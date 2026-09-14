@@ -70,8 +70,10 @@
 
   .admin-only { display: none !important; }
   body.admin-mode .admin-only { display: inline-flex !important; }
+  .user-authenticated-only { display: none !important; }
+  body.user-authenticated .user-authenticated-only { display: grid !important; }
 
-  /* Panel Ejecutivo & PMS Semanal */
+  /* Panel Ejecutivo & PMS Semanal (Visible solo logueado) */
   .executive-banner { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
   .pms-weekly-banner { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; background: rgba(59, 130, 246, 0.05); padding: 10px; border-radius: 8px; border: 1px dashed var(--border-card); }
   .exec-card { background: var(--bg-panel); border: 1px solid var(--border-card); border-radius: 8px; padding: 12px 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: space-between; }
@@ -166,7 +168,8 @@
       </div>
     </div>
 
-    <button class="btn-base admin-only" id="btnAdminGate" onclick="solicitarPermisoSuperAdmin()">🛡️ Admin</button>
+    <!-- Botón SuperAdmin oculto hasta autenticación de operador -->
+    <button class="btn-base user-authenticated-only" id="btnAdminGate" onclick="solicitarPermisoSuperAdmin()">🛡️ Admin</button>
     <button class="btn-base btn-success admin-only" onclick="abrirEdicionEquipoNuevo()">➕ Crear Activo</button>
     <button class="btn-base btn-warning admin-only" onclick="abrirPanelMaster()">🔐 Traza & Backups</button>
     <button class="btn-base btn-success admin-only" onclick="document.getElementById('excelUpload').click()">📂 Cargar Excel</button>
@@ -175,8 +178,8 @@
   </div>
 </div>
 
-<!-- Panel Ejecutivo & SLA PMS Semanal -->
-<div class="executive-banner">
+<!-- Panel Ejecutivo & PMS Semanal (Oculto para usuario anónimo/normal, visible tras login operador) -->
+<div class="executive-banner user-authenticated-only">
   <div class="exec-card">
     <div class="exec-card-title">Dólar / Hierro / Clima</div>
     <div class="exec-card-value">
@@ -201,7 +204,7 @@
   </div>
 </div>
 
-<div class="pms-weekly-banner">
+<div class="pms-weekly-banner user-authenticated-only">
   <div class="exec-card" style="background:var(--bg-card);">
     <div class="exec-card-title">📅 PMS Semana Vigente</div>
     <div class="exec-card-value code-font" id="kpiSemanaTag">2026-W38</div>
@@ -451,7 +454,6 @@
     menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
   }
 
-  // Cerrar menú usuario al hacer clic fuera
   window.addEventListener('click', function(e) {
     const wrapper = document.getElementById('userMenuWrapper');
     if (wrapper && !wrapper.contains(e.target)) {
@@ -478,6 +480,9 @@
       fieldReg.style.display = 'none';
       btnSub.innerText = "Iniciar Sesión";
     }
+    document.getElementById('authFullname').value = '';
+    document.getElementById('authUsername').value = '';
+    document.getElementById('authPassword').value = '';
     document.getElementById('modalAuth').style.display = 'flex';
   }
 
@@ -510,7 +515,6 @@
         alert("❌ Error al registrar usuario: " + err.message);
       });
     } else {
-      // Login contra Firebase o validar local
       const lookupId = userVal.replace(/[^a-zA-Z0-9]/g, '_');
       dbUsers.child(lookupId).once('value', snap => {
         const uData = snap.val();
@@ -518,7 +522,6 @@
           loguearUsuarioDirecto(uData.nombreCompleto || uData.usuario, userVal);
           document.getElementById('modalAuth').style.display = 'none';
         } else {
-          // Fallback para operador directo sin registro previo
           loguearUsuarioDirecto(userVal, userVal);
           document.getElementById('modalAuth').style.display = 'none';
         }
@@ -529,16 +532,18 @@
   function loguearUsuarioDirecto(nombreVisible, idUsuario) {
     usuarioActivo = nombreVisible;
     isUserAuthenticated = true;
+    document.body.classList.add('user-authenticated');
     document.getElementById('labelUsuarioBtn').innerText = nombreVisible.split(' ')[0];
     document.getElementById('dropUserInfo').innerText = `Activo: ${nombreVisible}`;
     document.getElementById('btnCerrarSesionDrop').style.display = 'block';
-    alert(`✅ Sesión iniciada: ${nombreVisible}`);
+    alert(`✅ Sesión iniciada: ${nombreVisible}. KPIs de faena desbloqueados.`);
   }
 
   function cerrarSesionUsuario() {
     isUserAuthenticated = false;
     usuarioActivo = null;
-    if (isAdmin) solicitarPermisoSuperAdmin(); // Apagar admin si sale de sesión
+    if (isAdmin) solicitarPermisoSuperAdmin();
+    document.body.classList.remove('user-authenticated');
     document.getElementById('labelUsuarioBtn').innerText = 'Usuario';
     document.getElementById('dropUserInfo').innerText = 'Sesión no iniciada';
     document.getElementById('btnCerrarSesionDrop').style.display = 'none';
