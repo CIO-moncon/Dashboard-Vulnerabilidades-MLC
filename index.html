@@ -46,9 +46,10 @@
   .header { border: 1px solid var(--border-card); padding: 14px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-panel); border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); flex-wrap: wrap; gap: 14px; }
   .header-brand { display: flex; align-items: center; gap: 20px; }
   
-  .logos-container { display: flex; align-items: center; background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.08) 100%); padding: 10px 20px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: inset 0 1px 6px rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.25); }
-  body.light-mode .logos-container { background: linear-gradient(135deg, rgba(0, 0, 0, 0.09) 0%, rgba(0, 0, 0, 0.04) 100%); border: 1px solid rgba(0, 0, 0, 0.15); }
-  .logo-cpf { height: 48px; width: auto; object-fit: contain; transform: scale(1.15); display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+  /* Fondo más claro y legible para el logo CPF */
+  .logos-container { display: flex; align-items: center; background: rgba(240, 244, 248, 0.94); padding: 10px 22px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+  body.light-mode .logos-container { background: rgba(228, 228, 231, 0.96); border: 1px solid rgba(0, 0, 0, 0.2); }
+  .logo-cpf { height: 48px; width: auto; object-fit: contain; transform: scale(1.15); display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15)); }
 
   .header-titles h1 { font-size: 1.25rem; margin: 0 0 2px 0; text-transform: uppercase; font-weight: 900; letter-spacing: 0.8px; color: var(--text-main); }
   .header-titles p { color: var(--text-muted); margin: 0; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
@@ -69,8 +70,6 @@
 
   .admin-only { display: none !important; }
   body.admin-mode .admin-only { display: inline-flex !important; }
-  .user-logged-only { display: none !important; }
-  body.user-authenticated .user-logged-only { display: inline-flex !important; }
 
   /* Panel Ejecutivo & PMS Semanal */
   .executive-banner { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
@@ -155,7 +154,18 @@
     </select>
     <button class="btn-base" onclick="toggleTheme()" title="Cambiar Tema Claro/Oscuro">☀️ / 🌙</button>
     <button class="btn-base btn-primary" onclick="alternarVistaMapa()">🗺️ Mapa Faena</button>
-    <button class="btn-base user-logged-only" id="btnAuthSession" onclick="iniciarSesionUsuario()">🔑 Login Operador</button>
+
+    <!-- Botón Usuario con menú desplegable Login/Registro -->
+    <div style="position:relative; display:inline-block;" id="userMenuWrapper">
+      <button class="btn-base" id="btnUsuarioMenu" onclick="toggleUserDropdown()">👤 <span id="labelUsuarioBtn">Usuario</span> ▾</button>
+      <div id="userDropdownMenu" style="display:none; position:absolute; right:0; top:110%; background:var(--bg-panel); border:1px solid var(--border-card); border-radius:6px; box-shadow:0 8px 16px rgba(0,0,0,0.5); min-width:180px; z-index:3000; padding:6px 0;">
+        <div style="padding:8px 12px; font-size:0.65rem; color:var(--text-muted); border-bottom:1px solid var(--border-card);" id="dropUserInfo">Sesión no iniciada</div>
+        <button class="btn-base" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent;" onclick="abrirModalAuth('login')">🔑 Iniciar Sesión</button>
+        <button class="btn-base" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent;" onclick="abrirModalAuth('register')">📝 Registrar Usuario</button>
+        <button class="btn-base" id="btnCerrarSesionDrop" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent; color:#ef4444; display:none;" onclick="cerrarSesionUsuario()">🚪 Cerrar Sesión</button>
+      </div>
+    </div>
+
     <button class="btn-base admin-only" id="btnAdminGate" onclick="solicitarPermisoSuperAdmin()">🛡️ Admin</button>
     <button class="btn-base btn-success admin-only" onclick="abrirEdicionEquipoNuevo()">➕ Crear Activo</button>
     <button class="btn-base btn-warning admin-only" onclick="abrirPanelMaster()">🔐 Traza & Backups</button>
@@ -249,17 +259,28 @@
 <div id="view-equipos" class="grid-equipos" style="display:none;"></div>
 <div id="view-componentes" class="grid-componentes" style="display:none;"></div>
 
-<!-- MODAL REGISTRO DE NUEVO OPERADOR / USUARIO -->
-<div id="modalLoginOperador" class="modal-overlay" style="z-index: 4000;">
-  <div class="modal-content" style="max-width: 400px;">
-    <h3 style="margin-top:0; color:var(--accent-color);">👤 Identificación de Operador</h3>
-    <p style="font-size: 0.75rem; color:var(--text-muted); margin-bottom: 16px;">Ingrese su Nombre y Apellido para habilitar lectura/trazabilidad.</p>
+<!-- MODAL UNIFICADO LOGIN / REGISTRO OPERADOR -->
+<div id="modalAuth" class="modal-overlay" style="z-index: 4500;">
+  <div class="modal-content" style="max-width: 420px;">
+    <button class="modal-close-btn" onclick="document.getElementById('modalAuth').style.display='none'">&times;</button>
+    <h3 id="authModalTitle" style="margin-top:0; color:var(--accent-color);">🔑 Iniciar Sesión Operador</h3>
+    <p style="font-size: 0.75rem; color:var(--text-muted); margin-bottom: 16px;" id="authModalDesc">Ingrese sus credenciales de operador.</p>
     <div style="display:flex; flex-direction:column; gap:12px;">
-      <div><label>Nombre</label><input type="text" id="opNombre" placeholder="Ej: Juan" style="width:100%; padding:8px; background:var(--input-bg); border:1px solid var(--border-card); color:var(--text-main); border-radius:6px; box-sizing:border-box;"></div>
-      <div><label>Apellido</label><input type="text" id="opApellido" placeholder="Ej: Pérez" style="width:100%; padding:8px; background:var(--input-bg); border:1px solid var(--border-card); color:var(--text-main); border-radius:6px; box-sizing:border-box;"></div>
-      <div style="display:flex; gap:10px; margin-top:10px;">
-        <button class="btn-base" style="flex:1;" onclick="document.getElementById('modalLoginOperador').style.display='none'">Cancelar</button>
-        <button class="btn-base btn-primary" style="flex:1;" onclick="confirmarLoginOperador()">Ingresar Sesión</button>
+      <div id="fieldRegistroNombre" style="display:none;">
+        <label>Nombre y Apellido</label>
+        <input type="text" id="authFullname" placeholder="Ej: Francisco Leiva" style="width:100%; padding:9px; background:var(--input-bg); border:1px solid var(--border-card); color:var(--text-main); border-radius:6px; box-sizing:border-box;">
+      </div>
+      <div>
+        <label>Identificador / Usuario (Email o Tag Faena)</label>
+        <input type="text" id="authUsername" placeholder="Ej: fleiva@cpf.cl" style="width:100%; padding:9px; background:var(--input-bg); border:1px solid var(--border-card); color:var(--text-main); border-radius:6px; box-sizing:border-box;">
+      </div>
+      <div>
+        <label>Contraseña</label>
+        <input type="password" id="authPassword" placeholder="••••••••" style="width:100%; padding:9px; background:var(--input-bg); border:1px solid var(--border-card); color:var(--text-main); border-radius:6px; box-sizing:border-box;">
+      </div>
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button class="btn-base" style="flex:1;" onclick="document.getElementById('modalAuth').style.display='none'">Cancelar</button>
+        <button class="btn-base btn-primary" style="flex:1;" id="btnSubmitAuth" onclick="ejecutarAccionAuth()">Continuar</button>
       </div>
     </div>
   </div>
@@ -401,11 +422,13 @@
     projectId: "dashboard-vulnerabilidades-mlc"
   };
   firebase.initializeApp(firebaseConfig);
-  const db = firebase.database().ref('activos_criticos'); 
+  const db = firebase.database().ref('activos_criticos');
+  const dbUsers = firebase.database().ref('usuarios_registrados');
 
   let isUserAuthenticated = false;
   let isAdmin = false;
   let usuarioActivo = null;
+  let modoAuthActual = 'login'; // 'login' | 'register'
   let equiposDB = [];
   let areaSeleccionada = null;
   let equipoSeleccionado = null;
@@ -423,41 +446,119 @@
   const SEV_PESO = { 'Rojo': 5, 'Naranja': 4, 'Amarillo': 3, 'Verde': 2, 'Plomo': 1 };
   const SEV_COLOR_HEX = { 'Rojo': '#ef4444', 'Naranja': '#f97316', 'Amarillo': '#eab308', 'Verde': '#22c55e', 'Plomo': '#6b7280' };
 
-  function iniciarSesionUsuario() {
-    document.getElementById('modalLoginOperador').style.display = 'flex';
+  function toggleUserDropdown() {
+    const menu = document.getElementById('userDropdownMenu');
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
   }
 
-  function confirmarLoginOperador() {
-    const nom = (document.getElementById('opNombre').value || '').trim();
-    const ape = (document.getElementById('opApellido').value || '').trim();
-    if (!nom || !ape) {
-      alert("⚠️ Debe ingresar nombre y apellido del operador.");
+  // Cerrar menú usuario al hacer clic fuera
+  window.addEventListener('click', function(e) {
+    const wrapper = document.getElementById('userMenuWrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+      document.getElementById('userDropdownMenu').style.display = 'none';
+    }
+  });
+
+  function abrirModalAuth(tipo) {
+    document.getElementById('userDropdownMenu').style.display = 'none';
+    modoAuthActual = tipo;
+    const title = document.getElementById('authModalTitle');
+    const desc = document.getElementById('authModalDesc');
+    const fieldReg = document.getElementById('fieldRegistroNombre');
+    const btnSub = document.getElementById('btnSubmitAuth');
+
+    if (tipo === 'register') {
+      title.innerText = "📝 Registrar Nuevo Operador";
+      desc.innerText = "Cree su perfil de operador para el registro de trazabilidad.";
+      fieldReg.style.display = 'block';
+      btnSub.innerText = "Registrarse y Entrar";
+    } else {
+      title.innerText = "🔑 Iniciar Sesión Operador";
+      desc.innerText = "Ingrese sus credenciales registradas.";
+      fieldReg.style.display = 'none';
+      btnSub.innerText = "Iniciar Sesión";
+    }
+    document.getElementById('modalAuth').style.display = 'flex';
+  }
+
+  function ejecutarAccionAuth() {
+    const userVal = (document.getElementById('authUsername').value || '').trim();
+    const passVal = (document.getElementById('authPassword').value || '').trim();
+    const fullnameVal = (document.getElementById('authFullname').value || '').trim();
+
+    if (!userVal || !passVal) {
+      alert("⚠️ Complete usuario y contraseña.");
       return;
     }
-    usuarioActivo = `${nom} ${ape}`;
+
+    if (modoAuthActual === 'register') {
+      if (!fullnameVal) {
+        alert("⚠️ Ingrese su nombre completo.");
+        return;
+      }
+      const newUserId = userVal.replace(/[^a-zA-Z0-9]/g, '_');
+      dbUsers.child(newUserId).set({
+        nombreCompleto: fullnameVal,
+        usuario: userVal,
+        password: passVal,
+        creadoEn: new Date().toISOString()
+      }).then(() => {
+        alert("✅ Usuario registrado exitosamente.");
+        document.getElementById('modalAuth').style.display = 'none';
+        loguearUsuarioDirecto(fullnameVal, userVal);
+      }).catch(err => {
+        alert("❌ Error al registrar usuario: " + err.message);
+      });
+    } else {
+      // Login contra Firebase o validar local
+      const lookupId = userVal.replace(/[^a-zA-Z0-9]/g, '_');
+      dbUsers.child(lookupId).once('value', snap => {
+        const uData = snap.val();
+        if (uData && uData.password === passVal) {
+          loguearUsuarioDirecto(uData.nombreCompleto || uData.usuario, userVal);
+          document.getElementById('modalAuth').style.display = 'none';
+        } else {
+          // Fallback para operador directo sin registro previo
+          loguearUsuarioDirecto(userVal, userVal);
+          document.getElementById('modalAuth').style.display = 'none';
+        }
+      });
+    }
+  }
+
+  function loguearUsuarioDirecto(nombreVisible, idUsuario) {
+    usuarioActivo = nombreVisible;
     isUserAuthenticated = true;
-    document.body.classList.add('user-authenticated');
-    document.getElementById('btnAuthSession').innerText = `👤 ${usuarioActivo}`;
-    document.getElementById('modalLoginOperador').style.display = 'none';
-    document.getElementById('opNombre').value = '';
-    document.getElementById('opApellido').value = '';
-    alert(`✅ Operador autenticado: ${usuarioActivo}.`);
+    document.getElementById('labelUsuarioBtn').innerText = nombreVisible.split(' ')[0];
+    document.getElementById('dropUserInfo').innerText = `Activo: ${nombreVisible}`;
+    document.getElementById('btnCerrarSesionDrop').style.display = 'block';
+    alert(`✅ Sesión iniciada: ${nombreVisible}`);
+  }
+
+  function cerrarSesionUsuario() {
+    isUserAuthenticated = false;
+    usuarioActivo = null;
+    if (isAdmin) solicitarPermisoSuperAdmin(); // Apagar admin si sale de sesión
+    document.getElementById('labelUsuarioBtn').innerText = 'Usuario';
+    document.getElementById('dropUserInfo').innerText = 'Sesión no iniciada';
+    document.getElementById('btnCerrarSesionDrop').style.display = 'none';
+    document.getElementById('userDropdownMenu').style.display = 'none';
+    alert("🚪 Sesión cerrada.");
   }
 
   function solicitarPermisoSuperAdmin() {
     if (!isUserAuthenticated) {
-      alert("⚠️ Debe autenticarse primero como operador en la plataforma.");
-      iniciarSesionUsuario();
+      alert("⚠️ Debe iniciar sesión o registrarse como operador primero.");
+      abrirModalAuth('login');
       return;
     }
     if (isAdmin) {
-      // Salir de admin pero mantener sesión de operador
       liberarLockEdicionActual();
       isAdmin = false;
       document.body.classList.remove('admin-mode');
       document.getElementById('btnAdminGate').innerText = '🛡️ Admin';
       cerrarEdicion();
-      alert("🔒 Modo SuperAdmin cerrado (sesión operador activa).");
+      alert("🔒 Modo SuperAdmin cerrado.");
       return;
     }
     const pass = prompt("🔑 Ingrese clave SuperAdmin (Moncon2026):");
@@ -465,7 +566,7 @@
       isAdmin = true;
       document.body.classList.add('admin-mode');
       document.getElementById('btnAdminGate').innerText = '🛡️ SuperAdmin ON';
-      alert(`✅ SuperAdmin activado por operador ${usuarioActivo}.`);
+      alert(`✅ SuperAdmin activado por ${usuarioActivo}.`);
     } else if (pass !== null) {
       alert("❌ Clave SuperAdmin incorrecta.");
     }
