@@ -145,14 +145,18 @@
       <img src="logo-cpf.png" alt="Logo CPF" class="logo-cpf" onerror="this.style.display='none'">
     </div>
     <div class="header-titles">
-      <h1>CIO - <span id="labelSiteGlobal">MINA LOS COLORADOS</span></h1>
-      <p>Centro Integrado de Operaciones | Monitoreo & Confiabilidad</p>
+      <h1>CIO - <span id="labelSiteGlobal">TODAS LAS FAENAS (GLOBAL)</span></h1>
+      <p id="subinfoFaenaUsuario">Acceso de Visualización Global</p>
     </div>
   </div>
   <div class="header-controls">
     <select id="selectorSite" class="filter-select" onchange="cambiarFaenaGlobal()" style="font-weight: 800; color: var(--accent-color);">
-      <option value="MLC">faena: Los Colorados (MLC)</option>
-      <option value="SITE_NORTE">faena: Planta/Mina Norte</option>
+      <option value="TODAS">🌐 Todas las Faenas (Global)</option>
+      <option value="Planta, Mina los Colorados">Planta, Mina los Colorados</option>
+      <option value="Mina, Mina los Colorados">Mina, Mina los Colorados</option>
+      <option value="Planta de Pellets">Planta de Pellets</option>
+      <option value="Planta, Mina el Romeral">Planta, Mina el Romeral</option>
+      <option value="Mina, Mina el Romeral">Mina, Mina el Romeral</option>
     </select>
     <button class="btn-base" onclick="toggleTheme()" title="Cambiar Tema Claro/Oscuro">☀️ / 🌙</button>
     <button class="btn-base btn-primary" onclick="alternarVistaMapa()">🗺️ Mapa Faena</button>
@@ -160,7 +164,7 @@
     <!-- Botón Usuario con menú desplegable Login/Registro -->
     <div style="position:relative; display:inline-block;" id="userMenuWrapper">
       <button class="btn-base" id="btnUsuarioMenu" onclick="toggleUserDropdown()">👤 <span id="labelUsuarioBtn">Usuario</span> ▾</button>
-      <div id="userDropdownMenu" style="display:none; position:absolute; right:0; top:110%; background:var(--bg-panel); border:1px solid var(--border-card); border-radius:6px; box-shadow:0 8px 16px rgba(0,0,0,0.5); min-width:180px; z-index:3000; padding:6px 0;">
+      <div id="userDropdownMenu" style="display:none; position:absolute; right:0; top:110%; background:var(--bg-panel); border:1px solid var(--border-card); border-radius:6px; box-shadow:0 8px 16px rgba(0,0,0,0.5); min-width:200px; z-index:3000; padding:6px 0;">
         <div style="padding:8px 12px; font-size:0.65rem; color:var(--text-muted); border-bottom:1px solid var(--border-card);" id="dropUserInfo">Sesión no iniciada</div>
         <button class="btn-base" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent;" onclick="abrirModalAuth('login')">🔑 Iniciar Sesión</button>
         <button class="btn-base" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent;" onclick="abrirModalAuth('register')">📝 Registrar Usuario</button>
@@ -178,7 +182,7 @@
   </div>
 </div>
 
-<!-- Panel Ejecutivo & PMS Semanal (Oculto para usuario anónimo/normal, visible tras login operador) -->
+<!-- Panel Ejecutivo & PMS Semanal (Visible solo logueado) -->
 <div class="executive-banner user-authenticated-only">
   <div class="exec-card">
     <div class="exec-card-title">Dólar / Hierro / Clima</div>
@@ -262,9 +266,9 @@
 <div id="view-equipos" class="grid-equipos" style="display:none;"></div>
 <div id="view-componentes" class="grid-componentes" style="display:none;"></div>
 
-<!-- MODAL UNIFICADO LOGIN / REGISTRO OPERADOR -->
+<!-- MODAL UNIFICADO LOGIN / REGISTRO OPERADOR CON ELECCIÓN DE FAENA ESCRITORIO/ASIGNADA -->
 <div id="modalAuth" class="modal-overlay" style="z-index: 4500;">
-  <div class="modal-content" style="max-width: 420px;">
+  <div class="modal-content" style="max-width: 440px;">
     <button class="modal-close-btn" onclick="document.getElementById('modalAuth').style.display='none'">&times;</button>
     <h3 id="authModalTitle" style="margin-top:0; color:var(--accent-color);">🔑 Iniciar Sesión Operador</h3>
     <p style="font-size: 0.75rem; color:var(--text-muted); margin-bottom: 16px;" id="authModalDesc">Ingrese sus credenciales de operador.</p>
@@ -280,6 +284,16 @@
       <div>
         <label>Contraseña</label>
         <input type="password" id="authPassword" placeholder="••••••••" style="width:100%; padding:9px; background:var(--input-bg); border:1px solid var(--border-card); color:var(--text-main); border-radius:6px; box-sizing:border-box;">
+      </div>
+      <div id="fieldAsignacionFaena" style="display:none;">
+        <label style="color:var(--accent-color);">📍 Seleccione Faena de Escritorio (Escritura Asignada)</label>
+        <select id="authSelectedSite" style="width:100%; padding:9px; background:var(--input-bg); border:1px solid var(--border-card); color:var(--text-main); border-radius:6px; box-sizing:border-box;">
+          <option value="Planta, Mina los Colorados">Planta, Mina los Colorados</option>
+          <option value="Mina, Mina los Colorados">Mina, Mina los Colorados</option>
+          <option value="Planta de Pellets">Planta de Pellets</option>
+          <option value="Planta, Mina el Romeral">Planta, Mina el Romeral</option>
+          <option value="Mina, Mina el Romeral">Mina, Mina el Romeral</option>
+        </select>
       </div>
       <div style="display:flex; gap:10px; margin-top:12px;">
         <button class="btn-base" style="flex:1;" onclick="document.getElementById('modalAuth').style.display='none'">Cancelar</button>
@@ -366,7 +380,7 @@
     <h2 style="margin-top: 0; font-size: 1.4rem; margin-bottom: 20px; border-bottom: 1px solid var(--border-card); padding-bottom: 12px;">Configuración Integral de Activo & Concurrencia</h2>
     
     <div class="form-grid">
-      <div><label>Faena (Site ID)</label><input type="text" id="edSiteId" class="code-font" value="MLC"></div>
+      <div><label>Faena (Site ID Asignado/Permitido)</label><input type="text" id="edSiteId" class="code-font" readonly style="opacity:0.7;"></div>
       <div><label>Dominio Operacional</label>
         <select id="edDomain">
           <option value="planta">🏭 Planta</option>
@@ -431,6 +445,7 @@
   let isUserAuthenticated = false;
   let isAdmin = false;
   let usuarioActivo = null;
+  let faenaAsignadaOperador = 'TODAS'; // 'TODAS' para admin o faena estricta para operador
   let modoAuthActual = 'login'; // 'login' | 'register'
   let equiposDB = [];
   let areaSeleccionada = null;
@@ -439,7 +454,7 @@
   let mapaLeaflet = null;
   let capaMarcadores = null;
   let modoMapaActivo = false;
-  let faenaActual = 'MLC';
+  let faenaActual = 'TODAS';
   
   let geoPickerLeaflet = null;
   let tempGeoMarker = null;
@@ -467,17 +482,20 @@
     const title = document.getElementById('authModalTitle');
     const desc = document.getElementById('authModalDesc');
     const fieldReg = document.getElementById('fieldRegistroNombre');
+    const fieldFaena = document.getElementById('fieldAsignacionFaena');
     const btnSub = document.getElementById('btnSubmitAuth');
 
     if (tipo === 'register') {
       title.innerText = "📝 Registrar Nuevo Operador";
-      desc.innerText = "Cree su perfil de operador para el registro de trazabilidad.";
+      desc.innerText = "Cree su perfil y seleccione su faena de asignación de escritura.";
       fieldReg.style.display = 'block';
+      fieldFaena.style.display = 'block';
       btnSub.innerText = "Registrarse y Entrar";
     } else {
       title.innerText = "🔑 Iniciar Sesión Operador";
-      desc.innerText = "Ingrese sus credenciales registradas.";
+      desc.innerText = "Ingrese sus credenciales de operador.";
       fieldReg.style.display = 'none';
+      fieldFaena.style.display = 'block';
       btnSub.innerText = "Iniciar Sesión";
     }
     document.getElementById('authFullname').value = '';
@@ -490,6 +508,7 @@
     const userVal = (document.getElementById('authUsername').value || '').trim();
     const passVal = (document.getElementById('authPassword').value || '').trim();
     const fullnameVal = (document.getElementById('authFullname').value || '').trim();
+    const selectedSite = document.getElementById('authSelectedSite').value;
 
     if (!userVal || !passVal) {
       alert("⚠️ Complete usuario y contraseña.");
@@ -506,11 +525,12 @@
         nombreCompleto: fullnameVal,
         usuario: userVal,
         password: passVal,
+        faenaAsignada: selectedSite,
         creadoEn: new Date().toISOString()
       }).then(() => {
         alert("✅ Usuario registrado exitosamente.");
         document.getElementById('modalAuth').style.display = 'none';
-        loguearUsuarioDirecto(fullnameVal, userVal);
+        loguearUsuarioDirecto(fullnameVal, selectedSite);
       }).catch(err => {
         alert("❌ Error al registrar usuario: " + err.message);
       });
@@ -519,33 +539,37 @@
       dbUsers.child(lookupId).once('value', snap => {
         const uData = snap.val();
         if (uData && uData.password === passVal) {
-          loguearUsuarioDirecto(uData.nombreCompleto || uData.usuario, userVal);
+          loguearUsuarioDirecto(uData.nombreCompleto || uData.usuario, uData.faenaAsignada || selectedSite);
           document.getElementById('modalAuth').style.display = 'none';
         } else {
-          loguearUsuarioDirecto(userVal, userVal);
+          loguearUsuarioDirecto(userVal, selectedSite);
           document.getElementById('modalAuth').style.display = 'none';
         }
       });
     }
   }
 
-  function loguearUsuarioDirecto(nombreVisible, idUsuario) {
+  function loguearUsuarioDirecto(nombreVisible, faenaAsignada) {
     usuarioActivo = nombreVisible;
     isUserAuthenticated = true;
+    faenaAsignadaOperador = faenaAsignada;
     document.body.classList.add('user-authenticated');
     document.getElementById('labelUsuarioBtn').innerText = nombreVisible.split(' ')[0];
-    document.getElementById('dropUserInfo').innerText = `Activo: ${nombreVisible}`;
+    document.getElementById('dropUserInfo').innerText = `Activo: ${nombreVisible} | Faena: ${faenaAsignada}`;
+    document.getElementById('subinfoFaenaUsuario').innerText = `Acceso escritura restringido a: ${faenaAsignada}`;
     document.getElementById('btnCerrarSesionDrop').style.display = 'block';
-    alert(`✅ Sesión iniciada: ${nombreVisible}. KPIs de faena desbloqueados.`);
+    alert(`✅ Sesión iniciada: ${nombreVisible}.\n📍 Escritura acotada a faena: ${faenaAsignada}. Visualización global habilitada.`);
   }
 
   function cerrarSesionUsuario() {
     isUserAuthenticated = false;
     usuarioActivo = null;
+    faenaAsignadaOperador = 'TODAS';
     if (isAdmin) solicitarPermisoSuperAdmin();
     document.body.classList.remove('user-authenticated');
     document.getElementById('labelUsuarioBtn').innerText = 'Usuario';
     document.getElementById('dropUserInfo').innerText = 'Sesión no iniciada';
+    document.getElementById('subinfoFaenaUsuario').innerText = 'Acceso de Visualización Global';
     document.getElementById('btnCerrarSesionDrop').style.display = 'none';
     document.getElementById('userDropdownMenu').style.display = 'none';
     alert("🚪 Sesión cerrada.");
@@ -562,8 +586,10 @@
       isAdmin = false;
       document.body.classList.remove('admin-mode');
       document.getElementById('btnAdminGate').innerText = '🛡️ Admin';
+      faenaAsignadaOperador = usuarioActivo ? (faenaAsignadaOperador || 'Planta, Mina los Colorados') : 'TODAS';
+      document.getElementById('subinfoFaenaUsuario').innerText = `Acceso escritura restringido a: ${faenaAsignadaOperador}`;
       cerrarEdicion();
-      alert("🔒 Modo SuperAdmin cerrado.");
+      alert("🔒 Modo SuperAdmin cerrado. Retorna a restricción de faena asignada.");
       return;
     }
     const pass = prompt("🔑 Ingrese clave SuperAdmin (Moncon2026):");
@@ -571,7 +597,9 @@
       isAdmin = true;
       document.body.classList.add('admin-mode');
       document.getElementById('btnAdminGate').innerText = '🛡️ SuperAdmin ON';
-      alert(`✅ SuperAdmin activado por ${usuarioActivo}.`);
+      faenaAsignadaOperador = 'TODAS';
+      document.getElementById('subinfoFaenaUsuario').innerText = '⚡ SUPERADMIN: Acceso total de escritura multifaena habilitado';
+      alert(`✅ SuperAdmin activado por ${usuarioActivo}. Acceso de modificación abierto a TODAS las faenas.`);
     } else if (pass !== null) {
       alert("❌ Clave SuperAdmin incorrecta.");
     }
@@ -606,7 +634,8 @@
 
   function cambiarFaenaGlobal() {
     faenaActual = document.getElementById('selectorSite').value;
-    document.getElementById('labelSiteGlobal').innerText = faenaActual === 'MLC' ? 'MINA LOS COLORADOS' : 'PLANTA/MINA NORTE';
+    const labelSite = document.getElementById('labelSiteGlobal');
+    labelSite.innerText = faenaActual === 'TODAS' ? 'TODAS LAS FAENAS (GLOBAL)' : faenaActual.toUpperCase();
     irAInicio();
   }
 
@@ -619,8 +648,7 @@
       mapaLeaflet.invalidateSize();
       return;
     }
-    const center = faenaActual === 'MLC' ? [-28.2876, -70.8130] : [-27.3668, -70.3331];
-    mapaLeaflet = L.map('view-map').setView(center, 17);
+    mapaLeaflet = L.map('view-map').setView([-28.2876, -70.8130], 10);
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 20,
       attribution: 'Esri World Imagery'
@@ -635,7 +663,7 @@
     
     setTimeout(() => {
       if (!geoPickerLeaflet) {
-        geoPickerLeaflet = L.map('geoPickerMap').setView([currentLat, currentLng], 18);
+        geoPickerLeaflet = L.map('geoPickerMap').setView([currentLat, currentLng], 15);
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
           maxZoom: 20
         }).addTo(geoPickerLeaflet);
@@ -648,7 +676,7 @@
         });
       } else {
         geoPickerLeaflet.invalidateSize();
-        geoPickerLeaflet.setView([currentLat, currentLng], 18);
+        geoPickerLeaflet.setView([currentLat, currentLng], 15);
       }
       
       if (tempGeoMarker) geoPickerLeaflet.removeLayer(tempGeoMarker);
@@ -698,7 +726,7 @@
   function actualizarMarcadoresMapa() {
     if (!capaMarcadores) return;
     capaMarcadores.clearLayers();
-    equiposDB.filter(e => (e.siteId || 'MLC') === faenaActual).forEach(eq => {
+    equiposDB.filter(e => faenaActual === 'TODAS' || (e.siteId || '') === faenaActual).forEach(eq => {
       if (eq.lat && eq.lng && eq.lat.trim() !== "" && eq.lng.trim() !== "") {
         const sev = calcularSeveridadGlobal(eq.componentes);
         const color = SEV_COLOR_HEX[sev] || '#6b7280';
@@ -712,6 +740,7 @@
         marker.bindPopup(`
           <div style="color: #141416; font-family: 'Inter', sans-serif;">
             <b style="font-size: 0.9rem;">${eq.tag}</b><br>
+            <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700;">Faena: ${eq.siteId || 'N/A'}</span><br>
             <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700;">Área: ${eq.area} [${(eq.domain||'planta').toUpperCase()}]</span><br>
             <span style="font-size: 0.75rem;">Estado: <b style="color: ${color};">${sev.toUpperCase()}</b></span><br><br>
             <button onclick="cerrarMapaYVerEquipo('${eq.id}')" style="background: #2563eb; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold;">🔍 Inspeccionar Activo</button>
@@ -735,7 +764,7 @@
         const item = rawData[key];
         return {
           id: item.id || key,
-          siteId: item.siteId || 'MLC',
+          siteId: item.siteId || 'Planta, Mina los Colorados',
           domain: item.domain || 'planta',
           area: item.area || 'Sin Área',
           tag: item.tag || item.nombre || item.identificador || item.codigo || 'S/N',
@@ -765,7 +794,7 @@
 
   function actualizarConteoUniversoEquipos() {
     let rojos = 0, naranjos = 0, amarillos = 0, verdes = 0;
-    equiposDB.filter(e => (e.siteId || 'MLC') === faenaActual).forEach(eq => {
+    equiposDB.filter(e => faenaActual === 'TODAS' || (e.siteId || '') === faenaActual).forEach(eq => {
       const sevGlobal = calcularSeveridadGlobal(eq.componentes);
       if (sevGlobal === 'Rojo') rojos++;
       else if (sevGlobal === 'Naranja') naranjos++;
@@ -822,7 +851,7 @@
     const query = (document.getElementById('buscadorTag').value || '').toLowerCase().trim();
     const areasMap = {};
 
-    equiposDB.filter(e => (e.siteId || 'MLC') === faenaActual).forEach(eq => {
+    equiposDB.filter(e => faenaActual === 'TODAS' || (e.siteId || '') === faenaActual).forEach(eq => {
       if (filtroDomain !== 'todos' && (eq.domain || 'planta') !== filtroDomain) return;
 
       if (filtroOM === 'con_om') {
@@ -837,7 +866,7 @@
         if (!matchTag && !matchArea && !matchOM) return;
       }
 
-      const area = `${eq.area} [${(eq.domain||'planta').toUpperCase()}]`;
+      const area = `${eq.area} [${(eq.siteId||'Faena')}]`;
       const sev = calcularSeveridadGlobal(eq.componentes);
       if (!areasMap[area]) areasMap[area] = { equipos: 0, criticos: 0, maxSevPeso: 1, maxSev: 'Plomo' };
       areasMap[area].equipos++;
@@ -853,7 +882,7 @@
         <div class="card-area sev-${data.maxSev.toLowerCase()} ${animClass}" onclick="renderNivel2Equipos('${area.split(' [')[0]}')">
           <div style="width: 100%; display: flex; justify-content: space-between; align-items: flex-start;">
             <div style="text-align: left;">
-              <div class="label-muted">Área [Dominio]</div>
+              <div class="label-muted">Área [Faena]</div>
               <div class="value-strong" style="font-size: 0.9rem; margin-top: 2px;">${area}</div>
             </div>
           </div>
@@ -890,7 +919,7 @@
     const filtroDomain = document.getElementById('filtroDomain').value;
     const query = (document.getElementById('buscadorTag').value || '').toLowerCase().trim();
     
-    let eqs = equiposDB.filter(e => (e.siteId || 'MLC') === faenaActual && e.area === areaSeleccionada);
+    let eqs = equiposDB.filter(e => (faenaActual === 'TODAS' || (e.siteId || '') === faenaActual) && e.area === areaSeleccionada);
     
     if (filtroDomain !== 'todos') {
       eqs = eqs.filter(e => (e.domain || 'planta') === filtroDomain);
@@ -915,7 +944,7 @@
       const lockBadge = eq.edit_lock && eq.edit_lock.user ? `<span class="lock-badge">🔒 ${eq.edit_lock.user}</span>` : '';
       return `
         <div class="card-equipo sev-${sevGlobal.toLowerCase()}" onclick="renderNivel3Componentes('${eq.id}')">
-          <div class="eq-type">${(eq.domain||'planta').toUpperCase()} | ${eq.tipo || 'Activo'}</div>
+          <div class="eq-type">${eq.siteId || 'Faena'} | ${eq.tipo || 'Activo'}</div>
           <div class="eq-tag code-font" title="${eq.tag}">${eq.tag}</div>
           <div class="eq-days" title="Días">${dias}d</div>
           ${lockBadge}
@@ -942,7 +971,7 @@
     let html = `
       <div style="grid-column: 1 / -1; display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px; background: var(--bg-card); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-card);">
         <div>
-          <div class="label-muted">${(eq.domain||'planta').toUpperCase()} | ${eq.tipo || 'ACTIVO'}</div>
+          <div class="label-muted">${eq.siteId || 'Faena'} | ${eq.tipo || 'ACTIVO'}</div>
           <h2 style="margin: 2px 0 0 0; font-size: 1.15rem;" class="code-font">${eq.tag}</h2>
           ${lockInfo}
         </div>
@@ -977,7 +1006,7 @@
     if (!eq || !eq.componentes || !eq.componentes[compIndex]) return;
     const c = eq.componentes[compIndex];
     
-    componenteActualDetalle = { site: eq.siteId||'MLC', domain: eq.domain||'planta', tipoActivo: eq.tipo, eqTag: eq.tag, area: eq.area, spot: c.nombre, sev: c.severidad, rms: c.rms || 'N/D', termo: c.termo || 'N/D', om: c.om || 'S/N', analisis: c.analisis || 'S/N', recomendacion: c.recomendacion || 'S/N', aceite: c.aceite || '' };
+    componenteActualDetalle = { site: eq.siteId||'Faena', domain: eq.domain||'planta', tipoActivo: eq.tipo, eqTag: eq.tag, area: eq.area, spot: c.nombre, sev: c.severidad, rms: c.rms || 'N/D', termo: c.termo || 'N/D', om: c.om || 'S/N', analisis: c.analisis || 'S/N', recomendacion: c.recomendacion || 'S/N', aceite: c.aceite || '' };
 
     document.getElementById('detCompEqTag').innerText = `Faena: ${componenteActualDetalle.site} | Activo: ${eq.tag} (${eq.area})`;
     document.getElementById('detCompNombre').innerText = c.nombre;
@@ -1041,6 +1070,11 @@ Recomendación: ${d.recomendacion}`;
 
   function abrirEdicionEquipo() {
     if (!isAdmin || !equipoSeleccionado) return;
+    if (!isAdminOverridingSite(equipoSeleccionado.siteId)) {
+      alert(`⛔ Acceso denegado: Tu faena asignada de escritura es "${faenaAsignadaOperador}". No puedes modificar activos de "${equipoSeleccionado.siteId}" sin rol SuperAdmin.`);
+      return;
+    }
+
     const me = usuarioActivo || 'SuperAdmin (MLC)';
     const currentLock = equipoSeleccionado.edit_lock;
 
@@ -1057,7 +1091,7 @@ Recomendación: ${d.recomendacion}`;
       edit_lock: { user: me, timestamp: Date.now() }
     });
     
-    document.getElementById('edSiteId').value = equipoSeleccionado.siteId || 'MLC';
+    document.getElementById('edSiteId').value = equipoSeleccionado.siteId || 'Planta, Mina los Colorados';
     document.getElementById('edDomain').value = equipoSeleccionado.domain || 'planta';
     document.getElementById('edArea').value = equipoSeleccionado.area || '';
     document.getElementById('edTag').value = equipoSeleccionado.tag || '';
@@ -1072,6 +1106,11 @@ Recomendación: ${d.recomendacion}`;
     (equipoSeleccionado.componentes || []).forEach((c, idx) => agregarFormComponente(c, tipoVal));
     
     document.getElementById('modalEdicion').style.display = 'block';
+  }
+
+  function isAdminOverridingSite(targetSite) {
+    if (faenaAsignadaOperador === 'TODAS') return true;
+    return targetSite === faenaAsignadaOperador;
   }
 
   function agregarFormComponente(data = {}, tipoActivoContexto = '') {
@@ -1242,7 +1281,13 @@ Recomendación: ${d.recomendacion}`;
     if (!equipoSeleccionado) return;
     const id = equipoSeleccionado.id;
     const timestampISO = new Date().toISOString();
-    const actor = usuarioActivo || 'SuperAdmin (MLC)';
+    const actor = usuarioActivo || 'SuperAdmin (Multifaena)';
+    const assignedSite = document.getElementById('edSiteId').value || faenaAsignadaOperador;
+
+    if (!isAdminOverridingSite(assignedSite)) {
+      alert(`⛔ No tienes permisos para guardar cambios en la faena "${assignedSite}".`);
+      return;
+    }
 
     const estadoPrevio = JSON.parse(JSON.stringify(equipoSeleccionado));
     if (estadoPrevio.id) {
@@ -1283,7 +1328,7 @@ Recomendación: ${d.recomendacion}`;
     datosAudit.modificado_por = actor;
 
     db.child(id).update({
-      siteId: document.getElementById('edSiteId').value || 'MLC',
+      siteId: assignedSite,
       domain: document.getElementById('edDomain').value || 'planta',
       area: document.getElementById('edArea').value,
       tag: document.getElementById('edTag').value,
@@ -1301,7 +1346,11 @@ Recomendación: ${d.recomendacion}`;
   }
 
   function eliminarEquipo() {
-    const actor = usuarioActivo || 'SuperAdmin (MLC)';
+    const actor = usuarioActivo || 'SuperAdmin';
+    if (!isAdminOverridingSite(equipoSeleccionado.siteId)) {
+      alert(`⛔ No puedes eliminar activos de la faena "${equipoSeleccionado.siteId}".`);
+      return;
+    }
     if(!confirm(`¿Eliminar permanentemente el activo ${equipoSeleccionado.tag}? Acción realizada por: ${actor}`)) return;
     
     const timestampISO = new Date().toISOString();
@@ -1309,7 +1358,7 @@ Recomendación: ${d.recomendacion}`;
       evento: 'ELIMINACION_ACTIVO',
       assetId: equipoSeleccionado.id,
       tag: equipoSeleccionado.tag,
-      faena: equipoSeleccionado.siteId || faenaActual,
+      faena: equipoSeleccionado.siteId || 'N/A',
       usuario: actor,
       timestamp: timestampISO
     });
@@ -1321,16 +1370,20 @@ Recomendación: ${d.recomendacion}`;
   }
 
   function abrirEdicionEquipoNuevo() {
-    equipoSeleccionado = { id: 'EQ_' + Date.now(), siteId: faenaActual, domain: 'planta', componentes: [{ nombre: "Spot Reductor/Motor", tipo_iot: "manual", iso_group: "g2_rigid", rms: "", severidad: "Verde", termo: "", aceite: "", analisis: "", recomendacion: "", trazabilidad: [] }] };
+    const defaultSite = faenaAsignadaOperador === 'TODAS' ? 'Planta, Mina los Colorados' : faenaAsignadaOperador;
+    equipoSeleccionado = { id: 'EQ_' + Date.now(), siteId: defaultSite, domain: 'planta', componentes: [{ nombre: "Spot Reductor/Motor", tipo_iot: "manual", iso_group: "g2_rigid", rms: "", severidad: "Verde", termo: "", aceite: "", analisis: "", recomendacion: "", trazabilidad: [] }] };
     abrirEdicionEquipo();
   }
 
   function exportarPlantillaExcel() {
-    const filas = equiposDB.map(eq => ({ ID_Interno: eq.id, Site_ID: eq.siteId||'MLC', Domain: eq.domain||'planta', Area: eq.area, Tag: eq.tag, Tipo: eq.tipo, Fecha_Medicion: eq.fecha || '' }));
+    const targetSiteFilter = isAdminOverridingSite('TODAS') ? 'TODAS' : faenaAsignadaOperador;
+    const filas = equiposDB
+      .filter(eq => targetSiteFilter === 'TODAS' || eq.siteId === targetSiteFilter)
+      .map(eq => ({ ID_Interno: eq.id, Site_ID: eq.siteId||'', Domain: eq.domain||'planta', Area: eq.area, Tag: eq.tag, Tipo: eq.tipo, Fecha_Medicion: eq.fecha || '' }));
     const ws = XLSX.utils.json_to_sheet(filas);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Equipos_MLC");
-    XLSX.writeFile(wb, `CIO_Base_${faenaActual}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, "Activos_Asignados");
+    XLSX.writeFile(wb, `CIO_Base_${targetSiteFilter.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`);
   }
 
   function procesarCargaExcel(e) {
@@ -1348,8 +1401,10 @@ Recomendación: ${d.recomendacion}`;
 
       json.forEach(row => {
         if(row.ID_Interno && row.Tag) {
+          const rowSite = row.Site_ID || (faenaAsignadaOperador === 'TODAS' ? 'Planta, Mina los Colorados' : faenaAsignadaOperador);
+          if (!isAdminOverridingSite(rowSite)) return; // omite faenas fuera del permiso operador
           db.child(row.ID_Interno).update({ 
-            siteId: row.Site_ID || faenaActual, 
+            siteId: rowSite, 
             domain: row.Domain || 'planta', 
             area: row.Area, 
             tag: row.Tag, 
@@ -1365,12 +1420,12 @@ Recomendación: ${d.recomendacion}`;
         evento: 'CARGA_MASIVA_EXCEL',
         batchId: batchId,
         usuario: actor,
-        faena: faenaActual,
+        faena: faenaAsignadaOperador,
         registros_procesados: procesados,
         timestamp: timestampISO
       });
 
-      alert(`✅ Carga masiva exitosa: ${procesados} equipos procesados por ${actor}.`);
+      alert(`✅ Carga masiva exitosa: ${procesados} equipos procesados en faena asignada por ${actor}.`);
     };
     reader.readAsArrayBuffer(file);
     e.target.value = '';
