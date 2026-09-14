@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CIO - CENTRO INTEGRADO DE OPERACIONES | PLANTA MLC</title>
+<title>CIO - CENTRO INTEGRADO DE OPERACIONES | CONFIABILIDAD MULTI-SITE</title>
 <!-- Leaflet CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <!-- SheetJS -->
@@ -24,7 +24,7 @@
     --input-bg: #121214;
     --btn-bg: #27272a;
     --btn-hover: #3f3f46;
-    --logo-box-bg: rgba(255, 255, 255, 0.08);
+    --logo-box-bg: rgba(255, 255, 255, 0.04);
   }
 
   body.light-mode {
@@ -38,22 +38,20 @@
     --input-bg: #f8fafc;
     --btn-bg: #e4e4e7;
     --btn-hover: #d4d4d8;
-    --logo-box-bg: rgba(0, 0, 0, 0.05);
+    --logo-box-bg: rgba(0, 0, 0, 0.03);
   }
 
   body { background-color: var(--bg-main); color: var(--text-main); font-family: 'Inter', sans-serif; padding: 20px; margin: 0; -webkit-font-smoothing: antialiased; transition: background 0.2s, color 0.2s; }
   .code-font { font-family: 'Roboto Mono', monospace; }
   
   /* Cabecera Principal */
-  .header { border: 1px solid var(--border-card); padding: 12px 20px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-panel); border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-  .header-brand { display: flex; align-items: center; gap: 16px; }
+  .header { border: 1px solid var(--border-card); padding: 14px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-panel); border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); flex-wrap: wrap; gap: 14px; }
+  .header-brand { display: flex; align-items: center; gap: 20px; }
   
-  .logos-container { display: flex; align-items: center; gap: 14px; background: var(--logo-box-bg); padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-card); box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); }
-  .logo-cmp { height: 32px; width: auto; object-fit: contain; }
-  .logo-cpf { height: 38px; width: auto; object-fit: contain; transform: scale(1.12); }
-  .logo-divider { width: 1px; height: 28px; background: var(--border-card); }
+  .logos-container { display: flex; align-items: center; background: var(--logo-box-bg); padding: 8px 18px; border-radius: 8px; border: 1px solid var(--border-card); box-shadow: inset 0 1px 4px rgba(0,0,0,0.25); }
+  .logo-cpf { height: 46px; width: auto; object-fit: contain; transform: scale(1.15); display: block; }
 
-  .header-titles h1 { font-size: 1.15rem; margin: 0 0 2px 0; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; color: var(--text-main); }
+  .header-titles h1 { font-size: 1.25rem; margin: 0 0 2px 0; text-transform: uppercase; font-weight: 900; letter-spacing: 0.8px; color: var(--text-main); }
   .header-titles p { color: var(--text-muted); margin: 0; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
   .header-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   
@@ -65,15 +63,17 @@
   .btn-success { background: #16a34a; color: white; border-color: #22c55e; }
   .btn-warning { background: #ca8a04; color: white; border-color: #eab308; }
   .btn-danger { background: #dc2626; color: white; border-color: #ef4444; }
-  .btn-iot { background: #7c3aed; color: white; border-color: #8b5cf6; }
 
-  .filter-select { background: var(--input-bg); border: 1px solid var(--border-card); color: var(--text-main); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; outline: none; cursor: pointer; }
+  .filter-select, .search-input { background: var(--input-bg); border: 1px solid var(--border-card); color: var(--text-main); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; outline: none; }
+  .search-input { width: 140px; }
+  .search-input:focus { border-color: var(--accent-color); }
 
   .admin-only { display: none !important; }
   body.admin-mode .admin-only { display: inline-flex !important; }
 
-  /* Panel Ejecutivo */
-  .executive-banner { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  /* Panel Ejecutivo & PMS Semanal */
+  .executive-banner { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .pms-weekly-banner { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; background: rgba(59, 130, 246, 0.05); padding: 10px; border-radius: 8px; border: 1px dashed var(--border-card); }
   .exec-card { background: var(--bg-panel); border: 1px solid var(--border-card); border-radius: 8px; padding: 12px 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: space-between; }
   .exec-card-title { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
   .exec-card-value { font-size: 1.15rem; font-weight: 800; color: var(--text-main); margin-top: 6px; font-family: 'Roboto Mono', monospace; display: flex; align-items: center; justify-content: space-between; }
@@ -90,7 +90,7 @@
   .grid-equipos { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
   .grid-componentes { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
   
-  #view-map { width: 100%; height: 750px; border-radius: 8px; border: 1px solid var(--border-card); display: none; margin-bottom: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.3); z-index: 10; }
+  #view-map { width: 100%; height: 700px; border-radius: 8px; border: 1px solid var(--border-card); display: none; margin-bottom: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.3); z-index: 10; }
 
   /* Tarjetas */
   .card-area { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 8px; padding: 16px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -109,28 +109,19 @@
   .sev-verde { border-left: 5px solid #22c55e; }
   .sev-plomo { border-left: 5px solid #6b7280; }
 
-  /* Insignias IoT */
-  .iot-badge { position: absolute; top: -6px; right: -6px; font-size: 0.75rem; background: var(--bg-panel); border: 2px solid var(--border-card); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index: 5; }
-  .iot-online { color: #22c55e; border-color: #22c55e; background: #052e16; }
-  .iot-offline { color: #f97316; border-color: #f97316; background: #431407; }
-  .iot-manual { color: var(--text-main); border-color: var(--border-card); background: var(--btn-bg); }
-  
-  .iot-badge-icon { font-size: 1.1rem; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: var(--bg-card); border: 2px solid var(--border-card); }
-  
   .label-muted { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
   .value-strong { font-size: 0.85rem; font-weight: 700; color: var(--text-main); }
   .eq-tag { font-size: 0.85rem; font-weight: 700; margin: 2px 0; color: var(--text-main); }
   .eq-type { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
   .eq-days { font-size: 0.55rem; font-weight: 600; background: var(--input-bg); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-card); margin-top: 4px; display: inline-block; color: var(--text-muted); }
-  .lock-badge { position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); font-size: 0.45rem; background: #dc2626; color: white; padding: 1px 4px; border-radius: 6px; font-weight: 700; text-transform: uppercase; z-index: 10;}
+  .lock-badge { font-size: 0.5rem; background: rgba(249,115,22,0.15); color: #f97316; padding: 1px 4px; border-radius: 3px; font-weight: bold; margin-top: 2px; }
 
-  /* Modales Estándar y de Edición en Pantalla Completa */
+  /* Modales Estándar y Edición Pantalla Completa */
   .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; backdrop-filter: blur(4px); }
-  .modal-content { background: var(--bg-panel); padding: 24px; border-radius: 12px; border: 1px solid var(--border-card); width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+  .modal-content { background: var(--bg-panel); padding: 24px; border-radius: 12px; border: 1px solid var(--border-card); width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
   
-  /* Modal Edición Pantalla Completa */
   .modal-fullscreen { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-main); z-index: 2500; overflow-y: auto; padding: 30px; box-sizing: border-box; }
-  .fullscreen-container { max-width: 1200px; margin: 0 auto; background: var(--bg-panel); border: 1px solid var(--border-card); border-radius: 12px; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; }
+  .fullscreen-container { max-width: 1250px; margin: 0 auto; background: var(--bg-panel); border: 1px solid var(--border-card); border-radius: 12px; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; }
 
   .modal-close-btn { position: absolute; top: 20px; right: 20px; color: var(--text-muted); font-size: 1.4rem; cursor: pointer; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; transition: 0.2s; z-index: 10; }
   .modal-close-btn:hover { color: white; background: #dc2626; border-color: #ef4444; }
@@ -138,6 +129,10 @@
   .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
   .form-grid label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; display: block; }
   .form-grid input, .form-grid select, .form-grid textarea { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-card); background: var(--input-bg); color: var(--text-main); font-size: 0.9rem; font-family: 'Inter', sans-serif; box-sizing: border-box; }
+  
+  .copilot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; }
+  .copilot-box { background: var(--input-bg); border: 1px solid var(--border-card); border-radius: 6px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; }
+  .copilot-box header { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
 </style>
 </head>
 <body>
@@ -145,35 +140,35 @@
 <div class="header">
   <div class="header-brand">
     <div class="logos-container">
-      <img src="logo-cmp.png" alt="Logo CMP" class="logo-cmp" onerror="this.style.display='none'">
-      <div class="logo-divider"></div>
       <img src="logo-cpf.png" alt="Logo CPF" class="logo-cpf" onerror="this.style.display='none'">
     </div>
-    
     <div class="header-titles">
-      <h1>CIO - MINA LOS COLORADOS</h1>
-      <p>Asistente de Monitoreo & Industria 4.0</p>
+      <h1>CIO - <span id="labelSiteGlobal">MINA LOS COLORADOS</span></h1>
+      <p>Centro Integrado de Operaciones | Monitoreo & Confiabilidad</p>
     </div>
   </div>
   <div class="header-controls">
+    <select id="selectorSite" class="filter-select" onchange="cambiarFaenaGlobal()" style="font-weight: 800; color: var(--accent-color);">
+      <option value="MLC">faena: Los Colorados (MLC)</option>
+      <option value="SITE_NORTE">faena: Planta/Mina Norte</option>
+    </select>
     <button class="btn-base" onclick="toggleTheme()" title="Cambiar Tema Claro/Oscuro">☀️ / 🌙</button>
-    <button class="btn-base btn-primary" onclick="alternarVistaMapa()">🗺️ Mapa Planta</button>
+    <button class="btn-base btn-primary" onclick="alternarVistaMapa()">🗺️ Mapa Faena</button>
     <button class="btn-base btn-success admin-only" onclick="abrirEdicionEquipoNuevo()">➕ Crear Activo</button>
-    <button class="btn-base btn-iot admin-only" onclick="simularInyeccionDynamox()">📡 Simular Alerta</button>
-    <button class="btn-base btn-warning admin-only" onclick="calcularRutaDescarga()">🚶‍♂️ Ruta Físicos</button>
+    <button class="btn-base btn-warning admin-only" onclick="abrirPanelMaster()">🔐 Traza & Backups</button>
     <button class="btn-base btn-success admin-only" onclick="document.getElementById('excelUpload').click()">📂 Cargar Excel</button>
     <input type="file" id="excelUpload" accept=".xlsx, .xls" style="display: none;" onchange="procesarCargaExcel(event)">
     <button class="btn-base btn-primary admin-only" onclick="exportarPlantillaExcel()">📥 Exportar BD</button>
-    <button class="btn-base" id="btnUnlock" onclick="toggleAdmin()">👤 Usuario</button>
+    <button class="btn-base" id="btnUnlock" onclick="toggleAdmin()">🛡️ Admin</button>
   </div>
 </div>
 
-<!-- Panel Ejecutivo -->
+<!-- Panel Ejecutivo & SLA PMS Semanal -->
 <div class="executive-banner">
   <div class="exec-card">
     <div class="exec-card-title">Dólar / Hierro / Clima</div>
     <div class="exec-card-value">
-      <span id="kpiDolar" style="font-size: 0.95rem;">$939</span> | <span id="kpiHierro" style="font-size: 0.95rem;">$98.6 USD</span> | <span id="kpiClima" style="font-size: 0.95rem;">☀️ 23°C</span>
+      <span id="kpiDolar" style="font-size: 0.9rem;">$939</span> | <span id="kpiHierro" style="font-size: 0.9rem;">$98.6 USD</span> | <span id="kpiClima" style="font-size: 0.9rem;">☀️ 23°C</span>
     </div>
   </div>
   <div class="exec-card" style="border-left: 3px solid #ef4444;">
@@ -194,25 +189,56 @@
   </div>
 </div>
 
+<div class="pms-weekly-banner">
+  <div class="exec-card" style="background:var(--bg-card);">
+    <div class="exec-card-title">📅 PMS Semana Vigente</div>
+    <div class="exec-card-value code-font" id="kpiSemanaTag">2026-W37</div>
+  </div>
+  <div class="exec-card" style="background:var(--bg-card); border-left: 3px solid #22c55e;">
+    <div class="exec-card-title">✅ Cumplimiento Pauta</div>
+    <div class="exec-card-value" id="kpiCumplimientoPauta" style="color: #22c55e;">94.2%</div>
+  </div>
+  <div class="exec-card" style="background:var(--bg-card); border-left: 3px solid #f97316;">
+    <div class="exec-card-title">⚡ Emergentes (Ejec./Ing.)</div>
+    <div class="exec-card-value code-font" id="kpiEmergentesStats">5 / 6</div>
+  </div>
+  <div class="exec-card" style="background:var(--bg-card); border-left: 3px solid #3b82f6;">
+    <div class="exec-card-title">📊 Cobertura ISO / Integridad</div>
+    <div class="exec-card-value code-font" id="kpiConfianzaDato">91.5%</div>
+  </div>
+</div>
+
 <div class="nav-bar-global">
   <div class="nav-breadcrumb-group">
     <button id="btnVolver" class="btn-base" style="display:none;" onclick="navegarAtras()">⬅️ Volver</button>
     <button id="btnInicio" class="btn-base" style="display:none;" onclick="irAInicio()">🏠 Inicio</button>
     <div class="nav-breadcrumb" id="breadcrumb">
-      <span class="nav-link" onclick="irAInicio()">Mina Los Colorados</span>
+      <span class="nav-link" onclick="irAInicio()">Faena Actual</span>
       <span id="bc-area" style="display:none;"></span>
       <span id="bc-equipo" style="display:none;"></span>
     </div>
   </div>
   
-  <div style="display: flex; align-items: center; gap: 8px;">
-    <span class="label-muted">Filtro IoT:</span>
-    <select id="filtroIoT" class="filter-select" onchange="aplicarFiltroIoT()">
-      <option value="todos">🔌 Todos</option>
-      <option value="gateway">📶 Gateway</option>
-      <option value="manual">🚶‍♂️ Manual</option>
-      <option value="parcial">🔄 Parcial</option>
-    </select>
+  <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <span class="label-muted">Dominio:</span>
+      <select id="filtroDomain" class="filter-select" onchange="aplicarFiltrosGlobales()">
+        <option value="todos">⚙️ Planta & Mina</option>
+        <option value="planta">🏭 Planta</option>
+        <option value="mina">⛏️ Mina</option>
+      </select>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <span class="label-muted">Buscar:</span>
+      <input type="text" id="buscadorTag" class="search-input" placeholder="🔍 Tag, Área, OM..." oninput="filtrarPorBusqueda()">
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <span class="label-muted">Filtro OM:</span>
+      <select id="filtroOM" class="filter-select" onchange="aplicarFiltrosGlobales()">
+        <option value="todos">📋 Todos</option>
+        <option value="con_om">🔴 Con Aviso SAP / OM</option>
+      </select>
+    </div>
   </div>
 </div>
 
@@ -221,35 +247,72 @@
 <div id="view-equipos" class="grid-equipos" style="display:none;"></div>
 <div id="view-componentes" class="grid-componentes" style="display:none;"></div>
 
-<!-- MODAL DETALLE DE COMPONENTE -->
+<!-- MODAL PANEL MASTER (TRAZA & BACKUPS) -->
+<div id="modalMaster" class="modal-overlay" style="z-index: 5000;">
+  <div class="modal-content" style="max-width: 900px; max-height: 85vh;">
+    <button class="modal-close-btn" onclick="document.getElementById('modalMaster').style.display='none'">&times;</button>
+    <h3 style="margin-top:0; color:#f59e0b;">🔐 Panel Master: Auditoría Global & Backups por Activo</h3>
+    <div style="display:flex; gap:10px; margin-bottom:16px;">
+      <button class="btn-base btn-primary" onclick="cargarAuditGlobalUI()">📜 Ver Traza Global</button>
+      <button class="btn-base btn-warning" onclick="cargarBackupsListUI()">💾 Ver Backups de Activos</button>
+      <button class="btn-base btn-success" onclick="exportarBackupTotalJSON()">📥 Descargar Backup Total JSON</button>
+    </div>
+    <div id="masterPanelContent" style="background:var(--input-bg); border:1px solid var(--border-card); border-radius:6px; padding:14px; max-height:50vh; overflow-y:auto; font-family:'Roboto Mono', monospace; font-size:0.75rem;">
+      Seleccione una opción de auditoría superior...
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE DE COMPONENTE & TRAZABILIDAD -->
 <div id="modalDetalleComponente" class="modal-overlay" onclick="cerrarDetalleComponente(event)">
   <div class="modal-content" onclick="event.stopPropagation()">
     <button class="modal-close-btn" onclick="cerrarDetalleComponente()" title="Cerrar">&times;</button>
     
-    <div style="margin-right: 40px; margin-bottom: 16px; border-bottom: 1px solid var(--border-card); padding-bottom: 12px;">
-      <div class="label-muted" id="detCompEqTag">TAG EQUIPO</div>
-      <h2 id="detCompNombre" class="code-font" style="margin: 2px 0 0 0; font-size: 1.2rem;">Nombre Spot</h2>
+    <div style="margin-right: 40px; margin-bottom: 16px; border-bottom: 1px solid var(--border-card); padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <div class="label-muted" id="detCompEqTag">TAG EQUIPO</div>
+        <h2 id="detCompNombre" class="code-font" style="margin: 2px 0 0 0; font-size: 1.2rem;">Nombre Spot</h2>
+      </div>
+      <button class="btn-base btn-primary" style="padding: 5px 10px; font-size: 0.7rem;" onclick="copiarResumenEjecutivo()">📋 Copiar Resumen</button>
     </div>
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
-      <div style="background: var(--bg-card); padding: 12px; border-radius: 6px; border: 1px solid var(--border-card);">
-        <div class="label-muted">Alerta Vibración</div>
-        <div id="detCompSev" class="value-strong" style="font-size: 1rem; margin-top: 4px; text-transform: uppercase;">Estado</div>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px;">
+      <div style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border-card);">
+        <div class="label-muted">Vibración</div>
+        <div id="detCompSev" class="value-strong" style="font-size: 0.9rem; margin-top: 4px; text-transform: uppercase;">Estado</div>
       </div>
-      <div style="background: var(--bg-card); padding: 12px; border-radius: 6px; border: 1px solid var(--border-card);">
-        <div class="label-muted">Telemetría</div>
-        <div id="detCompSync" style="margin-top: 4px;"></div>
+      <div style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border-card);">
+        <div class="label-muted">ISO 20816-3 RMS</div>
+        <div id="detCompRms" class="value-strong code-font" style="font-size: 0.85rem; margin-top: 4px;">N/D</div>
       </div>
+      <div style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border-card);">
+        <div class="label-muted">Termografía (ΔT)</div>
+        <div id="detCompTermo" class="value-strong code-font" style="font-size: 0.85rem; margin-top: 4px;">N/D</div>
+      </div>
+      <div style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border-card);">
+        <div class="label-muted">Aviso SAP / OM</div>
+        <div id="detCompOM" class="value-strong code-font" style="font-size: 0.85rem; margin-top: 4px;">S/N</div>
+      </div>
+    </div>
+
+    <div id="bloqueLubricanteDetalle" style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border-card); margin-bottom: 14px; display: none;">
+      <div class="label-muted" style="color: #f59e0b;">🧪 Análisis de Lubricante (Reductor/Aceite)</div>
+      <div id="detCompLubricante" style="font-size: 0.8rem; margin-top: 4px; color: var(--text-main);">Sin datos de aceite.</div>
     </div>
 
     <div style="background: var(--input-bg); padding: 14px; border-radius: 6px; border: 1px solid var(--border-card); margin-bottom: 12px;">
-      <div class="label-muted" style="margin-bottom: 6px; color: var(--accent-color);">Análisis Técnico</div>
+      <div class="label-muted" style="margin-bottom: 6px; color: var(--accent-color);">Análisis Técnico Multivariable (Copiloto)</div>
       <div id="detCompAnalisis" style="font-size: 0.85rem; line-height: 1.5;"></div>
     </div>
 
-    <div style="background: var(--input-bg); padding: 14px; border-radius: 6px; border: 1px solid var(--border-card);">
+    <div style="background: var(--input-bg); padding: 14px; border-radius: 6px; border: 1px solid var(--border-card); margin-bottom: 12px;">
       <div class="label-muted" style="margin-bottom: 6px; color: #16a34a;">Recomendación Operativa</div>
       <div id="detCompRecomendacion" style="font-size: 0.85rem; line-height: 1.5;"></div>
+    </div>
+
+    <div style="background: var(--bg-card); padding: 14px; border-radius: 6px; border: 1px solid var(--border-card);">
+      <div class="label-muted" style="margin-bottom: 6px; color: #f59e0b;">Historial de Trazabilidad (Evolución de Falla)</div>
+      <div id="detCompTrazabilidad" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted);">Sin cambios registrados.</div>
     </div>
   </div>
 </div>
@@ -258,28 +321,35 @@
 <div id="modalEdicion" class="modal-fullscreen">
   <div class="fullscreen-container">
     <button class="modal-close-btn" onclick="cerrarEdicion()">&times;</button>
-    <h2 style="margin-top: 0; font-size: 1.4rem; margin-bottom: 20px; border-bottom: 1px solid var(--border-card); padding-bottom: 12px;">Configuración Integral de Activo & Trazabilidad</h2>
+    <h2 style="margin-top: 0; font-size: 1.4rem; margin-bottom: 20px; border-bottom: 1px solid var(--border-card); padding-bottom: 12px;">Configuración Integral de Activo & Concurrencia</h2>
     
     <div class="form-grid">
+      <div><label>Faena (Site ID)</label><input type="text" id="edSiteId" class="code-font" value="MLC"></div>
+      <div><label>Dominio Operacional</label>
+        <select id="edDomain">
+          <option value="planta">🏭 Planta</option>
+          <option value="mina">⛏️ Mina</option>
+        </select>
+      </div>
       <div><label>Área Operacional</label><input type="text" id="edArea"></div>
       <div><label>Identificador (Tag)</label><input type="text" id="edTag" class="code-font" style="font-weight: 700;"></div>
-      <div><label>Clase de Activo</label><input type="text" id="edTipo"></div>
+      <div><label>Clase de Activo (ej: Reductor, Motor, Correa)</label><input type="text" id="edTipo" placeholder="Reductor principal"></div>
       <div><label>Última Sincronización</label><input type="date" id="edFecha"></div>
       <div style="grid-column: span 2;">
         <label style="display: flex; justify-content: space-between; align-items: center;">
           <span>Georreferencia (Lat, Lng)</span>
           <button type="button" class="btn-base btn-primary" style="padding: 4px 10px; font-size: 0.7rem;" onclick="abrirMapaGeorreferencia()">📍 Marcar en Mapa</button>
         </label>
-        <div style="display:flex; gap:10px; margin-top: 4px;"><input type="text" id="edLat" placeholder="Lat (Vacío si no está en mapa)"><input type="text" id="edLng" placeholder="Lng (Vacío si no está en mapa)"></div>
+        <div style="display:flex; gap:10px; margin-top: 4px;"><input type="text" id="edLat" placeholder="Vacío si no está emapa"><input type="text" id="edLng" placeholder="Vacío si no está en mapa"></div>
       </div>
     </div>
     
     <div style="margin-top: 30px; border-top: 1px solid var(--border-card); padding-top: 20px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 style="margin:0; font-size: 1.1rem;">Puntos de Medición (Spots) & Trazabilidad de Fallas</h3>
+        <h3 style="margin:0; font-size: 1.1rem;">Puntos de Medición (Spots), ISO 20816-3, Aceite & IA</h3>
         <button class="btn-base btn-success" onclick="agregarFormComponente()">+ Añadir Spot</button>
       </div>
-      <div id="edComponentesContainer" style="display:flex; flex-direction:column; gap:16px;"></div>
+      <div id="edComponentesContainer" style="display:flex; flex-direction:column; gap:20px;"></div>
     </div>
     
     <div style="margin-top: 30px; display: flex; gap: 12px; justify-content: flex-end; border-top: 1px solid var(--border-card); padding-top: 20px;">
@@ -293,7 +363,7 @@
 <div id="modalGeoMapa" class="modal-overlay" style="z-index: 3000;">
   <div class="modal-content" style="max-width: 800px; height: 600px; display: flex; flex-direction: column;">
     <button class="modal-close-btn" onclick="cerrarMapaGeorreferencia()">&times;</button>
-    <h3 style="margin-top: 0;">Seleccione la ubicación exacta en la planta</h3>
+    <h3 style="margin-top: 0;">Seleccione la ubicación exacta en la faena</h3>
     <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: -8px;">Haga clic sobre el mapa para capturar las coordenadas de este activo.</p>
     <div id="geoPickerMap" style="flex-grow: 1; border-radius: 8px; border: 1px solid var(--border-card); margin-bottom: 12px;"></div>
     <div style="display: flex; justify-content: flex-end; gap: 10px;">
@@ -316,12 +386,15 @@
   const db = firebase.database().ref('activos_criticos'); 
 
   let isAdmin = false;
+  let usuarioActivo = null;
   let equiposDB = [];
   let areaSeleccionada = null;
   let equipoSeleccionado = null;
+  let componenteActualDetalle = null;
   let mapaLeaflet = null;
   let capaMarcadores = null;
   let modoMapaActivo = false;
+  let faenaActual = 'MLC';
   
   let geoPickerLeaflet = null;
   let tempGeoMarker = null;
@@ -330,16 +403,63 @@
   
   const SEV_PESO = { 'Rojo': 5, 'Naranja': 4, 'Amarillo': 3, 'Verde': 2, 'Plomo': 1 };
   const SEV_COLOR_HEX = { 'Rojo': '#ef4444', 'Naranja': '#f97316', 'Amarillo': '#eab308', 'Verde': '#22c55e', 'Plomo': '#6b7280' };
-  
-  const IOT_ICON = { 
-    'gateway': '<span class="iot-badge iot-online" title="Online (Gateway)">📶</span>', 
-    'manual': '<span class="iot-badge iot-manual" title="Offline (Manual)">🚶‍♂️</span>', 
-    'parcial': '<span class="iot-badge iot-offline" title="Online (Parcial)">🔄</span>' 
-  };
-  const IOT_TEXT = { 'gateway': 'Online (Gateway)', 'manual': 'Offline (Manual)', 'parcial': 'Online (Parcial)' };
+
+  function esActivoConAceite(tipoActivo = '', nombreSpot = '') {
+    const texto = (tipoActivo + ' ' + nombreSpot).toLowerCase();
+    return texto.includes('reductor') || texto.includes('caja') || texto.includes('engranaje') || texto.includes('hidraulico') || texto.includes('lubricante') || texto.includes('aceite');
+  }
+
+  function evaluarIso20816ByGroup(rms, groupClass) {
+    const v = parseFloat(rms);
+    if (isNaN(v)) return 'Verde';
+    let bC = 2.8, cD = 4.5;
+    if (groupClass === 'g2_flexible') { bC = 4.5; cD = 7.1; }
+    else if (groupClass === 'g1_rigid') { bC = 4.5; cD = 7.1; }
+    else if (groupClass === 'g1_flexible') { bC = 7.1; cD = 11.0; }
+    
+    if (v >= cD) return 'Rojo';
+    if (v >= bC) return 'Naranja';
+    return 'Verde';
+  }
+
+  function onRmsOrGroupChange(el) {
+    const box = el.closest('.comp-item');
+    const rmsVal = box.querySelector('.c-rms').value;
+    const groupVal = box.querySelector('.c-iso-group').value;
+    const sevSelect = box.querySelector('.c-sev');
+    const suggestedSev = evaluarIso20816ByGroup(rmsVal, groupVal);
+    if (suggestedSev) sevSelect.value = suggestedSev;
+  }
+
+  function cambiarFaenaGlobal() {
+    faenaActual = document.getElementById('selectorSite').value;
+    document.getElementById('labelSiteGlobal').innerText = faenaActual === 'MLC' ? 'MINA LOS COLORADOS' : 'PLANTA/MINA NORTE';
+    irAInicio();
+  }
 
   function toggleTheme() {
     document.body.classList.toggle('light-mode');
+  }
+
+  function toggleAdmin() {
+    if (isAdmin) {
+      liberarLockEdicionActual();
+      isAdmin = false;
+      usuarioActivo = null;
+      document.body.classList.remove('admin-mode');
+      document.getElementById('btnUnlock').innerText = '🛡️ Admin';
+      cerrarEdicion();
+    } else {
+      const pass = prompt("🔑 Ingrese clave de Administrador (Moncon2026):");
+      if (pass === "Moncon2026") {
+        isAdmin = true;
+        usuarioActivo = "Administrador (MLC)";
+        document.body.classList.add('admin-mode');
+        document.getElementById('btnUnlock').innerText = '🔓 Salir Admin';
+      } else if (pass !== null) {
+        alert("❌ Clave incorrecta.");
+      }
+    }
   }
 
   function inicializarMapa() {
@@ -347,7 +467,8 @@
       mapaLeaflet.invalidateSize();
       return;
     }
-    mapaLeaflet = L.map('view-map').setView([-28.2876, -70.8130], 17);
+    const center = faenaActual === 'MLC' ? [-28.2876, -70.8130] : [-27.3668, -70.3331];
+    mapaLeaflet = L.map('view-map').setView(center, 17);
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 20,
       attribution: 'Esri World Imagery'
@@ -425,8 +546,7 @@
   function actualizarMarcadoresMapa() {
     if (!capaMarcadores) return;
     capaMarcadores.clearLayers();
-    equiposDB.forEach(eq => {
-      // Validación estricta para renderizar pines solo si existen coordenadas reales
+    equiposDB.filter(e => (e.siteId || 'MLC') === faenaActual).forEach(eq => {
       if (eq.lat && eq.lng && eq.lat.trim() !== "" && eq.lng.trim() !== "") {
         const sev = calcularSeveridadGlobal(eq.componentes);
         const color = SEV_COLOR_HEX[sev] || '#6b7280';
@@ -440,7 +560,7 @@
         marker.bindPopup(`
           <div style="color: #141416; font-family: 'Inter', sans-serif;">
             <b style="font-size: 0.9rem;">${eq.tag}</b><br>
-            <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700;">Área: ${eq.area}</span><br>
+            <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700;">Área: ${eq.area} [${(eq.domain||'planta').toUpperCase()}]</span><br>
             <span style="font-size: 0.75rem;">Estado: <b style="color: ${color};">${sev.toUpperCase()}</b></span><br><br>
             <button onclick="cerrarMapaYVerEquipo('${eq.id}')" style="background: #2563eb; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold;">🔍 Inspeccionar Activo</button>
           </div>
@@ -463,6 +583,8 @@
         const item = rawData[key];
         return {
           id: item.id || key,
+          siteId: item.siteId || 'MLC',
+          domain: item.domain || 'planta',
           area: item.area || 'Sin Área',
           tag: item.tag || item.nombre || item.identificador || item.codigo || 'S/N',
           tipo: item.tipo || item.clase || 'Activo',
@@ -470,7 +592,9 @@
           lat: item.lat || '',
           lng: item.lng || '',
           componentes: item.componentes || [],
-          en_edicion: item.en_edicion || false
+          en_edicion: item.en_edicion || false,
+          edit_lock: item.edit_lock || null,
+          audit: item.audit || {}
         };
       });
     } else {
@@ -478,14 +602,18 @@
     }
     actualizarConteoUniversoEquipos();
     if (modoMapaActivo) actualizarMarcadoresMapa();
-    else if (equipoSeleccionado) renderNivel3Componentes(equipoSeleccionado.id);
+    else if (equipoSeleccionado) {
+      const refreshed = equiposDB.find(e => e.id === equipoSeleccionado.id);
+      if (refreshed) equipoSeleccionado = refreshed;
+      renderNivel3Componentes(equipoSeleccionado.id);
+    }
     else if (areaSeleccionada) renderNivel2Equipos(areaSeleccionada);
     else renderNivel1Areas();
   });
 
   function actualizarConteoUniversoEquipos() {
     let rojos = 0, naranjos = 0, amarillos = 0, verdes = 0;
-    equiposDB.forEach(eq => {
+    equiposDB.filter(e => (e.siteId || 'MLC') === faenaActual).forEach(eq => {
       const sevGlobal = calcularSeveridadGlobal(eq.componentes);
       if (sevGlobal === 'Rojo') rojos++;
       else if (sevGlobal === 'Naranja') naranjos++;
@@ -505,28 +633,6 @@
     return sevFinal;
   }
 
-  function obtenerTipoIoT(eq) {
-    let hasGateway = false; let hasManual = false;
-    (eq.componentes || []).forEach(c => { if(c.tipo_iot === 'gateway') hasGateway=true; if(c.tipo_iot === 'manual' || c.tipo_iot === 'parcial') hasManual=true; });
-    if(hasGateway && hasManual) return 'parcial';
-    return hasGateway ? 'gateway' : 'manual';
-  }
-
-  function toggleAdmin() {
-    if (!isAdmin) {
-      const pass = prompt("Ingrese clave de Administrador:");
-      if (pass !== "Moncon2026") {
-        if (pass !== null) alert("❌ Clave incorrecta.");
-        return;
-      }
-    }
-    isAdmin = !isAdmin;
-    document.body.classList.toggle('admin-mode', isAdmin);
-    document.getElementById('btnUnlock').innerText = isAdmin ? '🛡️ Admin' : '👤 Usuario';
-    document.getElementById('btnUnlock').style.color = isAdmin ? '#22c55e' : '';
-    if (!isAdmin && equipoSeleccionado) db.child(equipoSeleccionado.id).update({ en_edicion: false });
-  }
-
   function irAInicio() { cerrarEdicion(); modoMapaActivo = false; document.getElementById('view-map').style.display = 'none'; renderNivel1Areas(); }
   function navegarAtras() {
     if (modoMapaActivo) { alternarVistaMapa(); return; }
@@ -536,7 +642,13 @@
     if (document.getElementById('view-equipos').style.display === 'grid') { irAInicio(); return; }
   }
 
-  function aplicarFiltroIoT() {
+  function aplicarFiltrosGlobales() {
+    if (modoMapaActivo) return;
+    if (areaSeleccionada) renderNivel2Equipos();
+    else renderNivel1Areas();
+  }
+
+  function filtrarPorBusqueda() {
     if (modoMapaActivo) return;
     if (areaSeleccionada) renderNivel2Equipos();
     else renderNivel1Areas();
@@ -553,14 +665,27 @@
     document.getElementById('view-componentes').style.display = 'none';
     document.getElementById('view-areas').style.display = 'grid';
 
-    const filtro = document.getElementById('filtroIoT').value;
+    const filtroOM = document.getElementById('filtroOM').value;
+    const filtroDomain = document.getElementById('filtroDomain').value;
+    const query = (document.getElementById('buscadorTag').value || '').toLowerCase().trim();
     const areasMap = {};
 
-    equiposDB.forEach(eq => {
-      const tipoEq = obtenerTipoIoT(eq);
-      if (filtro !== 'todos' && tipoEq !== filtro) return;
+    equiposDB.filter(e => (e.siteId || 'MLC') === faenaActual).forEach(eq => {
+      if (filtroDomain !== 'todos' && (eq.domain || 'planta') !== filtroDomain) return;
 
-      const area = eq.area || 'Sin Área';
+      if (filtroOM === 'con_om') {
+        const tieneOM = (eq.componentes || []).some(c => c.om && c.om.trim() !== "");
+        if (!tieneOM) return;
+      }
+
+      if (query !== "") {
+        const matchTag = eq.tag.toLowerCase().includes(query);
+        const matchArea = eq.area.toLowerCase().includes(query);
+        const matchOM = (eq.componentes || []).some(c => (c.om || '').toLowerCase().includes(query));
+        if (!matchTag && !matchArea && !matchOM) return;
+      }
+
+      const area = `${eq.area} [${(eq.domain||'planta').toUpperCase()}]`;
       const sev = calcularSeveridadGlobal(eq.componentes);
       if (!areasMap[area]) areasMap[area] = { equipos: 0, criticos: 0, maxSevPeso: 1, maxSev: 'Plomo' };
       areasMap[area].equipos++;
@@ -573,11 +698,11 @@
       const data = areasMap[area];
       const animClass = (data.maxSev === 'Rojo' || data.maxSev === 'Naranja') ? `sev-${data.maxSev.toLowerCase()}-anim` : '';
       return `
-        <div class="card-area sev-${data.maxSev.toLowerCase()} ${animClass}" onclick="renderNivel2Equipos('${area}')">
+        <div class="card-area sev-${data.maxSev.toLowerCase()} ${animClass}" onclick="renderNivel2Equipos('${area.split(' [')[0]}')">
           <div style="width: 100%; display: flex; justify-content: space-between; align-items: flex-start;">
             <div style="text-align: left;">
-              <div class="label-muted">Área</div>
-              <div class="value-strong" style="font-size: 0.95rem; margin-top: 2px;">${area}</div>
+              <div class="label-muted">Área [Dominio]</div>
+              <div class="value-strong" style="font-size: 0.9rem; margin-top: 2px;">${area}</div>
             </div>
           </div>
           <div style="width: 100%; display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border-card);">
@@ -592,7 +717,7 @@
           </div>
         </div>
       `;
-    }).join('') || '<div style="color:var(--text-muted); grid-column: 1/-1;">Sin activos registrados.</div>';
+    }).join('') || '<div style="color:var(--text-muted); grid-column: 1/-1;">Sin activos con los filtros o búsqueda seleccionada.</div>';
   }
 
   function renderNivel2Equipos(areaStr) {
@@ -609,34 +734,42 @@
     document.getElementById('view-componentes').style.display = 'none';
     document.getElementById('view-equipos').style.display = 'grid';
 
-    const filtro = document.getElementById('filtroIoT').value;
-    let eqs = equiposDB.filter(e => e.area === areaSeleccionada);
-    if (filtro !== 'todos') {
-      eqs = eqs.filter(e => obtenerTipoIoT(e) === filtro);
+    const filtroOM = document.getElementById('filtroOM').value;
+    const filtroDomain = document.getElementById('filtroDomain').value;
+    const query = (document.getElementById('buscadorTag').value || '').toLowerCase().trim();
+    
+    let eqs = equiposDB.filter(e => (e.siteId || 'MLC') === faenaActual && e.area === areaSeleccionada);
+    
+    if (filtroDomain !== 'todos') {
+      eqs = eqs.filter(e => (e.domain || 'planta') === filtroDomain);
     }
+    if (filtroOM === 'con_om') {
+      eqs = eqs.filter(e => (e.componentes || []).some(c => c.om && c.om.trim() !== ""));
+    }
+    if (query !== "") {
+      eqs = eqs.filter(eq => {
+        const matchTag = eq.tag.toLowerCase().includes(query);
+        const matchOM = (eq.componentes || []).some(c => (c.om || '').toLowerCase().includes(query));
+        return matchTag || matchOM;
+      });
+    }
+
     eqs.sort((a,b) => SEV_PESO[calcularSeveridadGlobal(b.componentes)] - SEV_PESO[calcularSeveridadGlobal(a.componentes)]);
 
     const container = document.getElementById('view-equipos');
     container.innerHTML = eqs.map(eq => {
       const sevGlobal = calcularSeveridadGlobal(eq.componentes);
-      const animClass = (sevGlobal === 'Rojo' || sevGlobal === 'Naranja') ? `sev-${sevGlobal.toLowerCase()}-anim` : '';
-      let hasGateway = false; let hasManual = false;
-      (eq.componentes || []).forEach(c => { if(c.tipo_iot === 'gateway') hasGateway=true; if(c.tipo_iot === 'manual') hasManual=true; });
-      let iotType = hasGateway && hasManual ? 'parcial' : (hasGateway ? 'gateway' : 'manual');
-      
       const dias = eq.fecha ? Math.floor((new Date() - new Date(eq.fecha)) / 86400000) : '?';
-      const lock = eq.en_edicion ? `<div class="lock-badge">EDICIÓN</div>` : '';
-
+      const lockBadge = eq.edit_lock && eq.edit_lock.user ? `<span class="lock-badge">🔒 ${eq.edit_lock.user}</span>` : '';
       return `
-        <div class="card-equipo sev-${sevGlobal.toLowerCase()} ${animClass}" onclick="renderNivel3Componentes('${eq.id}')">
-          ${IOT_ICON[iotType] || ''}
-          <div class="eq-type">${eq.tipo || 'Activo'}</div>
+        <div class="card-equipo sev-${sevGlobal.toLowerCase()}" onclick="renderNivel3Componentes('${eq.id}')">
+          <div class="eq-type">${(eq.domain||'planta').toUpperCase()} | ${eq.tipo || 'Activo'}</div>
           <div class="eq-tag code-font" title="${eq.tag}">${eq.tag}</div>
           <div class="eq-days" title="Días">${dias}d</div>
-          ${lock}
+          ${lockBadge}
         </div>
       `;
-    }).join('') || '<div style="color:var(--text-muted); grid-column: 1/-1;">No hay equipos para este filtro.</div>';
+    }).join('') || '<div style="color:var(--text-muted); grid-column: 1/-1;">No hay equipos en este área con los filtros aplicados.</div>';
   }
 
   function renderNivel3Componentes(id) {
@@ -653,12 +786,13 @@
     document.getElementById('view-componentes').style.display = 'grid';
 
     const container = document.getElementById('view-componentes');
-    
+    const lockInfo = eq.edit_lock && eq.edit_lock.user ? `<span style="font-size:0.65rem; color:#f97316; font-weight:700;">🔒 En edición por: ${eq.edit_lock.user}</span>` : '';
     let html = `
-      <div style="grid-column: 1 / -1; display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px; background: var(--bg-card); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-card); box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      <div style="grid-column: 1 / -1; display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px; background: var(--bg-card); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-card);">
         <div>
-          <div class="label-muted">${eq.tipo || 'ACTIVO'}</div>
+          <div class="label-muted">${(eq.domain||'planta').toUpperCase()} | ${eq.tipo || 'ACTIVO'}</div>
           <h2 style="margin: 2px 0 0 0; font-size: 1.15rem;" class="code-font">${eq.tag}</h2>
+          ${lockInfo}
         </div>
         <div style="display:flex; gap:10px; align-items:center;">
           <div style="text-align: right;">
@@ -670,28 +804,18 @@
       </div>
     `;
 
-    const compsHtml = (eq.componentes || []).map((c, index) => {
-      const icon = IOT_ICON[c.tipo_iot] || '';
-      return `
-      <div class="card-equipo card-componente sev-${c.severidad.toLowerCase()}" onclick="abrirDetalleComponente('${eq.id}', ${index})" title="Ver detalles">
-        ${icon}
+    const compsHtml = (eq.componentes || []).map((c, index) => `
+      <div class="card-equipo card-componente sev-${c.severidad.toLowerCase()}" onclick="abrirDetalleComponente('${eq.id}', ${index})">
         <div style="text-align: left; width: 100%;">
           <div class="eq-type">Spot / Componente</div>
-          <div class="eq-tag code-font" style="font-size: 0.85rem; max-width: 85%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.nombre}</div>
+          <div class="eq-tag code-font" style="font-size: 0.85rem;">${c.nombre}</div>
         </div>
-        
-        <div style="width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--border-card); text-align: left;">
-          <div>
-            <div class="label-muted" style="font-size: 0.5rem;">Vibración</div>
-            <div style="font-size: 0.7rem; font-weight: 700; color: ${SEV_COLOR_HEX[c.severidad]};">${c.severidad.toUpperCase()}</div>
-          </div>
-          <div>
-            <div class="label-muted" style="font-size: 0.5rem;">Telemetría</div>
-            <div style="font-size: 0.65rem; font-weight: 500; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${IOT_TEXT[c.tipo_iot]}</div>
-          </div>
+        <div style="width: 100%; display: flex; justify-content: space-between; margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--border-card);">
+          <span style="font-size: 0.7rem; font-weight: 700; color: ${SEV_COLOR_HEX[c.severidad]};">${c.severidad.toUpperCase()}</span>
+          <span style="font-size: 0.65rem; color: var(--text-muted);">OM: ${c.om || 'S/N'}</span>
         </div>
       </div>
-    `}).join('');
+    `).join('');
 
     container.innerHTML = html + (compsHtml || '<div style="grid-column: 1/-1; color:var(--text-muted); text-align:center;">Sin componentes registrados.</div>');
   }
@@ -701,30 +825,55 @@
     if (!eq || !eq.componentes || !eq.componentes[compIndex]) return;
     const c = eq.componentes[compIndex];
     
-    document.getElementById('detCompEqTag').innerText = `Activo: ${eq.tag} (${eq.area})`;
+    componenteActualDetalle = { site: eq.siteId||'MLC', domain: eq.domain||'planta', tipoActivo: eq.tipo, eqTag: eq.tag, area: eq.area, spot: c.nombre, sev: c.severidad, rms: c.rms || 'N/D', termo: c.termo || 'N/D', om: c.om || 'S/N', analisis: c.analisis || 'S/N', recomendacion: c.recomendacion || 'S/N', aceite: c.aceite || '' };
+
+    document.getElementById('detCompEqTag').innerText = `Faena: ${componenteActualDetalle.site} | Activo: ${eq.tag} (${eq.area})`;
     document.getElementById('detCompNombre').innerText = c.nombre;
-    
-    let iconClass = 'offline';
-    if(c.tipo_iot === 'gateway') iconClass = 'online';
-    if(c.tipo_iot === 'manual') iconClass = 'manual';
-    let iconSimbol = '🔄';
-    if(c.tipo_iot === 'gateway') iconSimbol = '📶';
-    if(c.tipo_iot === 'manual') iconSimbol = '🚶‍♂️';
-    
-    document.getElementById('detCompSync').innerHTML = `
-      <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
-        <div class="iot-badge-icon ${iconClass}">${iconSimbol}</div>
-        <span class="value-strong code-font" style="font-size: 0.8rem;">${IOT_TEXT[c.tipo_iot]}</span>
-      </div>
-    `;
+    document.getElementById('detCompOM').innerText = c.om || 'S/N (Sin Aviso SAP)';
+    document.getElementById('detCompRms').innerText = c.rms ? `${c.rms} mm/s` : 'N/D';
+    document.getElementById('detCompTermo').innerText = c.termo ? `+${c.termo}°C ΔT` : 'Normal';
     
     const sevEl = document.getElementById('detCompSev');
     sevEl.innerText = c.severidad.toUpperCase();
     sevEl.style.color = SEV_COLOR_HEX[c.severidad] || 'white';
     
-    document.getElementById('detCompAnalisis').innerText = c.analisis || 'Sin análisis técnico registrado.';
+    const bloqueAceite = document.getElementById('bloqueLubricanteDetalle');
+    if (esActivoConAceite(eq.tipo, c.nombre)) {
+      bloqueAceite.style.display = 'block';
+      document.getElementById('detCompLubricante').innerText = c.aceite || 'Condición de aceite nominal (sin reporte crítico).';
+    } else {
+      bloqueAceite.style.display = 'none';
+    }
+
+    document.getElementById('detCompAnalisis').innerText = c.analisis || 'Sin análisis técnico multivariable registrado.';
     document.getElementById('detCompRecomendacion').innerText = c.recomendacion || 'Sin recomendación operativa registrada.';
+    
+    const trazDiv = document.getElementById('detCompTrazabilidad');
+    if (c.trazabilidad && c.trazabilidad.length > 0) {
+      trazDiv.innerHTML = c.trazabilidad.map(t => `<div style="margin-bottom: 4px;">• [${t.fecha}] Transición de <b style="color:${SEV_COLOR_HEX[t.de]}">${t.de}</b> a <b style="color:${SEV_COLOR_HEX[t.a]}">${t.a}</b></div>`).join('');
+    } else {
+      trazDiv.innerHTML = 'Sin cambios de severidad previos registrados.';
+    }
+
     document.getElementById('modalDetalleComponente').style.display = 'flex';
+  }
+
+  function copiarResumenEjecutivo() {
+    if (!componenteActualDetalle) return;
+    const d = componenteActualDetalle;
+    const aceiteInfo = esActivoConAceite(d.tipoActivo, d.spot) ? `\nLubricante: ${d.aceite || 'Normal'}` : '';
+    const texto = `--- REPORTE EJECUTIVO CIO [${d.site}] ---
+Dominio: ${d.domain.toUpperCase()} | Área: ${d.area} | Activo: ${d.eqTag}
+Spot/Componente: ${d.spot}
+Severidad: ${d.sev.toUpperCase()} | ISO RMS: ${d.rms} mm/s | Termografía: ΔT ${d.termo} | OM: ${d.om}${aceiteInfo}
+Diagnóstico Cruzado: ${d.analisis}
+Recomendación: ${d.recomendacion}`;
+
+    navigator.clipboard.writeText(texto).then(() => {
+      alert("✅ Resumen ejecutivo copiado al portapapeles.");
+    }).catch(err => {
+      alert("⚠️ No se pudo copiar automáticamente.");
+    });
   }
 
   function cerrarDetalleComponente(e) {
@@ -732,48 +881,74 @@
     document.getElementById('modalDetalleComponente').style.display = 'none';
   }
 
+  function liberarLockEdicionActual() {
+    if (equipoSeleccionado && isAdmin) {
+      db.child(equipoSeleccionado.id).update({ en_edicion: false, edit_lock: null });
+    }
+  }
+
   function abrirEdicionEquipo() {
     if (!isAdmin || !equipoSeleccionado) return;
-    if (equipoSeleccionado.en_edicion) { if(!confirm("Otro usuario está editando. ¿Forzar entrada?")) return; }
+    const me = usuarioActivo || 'Administrador (MLC)';
+    const currentLock = equipoSeleccionado.edit_lock;
+
+    if (currentLock && currentLock.user && currentLock.user !== me) {
+      const ageMinutes = (Date.now() - (currentLock.timestamp || 0)) / 60000;
+      if (ageMinutes < 15) {
+        alert(`🔒 Activo bloqueado por concurrencia:\nEl usuario "${currentLock.user}" se encuentra editando este activo en este momento.`);
+        return;
+      }
+    }
+
+    db.child(equipoSeleccionado.id).update({ 
+      en_edicion: true,
+      edit_lock: { user: me, timestamp: Date.now() }
+    });
     
-    db.child(equipoSeleccionado.id).update({ en_edicion: true });
-    
+    document.getElementById('edSiteId').value = equipoSeleccionado.siteId || 'MLC';
+    document.getElementById('edDomain').value = equipoSeleccionado.domain || 'planta';
     document.getElementById('edArea').value = equipoSeleccionado.area || '';
     document.getElementById('edTag').value = equipoSeleccionado.tag || '';
     document.getElementById('edTipo').value = equipoSeleccionado.tipo || '';
     document.getElementById('edFecha').value = equipoSeleccionado.fecha || '';
-    // Si no tiene georreferencia, los inputs quedan vacíos
     document.getElementById('edLat').value = equipoSeleccionado.lat || '';
     document.getElementById('edLng').value = equipoSeleccionado.lng || '';
 
     const cont = document.getElementById('edComponentesContainer');
     cont.innerHTML = '';
-    (equipoSeleccionado.componentes || []).forEach((c, idx) => agregarFormComponente(c, idx));
+    const tipoVal = equipoSeleccionado.tipo || '';
+    (equipoSeleccionado.componentes || []).forEach((c, idx) => agregarFormComponente(c, tipoVal));
     
     document.getElementById('modalEdicion').style.display = 'block';
   }
 
-  function agregarFormComponente(data = {}, index = null) {
+  function agregarFormComponente(data = {}, tipoActivoContexto = '') {
     const cont = document.getElementById('edComponentesContainer');
     const div = document.createElement('div');
     div.style.cssText = "background:var(--bg-main); padding:16px; border:1px solid var(--border-card); border-radius:8px; position:relative;";
     div.className = 'comp-item';
     
     const sevActual = data.severidad || 'Verde';
+    const nombreSpot = data.nombre || '';
+    const usaAceite = esActivoConAceite(tipoActivoContexto, nombreSpot);
+    const estiloAceite = usaAceite ? 'display:block;' : 'display:none;';
+    const isoGroupVal = data.iso_group || 'g2_rigid';
     
     div.innerHTML = `
       <button class="btn-danger" style="position:absolute; top:12px; right:12px; padding:4px 8px; font-size:0.7rem;" onclick="this.parentElement.remove()">Eliminar Spot</button>
-      <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 12px; color: var(--accent-color);">Punto de Medición (Spot)</div>
+      <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 12px; color: var(--accent-color);">Punto de Medición (Spot), ISO 20816-3, Termo, Aceite & IA</div>
       <div class="form-grid">
-        <div><label>Nombre del Spot / Componente</label><input type="text" class="c-nom" value="${data.nombre || ''}" placeholder="Ej: Motor Lado Libre"></div>
-        <div><label>Tipo de Telemetría IoT</label>
-          <select class="c-iot">
-            <option value="gateway" ${data.tipo_iot==='gateway'?'selected':''}>Online (Gateway)</option>
-            <option value="parcial" ${data.tipo_iot==='parcial'?'selected':''}>Online (Parcial)</option>
-            <option value="manual" ${data.tipo_iot==='manual'?'selected':''}>Offline (Manual)</option>
+        <div><label>Nombre del Spot / Componente</label><input type="text" class="c-nom" value="${nombreSpot}" placeholder="Ej: Motor / Reductor" oninput="toggleAceiteInput(this)"></div>
+        <div><label>ISO 20816-3 Grupo / Base</label>
+          <select class="c-iso-group" onchange="onRmsOrGroupChange(this)">
+            <option value="g2_rigid" ${isoGroupVal==='g2_rigid'?'selected':''}>G2 - Rígida (15-300kW)</option>
+            <option value="g2_flexible" ${isoGroupVal==='g2_flexible'?'selected':''}>G2 - Flexible (15-300kW)</option>
+            <option value="g1_rigid" ${isoGroupVal==='g1_rigid'?'selected':''}>G1 - Rígida (>300kW)</option>
+            <option value="g1_flexible" ${isoGroupVal==='g1_flexible'?'selected':''}>G1 - Flexible (>300kW)</option>
           </select>
         </div>
-        <div><label>Severidad / Estatus</label>
+        <div><label>RMS Medido (mm/s ISO)</label><input type="number" step="0.1" class="c-rms" value="${data.rms || ''}" placeholder="Ej: 3.2" oninput="onRmsOrGroupChange(this)"></div>
+        <div><label>Severidad Evaluada (Automática/Manual)</label>
           <select class="c-sev" onchange="verificarCambioSeveridad(this, '${sevActual}')">
             <option value="Rojo" ${sevActual==='Rojo'?'selected':''}>🔴 Crítico (Rojo)</option>
             <option value="Naranja" ${sevActual==='Naranja'?'selected':''}>🟠 Alerta (Naranja)</option>
@@ -782,31 +957,104 @@
             <option value="Plomo" ${sevActual==='Plomo'?'selected':''}>⚪ Sin Datos (Plomo)</option>
           </select>
         </div>
+        <div><label>Termografía Delta T (°C ΔT)</label><input type="number" step="0.5" class="c-termo" value="${data.termo || ''}" placeholder="Ej: 15.5"></div>
         <div><label>Aviso SAP / Orden de Mantención (OM)</label><input type="text" class="c-om" value="${data.om || ''}" placeholder="Ej: OM-4091822"></div>
         <div><label>Fecha de Hallazgo</label><input type="date" class="c-fhallazgo" value="${data.fecha_hallazgo || ''}"></div>
-        <div><label>Fecha Última Medición</label><input type="date" class="c-fmedicion" value="${data.fecha_medicion || ''}"></div>
         
+        <div class="aceite-wrapper" style="grid-column: span 2; ${estiloAceite} background: var(--input-bg); padding: 10px; border-radius: 6px; border: 1px dashed #f59e0b;">
+          <label style="color: #f59e0b;">🧪 Diagnóstico de Lubricante (Conteo de partículas / Viscosidad)</label>
+          <input type="text" class="c-aceite" value="${data.aceite || ''}" placeholder="Ej: Viscosidad OK, presencia leve de partículas ferrosas MLC-02">
+        </div>
+        
+        <!-- COPILOTO IA MULTIVARIABLE -->
         <div style="grid-column: span 2;">
-          <label style="display:flex; justify-content:space-between; align-items:center;">
-            <span>Análisis Técnico del Hallazgo</span>
-            <button type="button" class="btn-base" style="padding:2px 8px; font-size:0.65rem;" onclick="sugerirIAAnalisis(this)">✨ Asistencia IA</button>
-          </label>
-          <textarea class="c-ana" rows="3" placeholder="Redacte el diagnóstico técnico...">${data.analisis || ''}</textarea>
+          <label>Análisis Técnico Cruzado (Vib ISO + Termo + Aceite)</label>
+          <div class="copilot-grid">
+            <div class="copilot-box">
+              <header><span>Versión del Analista</span></header>
+              <textarea class="c-ana" rows="4" placeholder="Escriba aquí sus observaciones..." oninput="triggerCopilotAnalisis(this)">${data.analisis || ''}</textarea>
+            </div>
+            <div class="copilot-box" style="border-color: #3b82f6;">
+              <header><span style="color: #3b82f6;">✨ Sugerencia Experta Cruzada (IA)</span> <button type="button" class="btn-base btn-primary" style="padding: 2px 6px; font-size: 0.6rem;" onclick="aplicarSugerenciaAnalisis(this)">Usar esta</button></header>
+              <div class="ai-suggestion-ana" style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; padding: 4px;">IA cruzando variables térmicas, RMS ISO y aceite en tiempo real...</div>
+            </div>
+          </div>
         </div>
 
         <div style="grid-column: span 2;">
-          <label style="display:flex; justify-content:space-between; align-items:center;">
-            <span>Recomendación Operativa / Correctiva</span>
-            <button type="button" class="btn-base" style="padding:2px 8px; font-size:0.65rem;" onclick="sugerirIARecomendacion(this)">✨ Asistencia IA</button>
-          </label>
-          <textarea class="c-rec" rows="3" placeholder="Redacte la recomendación de intervención...">${data.recomendacion || ''}</textarea>
+          <label>Recomendación Operativa / Correctiva</label>
+          <div class="copilot-grid">
+            <div class="copilot-box">
+              <header><span>Versión del Analista</span></header>
+              <textarea class="c-rec" rows="4" placeholder="Escriba aquí su recomendación..." oninput="triggerCopilotRecomendacion(this)">${data.recomendacion || ''}</textarea>
+            </div>
+            <div class="copilot-box" style="border-color: #16a34a;">
+              <header><span style="color: #22c55e;">✨ Sugerencia Experta / IA</span> <button type="button" class="btn-base btn-success" style="padding: 2px 6px; font-size: 0.6rem;" onclick="aplicarSugerenciaRecomendacion(this)">Usar esta</button></header>
+              <div class="ai-suggestion-rec" style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; padding: 4px;">Comience a escribir para sugerencias operativas integradas...</div>
+            </div>
+          </div>
         </div>
       </div>
-      
-      <!-- Historial de Trazabilidad Oculto / Guardado Internamente -->
       <input type="hidden" class="c-trazabilidad" value='${JSON.stringify(data.trazabilidad || [])}'>
     `;
     cont.appendChild(div);
+  }
+
+  function toggleAceiteInput(inputEl) {
+    const compBox = inputEl.closest('.comp-item');
+    const tipoActivo = document.getElementById('edTipo').value;
+    const nombreSpot = inputEl.value;
+    const wrapper = compBox.querySelector('.aceite-wrapper');
+    if (esActivoConAceite(tipoActivo, nombreSpot)) {
+      wrapper.style.display = 'block';
+    } else {
+      wrapper.style.display = 'none';
+    }
+  }
+
+  let copilotTimer = null;
+  function triggerCopilotAnalisis(textarea) {
+    clearTimeout(copilotTimer);
+    const box = textarea.closest('.form-grid');
+    const aiBox = box.querySelector('.ai-suggestion-ana');
+    aiBox.innerText = "Cruzando multivariable (ISO RMS + Termo + Aceite)...";
+    
+    copilotTimer = setTimeout(() => {
+      const val = textarea.value.trim();
+      const rmsVal = box.querySelector('.c-rms').value || '0';
+      const termoVal = box.querySelector('.c-termo').value || '0';
+      const aceiteVal = box.querySelector('.c-aceite') ? box.querySelector('.c-aceite').value : '';
+      let addRms = parseFloat(rmsVal) > 3.0 ? ` Lectura RMS ${rmsVal} mm/s sobre norma base ISO 20816-3.` : '';
+      let addTermo = parseFloat(termoVal) > 10 ? ` Alerta térmica detectada (ΔT +${termoVal}°C).` : '';
+      let addAceite = aceiteVal ? ` Evidencia aceite (${aceiteVal}).` : '';
+      
+      aiBox.innerText = `[IA Copiloto Multivariable]: ${val ? 'Sobre "' + val + '". ' : ''} Síntesis ISO/térmica: Compatible con fatiga subsuperficial.${addRms}${addTermo}${addAceite}`;
+    }, 600);
+  }
+
+  function triggerCopilotRecomendacion(textarea) {
+    clearTimeout(copilotTimer);
+    const box = textarea.closest('.form-grid');
+    const aiBox = box.querySelector('.ai-suggestion-rec');
+    
+    copilotTimer = setTimeout(() => {
+      const val = textarea.value.trim();
+      const termoVal = box.querySelector('.c-termo').value || '0';
+      let recExtra = parseFloat(termoVal) > 15 ? ' Urgente: Verificar flujo de aceite forzado.' : ' Programar monitoreo en ventana PMS.';
+      aiBox.innerText = `[IA Copiloto]: Respecto a faena ("${val}"), se sugiere ${recExtra}`;
+    }, 600);
+  }
+
+  function aplicarSugerenciaAnalisis(btn) {
+    const compBox = btn.closest('.form-grid');
+    const aiText = compBox.querySelector('.ai-suggestion-ana').innerText.replace('[IA Copiloto Multivariable]: ', '');
+    compBox.querySelector('.c-ana').value = aiText;
+  }
+
+  function aplicarSugerenciaRecomendacion(btn) {
+    const compBox = btn.closest('.form-grid');
+    const aiText = compBox.querySelector('.ai-suggestion-rec').innerText.replace('[IA Copiloto]: ', '');
+    compBox.querySelector('.c-rec').value = aiText;
   }
 
   function verificarCambioSeveridad(selectEl, severidadAnterior) {
@@ -825,50 +1073,66 @@
         detalle: `Evolución de severidad de ${severidadAnterior} a ${nuevaSev}`
       });
       trazInput.value = JSON.stringify(hist);
-      selectEl.setAttribute('data-anterior', nuevaSev);
     }
-  }
-
-  function sugerirIAAnalisis(btn) {
-    const compBox = btn.closest('.comp-item');
-    const nom = compBox.querySelector('.c-nom').value || 'el componente';
-    const txt = compBox.querySelector('.c-ana');
-    txt.value = `Se detecta modulación en espectro de alta frecuencia sobre ${nom}. Patrón armónico compatible con inicio de desgaste en pista exterior o falta de lubricación.`;
-  }
-
-  function sugerirIARecomendacion(btn) {
-    const compBox = btn.closest('.comp-item');
-    const txt = compBox.querySelector('.c-rec');
-    txt.value = `Intensificar frecuencia de monitoreo predictivo y programar inspección en próxima ventana operacional.`;
   }
 
   function cerrarEdicion(e) { 
     if(e && e.target !== document.getElementById('modalEdicion')) return; 
-    if(equipoSeleccionado) db.child(equipoSeleccionado.id).update({ en_edicion: false });
+    liberarLockEdicionActual();
     document.getElementById('modalEdicion').style.display = 'none'; 
   }
 
+  window.addEventListener('beforeunload', () => {
+    liberarLockEdicionActual();
+  });
+
   function guardarEquipo() {
+    if (!equipoSeleccionado) return;
     const id = equipoSeleccionado.id;
+    const timestampISO = new Date().toISOString();
+    const actor = usuarioActivo || 'Administrador (MLC)';
+
+    const estadoPrevio = JSON.parse(JSON.stringify(equipoSeleccionado));
+    if (estadoPrevio.id) {
+      db.child(`backups_activos/${id}`).push({
+        timestamp: timestampISO,
+        responsable_backup: actor,
+        estado_json: estadoPrevio
+      });
+    }
+
     const componentes = [];
     document.querySelectorAll('.comp-item').forEach(el => {
       let traz = [];
       try { traz = JSON.parse(el.querySelector('.c-trazabilidad').value); } catch(e) { traz = []; }
+      const aceiteInput = el.querySelector('.c-aceite');
       
       componentes.push({
         nombre: el.querySelector('.c-nom').value,
-        tipo_iot: el.querySelector('.c-iot').value,
+        tipo_iot: "manual",
+        iso_group: el.querySelector('.c-iso-group').value,
+        rms: el.querySelector('.c-rms').value,
         severidad: el.querySelector('.c-sev').value,
+        termo: el.querySelector('.c-termo').value,
         om: el.querySelector('.c-om').value,
         fecha_hallazgo: el.querySelector('.c-fhallazgo').value,
-        fecha_medicion: el.querySelector('.c-fmedicion').value,
+        aceite: aceiteInput ? aceiteInput.value : '',
         analisis: el.querySelector('.c-ana').value,
         recomendacion: el.querySelector('.c-rec').value,
         trazabilidad: traz
       });
     });
 
+    const datosAudit = equipoSeleccionado.audit || {};
+    if (!datosAudit.creado_por) {
+      datosAudit.creado_por = actor;
+    }
+    datosAudit.ultima_modificacion = timestampISO;
+    datosAudit.modificado_por = actor;
+
     db.child(id).update({
+      siteId: document.getElementById('edSiteId').value || 'MLC',
+      domain: document.getElementById('edDomain').value || 'planta',
       area: document.getElementById('edArea').value,
       tag: document.getElementById('edTag').value,
       tipo: document.getElementById('edTipo').value,
@@ -876,56 +1140,45 @@
       lat: document.getElementById('edLat').value,
       lng: document.getElementById('edLng').value,
       componentes: componentes,
-      en_edicion: false
-    }).then(() => { cerrarEdicion(); });
+      audit: datosAudit,
+      en_edicion: false,
+      edit_lock: null
+    }).then(() => { 
+      cerrarEdicion(); 
+    });
   }
 
   function eliminarEquipo() {
-    if(confirm("¿Eliminar este equipo permanentemente?")) {
-      db.child(equipoSeleccionado.id).remove().then(() => { cerrarEdicion(); renderNivel1Areas(); });
-    }
+    const actor = usuarioActivo || 'Administrador (MLC)';
+    if(!confirm(`¿Eliminar permanentemente el activo ${equipoSeleccionado.tag}? Acción realizada por: ${actor}`)) return;
+    
+    const timestampISO = new Date().toISOString();
+    db.child('audit_global').push({
+      evento: 'ELIMINACION_ACTIVO',
+      assetId: equipoSeleccionado.id,
+      tag: equipoSeleccionado.tag,
+      faena: equipoSeleccionado.siteId || faenaActual,
+      usuario: actor,
+      timestamp: timestampISO
+    });
+
+    db.child(equipoSeleccionado.id).remove().then(() => { 
+      cerrarEdicion(); 
+      renderNivel1Areas(); 
+    });
   }
 
   function abrirEdicionEquipoNuevo() {
-    equipoSeleccionado = { id: 'EQ_' + Date.now(), componentes: [{ nombre: "Spot Nuevo", tipo_iot: "gateway", severidad: "Verde", analisis: "", recomendacion: "", trazabilidad: [] }] };
+    equipoSeleccionado = { id: 'EQ_' + Date.now(), siteId: faenaActual, domain: 'planta', componentes: [{ nombre: "Spot Reductor/Motor", tipo_iot: "manual", iso_group: "g2_rigid", rms: "", severidad: "Verde", termo: "", aceite: "", analisis: "", recomendacion: "", trazabilidad: [] }] };
     abrirEdicionEquipo();
   }
 
-  function calcularRutaDescarga() {
-    let ruta = [];
-    equiposDB.forEach(eq => {
-      let necesitaDescarga = false;
-      (eq.componentes || []).forEach(c => { if(c.tipo_iot === 'parcial' || c.tipo_iot === 'manual') necesitaDescarga = true; });
-      if(necesitaDescarga) {
-        const dias = eq.fecha ? Math.floor((new Date() - new Date(eq.fecha)) / 86400000) : 999;
-        const sevPeso = SEV_PESO[calcularSeveridadGlobal(eq.componentes)];
-        ruta.push({ tag: eq.tag, area: eq.area, dias, sevPeso });
-      }
-    });
-    ruta.sort((a,b) => { if(b.dias !== a.dias) return b.dias - a.dias; return b.sevPeso - a.sevPeso; });
-    let msj = "📍 RUTA DE DESCARGA FÍSICA:\n\n";
-    ruta.slice(0, 10).forEach((r, i) => { msj += `Paso ${i+1}: [${r.area}] - ${r.tag} (${r.dias}d)\n`; });
-    if(ruta.length === 0) msj = "✅ Todos en línea vía Gateway.";
-    alert(msj);
-  }
-
-  function simularInyeccionDynamox() {
-    if(equiposDB.length === 0) return alert("Carga datos primero.");
-    const eq = equiposDB[Math.floor(Math.random() * equiposDB.length)];
-    if(!eq.componentes || eq.componentes.length === 0) return;
-    const comps = eq.componentes;
-    comps[0].severidad = 'Rojo';
-    comps[0].analisis = `[ALERTA DYNAMOX] Aceleración crítica detectada en ${comps[0].nombre}.`;
-    comps[0].tipo_iot = 'gateway';
-    db.child(eq.id).update({ componentes: comps });
-  }
-
   function exportarPlantillaExcel() {
-    const filas = equiposDB.map(eq => ({ ID_Interno: eq.id, Area: eq.area, Tag: eq.tag, Tipo: eq.tipo, Fecha_Medicion: eq.fecha || '' }));
+    const filas = equiposDB.map(eq => ({ ID_Interno: eq.id, Site_ID: eq.siteId||'MLC', Domain: eq.domain||'planta', Area: eq.area, Tag: eq.tag, Tipo: eq.tipo, Fecha_Medicion: eq.fecha || '' }));
     const ws = XLSX.utils.json_to_sheet(filas);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Equipos_MLC");
-    XLSX.writeFile(wb, `CIO_MLC_Base_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.writeFile(wb, `CIO_Base_${faenaActual}_${new Date().toISOString().split('T')[0]}.xlsx`);
   }
 
   function procesarCargaExcel(e) {
@@ -937,16 +1190,89 @@
       const workbook = XLSX.read(data, {type: 'array'});
       const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
       let procesados = 0;
+      const timestampISO = new Date().toISOString();
+      const actor = usuarioActivo || 'Administrador (Excel)';
+      const batchId = 'BATCH_' + Date.now();
+
       json.forEach(row => {
         if(row.ID_Interno && row.Tag) {
-          db.child(row.ID_Interno).update({ area: row.Area, tag: row.Tag, tipo: row.Tipo, fecha: row.Fecha_Medicion || '' });
+          db.child(row.ID_Interno).update({ 
+            siteId: row.Site_ID || faenaActual, 
+            domain: row.Domain || 'planta', 
+            area: row.Area, 
+            tag: row.Tag, 
+            tipo: row.Tipo, 
+            fecha: row.Fecha_Medicion || '',
+            audit: { modificado_por: actor, ultima_modificacion: timestampISO }
+          });
           procesados++;
         }
       });
-      alert(`✅ Carga masiva exitosa: ${procesados} equipos.`);
+
+      db.child('audit_global').push({
+        evento: 'CARGA_MASIVA_EXCEL',
+        batchId: batchId,
+        usuario: actor,
+        faena: faenaActual,
+        registros_procesados: procesados,
+        timestamp: timestampISO
+      });
+
+      alert(`✅ Carga masiva exitosa: ${procesados} equipos procesados por ${actor}.`);
     };
     reader.readAsArrayBuffer(file);
     e.target.value = '';
+  }
+
+  function abrirPanelMaster() {
+    if (!isAdmin) return;
+    document.getElementById('modalMaster').style.display = 'flex';
+    cargarAuditGlobalUI();
+  }
+
+  function cargarAuditGlobalUI() {
+    const container = document.getElementById('masterPanelContent');
+    container.innerHTML = "Cargando traza global...";
+    db.child('audit_global').once('value', snap => {
+      const data = snap.val();
+      if (!data) { container.innerHTML = "Sin registros en audit_global."; return; }
+      container.innerHTML = Object.keys(data).map(k => {
+        const item = data[k];
+        return `<div>[${item.timestamp}] <b>${item.evento}</b> | Usuario: ${item.usuario} | Faena: ${item.faena || 'N/A'} | Tag/Batch: ${item.tag || item.batchId || ''}</div>`;
+      }).join('<hr style="border-color:var(--border-card); margin:6px 0;">');
+    });
+  }
+
+  function cargarBackupsListUI() {
+    const container = document.getElementById('masterPanelContent');
+    container.innerHTML = "Cargando snapshots de respaldo...";
+    db.child('backups_activos').once('value', snap => {
+      const data = snap.val();
+      if (!data) { container.innerHTML = "Sin backups de activos registrados aún."; return; }
+      let html = '';
+      Object.keys(data).forEach(assetId => {
+        const backups = data[assetId];
+        html += `<div style="color:var(--accent-color); font-weight:bold; margin-top:10px;">Asset ID: ${assetId}</div>`;
+        Object.keys(backups).forEach(bKey => {
+          const b = backups[bKey];
+          html += `<div style="margin-left:15px; font-size:0.7rem; color:var(--text-muted);">• [${b.timestamp}] Backup por ${b.responsable_backup} | Tag: ${b.estado_json.tag || 'S/N'}</div>`;
+        });
+      });
+      container.innerHTML = html;
+    });
+  }
+
+  function exportarBackupTotalJSON() {
+    db.once('value', snap => {
+      const fullData = snap.val();
+      const blob = new Blob([JSON.stringify(fullData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `CIO_Backup_Total_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
   }
 </script>
 
