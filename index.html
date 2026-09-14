@@ -24,7 +24,6 @@
     --input-bg: #121214;
     --btn-bg: #27272a;
     --btn-hover: #3f3f46;
-    --logo-box-bg: rgba(255, 255, 255, 0.04);
   }
 
   body.light-mode {
@@ -38,7 +37,6 @@
     --input-bg: #f8fafc;
     --btn-bg: #e4e4e7;
     --btn-hover: #d4d4d8;
-    --logo-box-bg: rgba(0, 0, 0, 0.03);
   }
 
   body { background-color: var(--bg-main); color: var(--text-main); font-family: 'Inter', sans-serif; padding: 20px; margin: 0; -webkit-font-smoothing: antialiased; transition: background 0.2s, color 0.2s; }
@@ -48,8 +46,9 @@
   .header { border: 1px solid var(--border-card); padding: 14px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-panel); border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); flex-wrap: wrap; gap: 14px; }
   .header-brand { display: flex; align-items: center; gap: 20px; }
   
-  .logos-container { display: flex; align-items: center; background: var(--logo-box-bg); padding: 8px 18px; border-radius: 8px; border: 1px solid var(--border-card); box-shadow: inset 0 1px 4px rgba(0,0,0,0.25); }
-  .logo-cpf { height: 46px; width: auto; object-fit: contain; transform: scale(1.15); display: block; }
+  .logos-container { display: flex; align-items: center; background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.08) 100%); padding: 10px 20px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: inset 0 1px 6px rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.25); }
+  body.light-mode .logos-container { background: linear-gradient(135deg, rgba(0, 0, 0, 0.09) 0%, rgba(0, 0, 0, 0.04) 100%); border: 1px solid rgba(0, 0, 0, 0.15); }
+  .logo-cpf { height: 48px; width: auto; object-fit: contain; transform: scale(1.15); display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
 
   .header-titles h1 { font-size: 1.25rem; margin: 0 0 2px 0; text-transform: uppercase; font-weight: 900; letter-spacing: 0.8px; color: var(--text-main); }
   .header-titles p { color: var(--text-muted); margin: 0; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
@@ -70,6 +69,8 @@
 
   .admin-only { display: none !important; }
   body.admin-mode .admin-only { display: inline-flex !important; }
+  .user-logged-only { display: none !important; }
+  body.user-authenticated .user-logged-only { display: inline-flex !important; }
 
   /* Panel Ejecutivo & PMS Semanal */
   .executive-banner { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
@@ -154,12 +155,13 @@
     </select>
     <button class="btn-base" onclick="toggleTheme()" title="Cambiar Tema Claro/Oscuro">☀️ / 🌙</button>
     <button class="btn-base btn-primary" onclick="alternarVistaMapa()">🗺️ Mapa Faena</button>
+    <button class="btn-base user-logged-only" id="btnAuthSession" onclick="iniciarSesionUsuario()">🔑 Login Operador</button>
+    <button class="btn-base admin-only" id="btnAdminGate" onclick="solicitarPermisoSuperAdmin()">🛡️ Admin</button>
     <button class="btn-base btn-success admin-only" onclick="abrirEdicionEquipoNuevo()">➕ Crear Activo</button>
     <button class="btn-base btn-warning admin-only" onclick="abrirPanelMaster()">🔐 Traza & Backups</button>
     <button class="btn-base btn-success admin-only" onclick="document.getElementById('excelUpload').click()">📂 Cargar Excel</button>
     <input type="file" id="excelUpload" accept=".xlsx, .xls" style="display: none;" onchange="procesarCargaExcel(event)">
     <button class="btn-base btn-primary admin-only" onclick="exportarPlantillaExcel()">📥 Exportar BD</button>
-    <button class="btn-base" id="btnUnlock" onclick="toggleAdmin()">🛡️ Admin</button>
   </div>
 </div>
 
@@ -192,7 +194,7 @@
 <div class="pms-weekly-banner">
   <div class="exec-card" style="background:var(--bg-card);">
     <div class="exec-card-title">📅 PMS Semana Vigente</div>
-    <div class="exec-card-value code-font" id="kpiSemanaTag">2026-W37</div>
+    <div class="exec-card-value code-font" id="kpiSemanaTag">2026-W38</div>
   </div>
   <div class="exec-card" style="background:var(--bg-card); border-left: 3px solid #22c55e;">
     <div class="exec-card-title">✅ Cumplimiento Pauta</div>
@@ -246,6 +248,22 @@
 <div id="view-areas" class="grid-container"></div>
 <div id="view-equipos" class="grid-equipos" style="display:none;"></div>
 <div id="view-componentes" class="grid-componentes" style="display:none;"></div>
+
+<!-- MODAL REGISTRO DE NUEVO OPERADOR / USUARIO -->
+<div id="modalLoginOperador" class="modal-overlay" style="z-index: 4000;">
+  <div class="modal-content" style="max-width: 400px;">
+    <h3 style="margin-top:0; color:var(--accent-color);">👤 Identificación de Operador</h3>
+    <p style="font-size: 0.75rem; color:var(--text-muted); margin-bottom: 16px;">Ingrese su Nombre y Apellido para habilitar lectura/trazabilidad.</p>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div><label>Nombre</label><input type="text" id="opNombre" placeholder="Ej: Juan" style="width:100%; padding:8px; background:var(--input-bg); border:1px solid var(--border-card); color:var(--text-main); border-radius:6px; box-sizing:border-box;"></div>
+      <div><label>Apellido</label><input type="text" id="opApellido" placeholder="Ej: Pérez" style="width:100%; padding:8px; background:var(--input-bg); border:1px solid var(--border-card); color:var(--text-main); border-radius:6px; box-sizing:border-box;"></div>
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button class="btn-base" style="flex:1;" onclick="document.getElementById('modalLoginOperador').style.display='none'">Cancelar</button>
+        <button class="btn-base btn-primary" style="flex:1;" onclick="confirmarLoginOperador()">Ingresar Sesión</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL PANEL MASTER (TRAZA & BACKUPS) -->
 <div id="modalMaster" class="modal-overlay" style="z-index: 5000;">
@@ -340,7 +358,7 @@
           <span>Georreferencia (Lat, Lng)</span>
           <button type="button" class="btn-base btn-primary" style="padding: 4px 10px; font-size: 0.7rem;" onclick="abrirMapaGeorreferencia()">📍 Marcar en Mapa</button>
         </label>
-        <div style="display:flex; gap:10px; margin-top: 4px;"><input type="text" id="edLat" placeholder="Vacío si no está emapa"><input type="text" id="edLng" placeholder="Vacío si no está en mapa"></div>
+        <div style="display:flex; gap:10px; margin-top: 4px;"><input type="text" id="edLat" placeholder="Vacío si no está en mapa"><input type="text" id="edLng" placeholder="Vacío si no está en mapa"></div>
       </div>
     </div>
     
@@ -385,6 +403,7 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database().ref('activos_criticos'); 
 
+  let isUserAuthenticated = false;
   let isAdmin = false;
   let usuarioActivo = null;
   let equiposDB = [];
@@ -403,6 +422,54 @@
   
   const SEV_PESO = { 'Rojo': 5, 'Naranja': 4, 'Amarillo': 3, 'Verde': 2, 'Plomo': 1 };
   const SEV_COLOR_HEX = { 'Rojo': '#ef4444', 'Naranja': '#f97316', 'Amarillo': '#eab308', 'Verde': '#22c55e', 'Plomo': '#6b7280' };
+
+  function iniciarSesionUsuario() {
+    document.getElementById('modalLoginOperador').style.display = 'flex';
+  }
+
+  function confirmarLoginOperador() {
+    const nom = (document.getElementById('opNombre').value || '').trim();
+    const ape = (document.getElementById('opApellido').value || '').trim();
+    if (!nom || !ape) {
+      alert("⚠️ Debe ingresar nombre y apellido del operador.");
+      return;
+    }
+    usuarioActivo = `${nom} ${ape}`;
+    isUserAuthenticated = true;
+    document.body.classList.add('user-authenticated');
+    document.getElementById('btnAuthSession').innerText = `👤 ${usuarioActivo}`;
+    document.getElementById('modalLoginOperador').style.display = 'none';
+    document.getElementById('opNombre').value = '';
+    document.getElementById('opApellido').value = '';
+    alert(`✅ Operador autenticado: ${usuarioActivo}.`);
+  }
+
+  function solicitarPermisoSuperAdmin() {
+    if (!isUserAuthenticated) {
+      alert("⚠️ Debe autenticarse primero como operador en la plataforma.");
+      iniciarSesionUsuario();
+      return;
+    }
+    if (isAdmin) {
+      // Salir de admin pero mantener sesión de operador
+      liberarLockEdicionActual();
+      isAdmin = false;
+      document.body.classList.remove('admin-mode');
+      document.getElementById('btnAdminGate').innerText = '🛡️ Admin';
+      cerrarEdicion();
+      alert("🔒 Modo SuperAdmin cerrado (sesión operador activa).");
+      return;
+    }
+    const pass = prompt("🔑 Ingrese clave SuperAdmin (Moncon2026):");
+    if (pass === "Moncon2026") {
+      isAdmin = true;
+      document.body.classList.add('admin-mode');
+      document.getElementById('btnAdminGate').innerText = '🛡️ SuperAdmin ON';
+      alert(`✅ SuperAdmin activado por operador ${usuarioActivo}.`);
+    } else if (pass !== null) {
+      alert("❌ Clave SuperAdmin incorrecta.");
+    }
+  }
 
   function esActivoConAceite(tipoActivo = '', nombreSpot = '') {
     const texto = (tipoActivo + ' ' + nombreSpot).toLowerCase();
@@ -439,27 +506,6 @@
 
   function toggleTheme() {
     document.body.classList.toggle('light-mode');
-  }
-
-  function toggleAdmin() {
-    if (isAdmin) {
-      liberarLockEdicionActual();
-      isAdmin = false;
-      usuarioActivo = null;
-      document.body.classList.remove('admin-mode');
-      document.getElementById('btnUnlock').innerText = '🛡️ Admin';
-      cerrarEdicion();
-    } else {
-      const pass = prompt("🔑 Ingrese clave de Administrador (Moncon2026):");
-      if (pass === "Moncon2026") {
-        isAdmin = true;
-        usuarioActivo = "Administrador (MLC)";
-        document.body.classList.add('admin-mode');
-        document.getElementById('btnUnlock').innerText = '🔓 Salir Admin';
-      } else if (pass !== null) {
-        alert("❌ Clave incorrecta.");
-      }
-    }
   }
 
   function inicializarMapa() {
@@ -889,7 +935,7 @@ Recomendación: ${d.recomendacion}`;
 
   function abrirEdicionEquipo() {
     if (!isAdmin || !equipoSeleccionado) return;
-    const me = usuarioActivo || 'Administrador (MLC)';
+    const me = usuarioActivo || 'SuperAdmin (MLC)';
     const currentLock = equipoSeleccionado.edit_lock;
 
     if (currentLock && currentLock.user && currentLock.user !== me) {
@@ -1090,7 +1136,7 @@ Recomendación: ${d.recomendacion}`;
     if (!equipoSeleccionado) return;
     const id = equipoSeleccionado.id;
     const timestampISO = new Date().toISOString();
-    const actor = usuarioActivo || 'Administrador (MLC)';
+    const actor = usuarioActivo || 'SuperAdmin (MLC)';
 
     const estadoPrevio = JSON.parse(JSON.stringify(equipoSeleccionado));
     if (estadoPrevio.id) {
@@ -1149,7 +1195,7 @@ Recomendación: ${d.recomendacion}`;
   }
 
   function eliminarEquipo() {
-    const actor = usuarioActivo || 'Administrador (MLC)';
+    const actor = usuarioActivo || 'SuperAdmin (MLC)';
     if(!confirm(`¿Eliminar permanentemente el activo ${equipoSeleccionado.tag}? Acción realizada por: ${actor}`)) return;
     
     const timestampISO = new Date().toISOString();
@@ -1191,7 +1237,7 @@ Recomendación: ${d.recomendacion}`;
       const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
       let procesados = 0;
       const timestampISO = new Date().toISOString();
-      const actor = usuarioActivo || 'Administrador (Excel)';
+      const actor = usuarioActivo || 'SuperAdmin (Excel)';
       const batchId = 'BATCH_' + Date.now();
 
       json.forEach(row => {
@@ -1255,7 +1301,7 @@ Recomendación: ${d.recomendacion}`;
         html += `<div style="color:var(--accent-color); font-weight:bold; margin-top:10px;">Asset ID: ${assetId}</div>`;
         Object.keys(backups).forEach(bKey => {
           const b = backups[bKey];
-          html += `<div style="margin-left:15px; font-size:0.7rem; color:var(--text-muted);">• [${b.timestamp}] Backup por ${b.responsable_backup} | Tag: ${b.estado_json.tag || 'S/N'}</div>`;
+          html += `<div style="margin-left:15px; font-size:0.75rem; color:var(--text-main);">• [${b.timestamp}] Backup por ${b.responsable_backup} | Tag: ${b.estado_json.tag || 'S/N'}</div>`;
         });
       });
       container.innerHTML = html;
