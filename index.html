@@ -90,6 +90,10 @@
   .mining-ticker { display: flex; align-items: center; gap: 14px; background: var(--input-bg); padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border-card); font-size: 0.72rem; font-family: 'Roboto Mono', monospace; font-weight: 600; }
   .ticker-item { display: flex; align-items: center; gap: 4px; }
 
+  /* Secciones globales por faena */
+  .faena-section-header { grid-column: 1 / -1; font-size: 0.95rem; font-weight: 800; color: var(--accent-color); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 14px; margin-bottom: 4px; padding-bottom: 6px; border-bottom: 2px solid var(--border-card); display: flex; align-items: center; gap: 8px; }
+  .faena-section-header:first-of-type { margin-top: 0; }
+
   /* Grids y Mapa */
   .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
   .grid-equipos { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
@@ -164,7 +168,6 @@
     <button class="btn-base" onclick="toggleTheme()" title="Cambiar Tema Claro/Oscuro">☀️ / 🌙</button>
     <button class="btn-base btn-primary" onclick="alternarVistaMapa()">🗺️ Mapa Faena</button>
 
-    <!-- Botón Usuario con menú desplegable Login/Registro -->
     <div style="position:relative; display:inline-block;" id="userMenuWrapper">
       <button class="btn-base" id="btnUsuarioMenu" onclick="toggleUserDropdown()">👤 <span id="labelUsuarioBtn">Usuario</span> ▾</button>
       <div id="userDropdownMenu" style="display:none; position:absolute; right:0; top:110%; background:var(--bg-panel); border:1px solid var(--border-card); border-radius:6px; box-shadow:0 8px 16px rgba(0,0,0,0.5); min-width:200px; z-index:3000; padding:6px 0;">
@@ -175,7 +178,6 @@
       </div>
     </div>
 
-    <!-- Botón SuperAdmin oculto hasta autenticación de operador -->
     <button class="btn-base user-authenticated-only" id="btnAdminGate" onclick="solicitarPermisoSuperAdmin()">🛡️ Admin</button>
     <button class="btn-base btn-success admin-only" onclick="abrirEdicionEquipoNuevo()">➕ Crear Activo</button>
     <button class="btn-base btn-warning admin-only" onclick="abrirPanelMaster()">🔐 Traza & Backups</button>
@@ -472,10 +474,8 @@
   const SEV_PESO = { 'Rojo': 5, 'Naranja': 4, 'Amarillo': 3, 'Verde': 2, 'Plomo': 1 };
   const SEV_COLOR_HEX = { 'Rojo': '#ef4444', 'Naranja': '#f97316', 'Amarillo': '#eab308', 'Verde': '#22c55e', 'Plomo': '#6b7280' };
 
-  // Live Exchange Rate & Mining Ticker Fetcher simulation / API poll fallback
   async function actualizarTickerMineroEnTiempoReal() {
     try {
-      // Simulación de tipo de cambio vivo o consulta pública ligera de respaldo (ej. exchangerate/mindicador fallback)
       currentUsdClp = 945.72 + (Math.random() * 0.8 - 0.4);
       const clpValue = Math.round(currentHierroUsdFe62 * currentUsdClp * 10) / 10;
       
@@ -872,7 +872,7 @@
 
     const filtroOM = document.getElementById('filtroOM').value;
     const query = (document.getElementById('buscadorTag').value || '').toLowerCase().trim();
-    const areasMap = {};
+    const faenasMap = {};
 
     equiposDB.filter(e => faenaActual === 'TODAS' || (e.siteId || '') === faenaActual).forEach(eq => {
       if (filtroOM === 'con_om') {
@@ -887,39 +887,64 @@
         if (!matchTag && !matchArea && !matchOM) return;
       }
 
-      const area = `${eq.area} [${(eq.siteId||'Faena')}]`;
+      const siteName = eq.siteId || 'Sin Faena Asignada';
+      const areaName = eq.area || 'Sin Área';
+      if (!faenasMap[siteName]) faenasMap[siteName] = {};
+      const areaKey = `${areaName} [${(eq.domain||'planta').toUpperCase()}]`;
       const sev = calcularSeveridadGlobal(eq.componentes);
-      if (!areasMap[area]) areasMap[area] = { equipos: 0, criticos: 0, maxSevPeso: 1, maxSev: 'Plomo' };
-      areasMap[area].equipos++;
-      if (SEV_PESO[sev] >= 4) areasMap[area].criticos++;
-      if (SEV_PESO[sev] > areasMap[area].maxSevPeso) { areasMap[area].maxSevPeso = SEV_PESO[sev]; areasMap[area].maxSev = sev; }
+      if (!faenasMap[siteName][areaKey]) faenasMap[siteName][areaKey] = { equipos: 0, criticos: 0, maxSevPeso: 1, maxSev: 'Plomo' };
+      faenasMap[siteName][areaKey].equipos++;
+      if (SEV_PESO[sev] >= 4) faenasMap[siteName][areaKey].criticos++;
+      if (SEV_PESO[sev] > faenasMap[siteName][areaKey].maxSevPeso) { 
+        faenasMap[siteName][areaKey].maxSevPeso = SEV_PESO[sev]; 
+        faenasMap[siteName][areaKey].maxSev = sev; 
+      }
     });
 
     const container = document.getElementById('view-areas');
-    container.innerHTML = Object.keys(areasMap).sort().map(area => {
-      const data = areasMap[area];
-      const animClass = (data.maxSev === 'Rojo' || data.maxSev === 'Naranja') ? `sev-${data.maxSev.toLowerCase()}-anim` : '';
-      return `
-        <div class="card-area sev-${data.maxSev.toLowerCase()} ${animClass}" onclick="renderNivel2Equipos('${area.split(' [')[0]}')">
-          <div style="width: 100%; display: flex; justify-content: space-between; align-items: flex-start;">
-            <div style="text-align: left;">
-              <div class="label-muted">Área [Faena]</div>
-              <div class="value-strong" style="font-size: 0.9rem; margin-top: 2px;">${area}</div>
+    const ordenFaenas = [
+      'Planta, Mina los Colorados',
+      'Mina, Mina los Colorados',
+      'Planta de Pellets',
+      'Planta, Mina el Romeral',
+      'Mina, Mina el Romeral'
+    ];
+
+    let htmlGlobal = '';
+    const faenasListKeys = Object.keys(faenasMap);
+    const faenasOrdenadas = ordenFaenas.filter(f => faenasListKeys.includes(f)).concat(faenasListKeys.filter(f => !ordenFaenas.includes(f)));
+
+    faenasOrdenadas.forEach(siteName => {
+      const areasGroup = faenasMap[siteName];
+      htmlGlobal += `<div class="faena-section-header"><span>🏗️ Faena: ${siteName}</span></div>`;
+      htmlGlobal += Object.keys(areasGroup).sort().map(areaKey => {
+        const data = areasGroup[areaKey];
+        const animClass = (data.maxSev === 'Rojo' || data.maxSev === 'Naranja') ? `sev-${data.maxSev.toLowerCase()}-anim` : '';
+        const areaCleanName = areaKey.split(' [')[0];
+        return `
+          <div class="card-area sev-${data.maxSev.toLowerCase()} ${animClass}" onclick="renderNivel2Equipos('${areaCleanName}')">
+            <div style="width: 100%; display: flex; justify-content: space-between; align-items: flex-start;">
+              <div style="text-align: left;">
+                <div class="label-muted">Área [Dominio]</div>
+                <div class="value-strong" style="font-size: 0.9rem; margin-top: 2px;">${areaKey}</div>
+              </div>
+            </div>
+            <div style="width: 100%; display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border-card);">
+              <div>
+                <div class="label-muted" style="font-size: 0.5rem;">Activos</div>
+                <div class="value-strong">${data.equipos}</div>
+              </div>
+              <div style="text-align: right;">
+                <div class="label-muted" style="font-size: 0.5rem;">Condición</div>
+                <div class="value-strong" style="color: ${SEV_COLOR_HEX[data.maxSev]}">${data.criticos > 0 ? `${data.criticos} Alerta` : 'Normal'}</div>
+              </div>
             </div>
           </div>
-          <div style="width: 100%; display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border-card);">
-            <div>
-              <div class="label-muted" style="font-size: 0.5rem;">Activos</div>
-              <div class="value-strong">${data.equipos}</div>
-            </div>
-            <div style="text-align: right;">
-              <div class="label-muted" style="font-size: 0.5rem;">Condición</div>
-              <div class="value-strong" style="color: ${SEV_COLOR_HEX[data.maxSev]}">${data.criticos > 0 ? `${data.criticos} Alerta` : 'Normal'}</div>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('') || '<div style="color:var(--text-muted); grid-column: 1/-1;">Sin activos con los filtros o búsqueda seleccionada.</div>';
+        `;
+      }).join('');
+    });
+
+    container.innerHTML = htmlGlobal || '<div style="color:var(--text-muted); grid-column: 1/-1;">Sin activos con los filtros o búsqueda seleccionada.</div>';
   }
 
   function renderNivel2Equipos(areaStr) {
