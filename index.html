@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CIO - CENTRO INTEGRADO DE OPERACIONES | CONFIABILIDAD MULTI-SITE</title>
+<title>CIO - CENTRO INTEGRADO DE OPERACIONES | MULTI-SITE 3-SCREEN ARCHITECTURE</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -22,12 +22,13 @@
   body { background-color: var(--bg-main); color: var(--text-main); font-family: 'Inter', sans-serif; padding: 20px; margin: 0; -webkit-font-smoothing: antialiased; transition: background 0.2s, color 0.2s; }
   .code-font { font-family: 'Roboto Mono', monospace; }
   
+  /* Cabecera Principal */
   .header { border: 1px solid var(--border-card); padding: 14px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-panel); border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); flex-wrap: wrap; gap: 14px; }
-  .header-brand { display: flex; align-items: center; gap: 20px; }
-  .logos-container { display: flex; align-items: center; background: var(--bg-card); padding: 10px 20px; border-radius: 10px; border: 1px solid var(--border-card); box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
-  .logo-cpf { height: 46px; width: auto; object-fit: contain; transform: scale(1.15); display: block; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3)); }
-  .header-titles h1 { font-size: 1.25rem; margin: 0 0 2px 0; text-transform: uppercase; font-weight: 900; letter-spacing: 0.8px; color: var(--text-main); }
-  .header-titles p { color: var(--text-muted); margin: 0; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+  .header-brand { display: flex; align-items: center; gap: 20px; cursor: pointer; }
+  .logos-container { display: flex; align-items: center; background: var(--bg-card); padding: 10px 20px; border-radius: 10px; border: 1px solid var(--border-card); }
+  .logo-cpf { height: 44px; width: auto; object-fit: contain; transform: scale(1.15); display: block; }
+  .header-titles h1 { font-size: 1.15rem; margin: 0 0 2px 0; text-transform: uppercase; font-weight: 900; letter-spacing: 0.8px; color: var(--text-main); }
+  .header-titles p { color: var(--text-muted); margin: 0; font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
   .header-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   
   .btn-base { background: var(--btn-bg); border: 1px solid var(--border-card); color: var(--text-main); padding: 7px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.75rem; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
@@ -42,53 +43,33 @@
   .search-input { width: 140px; }
   .search-input:focus { border-color: var(--accent-color); }
 
-  .admin-only { display: none !important; }
-  body.admin-mode .admin-only { display: inline-flex !important; }
-  .user-authenticated-only { display: none !important; }
-  body.user-authenticated .user-authenticated-only { display: grid !important; }
+  .auth-only-element { display: none !important; }
+  body.user-authenticated .auth-only-element { display: inline-flex !important; }
+  .admin-only-element { display: none !important; }
+  body.superadmin-active .admin-only-element { display: inline-flex !important; }
 
-  .executive-banner { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
-  .pms-weekly-banner { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; background: rgba(59, 130, 246, 0.05); padding: 10px; border-radius: 8px; border: 1px dashed var(--border-card); }
-  .exec-card { background: var(--bg-panel); border: 1px solid var(--border-card); border-radius: 8px; padding: 12px 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: space-between; }
-  .exec-card-title { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
-  .exec-card-value { font-size: 1.15rem; font-weight: 800; color: var(--text-main); margin-top: 6px; font-family: 'Roboto Mono', monospace; display: flex; align-items: center; justify-content: space-between; }
+  /* Ticker macroeconómico minería hierro */
+  .mining-ticker { display: flex; align-items: center; gap: 14px; background: var(--input-bg); padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-card); font-size: 0.75rem; font-family: 'Roboto Mono', monospace; font-weight: 600; margin-bottom: 16px; flex-wrap: wrap; }
+  .ticker-item { display: flex; align-items: center; gap: 6px; }
 
-  .sla-matrix-banner { background: var(--bg-panel); border: 1px solid var(--border-card); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
-  .sla-table { width: 100%; border-collapse: collapse; font-family: 'Roboto Mono', monospace; font-size: 0.75rem; }
-  .sla-table th { text-align: left; color: var(--text-muted); font-size: 0.6rem; text-transform: uppercase; border-bottom: 1px solid var(--border-card); padding-bottom: 4px; }
-  .sla-table td { padding: 6px 0; border-bottom: 1px dashed var(--border-card); color: var(--text-main); }
-
-  .nav-bar-global { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; background: var(--bg-panel); padding: 10px 20px; border-radius: 8px; border: 1px solid var(--border-card); box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex-wrap: wrap; gap: 12px; }
-  .nav-breadcrumb-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  .nav-breadcrumb { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 8px; margin-left: 8px; border-left: 2px solid var(--border-card); padding-left: 12px; }
-  .nav-link { cursor: pointer; color: var(--accent-color); transition: 0.2s; }
-  .nav-link:hover { color: #60a5fa; text-decoration: underline; }
-  
-  .mining-ticker { display: flex; align-items: center; gap: 14px; background: var(--input-bg); padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border-card); font-size: 0.72rem; font-family: 'Roboto Mono', monospace; font-weight: 600; }
-  .ticker-item { display: flex; align-items: center; gap: 4px; }
+  /* Vistas por Pantalla (Screen Views) */
+  .screen-view { display: none; }
+  .screen-view.active { display: block; }
 
   .faena-section-header { grid-column: 1 / -1; font-size: 0.95rem; font-weight: 800; color: var(--accent-color); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 14px; margin-bottom: 4px; padding-bottom: 6px; border-bottom: 2px solid var(--border-card); display: flex; align-items: center; gap: 8px; }
-  .faena-section-header:first-of-type { margin-top: 0; }
-
   .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
   .grid-equipos { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
   .grid-componentes { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
-  
-  #view-map { width: 100%; height: 700px; border-radius: 8px; border: 1px solid var(--border-card); display: none; margin-bottom: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.3); z-index: 10; }
 
-  .card-area { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 8px; padding: 16px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+  .card-area { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 8px; padding: 16px; transition: 0.2s; display: flex; flex-direction: column; gap: 8px; cursor: pointer; }
   .card-area:hover { transform: translateY(-2px); border-color: var(--text-muted); }
-  
-  .card-equipo { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 8px; padding: 14px 10px; position: relative; cursor: pointer; text-align: center; transition: 0.15s; min-height: 85px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+  .card-equipo { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 8px; padding: 14px 10px; position: relative; cursor: pointer; text-align: center; transition: 0.15s; min-height: 85px; display: flex; flex-direction: column; justify-content: center; }
   .card-equipo:hover { transform: translateY(-2px); border-color: var(--text-muted); }
 
   .sensor-badge { position: absolute; top: 6px; right: 6px; font-size: 0.48rem; padding: 2px 5px; border-radius: 4px; font-family: 'Roboto Mono', monospace; font-weight: 700; background: rgba(59,130,246,0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
-  .sensor-badge.alert-sensor { background: rgba(239,68,68,0.2); color: #ef4444; border-color: rgba(239,68,68,0.4); animation: pulseAlert 1.5s infinite; }
-  @keyframes pulseAlert { 0% { opacity: 1; } 50% { opacity: 0.55; } 100% { opacity: 1; } }
+  .sensor-badge.alert-sensor { background: rgba(239,68,68,0.2); color: #ef4444; border-color: rgba(239,68,68,0.4); }
 
-  .card-componente { padding: 14px 12px; text-align: left; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; min-height: 100px; transition: 0.2s; }
-  .card-componente:hover { transform: translateY(-2px); border-color: var(--accent-color); } 
-  
   .sev-rojo { border-left: 5px solid #ef4444; }
   .sev-naranja { border-left: 5px solid #f97316; }
   .sev-amarillo { border-left: 5px solid #eab308; }
@@ -98,256 +79,145 @@
   .label-muted { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
   .value-strong { font-size: 0.85rem; font-weight: 700; color: var(--text-main); }
   .eq-tag { font-size: 0.85rem; font-weight: 700; margin: 2px 0; color: var(--text-main); }
-  .eq-type { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
-  .eq-days { font-size: 0.55rem; font-weight: 600; background: var(--input-bg); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-card); margin-top: 4px; display: inline-block; color: var(--text-muted); }
-  .lock-badge { font-size: 0.5rem; background: rgba(249,115,22,0.15); color: #f97316; padding: 1px 4px; border-radius: 3px; font-weight: bold; margin-top: 2px; }
+  .eq-type { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
 
-  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; backdrop-filter: blur(4px); }
+  #view-map { width: 100%; height: 500px; border-radius: 8px; border: 1px solid var(--border-card); margin-bottom: 16px; }
+
+  /* Modales Estándar y Edición Pantalla Completa */
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 2000; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; backdrop-filter: blur(4px); }
   .modal-content { background: var(--bg-panel); padding: 24px; border-radius: 12px; border: 1px solid var(--border-card); width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
-  
   .modal-fullscreen { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-main); z-index: 2500; overflow-y: auto; padding: 30px; box-sizing: border-box; }
   .fullscreen-container { max-width: 1250px; margin: 0 auto; background: var(--bg-panel); border: 1px solid var(--border-card); border-radius: 12px; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; }
-
-  .modal-close-btn { position: absolute; top: 20px; right: 20px; color: var(--text-muted); font-size: 1.4rem; cursor: pointer; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; transition: 0.2s; z-index: 10; }
-  .modal-close-btn:hover { color: white; background: #dc2626; border-color: #ef4444; }
-
+  .modal-close-btn { position: absolute; top: 16px; right: 16px; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 50まります; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+  
+  .form-group { margin-bottom: 12px; }
+  .form-group label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; display: block; }
+  .form-group input, .form-group select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-card); background: var(--input-bg); color: var(--text-main); font-size: 0.9rem; box-sizing: border-box; }
   .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
   .form-grid label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; display: block; }
   .form-grid input, .form-grid select, .form-grid textarea { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-card); background: var(--input-bg); color: var(--text-main); font-size: 0.9rem; font-family: 'Inter', sans-serif; box-sizing: border-box; }
-  
-  .copilot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; }
-  .copilot-box { background: var(--input-bg); border: 1px solid var(--border-card); border-radius: 6px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; }
-  .copilot-box header { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
 </style>
 </head>
-<body class="user-authenticated">
+<body>
 
+<!-- CABECERA GENERAL -->
 <div class="header">
-  <div class="header-brand">
+  <div class="header-brand" onclick="goScreen(1)">
     <div class="logos-container">
       <img src="logo-cpf.png" alt="Logo CPF" class="logo-cpf" onerror="this.style.display='none'">
     </div>
     <div class="header-titles">
-      <h1>CIO - <span id="labelSiteGlobal">TODAS LAS FAENAS (GLOBAL)</span></h1>
-      <p id="subinfoFaenaUsuario">Acceso de Visualización y Operación Global</p>
+      <h1>CIO - <span id="headerScreenTitle">VISTA PÚBLICA (GLOBAL)</span></h1>
+      <p>Compañía Minera del Pacífico (CMP)</p>
     </div>
   </div>
   <div class="header-controls">
-    <select id="selectorSite" class="filter-select" onchange="cambiarFaenaGlobal()" style="font-weight: 800; color: var(--accent-color);">
-      <option value="TODAS">🌐 Todas las Faenas (Global)</option>
+    <button class="btn-base" onclick="toggleTheme()" title="Cambiar Tema Claro/Oscuro">☀️ / 🌙</button>
+    <div style="position:relative; display:inline-block;" id="userMenuWrapper">
+      <button class="btn-base btn-primary" id="btnUsuarioMenu" onclick="toggleUserDropdown()">👤 <span id="labelUsuarioBtn">Entrar</span> ▾</button>
+      <div id="userDropdownMenu" style="display:none; position:absolute; right:0; top:110%; background:var(--bg-panel); border:1px solid var(--border-card); border-radius:6px; box-shadow:0 8px 16px rgba(0,0,0,0.5); min-width:200px; z-index:3000; padding:6px 0;">
+        <div style="padding:8px 12px; font-size:0.65rem; color:var(--text-muted); border-bottom:1px solid var(--border-card);" id="dropUserInfo">Invitado (Solo Lectura)</div>
+        <button class="btn-base" id="dropLoginBtn" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent;" onclick="abrirModalAuth()">🔑 Ingresar / Registrar Operador</button>
+        <button class="btn-base" id="dropLogoutBtn" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent; color:#ef4444; display:none;" onclick="cerrarSesionUsuario()">🚪 Cerrar Sesión</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TICKER MACROECONÓMICO & CLIMA -->
+<div class="mining-ticker">
+  <div class="ticker-item">💵 <b>USD/CLP:</b> <span id="tickerUsdClp">945.72</span></div>
+  <div style="width:1px; height:14px; background:var(--border-card);"></div>
+  <div class="ticker-item">⛏️ <b>Fe 62%:</b> <span id="tickerHierroFe">98.02 USD/t</span></div>
+  <div style="width:1px; height:14px; background:var(--border-card);"></div>
+  <div class="ticker-item">💱 <b>Hierro/CLP:</b> <span id="tickerHierroClp">92,700 CLP/t</span></div>
+  <div style="width:1px; height:14px; background:var(--border-card);"></div>
+  <div class="ticker-item">☀️ <b>Clima:</b> <span id="tickerClima">22°C (Vallenar)</span></div>
+</div>
+
+<!-- =========================================================================
+     PANTALLA 1: PÚBLICA / RESUMEN GLOBAL (Solo visualizar áreas, faenas y macro)
+     ========================================================================= -->
+<div id="screen-1" class="screen-view active">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+    <h2 style="font-size:1rem; margin:0; text-transform:uppercase; color:var(--text-muted);">Visualización Global de Faenas y Áreas (Solo Lectura)</h2>
+  </div>
+  <div id="viewScreen1Content" class="grid-container"></div>
+</div>
+
+<!-- =========================================================================
+     PANTALLA 2: DETALLE DE FAENA ASIGNADA + BOTÓN SUPER ADMIN (POST-LOGIN)
+     ========================================================================= -->
+<div id="screen-2" class="screen-view">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+    <div>
+      <button class="btn-base" onclick="goScreen(1)">⬅️ Volver a Global</button>
+      <h2 id="screen2SiteTitle" style="font-size:1.1rem; margin:6px 0 0 0;">Faena Seleccionada</h2>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <span id="badgeFaenaAsignada" style="font-size:0.75rem; background:rgba(59,130,246,0.15); color:var(--accent-color); padding:4px 10px; border-radius:6px; font-weight:700;">Faena</span>
+      
+      <!-- BOTÓN SUPER ADMIN APARECE ESTRICTAMENTE TRAS LOGUEARSE COMO USUARIO/OPERADOR -->
+      <button class="btn-base btn-warning auth-only-element" onclick="solicitarPermisoSuperAdmin()">🛡️ SuperAdmin (Multi-faena)</button>
+    </div>
+  </div>
+  <div id="viewScreen2Equipos" class="grid-equipos"></div>
+</div>
+
+<!-- =========================================================================
+     PANTALLA 3: CONSOLA GLOBAL SUPERADMIN (Todas las faenas, editar, catastro)
+     ========================================================================= -->
+<div id="screen-3" class="screen-view">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+    <div>
+      <button class="btn-base" onclick="goScreen(2)">⬅️ Salir SuperAdmin</button>
+      <h2 style="font-size:1.1rem; margin:6px 0 0 0; color:#ca8a04;">⚡ Consola Global SuperAdmin (Todas las Faenas)</h2>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn-base btn-success" onclick="abrirEdicionGlobalNuevo()">➕ Crear Activo Global</button>
+      <button class="btn-base btn-primary" onclick="exportarReporteGerenciaAlta()">📊 Reporte Alta Gerencia</button>
+      <button class="btn-base btn-primary" onclick="toggleMapModal()">🗺️ Mapa Global</button>
+    </div>
+  </div>
+  <div style="margin-bottom:12px;">
+    <select id="superAdminFilterSite" class="filter-select" onchange="renderScreen3Global()">
+      <option value="TODAS">Ver Todas las 5 Faenas</option>
       <option value="Planta, Mina los Colorados">Planta, Mina los Colorados</option>
       <option value="Mina, Mina los Colorados">Mina, Mina los Colorados</option>
       <option value="Planta de Pellets">Planta de Pellets</option>
       <option value="Planta, Mina el Romeral">Planta, Mina el Romeral</option>
       <option value="Mina, Mina el Romeral">Mina, Mina el Romeral</option>
     </select>
-    <button class="btn-base" onclick="toggleTheme()" title="Cambiar Tema Claro/Oscuro">☀️ / 🌙</button>
-    <button class="btn-base btn-primary" onclick="alternarVistaMapa()">🗺️ Mapa Faena</button>
-
-    <div style="position:relative; display:inline-block;" id="userMenuWrapper">
-      <button class="btn-base" id="btnUsuarioMenu" onclick="toggleUserDropdown()">👤 <span id="labelUsuarioBtn">SuperAdmin</span> ▾</button>
-      <div id="userDropdownMenu" style="display:none; position:absolute; right:0; top:110%; background:var(--bg-panel); border:1px solid var(--border-card); border-radius:6px; box-shadow:0 8px 16px rgba(0,0,0,0.5); min-width:200px; z-index:3000; padding:6px 0;">
-        <div style="padding:8px 12px; font-size:0.65rem; color:var(--text-muted); border-bottom:1px solid var(--border-card);" id="dropUserInfo">Sesión Operativa Activa</div>
-        <button class="btn-base" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent;" onclick="abrirModalAuth('login')">🔑 Iniciar Sesión</button>
-        <button class="btn-base" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent;" onclick="abrirModalAuth('register')">📝 Registrar Usuario</button>
-        <button class="btn-base" id="btnCerrarSesionDrop" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent; color:#ef4444; display:block;" onclick="cerrarSesionUsuario()">🚪 Cambiar / Cerrar Sesión</button>
-      </div>
-    </div>
-
-    <button class="btn-base user-authenticated-only" id="btnAdminGate" onclick="solicitarPermisoSuperAdmin()">🛡️ SuperAdmin ON</button>
-    <button class="btn-base btn-success admin-only" onclick="abrirEdicionEquipoNuevo()">➕ Crear Activo</button>
-    <button class="btn-base btn-warning admin-only" onclick="abrirPanelMaster()">🔐 Traza & Backups</button>
-    <button class="btn-base btn-success admin-only" onclick="document.getElementById('excelUpload').click()">📂 Cargar Excel</button>
-    <input type="file" id="excelUpload" accept=".xlsx, .xls" style="display: none;" onchange="procesarCargaExcel(event)">
-    <button class="btn-base btn-primary admin-only" onclick="exportarPlantillaExcel()">📥 Exportar BD</button>
   </div>
+  <div id="viewMapGlobalContainer" style="display:none; margin-bottom:16px;"><div id="view-map"></div></div>
+  <div id="viewScreen3Global" class="grid-equipos"></div>
 </div>
 
-<div class="sla-matrix-banner user-authenticated-only">
-  <div style="display:flex; justify-content:space-between; align-items:center;">
-    <span style="font-size:0.75rem; font-weight:800; color:var(--accent-color); text-transform:uppercase;">📊 Semáforo Corporativo SLA / Control de Sala CIO</span>
-    <span style="font-size:0.65rem; color:var(--text-muted);">Sincronización en tiempo real</span>
-  </div>
-  <table class="sla-table">
-    <thead>
-      <tr>
-        <th>Faena Operativa</th>
-        <th>Críticos (Rojo)</th>
-        <th>Alertas (Naranja)</th>
-        <th>OM Abiertas SAP</th>
-        <th>SLA Breached Window</th>
-        <th>Triage General Sala</th>
-      </tr>
-    </thead>
-    <tbody id="slaMatrixBody"></tbody>
-  </table>
-</div>
-
-<div class="executive-banner user-authenticated-only">
-  <div class="exec-card">
-    <div class="exec-card-title">Salud Operacional Global</div>
-    <div class="exec-card-value">
-      <span style="font-size: 0.9rem; color: #22c55e;">SLA Activo</span> | <span style="font-size: 0.9rem; color: var(--accent-color);">Multi-Site</span>
-    </div>
-  </div>
-  <div class="exec-card" style="border-left: 3px solid #ef4444;">
-    <div class="exec-card-title">🔴 Universos Rojos</div>
-    <div class="exec-card-value" id="kpiTotalRojos" style="color: #ef4444;">0</div>
-  </div>
-  <div class="exec-card" style="border-left: 3px solid #f97316;">
-    <div class="exec-card-title">🟠 Universos Naranjos</div>
-    <div class="exec-card-value" id="kpiTotalNaranjos" style="color: #f97316;">0</div>
-  </div>
-  <div class="exec-card" style="border-left: 3px solid #eab308;">
-    <div class="exec-card-title">🟡 Universos Amarillos</div>
-    <div class="exec-card-value" id="kpiTotalAmarillos" style="color: #eab308;">0</div>
-  </div>
-  <div class="exec-card" style="border-left: 3px solid #22c55e;">
-    <div class="exec-card-title">🟢 Universos Verdes</div>
-    <div class="exec-card-value" id="kpiTotalVerdes" style="color: #22c55e;">0</div>
-  </div>
-  <div class="exec-card admin-only" style="border-left: 3px solid #3b82f6; cursor:pointer;" onclick="exportarReporteGerenciaAlta()">
-    <div class="exec-card-title">📊 Alta Gerencia (Reporte Ejecutivo)</div>
-    <div class="exec-card-value" style="font-size:0.75rem; color:#3b82f6;">📥 Exportar / Resumen SLA</div>
-  </div>
-</div>
-
-<div class="pms-weekly-banner user-authenticated-only">
-  <div class="exec-card" style="background:var(--bg-card);">
-    <div class="exec-card-title">📅 PMS Semana Vigente</div>
-    <div class="exec-card-value code-font" id="kpiSemanaTag">2026-W38</div>
-  </div>
-  <div class="exec-card" style="background:var(--bg-card); border-left: 3px solid #22c55e;">
-    <div class="exec-card-title">✅ Cumplimiento Pauta</div>
-    <div class="exec-card-value" id="kpiCumplimientoPauta" style="color: #22c55e;">94.2%</div>
-  </div>
-  <div class="exec-card" style="background:var(--bg-card); border-left: 3px solid #f97316;">
-    <div class="exec-card-title">⚡ Emergentes (Ejec./Ing.)</div>
-    <div class="exec-card-value code-font" id="kpiEmergentesStats">5 / 6</div>
-  </div>
-  <div class="exec-card" style="background:var(--bg-card); border-left: 3px solid #3b82f6;">
-    <div class="exec-card-title">📊 Cobertura ISO / Integridad</div>
-    <div class="exec-card-value code-font" id="kpiConfianzaDato">91.5%</div>
-  </div>
-</div>
-
-<div class="nav-bar-global">
-  <div class="nav-breadcrumb-group">
-    <button id="btnVolver" class="btn-base" style="display:none;" onclick="navegarAtras()">⬅️ Volver</button>
-    <button id="btnInicio" class="btn-base" style="display:none;" onclick="irAInicio()">🏠 Inicio</button>
-    <div class="nav-breadcrumb" id="breadcrumb">
-      <span class="nav-link" onclick="irAInicio()">Faena Actual</span>
-      <span id="bc-area" style="display:none;"></span>
-      <span id="bc-equipo" style="display:none;"></span>
-    </div>
-  </div>
-  
-  <div class="mining-ticker" id="miningTickerBar">
-    <div class="ticker-item">💵 <b>USD/CLP:</b> <span id="tickerUsdClp">945.72</span></div>
-    <div style="width:1px; height:16px; background:var(--border-card);"></div>
-    <div class="ticker-item">⛏️ <b>Fe 62%:</b> <span id="tickerHierroFe">98.02 USD/t</span></div>
-    <div style="width:1px; height:16px; background:var(--border-card);"></div>
-    <div class="ticker-item">💱 <b>Hierro/CLP:</b> <span id="tickerHierroClp">92,700 CLP/t</span></div>
-    <div style="width:1px; height:16px; background:var(--border-card);"></div>
-    <div class="ticker-item">☀️ <b>Clima:</b> <span id="tickerClima">22°C (Vallenar)</span></div>
-  </div>
-
-  <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-    <div style="display: flex; align-items: center; gap: 6px;">
-      <span class="label-muted">Buscar:</span>
-      <input type="text" id="buscadorTag" class="search-input" placeholder="🔍 Tag, Área, OM..." oninput="filtrarPorBusqueda()">
-    </div>
-    <div style="display: flex; align-items: center; gap: 6px;">
-      <span class="label-muted">Filtro OM:</span>
-      <select id="filtroOM" class="filter-select" onchange="aplicarFiltrosGlobales()">
-        <option value="todos">📋 Todos</option>
-        <option value="con_om">🔴 Con Aviso SAP / OM</option>
+<!-- MODAL AUTH -->
+<div id="modalAuth" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-close-btn" onclick="document.getElementById('modalAuth').style.display='none'">&times;</div>
+    <h3 style="margin-top:0;">Autenticación Operador / Usuario</h3>
+    <div class="form-group"><label>Nombre / Usuario</label><input type="text" id="authUser" placeholder="ej: fleiva@cpf.cl"></div>
+    <div class="form-group"><label>Contraseña</label><input type="password" id="authPass"></div>
+    <div class="form-group">
+      <label>Faena Asignada (Acceso Operativo de Escritura)</label>
+      <select id="authSiteSelect">
+        <option value="Planta, Mina los Colorados">Planta, Mina los Colorados</option>
+        <option value="Mina, Mina los Colorados">Mina, Mina los Colorados</option>
+        <option value="Planta de Pellets">Planta de Pellets</option>
+        <option value="Planta, Mina el Romeral">Planta, Mina el Romeral</option>
+        <option value="Mina, Mina el Romeral">Mina, Mina el Romeral</option>
       </select>
     </div>
+    <button class="btn-base btn-primary" style="width:100%; justify-content:center; padding:12px;" onclick="ejecutarAutenticacion()">Confirmar e Iniciar Sesión</button>
   </div>
 </div>
 
-<div id="view-map"></div>
-<div id="view-areas" class="grid-container"></div>
-<div id="view-equipos" class="grid-equipos" style="display:none;"></div>
-<div id="view-componentes" class="grid-componentes" style="display:none;"></div>
-
-<div id="modalAuth" class="modal-overlay" style="z-index: 4500;">
-  <div class="modal-content" style="max-width: 440px;">
-    <button class="modal-close-btn" onclick="document.getElementById('modalAuth').style.display='none'">&times;</button>
-    <h3 id="authModalTitle" style="margin-top:0; color:var(--accent-color);">🔑 Iniciar Sesión Operador</h3>
-    <div style="display:flex; flex-direction:column; gap:12px;">
-      <div id="fieldRegistroNombre" style="display:none;"><label>Nombre y Apellido</label><input type="text" id="authFullname"></div>
-      <div><label>Identificador / Usuario</label><input type="text" id="authUsername"></div>
-      <div><label>Contraseña</label><input type="password" id="authPassword"></div>
-      <div id="fieldAsignacionFaena" style="display:block;">
-        <label>📍 Seleccione Faena Asignada</label>
-        <select id="authSelectedSite">
-          <option value="Planta, Mina los Colorados">Planta, Mina los Colorados</option>
-          <option value="Mina, Mina los Colorados">Mina, Mina los Colorados</option>
-          <option value="Planta de Pellets">Planta de Pellets</option>
-          <option value="Planta, Mina el Romeral">Planta, Mina el Romeral</option>
-          <option value="Mina, Mina el Romeral">Mina, Mina el Romeral</option>
-        </select>
-      </div>
-      <div style="display:flex; gap:10px; margin-top:12px;">
-        <button class="btn-base" style="flex:1;" onclick="document.getElementById('modalAuth').style.display='none'">Cancelar</button>
-        <button class="btn-base btn-primary" style="flex:1;" id="btnSubmitAuth" onclick="ejecutarAccionAuth()">Continuar</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div id="modalMaster" class="modal-overlay" style="z-index: 5000;">
-  <div class="modal-content" style="max-width: 900px; max-height: 85vh;">
-    <button class="modal-close-btn" onclick="document.getElementById('modalMaster').style.display='none'">&times;</button>
-    <h3 style="margin-top:0; color:#f59e0b;">🔐 Panel Master: Auditoría Global & Backups</h3>
-    <div style="display:flex; gap:10px; margin-bottom:16px;">
-      <button class="btn-base btn-primary" onclick="cargarAuditGlobalUI()">📜 Ver Traza</button>
-      <button class="btn-base btn-warning" onclick="cargarBackupsListUI()">💾 Ver Backups</button>
-      <button class="btn-base btn-success" onclick="exportarBackupTotalJSON()">📥 Descargar Total JSON</button>
-    </div>
-    <div id="masterPanelContent" style="background:var(--input-bg); border:1px solid var(--border-card); border-radius:6px; padding:14px; max-height:50vh; overflow-y:auto; font-family:'Roboto Mono', monospace; font-size:0.75rem;"></div>
-  </div>
-</div>
-
-<div id="modalDetalleComponente" class="modal-overlay" onclick="cerrarDetalleComponente(event)">
-  <div class="modal-content" onclick="event.stopPropagation()">
-    <button class="modal-close-btn" onclick="cerrarDetalleComponente()">&times;</button>
-    <div style="margin-right: 40px; margin-bottom: 16px; border-bottom: 1px solid var(--border-card); padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
-      <div><div class="label-muted" id="detCompEqTag">TAG EQUIPO</div><h2 id="detCompNombre" class="code-font" style="margin: 2px 0 0 0; font-size: 1.2rem;">Nombre Spot</h2></div>
-      <button class="btn-base btn-primary" style="padding: 5px 10px; font-size: 0.7rem;" onclick="copiarResumenEjecutivo()">📋 Copiar Resumen</button>
-    </div>
-    <div style="background:var(--input-bg); padding:10px; border-radius:6px; border:1px solid var(--border-card); margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
-      <div>
-        <div class="label-muted">Estatus Triage Sala (CIO)</div>
-        <select id="controlRoomStatus" class="filter-select" style="margin-top:4px;" onchange="actualizarTriageSala(this.value)">
-          <option value="new">🔴 Nueva / Sin Atender</option>
-          <option value="acked">🟡 Reconocida</option>
-          <option value="sap_linked">🔵 Derivada SAP</option>
-          <option value="resolved">🟢 Monitoreo Reforzado</option>
-        </select>
-      </div>
-      <div style="text-align:right;"><div class="label-muted">Último Ack</div><div id="ackTimestamp" class="code-font" style="font-size:0.75rem; color:var(--text-muted);">-</div></div>
-    </div>
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px;">
-      <div style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border-card);"><div class="label-muted">Vibración</div><div id="detCompSev" class="value-strong" style="font-size: 0.9rem; margin-top: 4px; text-transform: uppercase;">Estado</div></div>
-      <div style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border-card);"><div class="label-muted">ISO RMS</div><div id="detCompRms" class="value-strong code-font" style="font-size: 0.85rem; margin-top: 4px;">N/D</div></div>
-      <div style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border-card);"><div class="label-muted">Termografía</div><div id="detCompTermo" class="value-strong code-font" style="font-size: 0.85rem; margin-top: 4px;">N/D</div></div>
-      <div style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border-card);"><div class="label-muted">Aviso SAP</div><div id="detCompOM" class="value-strong code-font" style="font-size: 0.85rem; margin-top: 4px;">S/N</div></div>
-    </div>
-    <div id="bloqueLubricanteDetalle" style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border-card); margin-bottom: 14px; display: none;">
-      <div class="label-muted" style="color: #f59e0b;">🧪 Lubricante</div><div id="detCompLubricante" style="font-size: 0.8rem; margin-top: 4px;">Nominal.</div>
-    </div>
-    <div style="background: var(--input-bg); padding: 14px; border-radius: 6px; border: 1px solid var(--border-card); margin-bottom: 12px;"><div class="label-muted" style="margin-bottom: 6px; color: var(--accent-color);">Análisis Copilot IA</div><div id="detCompAnalisis" style="font-size: 0.85rem;"></div></div>
-    <div style="background: var(--input-bg); padding: 14px; border-radius: 6px; border: 1px solid var(--border-card); margin-bottom: 12px;"><div class="label-muted" style="margin-bottom: 6px; color: #16a34a;">Recomendación</div><div id="detCompRecomendacion" style="font-size: 0.85rem;"></div></div>
-    <div style="background: var(--bg-card); padding: 14px; border-radius: 6px; border: 1px solid var(--border-card);"><div class="label-muted" style="margin-bottom: 6px; color: #f59e0b;">Trazabilidad</div><div id="detCompTrazabilidad" style="font-size: 0.8rem; color: var(--text-muted);">Sin cambios.</div></div>
-  </div>
-</div>
-
+<!-- MODAL EDICIÓN ACTIVO GLOBAL/LOCAL -->
 <div id="modalEdicion" class="modal-fullscreen">
   <div class="fullscreen-container">
-    <button class="modal-close-btn" onclick="cerrarEdicion()">&times;</button>
+    <div class="modal-close-btn" onclick="cerrarEdicion()">&times;</div>
     <h2 style="margin-top: 0; font-size: 1.4rem; margin-bottom: 20px;">Configuración de Activo</h2>
     <div class="form-grid">
       <div><label>Faena</label><input type="text" id="edSiteId" class="code-font" readonly></div>
@@ -370,18 +240,6 @@
   </div>
 </div>
 
-<div id="modalGeoMapa" class="modal-overlay" style="z-index: 3000;">
-  <div class="modal-content" style="max-width: 800px; height: 600px; display: flex; flex-direction: column;">
-    <button class="modal-close-btn" onclick="cerrarMapaGeorreferencia()">&times;</button>
-    <h3>Marcar Coordenada</h3>
-    <div id="geoPickerMap" style="flex-grow: 1; border-radius: 8px;"></div>
-    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
-      <button class="btn-base" onclick="cerrarMapaGeorreferencia()">Cancelar</button>
-      <button class="btn-base btn-success" onclick="confirmarGeorreferencia()">✔️ Confirmar</button>
-    </div>
-  </div>
-</div>
-
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script>
@@ -393,362 +251,243 @@
   };
   try { firebase.initializeApp(firebaseConfig); } catch(e){}
   const db = firebase.database().ref('activos_criticos');
-  const dbUsers = firebase.database().ref('usuarios_registrados');
 
-  let isUserAuthenticated = true, isAdmin = true, usuarioActivo = 'SuperAdmin CIO', faenaAsignadaOperador = 'TODAS';
+  let currentScreen = 1;
+  let usuarioActivo = null;
+  let faenaAsignadaOperador = null;
+  let isSuperAdmin = false;
   let equiposDB = [];
-  let areaSeleccionada = null, equipoSeleccionado = null, componenteActualDetalle = null;
-  let mapaLeaflet = null, capaMarcadores = null, modoMapaActivo = false, faenaActual = 'TODAS';
-  let geoPickerLeaflet = null, tempGeoMarker = null, selectedLat = null, selectedLng = null;
+  let faenaSeleccionadaScreen2 = null;
+  let equipoSeleccionado = null;
+  let mapaGlobalInstancia = null, capaGlobalMarkers = null;
+
+  const FAENAS_LIST = [
+    'Planta, Mina los Colorados',
+    'Mina, Mina los Colorados',
+    'Planta de Pellets',
+    'Planta, Mina el Romeral',
+    'Mina, Mina el Romeral'
+  ];
 
   const SEV_PESO = { 'Rojo': 5, 'Naranja': 4, 'Amarillo': 3, 'Verde': 2, 'Plomo': 1 };
   const SEV_COLOR_HEX = { 'Rojo': '#ef4444', 'Naranja': '#f97316', 'Amarillo': '#eab308', 'Verde': '#22c55e', 'Plomo': '#6b7280' };
 
-  // Datos mock iniciales por si la base está vacía o sin red
-  const MOCK_SEED = [
-    { id: 'eq_01', siteId: 'Planta, Mina los Colorados', domain: 'planta', area: 'Chancado Primario', tag: 'CH-01-MTR', tipo: 'Motor', fecha: '2026-09-01', lat: '-28.2880', lng: '-70.8125', componentes: [{ nombre: 'Cojinete Lado Libre', severidad: 'Rojo', rms: '5.2', om: 'OM-9921', analisis: 'Fatiga subsuperficial', recomendacion: 'Inspeccionar ventana' }] },
-    { id: 'eq_02', siteId: 'Planta, Mina los Colorados', domain: 'planta', area: 'Molienda SAG', tag: 'SAG-01-RED', tipo: 'Reductor', fecha: '2026-09-05', lat: '-28.2870', lng: '-70.8135', componentes: [{ nombre: 'Caja Reductora Principal', severidad: 'Verde', rms: '2.1', om: '', analisis: 'Nominal', recomendacion: 'Monitoreo ruta' }] },
-    { id: 'eq_03', siteId: 'Planta de Pellets', domain: 'planta', area: 'Horno Induración', tag: 'PEL-03-FAN', tipo: 'Ventilador', fecha: '2026-09-10', lat: '-27.3670', lng: '-70.3335', componentes: [{ nombre: 'Rodamiento Eje Soplo', severidad: 'Naranja', rms: '4.1', om: 'OM-8831', analisis: 'Desgaste severo', recomendacion: 'Cambiar en pauta' }] },
-    { id: 'eq_04', siteId: 'Mina, Mina el Romeral', domain: 'mina', area: 'Palas Excavación', tag: 'PALA-02-HID', tipo: 'Hidráulica', fecha: '2026-09-15', lat: '-29.7340', lng: '-71.2510', componentes: [{ nombre: 'Bomba Principal', severidad: 'Verde', rms: '1.8', om: '', analisis: 'Operativo', recomendacion: 'Sin acción' }] }
+  const MOCK_DATA = [
+    { id: 'm1', siteId: 'Planta, Mina los Colorados', domain: 'planta', area: 'Chancado Primario', tag: 'CH-01-MTR', tipo: 'Motor', lat: '-28.2880', lng: '-70.8125', componentes: [{severidad:'Rojo', rms:'4.5'}] },
+    { id: 'm2', siteId: 'Planta de Pellets', domain: 'planta', area: 'Horno Induración', tag: 'PEL-FAN-02', tipo: 'Ventilador', lat: '-27.3670', lng: '-70.3335', componentes: [{severidad:'Naranja', rms:'3.8'}] },
+    { id: 'm3', siteId: 'Mina, Mina el Romeral', domain: 'mina', area: 'Palas', tag: 'ROM-PALA-01', tipo: 'Hidráulica', lat: '-29.7340', lng: '-71.2510', componentes: [{severidad:'Verde', rms:'1.5'}] }
   ];
 
-  function inicializarDatos() {
-    db.once('value', snap => {
-      const data = snap.val();
-      if (!data) {
-        // Sembrar datos de prueba si está vacío
-        const initialObj = {};
-        MOCK_SEED.forEach(i => initialObj[i.id] = i);
-        db.set(initialObj);
-      }
-    });
-  }
-  inicializarDatos();
-
   db.on('value', snap => {
-    const rawData = snap.val();
-    if (rawData) {
-      equiposDB = Object.keys(rawData).map(key => ({
-        id: rawData[key].id || key,
-        siteId: rawData[key].siteId || 'Planta, Mina los Colorados',
-        domain: rawData[key].domain || 'planta',
-        area: rawData[key].area || 'Sin Área',
-        tag: rawData[key].tag || 'S/N',
-        tipo: rawData[key].tipo || 'Activo',
-        fecha: rawData[key].fecha || '',
-        lat: rawData[key].lat || '',
-        lng: rawData[key].lng || '',
-        componentes: rawData[key].componentes || [],
-        en_edicion: rawData[key].en_edicion || false,
-        edit_lock: rawData[key].edit_lock || null,
-        audit: rawData[key].audit || {},
-        triage_sala: rawData[key].triage_sala || {}
-      }));
-    } else {
-      equiposDB = MOCK_SEED;
-    }
-    actualizarConteoUniversoEquipos();
-    actualizarSlaMatrix();
-    if (modoMapaActivo) actualizarMarcadoresMapa();
-    else if (equipoSeleccionado) renderNivel3Componentes(equipoSeleccionado.id);
-    else if (areaSeleccionada) renderNivel2Equipos();
-    else renderNivel1Areas();
+    const raw = snap.val();
+    equiposDB = raw ? Object.keys(raw).map(k => ({ id: k, ...raw[k], componentes: raw[k].componentes || [] })) : MOCK_DATA;
+    refreshCurrentScreen();
   });
 
-  function actualizarSlaMatrix() {
-    const tableBody = document.getElementById('slaMatrixBody');
-    if (!tableBody) return;
-    const ordenFaenas = ['Planta, Mina los Colorados', 'Mina, Mina los Colorados', 'Planta de Pellets', 'Planta, Mina el Romeral', 'Mina, Mina el Romeral'];
-    tableBody.innerHTML = ordenFaenas.map(siteName => {
-      const eqSite = equiposDB.filter(e => (e.siteId || '') === siteName);
-      let r = 0, n = 0, om = 0;
-      eqSite.forEach(eq => {
-        (eq.componentes || []).forEach(c => {
-          if (c.severidad === 'Rojo') r++;
-          if (c.severidad === 'Naranja') n++;
-          if (c.om && c.om.trim() !== "") om++;
-        });
-      });
-      const triageBadge = r > 0 ? '🔴 Escalado / Crítico' : (n > 0 ? '🟡 Monitoreo Activo' : '🟢 Nominal / SLA OK');
-      const slaWin = r > 0 ? '< 6 hrs' : '72 hrs';
-      return `<tr><td><b>${siteName}</b></td><td><span style="color:#ef4444;font-weight:bold;">${r}</span></td><td><span style="color:#f97316;font-weight:bold;">${n}</span></td><td>${om}</td><td>${slaWin}</td><td>${triageBadge}</td></tr>`;
+  function goScreen(num) {
+    currentScreen = num;
+    document.querySelectorAll('.screen-view').forEach(el => el.classList.remove('active'));
+    document.getElementById(`screen-${num}`).classList.add('active');
+    const titles = { 1: 'VISTA PÚBLICA (GLOBAL)', 2: `FAENA: ${faenaSeleccionadaScreen2 || 'ASIGNADA'}`, 3: 'CONSOLA GLOBAL SUPERADMIN' };
+    document.getElementById('headerScreenTitle').innerText = titles[num] || 'CIO';
+    refreshCurrentScreen();
+  }
+
+  function refreshCurrentScreen() {
+    if (currentScreen === 1) renderScreen1Public();
+    else if (currentScreen === 2) renderScreen2Site();
+    else if (currentScreen === 3) renderScreen3Global();
+  }
+
+  function renderScreen1Public() {
+    const container = document.getElementById('viewScreen1Content');
+    const faenasGroup = {};
+    FAENAS_LIST.forEach(f => faenasGroup[f] = { count: 0, critical: 0 });
+    equiposDB.forEach(eq => {
+      const f = eq.siteId || 'Sin Faena';
+      if (!faenasGroup[f]) faenasGroup[f] = { count: 0, critical: 0 };
+      faenasGroup[f].count++;
+      const sev = calcMaxSev(eq.componentes);
+      if (sev === 'Rojo' || sev === 'Naranja') faenasGroup[f].critical++;
+    });
+
+    container.innerHTML = Object.keys(faenasGroup).map(f => {
+      const d = faenasGroup[f];
+      return `<div class="card-area" onclick="seleccionarFaenaScreen2('${f}')">
+        <div class="label-muted">Faena Operativa CMP</div>
+        <div class="value-strong" style="font-size:0.95rem; margin:4px 0;">${f}</div>
+        <div style="display:flex; justify-content:space-between; margin-top:10px; padding-top:6px; border-top:1px solid var(--border-card);">
+          <div><div class="label-muted">Activos</div><div class="value-strong">${d.count}</div></div>
+          <div><div class="label-muted">Alertas</div><div class="value-strong" style="color:${d.critical>0?'#ef4444':'#22c55e'}">${d.critical}</div></div>
+        </div>
+      </div>`;
     }).join('');
   }
 
-  function actualizarConteoUniversoEquipos() {
-    let r = 0, n = 0, a = 0, v = 0;
-    equiposDB.filter(e => faenaActual === 'TODAS' || (e.siteId || '') === faenaActual).forEach(eq => {
-      const s = calcularSeveridadGlobal(eq.componentes);
-      if (s === 'Rojo') r++; else if (s === 'Naranja') n++; else if (s === 'Amarillo') a++; else if (s === 'Verde') v++;
-    });
-    document.getElementById('kpiTotalRojos').innerText = r; document.getElementById('kpiTotalNaranjos').innerText = n;
-    document.getElementById('kpiTotalAmarillos').innerText = a; document.getElementById('kpiTotalVerdes').innerText = v;
+  function seleccionarFaenaScreen2(faenaName) {
+    faenaSeleccionadaScreen2 = faenaName;
+    if (!usuarioActivo) faenaAsignadaOperador = faenaName;
+    document.getElementById('badgeFaenaAsignada').innerText = faenaName;
+    goScreen(2);
   }
 
-  function calcularSeveridadGlobal(componentes) {
-    if (!componentes || !componentes.length) return 'Plomo';
-    let maxP = 1, sev = 'Plomo';
-    componentes.forEach(c => { if (SEV_PESO[c.severidad] > maxP) { maxP = SEV_PESO[c.severidad]; sev = c.severidad; } });
-    return sev;
-  }
-
-  function irAInicio() { cerrarEdicion(); modoMapaActivo = false; document.getElementById('view-map').style.display = 'none'; renderNivel1Areas(); }
-  function navegarAtras() {
-    if (modoMapaActivo) { alternarVistaMapa(); return; }
-    if (document.getElementById('modalDetalleComponente').style.display === 'flex') { cerrarDetalleComponente(); return; }
-    if (document.getElementById('modalEdicion').style.display === 'block') { cerrarEdicion(); if(equipoSeleccionado) renderNivel3Componentes(equipoSeleccionado.id); return; }
-    if (document.getElementById('view-componentes').style.display === 'grid') { renderNivel2Equipos(areaSeleccionada); return; }
-    if (document.getElementById('view-equipos').style.display === 'grid') { irAInicio(); return; }
-  }
-
-  function aplicarFiltrosGlobales() { if (modoMapaActivo) return; areaSeleccionada ? renderNivel2Equipos() : renderNivel1Areas(); }
-  function filtrarPorBusqueda() { aplicarFiltrosGlobales(); }
-
-  function renderNivel1Areas() {
-    areaSeleccionada = null; equipoSeleccionado = null;
-    document.getElementById('btnVolver').style.display = 'none'; document.getElementById('btnInicio').style.display = 'none';
-    document.getElementById('bc-area').style.display = 'none'; document.getElementById('bc-equipo').style.display = 'none';
-    document.getElementById('view-equipos').style.display = 'none'; document.getElementById('view-componentes').style.display = 'none';
-    document.getElementById('view-areas').style.display = 'grid';
-
-    const filtroOM = document.getElementById('filtroOM').value, query = (document.getElementById('buscadorTag').value || '').toLowerCase().trim();
-    const faenasMap = {};
-    equiposDB.filter(e => faenaActual === 'TODAS' || (e.siteId || '') === faenaActual).forEach(eq => {
-      if (filtroOM === 'con_om' && !(eq.componentes || []).some(c => c.om && c.om.trim() !== "")) return;
-      if (query && !eq.tag.toLowerCase().includes(query) && !eq.area.toLowerCase().includes(query)) return;
-      const siteName = eq.siteId || 'Sin Faena', areaKey = `${eq.area || 'Sin Área'} [${(eq.domain||'planta').toUpperCase()}]`;
-      if (!faenasMap[siteName]) faenasMap[siteName] = {};
-      const sev = calcularSeveridadGlobal(eq.componentes);
-      if (!faenasMap[siteName][areaKey]) faenasMap[siteName][areaKey] = { equipos: 0, criticos: 0, maxSevPeso: 1, maxSev: 'Plomo' };
-      faenasMap[siteName][areaKey].equipos++;
-      if (SEV_PESO[sev] >= 4) faenasMap[siteName][areaKey].criticos++;
-      if (SEV_PESO[sev] > faenasMap[siteName][areaKey].maxSevPeso) { faenasMap[siteName][areaKey].maxSevPeso = SEV_PESO[sev]; faenasMap[siteName][areaKey].maxSev = sev; }
-    });
-
-    const ordenFaenas = ['Planta, Mina los Colorados', 'Mina, Mina los Colorados', 'Planta de Pellets', 'Planta, Mina el Romeral', 'Mina, Mina el Romeral'];
-    const faenasListKeys = Object.keys(faenasMap), faenasOrdenadas = ordenFaenas.filter(f => faenasListKeys.includes(f)).concat(faenasListKeys.filter(f => !ordenFaenas.includes(f)));
-
-    document.getElementById('view-areas').innerHTML = faenasOrdenadas.map(siteName => {
-      const areasGroup = faenasMap[siteName];
-      const cardsHtml = Object.keys(areasGroup).sort().map(areaKey => {
-        const data = areasGroup[areaKey], anim = (data.maxSev === 'Rojo' || data.maxSev === 'Naranja') ? `sev-${data.maxSev.toLowerCase()}-anim` : '';
-        const cleanName = areaKey.split(' [')[0];
-        return `<div class="card-area sev-${data.maxSev.toLowerCase()} ${anim}" onclick="renderNivel2Equipos('${cleanName}')">
-          <div style="text-align:left;"><div class="label-muted">Área [Dominio]</div><div class="value-strong">${areaKey}</div></div>
-          <div style="display:flex; justify-content:space-between; margin-top:6px; pt:6px; border-top:1px solid var(--border-card);">
-            <div><div class="label-muted" style="font-size:0.5rem;">Activos</div><div class="value-strong">${data.equipos}</div></div>
-            <div style="text-align:right;"><div class="label-muted" style="font-size:0.5rem;">Condición</div><div class="value-strong" style="color:${SEV_COLOR_HEX[data.maxSev]}">${data.criticos > 0 ? `${data.criticos} Alerta` : 'Normal'}</div></div>
-          </div>
-        </div>`;
-      }).join('');
-      return `<div class="faena-section-header"><span>🏗️ Faena: ${siteName}</span></div>` + cardsHtml;
-    }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin activos registrados para los filtros actuales.</div>';
-  }
-
-  function renderNivel2Equipos(areaStr) {
-    if (areaStr) areaSeleccionada = areaStr; equipoSeleccionado = null;
-    document.getElementById('btnVolver').style.display = 'inline-flex'; document.getElementById('btnInicio').style.display = 'inline-flex';
-    document.getElementById('bc-area').style.display = 'inline-flex'; document.getElementById('bc-area').innerHTML = ` / <span class="nav-link">${areaSeleccionada}</span>`;
-    document.getElementById('bc-equipo').style.display = 'none';
-    document.getElementById('view-areas').style.display = 'none'; document.getElementById('view-componentes').style.display = 'none';
-    document.getElementById('view-equipos').style.display = 'grid';
-
-    const filtroOM = document.getElementById('filtroOM').value, query = (document.getElementById('buscadorTag').value || '').toLowerCase().trim();
-    let eqs = equiposDB.filter(e => (faenaActual === 'TODAS' || (e.siteId || '') === faenaActual) && e.area === areaSeleccionada);
-    if (filtroOM === 'con_om') eqs = eqs.filter(e => (e.componentes||[]).some(c => c.om && c.om.trim() !== ""));
-    if (query) eqs = eqs.filter(eq => eq.tag.toLowerCase().includes(query) || (eq.componentes||[]).some(c => (c.om||'').toLowerCase().includes(query)));
-    eqs.sort((a,b) => SEV_PESO[calcularSeveridadGlobal(b.componentes)] - SEV_PESO[calcularSeveridadGlobal(a.componentes)]);
-
-    document.getElementById('view-equipos').innerHTML = eqs.map(eq => {
-      const sevGlobal = calcularSeveridadGlobal(eq.componentes), dias = eq.fecha ? Math.floor((new Date() - new Date(eq.fecha)) / 86400000) : '?';
-      const lockBadge = eq.edit_lock?.user ? `<span class="lock-badge">🔒 ${eq.edit_lock.user}</span>` : '';
-      const isCriticalAlert = sevGlobal === 'Rojo' || sevGlobal === 'Naranja';
-      const sensorTag = isCriticalAlert ? `<div class="sensor-badge alert-sensor">📡 IOT: ALERTA</div>` : `<div class="sensor-badge">📡 IOT: OK</div>`;
-      return `<div class="card-equipo sev-${sevGlobal.toLowerCase()}" onclick="renderNivel3Componentes('${eq.id}')">
-        ${sensorTag}
-        <div class="eq-type" style="margin-top:10px;">${eq.siteId || 'Faena'} | ${eq.tipo || 'Activo'}</div>
-        <div class="eq-tag code-font">${eq.tag}</div>
-        <div class="eq-days">${dias}d</div>
-        ${lockBadge}
-      </div>`;
-    }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin equipos en esta área.</div>';
-  }
-
-  function renderNivel3Componentes(id) {
-    const eq = equiposDB.find(e => e.id === id); if (!eq) return;
-    equipoSeleccionado = eq; const sevGlobal = calcularSeveridadGlobal(eq.componentes);
-    document.getElementById('bc-equipo').style.display = 'inline-flex';
-    document.getElementById('bc-equipo').innerHTML = ` / <span class="code-font" style="color:var(--text-main); font-weight:700;">${eq.tag}</span>`;
-    document.getElementById('view-areas').style.display = 'none'; document.getElementById('view-equipos').style.display = 'none';
-    document.getElementById('view-componentes').style.display = 'grid';
-
-    const lockInfo = eq.edit_lock?.user ? `<span style="font-size:0.65rem; color:#f97316; font-weight:700;">🔒 En edición por: ${eq.edit_lock.user}</span>` : '';
-    let html = `<div style="grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; background:var(--bg-card); padding:10px 14px; border-radius:8px; border:1px solid var(--border-card);">
-      <div><div class="label-muted">${eq.siteId} | ${eq.tipo}</div><h2 style="margin:2px 0 0 0; font-size:1.15rem;" class="code-font">${eq.tag}</h2>${lockInfo}</div>
-      <div style="display:flex; gap:10px; align-items:center;">
-        <div style="text-align:right;"><div class="label-muted" style="font-size:0.5rem;">Estado Global</div><div class="value-strong" style="color:${SEV_COLOR_HEX[sevGlobal]}; font-size:0.75rem;">${sevGlobal}</div></div>
-        <button class="btn-base btn-primary admin-only" onclick="abrirEdicionEquipo()">✏️ Editar</button>
-      </div>
-    </div>`;
-
-    document.getElementById('view-componentes').innerHTML = html + (eq.componentes || []).map((c, index) => `
-      <div class="card-equipo card-componente sev-${c.severidad.toLowerCase()}" onclick="abrirDetalleComponente('${eq.id}', ${index})">
-        <div style="text-align:left; width:100%;"><div class="eq-type">Spot / Componente</div><div class="eq-tag code-font" style="font-size:0.85rem;">${c.nombre}</div></div>
-        <div style="width:100%; display:flex; justify-content:space-between; margin-top:4px; pt:6px; border-top:1px solid var(--border-card);">
-          <span style="font-size:0.7rem; font-weight:700; color:${SEV_COLOR_HEX[c.severidad]};">${c.severidad.toUpperCase()}</span>
-          <span style="font-size:0.65rem; color:var(--text-muted);">OM: ${c.om || 'S/N'}</span>
-        </div>
-      </div>
-    `).join('') || '<div style="grid-column:1/-1; color:var(--text-muted); text-align:center;">Sin componentes.</div>';
-  }
-
-  function abrirDetalleComponente(eqId, compIndex) {
-    const eq = equiposDB.find(e => e.id === eqId); if (!eq || !eq.componentes[compIndex]) return;
-    const c = eq.componentes[compIndex];
-    componenteActualDetalle = { site: eq.siteId||'Faena', domain: eq.domain||'planta', tipoActivo: eq.tipo, eqTag: eq.tag, area: eq.area, spot: c.nombre, sev: c.severidad, rms: c.rms || 'N/D', termo: c.termo || 'N/D', om: c.om || 'S/N', analisis: c.analisis || 'S/N', recomendacion: c.recomendacion || 'S/N', aceite: c.aceite || '' };
-
-    document.getElementById('detCompEqTag').innerText = `Faena: ${componenteActualDetalle.site} | Activo: ${eq.tag} (${eq.area})`;
-    document.getElementById('detCompNombre').innerText = c.nombre;
-    document.getElementById('detCompOM').innerText = c.om || 'S/N (Sin Aviso SAP)';
-    document.getElementById('detCompRms').innerText = c.rms ? `${c.rms} mm/s` : 'N/D';
-    document.getElementById('detCompTermo').innerText = c.termo ? `+${c.termo}°C ΔT` : 'Normal';
+  function renderScreen2Site() {
+    const targetSite = faenaSeleccionadaScreen2 || faenaAsignadaOperador || FAENAS_LIST[0];
+    document.getElementById('screen2SiteTitle').innerText = targetSite;
+    const eqs = equiposDB.filter(e => e.siteId === targetSite);
+    const container = document.getElementById('viewScreen2Equipos');
     
-    const stSel = document.getElementById('controlRoomStatus');
-    stSel.value = eq.triage_sala?.status || 'new';
-    document.getElementById('ackTimestamp').innerText = eq.triage_sala?.updatedAt ? `${eq.triage_sala.updatedAt} (${eq.triage_sala.updatedBy || ''})` : '-';
-
-    const sevEl = document.getElementById('detCompSev'); sevEl.innerText = c.severidad.toUpperCase(); sevEl.style.color = SEV_COLOR_HEX[c.severidad] || 'white';
-    document.getElementById('bloqueLubricanteDetalle').style.display = esActivoConAceite(eq.tipo, c.nombre) ? 'block' : 'none';
-    document.getElementById('detCompLubricante').innerText = c.aceite || 'Condición de aceite nominal.';
-    document.getElementById('detCompAnalisis').innerText = c.analisis || 'Sin análisis registrado.';
-    document.getElementById('detCompRecomendacion').innerText = c.recomendacion || 'Sin recomendación registrada.';
-    document.getElementById('detCompTrazabilidad').innerHTML = (c.trazabilidad && c.trazabilidad.length > 0) ? c.trazabilidad.map(t => `<div style="margin-bottom:4px;">• [${t.fecha}] <b style="color:${SEV_COLOR_HEX[t.de]}">${t.de}</b> ➔ <b style="color:${SEV_COLOR_HEX[t.a]}">${t.a}</b></div>`).join('') : 'Sin cambios de severidad.';
-    document.getElementById('modalDetalleComponente').style.display = 'flex';
+    container.innerHTML = eqs.map(eq => {
+      const sev = calcMaxSev(eq.componentes);
+      return `<div class="card-equipo sev-${sev.toLowerCase()}">
+        <div class="eq-type">${eq.area || 'Planta'}</div>
+        <div class="eq-tag code-font">${eq.tag}</div>
+        <div class="eq-type" style="color:${SEV_COLOR_HEX[sev]}">${sev.toUpperCase()}</div>
+      </div>`;
+    }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">No hay equipos registrados en esta faena.</div>';
   }
 
-  function actualizarTriageSala(newStatus) {
-    if (!equipoSeleccionado) return;
-    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
-    document.getElementById('ackTimestamp').innerText = `${nowStr} (${usuarioActivo})`;
-    db.child(equipoSeleccionado.id).update({ triage_sala: { status: newStatus, updatedBy: usuarioActivo, updatedAt: nowStr } });
+  function renderScreen3Global() {
+    const filter = document.getElementById('superAdminFilterSite')?.value || 'TODAS';
+    const eqs = filter === 'TODAS' ? equiposDB : equiposDB.filter(e => e.siteId === filter);
+    const container = document.getElementById('viewScreen3Global');
+
+    container.innerHTML = eqs.map(eq => {
+      const sev = calcMaxSev(eq.componentes);
+      return `<div class="card-equipo sev-${sev.toLowerCase()}" style="cursor:default;">
+        <div class="label-muted">${eq.siteId}</div>
+        <div class="eq-tag code-font">${eq.tag}</div>
+        <div style="margin-top:6px; display:flex; gap:4px; justify-content:center;">
+          <button class="btn-base btn-primary" style="padding:3px 6px; font-size:0.65rem;" onclick="abrirEdicionEquipoGlobal('${eq.id}')">✏️ Editar</button>
+        </div>
+      </div>`;
+    }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin activos en filtro global.</div>';
   }
 
-  function copiarResumenEjecutivo() {
-    if (!componenteActualDetalle) return;
-    const d = componenteActualDetalle;
-    const txt = `--- REPORTE EJECUTIVO CIO [${d.site}] ---\nActivo: ${d.eqTag} (${d.area})\nSpot: ${d.spot}\nSev: ${d.sev.toUpperCase()} | RMS: ${d.rms} mm/s | Termo: ΔT ${d.termo} | OM: ${d.om}\nDiagnóstico: ${d.analisis}\nRecomendación: ${d.recomendacion}`;
-    navigator.clipboard.writeText(txt).then(() => alert("✅ Resumen copiado."));
+  function toggleMapModal() {
+    const box = document.getElementById('viewMapGlobalContainer');
+    const isHidden = box.style.display === 'none';
+    box.style.display = isHidden ? 'block' : 'none';
+    if (isHidden) {
+      setTimeout(() => {
+        if (!mapaGlobalInstancia) {
+          mapaGlobalInstancia = L.map('view-map').setView([-28.2876, -70.8130], 10);
+          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:20}).addTo(mapaGlobalInstancia);
+          capaGlobalMarkers = L.layerGroup().addTo(mapaGlobalInstancia);
+        } else {
+          mapaGlobalInstancia.invalidateSize();
+        }
+        if (capaGlobalMarkers) {
+          capaGlobalMarkers.clearLayers();
+          let valid = [];
+          equiposDB.forEach(eq => {
+            const lat = parseFloat(eq.lat), lng = parseFloat(eq.lng);
+            if (!isNaN(lat) && !isNaN(lng) && lat !== 0) {
+              L.marker([lat, lng]).bindPopup(`<b>${eq.tag}</b> (${eq.siteId})`).addTo(capaGlobalMarkers);
+              valid.push([lat, lng]);
+            }
+          });
+          if (valid.length) mapaGlobalInstancia.fitBounds(L.latLngBounds(valid), {padding:[30,30]});
+        }
+      }, 200);
+    }
   }
 
-  function cerrarDetalleComponente(e) { if(e && e.target !== document.getElementById('modalDetalleComponente')) return; document.getElementById('modalDetalleComponente').style.display = 'none'; }
-  function liberarLockEdicionActual() { if (equipoSeleccionado && isAdmin) db.child(equipoSeleccionado.id).update({ en_edicion: false, edit_lock: null }); }
-
-  function abrirEdicionEquipo() {
-    if (!isAdmin || !equipoSeleccionado) return;
-    db.child(equipoSeleccionado.id).update({ en_edicion: true, edit_lock: { user: usuarioActivo, timestamp: Date.now() } });
-    document.getElementById('edSiteId').value = equipoSeleccionado.siteId;
-    document.getElementById('edDomain').value = equipoSeleccionado.domain;
-    document.getElementById('edArea').value = equipoSeleccionado.area;
-    document.getElementById('edTag').value = equipoSeleccionado.tag;
-    document.getElementById('edTipo').value = equipoSeleccionado.tipo;
-    document.getElementById('edFecha').value = equipoSeleccionado.fecha;
-    document.getElementById('edLat').value = equipoSeleccionado.lat;
-    document.getElementById('edLng').value = equipoSeleccionado.lng;
-    const cont = document.getElementById('edComponentesContainer'); cont.innerHTML = '';
-    (equipoSeleccionado.componentes || []).forEach(c => agregarFormComponente(c, equipoSeleccionado.tipo));
-    document.getElementById('modalEdicion').style.display = 'block';
-  }
-
-  function agregarFormComponente(data = {}) {
-    const cont = document.getElementById('edComponentesContainer'), div = document.createElement('div');
-    div.style.cssText = "background:var(--bg-main); padding:16px; border:1px solid var(--border-card); border-radius:8px; position:relative;";
-    div.className = 'comp-item';
-    div.innerHTML = `
-      <button class="btn-danger" style="position:absolute; top:12px; right:12px; padding:4px 8px; font-size:0.7rem;" onclick="this.parentElement.remove()">Eliminar Spot</button>
-      <div class="form-grid">
-        <div><label>Nombre Spot</label><input type="text" class="c-nom" value="${data.nombre || ''}"></div>
-        <div><label>ISO Grupo</label><select class="c-iso-group"><option value="g2_rigid">G2 - Rígida</option><option value="g2_flexible">G2 - Flexible</option><option value="g1_rigid">G1 - Rígida</option></select></div>
-        <div><label>RMS Medido</label><input type="number" step="0.1" class="c-rms" value="${data.rms || ''}"></div>
-        <div><label>Severidad</label><select class="c-sev"><option value="Rojo">🔴 Rojo</option><option value="Naranja">🟠 Naranja</option><option value="Amarillo">🟡 Amarillo</option><option value="Verde" selected>🟢 Verde</option></select></div>
-        <div><label>Termo ΔT</label><input type="number" step="0.5" class="c-termo" value="${data.termo || ''}"></div>
-        <div><label>OM SAP</label><input type="text" class="c-om" value="${data.om || ''}"></div>
-      </div>
-      <input type="hidden" class="c-trazabilidad" value='${JSON.stringify(data.trazabilidad || [])}'>`;
-    cont.appendChild(div);
-  }
-
-  function cerrarEdicion(e) { if(e && e.target !== document.getElementById('modalEdicion')) return; liberarLockEdicionActual(); document.getElementById('modalEdicion').style.display = 'none'; }
-  window.addEventListener('beforeunload', () => liberarLockEdicionActual());
-
-  function guardarEquipo() {
-    if (!equipoSeleccionado) return;
-    const id = equipoSeleccionado.id, ts = new Date().toISOString();
-    const componentes = [];
-    document.querySelectorAll('.comp-item').forEach(el => {
-      let traz = []; try { traz = JSON.parse(el.querySelector('.c-trazabilidad').value); } catch(e){}
-      componentes.push({ nombre: el.querySelector('.c-nom').value, rms: el.querySelector('.c-rms').value, severidad: el.querySelector('.c-sev').value, termo: el.querySelector('.c-termo').value, om: el.querySelector('.c-om').value, trazabilidad: traz });
-    });
-    db.child(id).update({
-      siteId: document.getElementById('edSiteId').value, domain: document.getElementById('edDomain').value, area: document.getElementById('edArea').value,
-      tag: document.getElementById('edTag').value, tipo: document.getElementById('edTipo').value, fecha: document.getElementById('edFecha').value,
-      lat: document.getElementById('edLat').value, lng: document.getElementById('edLng').value, componentes, en_edicion: false, edit_lock: null
-    }).then(() => cerrarEdicion());
-  }
-
-  function eliminarEquipo() {
-    if(!confirm(`¿Eliminar activo ${equipoSeleccionado.tag}?`)) return;
-    db.child(equipoSeleccionado.id).remove().then(() => { cerrarEdicion(); renderNivel1Areas(); });
-  }
-
-  function abrirEdicionEquipoNuevo() {
-    equipoSeleccionado = { id: 'EQ_' + Date.now(), siteId: 'Planta, Mina los Colorados', domain: 'planta', componentes: [] };
-    abrirEdicionEquipo();
-  }
-
-  function exportarPlantillaExcel() {
-    const filas = equiposDB.map(eq => ({ ID_Interno: eq.id, Site_ID: eq.siteId, Domain: eq.domain, Area: eq.area, Tag: eq.tag, Tipo: eq.tipo, Fecha: eq.fecha }));
-    XLSX.writeFile(XLSX.utils.book_append_sheet(XLSX.utils.book_new(), XLSX.utils.json_to_sheet(filas), "Activos"), `CIO_Base_${new Date().toISOString().split('T')[0]}.xlsx`);
-  }
-
-  function procesarCargaExcel(e) {
-    const file = e.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-      const json = XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(evt.target.result), {type:'array'}).Sheets[XLSX.read(new Uint8Array(evt.target.result), {type:'array'}).SheetNames[0]]);
-      let count = 0;
-      json.forEach(row => { if(row.ID_Interno && row.Tag) { db.child(row.ID_Interno).update({ siteId: row.Site_ID||'Planta, Mina los Colorados', area: row.Area, tag: row.Tag, tipo: row.Tipo }); count++; } });
-      alert(`✅ Carga masiva: ${count} activos procesados.`);
-    };
-    reader.readAsArrayBuffer(file); e.target.value = '';
-  }
-
-  function abrirPanelMaster() { document.getElementById('modalMaster').style.display = 'flex'; cargarAuditGlobalUI(); }
-  function cargarAuditGlobalUI() {
-    db.child('audit_global').once('value', snap => {
-      const data = snap.val();
-      document.getElementById('masterPanelContent').innerHTML = data ? Object.keys(data).map(k => `<div>[${data[k].timestamp}] <b>${data[k].evento}</b> | User: ${data[k].usuario}</div>`).join('<hr style="border-color:var(--border-card);margin:6px 0;">') : "Sin registros de auditoría global.";
-    });
-  }
-  function cargarBackupsListUI() {
-    db.child('backups_activos').once('value', snap => {
-      const data = snap.val();
-      let html = '';
-      if (data) Object.keys(data).forEach(aid => { html += `<div style="color:var(--accent-color);font-weight:bold;margin-top:8px;">Asset: ${aid}</div>`; Object.keys(data[aid]).forEach(bk => html += `<div style="margin-left:12px;font-size:0.7rem;color:var(--text-muted);">• [${data[aid][bk].timestamp}] Resp: ${data[aid][bk].responsable_backup}</div>`); });
-      document.getElementById('masterPanelContent').innerHTML = html || "Sin backups previos.";
-    });
-  }
-  function exportarBackupTotalJSON() {
-    db.once('value', snap => {
-      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(snap.val(), null, 2)], {type:'application/json'}));
-      a.download = `CIO_Backup_Total_${new Date().toISOString().split('T')[0]}.json`; a.click();
-    });
+  function calcMaxSev(comps) {
+    if (!comps || !comps.length) return 'Plomo';
+    let maxP = 1, sev = 'Plomo';
+    comps.forEach(c => { if (SEV_PESO[c.severidad] > maxP) { maxP = SEV_PESO[c.severidad]; sev = c.severidad; } });
+    return sev;
   }
 
   function toggleUserDropdown() {
     const m = document.getElementById('userDropdownMenu');
     m.style.display = m.style.display === 'block' ? 'none' : 'block';
   }
-  window.addEventListener('click', e => { if (!document.getElementById('userMenuWrapper')?.contains(e.target)) document.getElementById('userDropdownMenu').style.display = 'none'; });
+  function abrirModalAuth() {
+    document.getElementById('userDropdownMenu').style.display = 'none';
+    document.getElementById('modalAuth').style.display = 'flex';
+  }
+  function ejecutarAutenticacion() {
+    const u = document.getElementById('authUser').value || 'Operador';
+    const site = document.getElementById('authSiteSelect').value;
+    usuarioActivo = u;
+    faenaAsignadaOperador = site;
+    document.body.classList.add('user-authenticated');
+    document.getElementById('labelUsuarioBtn').innerText = u.split('@')[0];
+    document.getElementById('dropUserInfo').innerText = `Activo: ${u} | Faena: ${site}`;
+    document.getElementById('dropLogoutBtn').style.display = 'block';
+    document.getElementById('modalAuth').style.display = 'none';
+    alert(`✅ Bienvenido ${u}. Sesión iniciada con faena asignada: ${site}.`);
+  }
+  function cerrarSesionUsuario() {
+    usuarioActivo = null; faenaAsignadaOperador = null; isSuperAdmin = false;
+    document.body.classList.remove('user-authenticated');
+    document.body.classList.remove('superadmin-active');
+    document.getElementById('labelUsuarioBtn').innerText = 'Entrar';
+    document.getElementById('dropUserInfo').innerText = 'Invitado (Solo Lectura)';
+    document.getElementById('dropLogoutBtn').style.display = 'none';
+    goScreen(1);
+    alert("🚪 Sesión cerrada.");
+  }
+  function solicitarPermisoSuperAdmin() {
+    const pass = prompt("🔑 Ingrese clave SuperAdmin:");
+    if (pass === "Moncon2026") {
+      isSuperAdmin = true;
+      document.body.classList.add('superadmin-active');
+      goScreen(3);
+      alert("⚡ SuperAdmin activado: Acceso global multifaena.");
+    } else if (pass !== null) {
+      alert("❌ Clave SuperAdmin incorrecta.");
+    }
+  }
+
+  function toggleTheme() { document.body.classList.toggle('light-mode'); }
+  function abrirEdicionGlobalNuevo() {
+    equipoSeleccionado = { id: 'EQ_' + Date.now(), siteId: 'Planta, Mina los Colorados', domain: 'planta', componentes: [] };
+    abrirEdicionEquipoGlobalObj();
+  }
+  function abrirEdicionEquipoGlobal(eqId) {
+    equipoSeleccionado = equiposDB.find(e => e.id === eqId);
+    if (equipoSeleccionado) abrirEdicionEquipoGlobalObj();
+  }
+  function abrirEdicionEquipoGlobalObj() {
+    document.getElementById('edSiteId').value = equipoSeleccionado.siteId;
+    document.getElementById('edDomain').value = equipoSeleccionado.domain || 'planta';
+    document.getElementById('edArea').value = equipoSeleccionado.area || '';
+    document.getElementById('edTag').value = equipoSeleccionado.tag || '';
+    document.getElementById('edTipo').value = equipoSeleccionado.tipo || '';
+    document.getElementById('edFecha').value = equipoSeleccionado.fecha || '';
+    document.getElementById('edLat').value = equipoSeleccionado.lat || '';
+    document.getElementById('edLng').value = equipoSeleccionado.lng || '';
+    const cont = document.getElementById('edComponentesContainer'); cont.innerHTML = '';
+    (equipoSeleccionado.componentes || []).forEach(c => agregarFormComponente(c));
+    document.getElementById('modalEdicion').style.display = 'block';
+  }
+  function agregarFormComponente(data = {}) {
+    const cont = document.getElementById('edComponentesContainer'), div = document.createElement('div');
+    div.style.cssText = "background:var(--bg-main); padding:14px; border:1px solid var(--border-card); border-radius:8px; position:relative;";
+    div.className = 'comp-item';
+    div.innerHTML = `<button class="btn-danger" style="position:absolute; top:10px; right:10px; padding:3px 6px; font-size:0.65rem;" onclick="this.parentElement.remove()">Eliminar</button>
+    <div class="form-grid"><div><label>Spot</label><input type="text" class="c-nom" value="${data.nombre||''}"></div><div><label>RMS</label><input type="text" class="c-rms" value="${data.rms||''}"></div><div><label>Sev</label><select class="c-sev"><option value="Rojo" ${data.severidad==='Rojo'?'selected':''}>Rojo</option><option value="Naranja" ${data.severidad==='Naranja'?'selected':''}>Naranja</option><option value="Verde" ${data.severidad==='Verde'?'selected':''}>Verde</option></select></div></div>`;
+    cont.appendChild(div);
+  }
+  function cerrarEdicion() { document.getElementById('modalEdicion').style.display = 'none'; }
+  function guardarEquipo() {
+    if (!equipoSeleccionado) return;
+    const comps = [];
+    document.querySelectorAll('.comp-item').forEach(el => comps.push({ nombre: el.querySelector('.c-nom').value, rms: el.querySelector('.c-rms').value, severidad: el.querySelector('.c-sev').value }));
+    db.child(equipoSeleccionado.id).update({
+      siteId: document.getElementById('edSiteId').value, domain: document.getElementById('edDomain').value,
+      area: document.getElementById('edArea').value, tag: document.getElementById('edTag').value, tipo: document.getElementById('edTipo').value,
+      lat: document.getElementById('edLat').value, lng: document.getElementById('edLng').value, componentes: comps
+    }).then(() => cerrarEdicion());
+  }
+  function eliminarEquipo() {
+    if (confirm('¿Eliminar activo?')) db.child(equipoSeleccionado.id).remove().then(() => cerrarEdicion());
+  }
+  function abrirMapaGeorreferencia() { alert('Usa el modo mapa global o escribe coordenadas directas lat/lng.'); }
+  function exportarReporteGerenciaAlta() { alert('Generando reporte ejecutivo alta gerencia multifaena...'); }
 </script>
 </body>
 </html>
