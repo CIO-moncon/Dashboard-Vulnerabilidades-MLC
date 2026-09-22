@@ -4,13 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CIO - CENTRO INTEGRADO DE OPERACIONES | CONFIABILIDAD MULTI-SITE</title>
-<!-- Leaflet CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<!-- SheetJS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<!-- Tipografía industrial Roboto Mono & Inter -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -57,7 +53,6 @@
   .exec-card-title { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
   .exec-card-value { font-size: 1.15rem; font-weight: 800; color: var(--text-main); margin-top: 6px; font-family: 'Roboto Mono', monospace; display: flex; align-items: center; justify-content: space-between; }
 
-  /* Matriz SLA Ultra-wide de Sala */
   .sla-matrix-banner { background: var(--bg-panel); border: 1px solid var(--border-card); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
   .sla-table { width: 100%; border-collapse: collapse; font-family: 'Roboto Mono', monospace; font-size: 0.75rem; }
   .sla-table th { text-align: left; color: var(--text-muted); font-size: 0.6rem; text-transform: uppercase; border-bottom: 1px solid var(--border-card); padding-bottom: 4px; }
@@ -125,7 +120,7 @@
   .copilot-box header { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
 </style>
 </head>
-<body>
+<body class="user-authenticated">
 
 <div class="header">
   <div class="header-brand">
@@ -134,7 +129,7 @@
     </div>
     <div class="header-titles">
       <h1>CIO - <span id="labelSiteGlobal">TODAS LAS FAENAS (GLOBAL)</span></h1>
-      <p id="subinfoFaenaUsuario">Acceso de Visualización Global</p>
+      <p id="subinfoFaenaUsuario">Acceso de Visualización y Operación Global</p>
     </div>
   </div>
   <div class="header-controls">
@@ -150,16 +145,16 @@
     <button class="btn-base btn-primary" onclick="alternarVistaMapa()">🗺️ Mapa Faena</button>
 
     <div style="position:relative; display:inline-block;" id="userMenuWrapper">
-      <button class="btn-base" id="btnUsuarioMenu" onclick="toggleUserDropdown()">👤 <span id="labelUsuarioBtn">Usuario</span> ▾</button>
+      <button class="btn-base" id="btnUsuarioMenu" onclick="toggleUserDropdown()">👤 <span id="labelUsuarioBtn">SuperAdmin</span> ▾</button>
       <div id="userDropdownMenu" style="display:none; position:absolute; right:0; top:110%; background:var(--bg-panel); border:1px solid var(--border-card); border-radius:6px; box-shadow:0 8px 16px rgba(0,0,0,0.5); min-width:200px; z-index:3000; padding:6px 0;">
-        <div style="padding:8px 12px; font-size:0.65rem; color:var(--text-muted); border-bottom:1px solid var(--border-card);" id="dropUserInfo">Sesión no iniciada</div>
+        <div style="padding:8px 12px; font-size:0.65rem; color:var(--text-muted); border-bottom:1px solid var(--border-card);" id="dropUserInfo">Sesión Operativa Activa</div>
         <button class="btn-base" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent;" onclick="abrirModalAuth('login')">🔑 Iniciar Sesión</button>
         <button class="btn-base" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent;" onclick="abrirModalAuth('register')">📝 Registrar Usuario</button>
-        <button class="btn-base" id="btnCerrarSesionDrop" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent; color:#ef4444; display:none;" onclick="cerrarSesionUsuario()">🚪 Cerrar Sesión</button>
+        <button class="btn-base" id="btnCerrarSesionDrop" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent; color:#ef4444; display:block;" onclick="cerrarSesionUsuario()">🚪 Cambiar / Cerrar Sesión</button>
       </div>
     </div>
 
-    <button class="btn-base user-authenticated-only" id="btnAdminGate" onclick="solicitarPermisoSuperAdmin()">🛡️ Admin</button>
+    <button class="btn-base user-authenticated-only" id="btnAdminGate" onclick="solicitarPermisoSuperAdmin()">🛡️ SuperAdmin ON</button>
     <button class="btn-base btn-success admin-only" onclick="abrirEdicionEquipoNuevo()">➕ Crear Activo</button>
     <button class="btn-base btn-warning admin-only" onclick="abrirPanelMaster()">🔐 Traza & Backups</button>
     <button class="btn-base btn-success admin-only" onclick="document.getElementById('excelUpload').click()">📂 Cargar Excel</button>
@@ -168,7 +163,6 @@
   </div>
 </div>
 
-<!-- Matriz SLA Multi-Site (Vista de Controlador Sala Ultra-Wide) -->
 <div class="sla-matrix-banner user-authenticated-only">
   <div style="display:flex; justify-content:space-between; align-items:center;">
     <span style="font-size:0.75rem; font-weight:800; color:var(--accent-color); text-transform:uppercase;">📊 Semáforo Corporativo SLA / Control de Sala CIO</span>
@@ -185,13 +179,10 @@
         <th>Triage General Sala</th>
       </tr>
     </thead>
-    <tbody id="slaMatrixBody">
-      <!-- Inyectado dinámicamente o resumen agregado -->
-    </tbody>
+    <tbody id="slaMatrixBody"></tbody>
   </table>
 </div>
 
-<!-- Panel Ejecutivo & KPI de Alta Gerencia (Visible solo logueado) -->
 <div class="executive-banner user-authenticated-only">
   <div class="exec-card">
     <div class="exec-card-title">Salud Operacional Global</div>
@@ -252,13 +243,13 @@
   </div>
   
   <div class="mining-ticker" id="miningTickerBar">
-    <div class="ticker-item" title="Tipo de cambio USD/CLP">💵 <b>USD/CLP:</b> <span id="tickerUsdClp">945.72</span></div>
+    <div class="ticker-item">💵 <b>USD/CLP:</b> <span id="tickerUsdClp">945.72</span></div>
     <div style="width:1px; height:16px; background:var(--border-card);"></div>
-    <div class="ticker-item" title="Índice Spot Mineral de Hierro Fines 62% Fe CFR China">⛏️ <b>Fe 62%:</b> <span id="tickerHierroFe">98.02 USD/t</span></div>
+    <div class="ticker-item">⛏️ <b>Fe 62%:</b> <span id="tickerHierroFe">98.02 USD/t</span></div>
     <div style="width:1px; height:16px; background:var(--border-card);"></div>
-    <div class="ticker-item" title="Equivalencia CLP por Tonelada de Hierro">💱 <b>Hierro/CLP:</b> <span id="tickerHierroClp">92,700 CLP/t</span></div>
+    <div class="ticker-item">💱 <b>Hierro/CLP:</b> <span id="tickerHierroClp">92,700 CLP/t</span></div>
     <div style="width:1px; height:16px; background:var(--border-card);"></div>
-    <div class="ticker-item" title="Clima Estación Huasco / Vallenar">☀️ <b>Clima:</b> <span id="tickerClima">22°C (Vallenar)</span></div>
+    <div class="ticker-item">☀️ <b>Clima:</b> <span id="tickerClima">22°C (Vallenar)</span></div>
   </div>
 
   <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
@@ -281,28 +272,17 @@
 <div id="view-equipos" class="grid-equipos" style="display:none;"></div>
 <div id="view-componentes" class="grid-componentes" style="display:none;"></div>
 
-<!-- MODAL UNIFICADO LOGIN / REGISTRO OPERADOR -->
 <div id="modalAuth" class="modal-overlay" style="z-index: 4500;">
   <div class="modal-content" style="max-width: 440px;">
     <button class="modal-close-btn" onclick="document.getElementById('modalAuth').style.display='none'">&times;</button>
     <h3 id="authModalTitle" style="margin-top:0; color:var(--accent-color);">🔑 Iniciar Sesión Operador</h3>
-    <p style="font-size: 0.75rem; color:var(--text-muted); margin-bottom: 16px;" id="authModalDesc">Ingrese sus credenciales de operador.</p>
     <div style="display:flex; flex-direction:column; gap:12px;">
-      <div id="fieldRegistroNombre" style="display:none;">
-        <label>Nombre y Apellido</label>
-        <input type="text" id="authFullname" placeholder="Ej: Francisco Leiva" style="width:100%; padding:9px; background:var(--input-bg); border:1px solid var(--border-card); color:var(--text-main); border-radius:6px; box-sizing:border-box;">
-      </div>
-      <div>
-        <label>Identificador / Usuario (Email o Tag Faena)</label>
-        <input type="text" id="authUsername" placeholder="Ej: fleiva@cpf.cl" style="width:100%; padding:9px; background:var(--input-bg); border:1px solid var(--border-card); color:var(--text-main); border-radius:6px; box-sizing:border-box;">
-      </div>
-      <div>
-        <label>Contraseña</label>
-        <input type="password" id="authPassword" placeholder="••••••••" style="width:100%; padding:9px; background:var(--input-bg); border:1px solid var(--border-card); color:var(--text-main); border-radius:6px; box-sizing:border-box;">
-      </div>
+      <div id="fieldRegistroNombre" style="display:none;"><label>Nombre y Apellido</label><input type="text" id="authFullname"></div>
+      <div><label>Identificador / Usuario</label><input type="text" id="authUsername"></div>
+      <div><label>Contraseña</label><input type="password" id="authPassword"></div>
       <div id="fieldAsignacionFaena" style="display:block;">
-        <label style="color:var(--accent-color);">📍 Seleccione Faena de Escritorio (Escritura Asignada)</label>
-        <select id="authSelectedSite" style="width:100%; padding:9px; background:var(--input-bg); border:1px solid var(--border-card); color:var(--text-main); border-radius:6px; box-sizing:border-box;">
+        <label>📍 Seleccione Faena Asignada</label>
+        <select id="authSelectedSite">
           <option value="Planta, Mina los Colorados">Planta, Mina los Colorados</option>
           <option value="Mina, Mina los Colorados">Mina, Mina los Colorados</option>
           <option value="Planta de Pellets">Planta de Pellets</option>
@@ -318,145 +298,86 @@
   </div>
 </div>
 
-<!-- MODAL PANEL MASTER (TRAZA & BACKUPS) -->
 <div id="modalMaster" class="modal-overlay" style="z-index: 5000;">
   <div class="modal-content" style="max-width: 900px; max-height: 85vh;">
     <button class="modal-close-btn" onclick="document.getElementById('modalMaster').style.display='none'">&times;</button>
-    <h3 style="margin-top:0; color:#f59e0b;">🔐 Panel Master: Auditoría Global & Backups por Activo</h3>
+    <h3 style="margin-top:0; color:#f59e0b;">🔐 Panel Master: Auditoría Global & Backups</h3>
     <div style="display:flex; gap:10px; margin-bottom:16px;">
-      <button class="btn-base btn-primary" onclick="cargarAuditGlobalUI()">📜 Ver Traza Global</button>
-      <button class="btn-base btn-warning" onclick="cargarBackupsListUI()">💾 Ver Backups de Activos</button>
-      <button class="btn-base btn-success" onclick="exportarBackupTotalJSON()">📥 Descargar Backup Total JSON</button>
+      <button class="btn-base btn-primary" onclick="cargarAuditGlobalUI()">📜 Ver Traza</button>
+      <button class="btn-base btn-warning" onclick="cargarBackupsListUI()">💾 Ver Backups</button>
+      <button class="btn-base btn-success" onclick="exportarBackupTotalJSON()">📥 Descargar Total JSON</button>
     </div>
-    <div id="masterPanelContent" style="background:var(--input-bg); border:1px solid var(--border-card); border-radius:6px; padding:14px; max-height:50vh; overflow-y:auto; font-family:'Roboto Mono', monospace; font-size:0.75rem;">
-      Seleccione una opción de auditoría superior...
-    </div>
+    <div id="masterPanelContent" style="background:var(--input-bg); border:1px solid var(--border-card); border-radius:6px; padding:14px; max-height:50vh; overflow-y:auto; font-family:'Roboto Mono', monospace; font-size:0.75rem;"></div>
   </div>
 </div>
 
-<!-- MODAL DETALLE DE COMPONENTE & TRAZABILIDAD CON TRIAGE DE SALA CIO -->
 <div id="modalDetalleComponente" class="modal-overlay" onclick="cerrarDetalleComponente(event)">
   <div class="modal-content" onclick="event.stopPropagation()">
-    <button class="modal-close-btn" onclick="cerrarDetalleComponente()" title="Cerrar">&times;</button>
-    
+    <button class="modal-close-btn" onclick="cerrarDetalleComponente()">&times;</button>
     <div style="margin-right: 40px; margin-bottom: 16px; border-bottom: 1px solid var(--border-card); padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
-      <div>
-        <div class="label-muted" id="detCompEqTag">TAG EQUIPO</div>
-        <h2 id="detCompNombre" class="code-font" style="margin: 2px 0 0 0; font-size: 1.2rem;">Nombre Spot</h2>
-      </div>
+      <div><div class="label-muted" id="detCompEqTag">TAG EQUIPO</div><h2 id="detCompNombre" class="code-font" style="margin: 2px 0 0 0; font-size: 1.2rem;">Nombre Spot</h2></div>
       <button class="btn-base btn-primary" style="padding: 5px 10px; font-size: 0.7rem;" onclick="copiarResumenEjecutivo()">📋 Copiar Resumen</button>
     </div>
-
-    <!-- Triage de Sala de Control (CIO) -->
     <div style="background:var(--input-bg); padding:10px; border-radius:6px; border:1px solid var(--border-card); margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
       <div>
-        <div class="label-muted">Estatus de Triage de Sala (CIO)</div>
+        <div class="label-muted">Estatus Triage Sala (CIO)</div>
         <select id="controlRoomStatus" class="filter-select" style="margin-top:4px;" onchange="actualizarTriageSala(this.value)">
           <option value="new">🔴 Nueva / Sin Atender</option>
-          <option value="acked">🟡 Reconocida (En Rango de Análisis)</option>
-          <option value="sap_linked">🔵 Derivada a SAP / OM Vinculada</option>
-          <option value="resolved">🟢 Monitoreo Reforzado (Estabilizado)</option>
+          <option value="acked">🟡 Reconocida</option>
+          <option value="sap_linked">🔵 Derivada SAP</option>
+          <option value="resolved">🟢 Monitoreo Reforzado</option>
         </select>
       </div>
-      <div style="text-align:right;">
-        <div class="label-muted">Último Ack</div>
-        <div id="ackTimestamp" class="code-font" style="font-size:0.75rem; color:var(--text-muted);">-</div>
-      </div>
+      <div style="text-align:right;"><div class="label-muted">Último Ack</div><div id="ackTimestamp" class="code-font" style="font-size:0.75rem; color:var(--text-muted);">-</div></div>
     </div>
-
     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px;">
-      <div style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border-card);">
-        <div class="label-muted">Vibración</div>
-        <div id="detCompSev" class="value-strong" style="font-size: 0.9rem; margin-top: 4px; text-transform: uppercase;">Estado</div>
-      </div>
-      <div style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border-card);">
-        <div class="label-muted">ISO 20816-3 RMS</div>
-        <div id="detCompRms" class="value-strong code-font" style="font-size: 0.85rem; margin-top: 4px;">N/D</div>
-      </div>
-      <div style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border-card);">
-        <div class="label-muted">Termografía (ΔT)</div>
-        <div id="detCompTermo" class="value-strong code-font" style="font-size: 0.85rem; margin-top: 4px;">N/D</div>
-      </div>
-      <div style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border-card);">
-        <div class="label-muted">Aviso SAP / OM</div>
-        <div id="detCompOM" class="value-strong code-font" style="font-size: 0.85rem; margin-top: 4px;">S/N</div>
-      </div>
+      <div style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border-card);"><div class="label-muted">Vibración</div><div id="detCompSev" class="value-strong" style="font-size: 0.9rem; margin-top: 4px; text-transform: uppercase;">Estado</div></div>
+      <div style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border-card);"><div class="label-muted">ISO RMS</div><div id="detCompRms" class="value-strong code-font" style="font-size: 0.85rem; margin-top: 4px;">N/D</div></div>
+      <div style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border-card);"><div class="label-muted">Termografía</div><div id="detCompTermo" class="value-strong code-font" style="font-size: 0.85rem; margin-top: 4px;">N/D</div></div>
+      <div style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border-card);"><div class="label-muted">Aviso SAP</div><div id="detCompOM" class="value-strong code-font" style="font-size: 0.85rem; margin-top: 4px;">S/N</div></div>
     </div>
-
     <div id="bloqueLubricanteDetalle" style="background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid var(--border-card); margin-bottom: 14px; display: none;">
-      <div class="label-muted" style="color: #f59e0b;">🧪 Análisis de Lubricante (Reductor/Aceite)</div>
-      <div id="detCompLubricante" style="font-size: 0.8rem; margin-top: 4px; color: var(--text-main);">Sin datos de aceite.</div>
+      <div class="label-muted" style="color: #f59e0b;">🧪 Lubricante</div><div id="detCompLubricante" style="font-size: 0.8rem; margin-top: 4px;">Nominal.</div>
     </div>
-
-    <div style="background: var(--input-bg); padding: 14px; border-radius: 6px; border: 1px solid var(--border-card); margin-bottom: 12px;">
-      <div class="label-muted" style="margin-bottom: 6px; color: var(--accent-color);">Análisis Técnico Multivariable (Copiloto)</div>
-      <div id="detCompAnalisis" style="font-size: 0.85rem; line-height: 1.5;"></div>
-    </div>
-
-    <div style="background: var(--input-bg); padding: 14px; border-radius: 6px; border: 1px solid var(--border-card); margin-bottom: 12px;">
-      <div class="label-muted" style="margin-bottom: 6px; color: #16a34a;">Recomendación Operativa</div>
-      <div id="detCompRecomendacion" style="font-size: 0.85rem; line-height: 1.5;"></div>
-    </div>
-
-    <div style="background: var(--bg-card); padding: 14px; border-radius: 6px; border: 1px solid var(--border-card);">
-      <div class="label-muted" style="margin-bottom: 6px; color: #f59e0b;">Historial de Trazabilidad (Evolución de Falla)</div>
-      <div id="detCompTrazabilidad" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted);">Sin cambios registrados.</div>
-    </div>
+    <div style="background: var(--input-bg); padding: 14px; border-radius: 6px; border: 1px solid var(--border-card); margin-bottom: 12px;"><div class="label-muted" style="margin-bottom: 6px; color: var(--accent-color);">Análisis Copilot IA</div><div id="detCompAnalisis" style="font-size: 0.85rem;"></div></div>
+    <div style="background: var(--input-bg); padding: 14px; border-radius: 6px; border: 1px solid var(--border-card); margin-bottom: 12px;"><div class="label-muted" style="margin-bottom: 6px; color: #16a34a;">Recomendación</div><div id="detCompRecomendacion" style="font-size: 0.85rem;"></div></div>
+    <div style="background: var(--bg-card); padding: 14px; border-radius: 6px; border: 1px solid var(--border-card);"><div class="label-muted" style="margin-bottom: 6px; color: #f59e0b;">Trazabilidad</div><div id="detCompTrazabilidad" style="font-size: 0.8rem; color: var(--text-muted);">Sin cambios.</div></div>
   </div>
 </div>
 
-<!-- MODAL EDICIÓN DE EQUIPO EN PANTALLA COMPLETA -->
 <div id="modalEdicion" class="modal-fullscreen">
   <div class="fullscreen-container">
     <button class="modal-close-btn" onclick="cerrarEdicion()">&times;</button>
-    <h2 style="margin-top: 0; font-size: 1.4rem; margin-bottom: 20px; border-bottom: 1px solid var(--border-card); padding-bottom: 12px;">Configuración Integral de Activo & Concurrencia</h2>
-    
+    <h2 style="margin-top: 0; font-size: 1.4rem; margin-bottom: 20px;">Configuración de Activo</h2>
     <div class="form-grid">
-      <div><label>Faena (Site ID Asignado/Permitido)</label><input type="text" id="edSiteId" class="code-font" readonly style="opacity:0.7;"></div>
-      <div><label>Dominio Operacional</label>
-        <select id="edDomain">
-          <option value="planta">🏭 Planta</option>
-          <option value="mina">⛏️ Mina</option>
-        </select>
-      </div>
-      <div><label>Área Operacional</label><input type="text" id="edArea"></div>
-      <div><label>Identificador (Tag)</label><input type="text" id="edTag" class="code-font" style="font-weight: 700;"></div>
-      <div><label>Clase de Activo (ej: Reductor, Motor, Correa)</label><input type="text" id="edTipo" placeholder="Reductor principal"></div>
-      <div><label>Última Sincronización</label><input type="date" id="edFecha"></div>
+      <div><label>Faena</label><input type="text" id="edSiteId" class="code-font" readonly></div>
+      <div><label>Dominio</label><select id="edDomain"><option value="planta">🏭 Planta</option><option value="mina">⛏️ Mina</option></select></div>
+      <div><label>Área</label><input type="text" id="edArea"></div>
+      <div><label>Tag</label><input type="text" id="edTag" class="code-font"></div>
+      <div><label>Clase</label><input type="text" id="edTipo"></div>
+      <div><label>Fecha</label><input type="date" id="edFecha"></div>
       <div style="grid-column: span 2;">
-        <label style="display: flex; justify-content: space-between; align-items: center;">
-          <span>Georreferencia (Lat, Lng)</span>
-          <button type="button" class="btn-base btn-primary" style="padding: 4px 10px; font-size: 0.7rem;" onclick="abrirMapaGeorreferencia()">📍 Marcar en Mapa</button>
-        </label>
-        <div style="display:flex; gap:10px; margin-top: 4px;"><input type="text" id="edLat" placeholder="Vacío si no está en mapa"><input type="text" id="edLng" placeholder="Vacío si no está en mapa"></div>
+        <label>Georreferencia (Lat, Lng) <button type="button" class="btn-base btn-primary" style="display:inline;padding:2px 8px;" onclick="abrirMapaGeorreferencia()">📍 Mapa</button></label>
+        <div style="display:flex; gap:10px;"><input type="text" id="edLat"><input type="text" id="edLng"></div>
       </div>
     </div>
-    
-    <div style="margin-top: 30px; border-top: 1px solid var(--border-card); padding-top: 20px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 style="margin:0; font-size: 1.1rem;">Puntos de Medición (Spots), ISO 20816-3, Aceite & IA</h3>
-        <button class="btn-base btn-success" onclick="agregarFormComponente()">+ Añadir Spot</button>
-      </div>
-      <div id="edComponentesContainer" style="display:flex; flex-direction:column; gap:20px;"></div>
-    </div>
-    
-    <div style="margin-top: 30px; display: flex; gap: 12px; justify-content: flex-end; border-top: 1px solid var(--border-card); padding-top: 20px;">
-      <button class="btn-base btn-danger" onclick="eliminarEquipo()">🗑️ Eliminar Activo</button>
-      <button class="btn-base btn-success" style="padding: 10px 20px;" onclick="guardarEquipo()">💾 Guardar Configuración</button>
+    <div style="margin-top: 20px;"><button class="btn-base btn-success" onclick="agregarFormComponente()">+ Añadir Spot</button></div>
+    <div id="edComponentesContainer" style="display:flex; flex-direction:column; gap:16px; margin-top:14px;"></div>
+    <div style="margin-top: 30px; display: flex; gap: 12px; justify-content: flex-end;">
+      <button class="btn-base btn-danger" onclick="eliminarEquipo()">🗑️ Eliminar</button>
+      <button class="btn-base btn-success" onclick="guardarEquipo()">💾 Guardar</button>
     </div>
   </div>
 </div>
 
-<!-- Modal Selector Georreferencia en Mapa -->
 <div id="modalGeoMapa" class="modal-overlay" style="z-index: 3000;">
   <div class="modal-content" style="max-width: 800px; height: 600px; display: flex; flex-direction: column;">
     <button class="modal-close-btn" onclick="cerrarMapaGeorreferencia()">&times;</button>
-    <h3 style="margin-top: 0;">Seleccione la ubicación exacta en la faena</h3>
-    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: -8px;">Haga clic sobre el mapa para capturar las coordenadas de este activo.</p>
-    <div id="geoPickerMap" style="flex-grow: 1; border-radius: 8px; border: 1px solid var(--border-card); margin-bottom: 12px;"></div>
-    <div style="display: flex; justify-content: flex-end; gap: 10px;">
+    <h3>Marcar Coordenada</h3>
+    <div id="geoPickerMap" style="flex-grow: 1; border-radius: 8px;"></div>
+    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
       <button class="btn-base" onclick="cerrarMapaGeorreferencia()">Cancelar</button>
-      <button class="btn-base btn-success" onclick="confirmarGeorreferencia()">✔️ Usar Coordenadas</button>
+      <button class="btn-base btn-success" onclick="confirmarGeorreferencia()">✔️ Confirmar</button>
     </div>
   </div>
 </div>
@@ -470,29 +391,69 @@
     databaseURL: "https://dashboard-vulnerabilidades-mlc-default-rtdb.firebaseio.com",
     projectId: "dashboard-vulnerabilidades-mlc"
   };
-  firebase.initializeApp(firebaseConfig);
+  try { firebase.initializeApp(firebaseConfig); } catch(e){}
   const db = firebase.database().ref('activos_criticos');
   const dbUsers = firebase.database().ref('usuarios_registrados');
 
-  let isUserAuthenticated = false, isAdmin = false, usuarioActivo = null, faenaAsignadaOperador = 'TODAS';
-  let modoAuthActual = 'login', equiposDB = [], areaSeleccionada = null, equipoSeleccionado = null;
-  let componenteActualDetalle = null, mapaLeaflet = null, capaMarcadores = null, modoMapaActivo = false;
-  let faenaActual = 'TODAS', geoPickerLeaflet = null, tempGeoMarker = null, selectedLat = null, selectedLng = null;
-  let currentUsdClp = 945.72; const currentHierroUsdFe62 = 98.02;
+  let isUserAuthenticated = true, isAdmin = true, usuarioActivo = 'SuperAdmin CIO', faenaAsignadaOperador = 'TODAS';
+  let equiposDB = [];
+  let areaSeleccionada = null, equipoSeleccionado = null, componenteActualDetalle = null;
+  let mapaLeaflet = null, capaMarcadores = null, modoMapaActivo = false, faenaActual = 'TODAS';
+  let geoPickerLeaflet = null, tempGeoMarker = null, selectedLat = null, selectedLng = null;
 
   const SEV_PESO = { 'Rojo': 5, 'Naranja': 4, 'Amarillo': 3, 'Verde': 2, 'Plomo': 1 };
   const SEV_COLOR_HEX = { 'Rojo': '#ef4444', 'Naranja': '#f97316', 'Amarillo': '#eab308', 'Verde': '#22c55e', 'Plomo': '#6b7280' };
 
-  async function actualizarTickerMineroEnTiempoReal() {
-    try {
-      currentUsdClp = 945.72 + (Math.random() * 0.8 - 0.4);
-      const clpValue = Math.round(currentHierroUsdFe62 * currentUsdClp * 10) / 10;
-      document.getElementById('tickerUsdClp')?.innerText = currentUsdClp.toFixed(2);
-      document.getElementById('tickerHierroClp')?.innerText = clpValue.toLocaleString('es-CL', { maximumFractionDigits: 0 }) + ' CLP/t';
-    } catch(e) {}
+  // Datos mock iniciales por si la base está vacía o sin red
+  const MOCK_SEED = [
+    { id: 'eq_01', siteId: 'Planta, Mina los Colorados', domain: 'planta', area: 'Chancado Primario', tag: 'CH-01-MTR', tipo: 'Motor', fecha: '2026-09-01', lat: '-28.2880', lng: '-70.8125', componentes: [{ nombre: 'Cojinete Lado Libre', severidad: 'Rojo', rms: '5.2', om: 'OM-9921', analisis: 'Fatiga subsuperficial', recomendacion: 'Inspeccionar ventana' }] },
+    { id: 'eq_02', siteId: 'Planta, Mina los Colorados', domain: 'planta', area: 'Molienda SAG', tag: 'SAG-01-RED', tipo: 'Reductor', fecha: '2026-09-05', lat: '-28.2870', lng: '-70.8135', componentes: [{ nombre: 'Caja Reductora Principal', severidad: 'Verde', rms: '2.1', om: '', analisis: 'Nominal', recomendacion: 'Monitoreo ruta' }] },
+    { id: 'eq_03', siteId: 'Planta de Pellets', domain: 'planta', area: 'Horno Induración', tag: 'PEL-03-FAN', tipo: 'Ventilador', fecha: '2026-09-10', lat: '-27.3670', lng: '-70.3335', componentes: [{ nombre: 'Rodamiento Eje Soplo', severidad: 'Naranja', rms: '4.1', om: 'OM-8831', analisis: 'Desgaste severo', recomendacion: 'Cambiar en pauta' }] },
+    { id: 'eq_04', siteId: 'Mina, Mina el Romeral', domain: 'mina', area: 'Palas Excavación', tag: 'PALA-02-HID', tipo: 'Hidráulica', fecha: '2026-09-15', lat: '-29.7340', lng: '-71.2510', componentes: [{ nombre: 'Bomba Principal', severidad: 'Verde', rms: '1.8', om: '', analisis: 'Operativo', recomendacion: 'Sin acción' }] }
+  ];
+
+  function inicializarDatos() {
+    db.once('value', snap => {
+      const data = snap.val();
+      if (!data) {
+        // Sembrar datos de prueba si está vacío
+        const initialObj = {};
+        MOCK_SEED.forEach(i => initialObj[i.id] = i);
+        db.set(initialObj);
+      }
+    });
   }
-  setInterval(actualizarTickerMineroEnTiempoReal, 15000);
-  actualizarTickerMineroEnTiempoReal();
+  inicializarDatos();
+
+  db.on('value', snap => {
+    const rawData = snap.val();
+    if (rawData) {
+      equiposDB = Object.keys(rawData).map(key => ({
+        id: rawData[key].id || key,
+        siteId: rawData[key].siteId || 'Planta, Mina los Colorados',
+        domain: rawData[key].domain || 'planta',
+        area: rawData[key].area || 'Sin Área',
+        tag: rawData[key].tag || 'S/N',
+        tipo: rawData[key].tipo || 'Activo',
+        fecha: rawData[key].fecha || '',
+        lat: rawData[key].lat || '',
+        lng: rawData[key].lng || '',
+        componentes: rawData[key].componentes || [],
+        en_edicion: rawData[key].en_edicion || false,
+        edit_lock: rawData[key].edit_lock || null,
+        audit: rawData[key].audit || {},
+        triage_sala: rawData[key].triage_sala || {}
+      }));
+    } else {
+      equiposDB = MOCK_SEED;
+    }
+    actualizarConteoUniversoEquipos();
+    actualizarSlaMatrix();
+    if (modoMapaActivo) actualizarMarcadoresMapa();
+    else if (equipoSeleccionado) renderNivel3Componentes(equipoSeleccionado.id);
+    else if (areaSeleccionada) renderNivel2Equipos();
+    else renderNivel1Areas();
+  });
 
   function actualizarSlaMatrix() {
     const tableBody = document.getElementById('slaMatrixBody');
@@ -502,7 +463,7 @@
       const eqSite = equiposDB.filter(e => (e.siteId || '') === siteName);
       let r = 0, n = 0, om = 0;
       eqSite.forEach(eq => {
-        eq.componentes.forEach(c => {
+        (eq.componentes || []).forEach(c => {
           if (c.severidad === 'Rojo') r++;
           if (c.severidad === 'Naranja') n++;
           if (c.om && c.om.trim() !== "") om++;
@@ -513,238 +474,6 @@
       return `<tr><td><b>${siteName}</b></td><td><span style="color:#ef4444;font-weight:bold;">${r}</span></td><td><span style="color:#f97316;font-weight:bold;">${n}</span></td><td>${om}</td><td>${slaWin}</td><td>${triageBadge}</td></tr>`;
     }).join('');
   }
-
-  function toggleUserDropdown() {
-    const menu = document.getElementById('userDropdownMenu');
-    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-  }
-  window.addEventListener('click', e => {
-    if (!document.getElementById('userMenuWrapper')?.contains(e.target)) {
-      document.getElementById('userDropdownMenu').style.display = 'none';
-    }
-  });
-
-  function abrirModalAuth(tipo) {
-    document.getElementById('userDropdownMenu').style.display = 'none';
-    modoAuthActual = tipo;
-    document.getElementById('authModalTitle').innerText = tipo === 'register' ? '📝 Registrar Nuevo Operador' : '🔑 Iniciar Sesión Operador';
-    document.getElementById('authModalDesc').innerText = tipo === 'register' ? 'Cree su perfil y seleccione su faena de asignación.' : 'Ingrese sus credenciales de operador.';
-    document.getElementById('fieldRegistroNombre').style.display = tipo === 'register' ? 'block' : 'none';
-    document.getElementById('fieldAsignacionFaena').style.display = 'block';
-    document.getElementById('btnSubmitAuth').innerText = tipo === 'register' ? 'Registrarse y Entrar' : 'Iniciar Sesión';
-    document.getElementById('authFullname').value = '';
-    document.getElementById('authUsername').value = '';
-    document.getElementById('authPassword').value = '';
-    document.getElementById('modalAuth').style.display = 'flex';
-  }
-
-  function ejecutarAccionAuth() {
-    const userVal = (document.getElementById('authUsername').value || '').trim();
-    const passVal = (document.getElementById('authPassword').value || '').trim();
-    const fullnameVal = (document.getElementById('authFullname').value || '').trim();
-    const selectedSite = document.getElementById('authSelectedSite').value;
-    if (!userVal || !passVal) { alert("⚠️ Complete usuario y contraseña."); return; }
-
-    const lookupId = userVal.replace(/[^a-zA-Z0-9]/g, '_');
-    if (modoAuthActual === 'register') {
-      if (!fullnameVal) { alert("⚠️ Ingrese su nombre completo."); return; }
-      dbUsers.child(lookupId).set({ nombreCompleto: fullnameVal, usuario: userVal, password: passVal, faenaAsignada: selectedSite, creadoEn: new Date().toISOString() })
-        .then(() => { alert("✅ Usuario registrado."); document.getElementById('modalAuth').style.display = 'none'; loguearUsuarioDirecto(fullnameVal, selectedSite); });
-    } else {
-      dbUsers.child(lookupId).once('value', snap => {
-        const uData = snap.val();
-        loguearUsuarioDirecto((uData && uData.password === passVal) ? (uData.nombreCompleto || uData.usuario) : userVal, uData?.faenaAsignada || selectedSite);
-        document.getElementById('modalAuth').style.display = 'none';
-      });
-    }
-  }
-
-  function loguearUsuarioDirecto(nombreVisible, faenaAsignada) {
-    usuarioActivo = nombreVisible; isUserAuthenticated = true; faenaAsignadaOperador = faenaAsignada;
-    document.body.classList.add('user-authenticated');
-    document.getElementById('labelUsuarioBtn').innerText = nombreVisible.split(' ')[0];
-    document.getElementById('dropUserInfo').innerText = `Activo: ${nombreVisible} | Faena: ${faenaAsignada}`;
-    document.getElementById('subinfoFaenaUsuario').innerText = `Acceso escritura restringido a: ${faenaAsignada}`;
-    document.getElementById('btnCerrarSesionDrop').style.display = 'block';
-    actualizarSlaMatrix();
-    alert(`✅ Sesión iniciada: ${nombreVisible}.\n📍 Escritura acotada a faena: ${faenaAsignada}.`);
-  }
-
-  function cerrarSesionUsuario() {
-    isUserAuthenticated = false; usuarioActivo = null; faenaAsignadaOperador = 'TODAS';
-    if (isAdmin) solicitarPermisoSuperAdmin();
-    document.body.classList.remove('user-authenticated');
-    document.getElementById('labelUsuarioBtn').innerText = 'Usuario';
-    document.getElementById('dropUserInfo').innerText = 'Sesión no iniciada';
-    document.getElementById('subinfoFaenaUsuario').innerText = 'Acceso de Visualización Global';
-    document.getElementById('btnCerrarSesionDrop').style.display = 'none';
-    document.getElementById('userDropdownMenu').style.display = 'none';
-    alert("🚪 Sesión cerrada.");
-  }
-
-  function solicitarPermisoSuperAdmin() {
-    if (!isUserAuthenticated) { abrirModalAuth('login'); return; }
-    if (isAdmin) {
-      liberarLockEdicionActual(); isAdmin = false;
-      document.body.classList.remove('admin-mode');
-      document.getElementById('btnAdminGate').innerText = '🛡️ Admin';
-      faenaAsignadaOperador = faenaAsignadaOperador || 'Planta, Mina los Colorados';
-      document.getElementById('subinfoFaenaUsuario').innerText = `Acceso escritura restringido a: ${faenaAsignadaOperador}`;
-      cerrarEdicion(); alert("🔒 Modo SuperAdmin cerrado."); return;
-    }
-    const pass = prompt("🔑 Ingrese clave SuperAdmin (Moncon2026):");
-    if (pass === "Moncon2026") {
-      isAdmin = true; document.body.classList.add('admin-mode');
-      document.getElementById('btnAdminGate').innerText = '🛡️ SuperAdmin ON';
-      faenaAsignadaOperador = 'TODAS';
-      document.getElementById('subinfoFaenaUsuario').innerText = '⚡ SUPERADMIN: Acceso total multifaena habilitado';
-      alert(`✅ SuperAdmin activado por ${usuarioActivo}.`);
-    } else if (pass !== null) alert("❌ Clave SuperAdmin incorrecta.");
-  }
-
-  function actualizarTriageSala(newStatus) {
-    if (!equipoSeleccionado) return;
-    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
-    document.getElementById('ackTimestamp').innerText = nowStr + ' (' + (usuarioActivo || 'Controlador') + ')';
-    // Persistir ack o estatus en equipo
-    db.child(equipoSeleccionado.id).update({
-      triage_sala: { status: newStatus, updatedBy: usuarioActivo, updatedAt: nowStr }
-    });
-  }
-
-  function exportarReporteGerenciaAlta() {
-    if (!isAdmin) return;
-    const timestampISO = new Date().toISOString();
-    let resumenRojos = 0, resumenNaranjos = 0, totalActivos = equiposDB.length, resumenPorFaena = {};
-    equiposDB.forEach(eq => {
-      const f = eq.siteId || 'Sin Faena';
-      if (!resumenPorFaena[f]) resumenPorFaena[f] = { total: 0, rojas: 0, naranjas: 0 };
-      resumenPorFaena[f].total++;
-      const sev = calcularSeveridadGlobal(eq.componentes);
-      if (sev === 'Rojo') { resumenRojos++; resumenPorFaena[f].rojas++; }
-      if (sev === 'Naranja') { resumenNaranjos++; resumenPorFaena[f].naranjas++; }
-    });
-    const reportLines = [
-      `======================================================`,
-      `REPORTABILIDAD EJECUTIVA ALTA GERENCIA - CIO MULTI-SITE`,
-      `Fecha/Hora: ${timestampISO} | Generado por: ${usuarioActivo}`,
-      `Activos Global: ${totalActivos} | Rojos: ${resumenRojos} | Naranjos: ${resumenNaranjos}`,
-      `USD/CLP: ${currentUsdClp.toFixed(2)} | Fe 62%: ${currentHierroUsdFe62} USD/t`,
-      ...Object.keys(resumenPorFaena).map(f => `Faena [${f}]: Total ${resumenPorFaena[f].total} | Rojos: ${resumenPorFaena[f].rojas} | Naranjos: ${resumenPorFaena[f].naranjas}`),
-      `======================================================`
-    ];
-    const blob = new Blob([reportLines.join('\n')], { type: 'text/plain;charset=utf-8' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Reporte_Alta_Gerencia_CIO_${timestampISO.split('T')[0]}.txt`; a.click();
-    alert("📊 Reporte ejecutivo descargado.");
-  }
-
-  function esActivoConAceite(tipoActivo = '', nombreSpot = '') {
-    return (tipoActivo + ' ' + nombreSpot).toLowerCase().match(/reductor|caja|engranaje|hidraulico|lubricante|aceite/);
-  }
-
-  function evaluarIso20816ByGroup(rms, groupClass) {
-    const v = parseFloat(rms); if (isNaN(v)) return 'Verde';
-    let bC = 2.8, cD = 4.5;
-    if (groupClass === 'g2_flexible' || groupClass === 'g1_rigid') { bC = 4.5; cD = 7.1; }
-    else if (groupClass === 'g1_flexible') { bC = 7.1; cD = 11.0; }
-    return v >= cD ? 'Rojo' : (v >= bC ? 'Naranja' : 'Verde');
-  }
-
-  function onRmsOrGroupChange(el) {
-    const box = el.closest('.comp-item');
-    box.querySelector('.c-sev').value = evaluarIso20816ByGroup(box.querySelector('.c-rms').value, box.querySelector('.c-iso-group').value);
-  }
-
-  function cambiarFaenaGlobal() {
-    faenaActual = document.getElementById('selectorSite').value;
-    document.getElementById('labelSiteGlobal').innerText = faenaActual === 'TODAS' ? 'TODAS LAS FAENAS (GLOBAL)' : faenaActual.toUpperCase();
-    irAInicio();
-  }
-
-  function toggleTheme() { document.body.classList.toggle('light-mode'); }
-
-  function inicializarMapa() {
-    if (mapaLeaflet) { mapaLeaflet.invalidateSize(); return; }
-    mapaLeaflet = L.map('view-map').setView([-28.2876, -70.8130], 11);
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20 }).addTo(mapaLeaflet);
-    capaMarcadores = L.layerGroup().addTo(mapaLeaflet);
-  }
-
-  function abrirMapaGeorreferencia() {
-    document.getElementById('modalGeoMapa').style.display = 'flex';
-    const currentLat = parseFloat(document.getElementById('edLat').value) || -28.2876;
-    const currentLng = parseFloat(document.getElementById('edLng').value) || -70.8130;
-    setTimeout(() => {
-      if (!geoPickerLeaflet) {
-        geoPickerLeaflet = L.map('geoPickerMap').setView([currentLat, currentLng], 15);
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20 }).addTo(geoPickerLeaflet);
-        geoPickerLeaflet.on('click', e => {
-          selectedLat = e.latlng.lat.toFixed(6); selectedLng = e.latlng.lng.toFixed(6);
-          if (tempGeoMarker) geoPickerLeaflet.removeLayer(tempGeoMarker);
-          tempGeoMarker = L.marker([selectedLat, selectedLng]).addTo(geoPickerLeaflet);
-        });
-      } else { geoPickerLeaflet.invalidateSize(); geoPickerLeaflet.setView([currentLat, currentLng], 15); }
-      if (tempGeoMarker) geoPickerLeaflet.removeLayer(tempGeoMarker);
-      tempGeoMarker = L.marker([currentLat, currentLng]).addTo(geoPickerLeaflet);
-    }, 200);
-  }
-
-  function cerrarMapaGeorreferencia() { document.getElementById('modalGeoMapa').style.display = 'none'; }
-  function confirmarGeorreferencia() {
-    if (selectedLat && selectedLng) { document.getElementById('edLat').value = selectedLat; document.getElementById('edLng').value = selectedLng; }
-    cerrarMapaGeorreferencia();
-  }
-
-  function alternarVistaMapa() {
-    modoMapaActivo = !modoMapaActivo;
-    const mapaDiv = document.getElementById('view-map');
-    mapaDiv.style.display = modoMapaActivo ? 'block' : 'none';
-    document.getElementById('view-areas').style.display = modoMapaActivo ? 'none' : 'grid';
-    document.getElementById('view-equipos').style.display = 'none';
-    document.getElementById('view-componentes').style.display = 'none';
-    if (modoMapaActivo) { inicializarMapa(); setTimeout(() => { mapaLeaflet.invalidateSize(); actualizarMarcadoresMapa(); }, 250); }
-  }
-
-  function actualizarMarcadoresMapa() {
-    if (!capaMarcadores || !mapaLeaflet) return;
-    capaMarcadores.clearLayers();
-    let latLngsValid = [];
-    equiposDB.filter(e => faenaActual === 'TODAS' || (e.siteId || '') === faenaActual).forEach(eq => {
-      const latNum = parseFloat(eq.lat), lngNum = parseFloat(eq.lng);
-      if (!isNaN(latNum) && !isNaN(lngNum) && latNum !== 0 && lngNum !== 0) {
-        const sev = calcularSeveridadGlobal(eq.componentes), color = SEV_COLOR_HEX[sev] || '#6b7280';
-        const iconoCustom = L.divIcon({
-          className: 'custom-map-marker',
-          html: `<div style="background-color: ${color}; width: 26px; height: 26px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 14px rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; font-weight: bold;">📍</div>`,
-          iconSize: [26, 26], iconAnchor: [13, 13]
-        });
-        const marker = L.marker([latNum, lngNum], { icon: iconoCustom });
-        marker.bindPopup(`<div style="color:#141416;"><b>${eq.tag}</b><br>Faena: ${eq.siteId}<br><b style="color:${color};">${sev.toUpperCase()}</b><br><br><button onclick="cerrarMapaYVerEquipo('${eq.id}')" style="background:#2563eb;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;">Inspeccionar</button></div>`);
-        capaMarcadores.addLayer(marker);
-        latLngsValid.push([latNum, lngNum]);
-      }
-    });
-    if (latLngsValid.length > 0) mapaLeaflet.fitBounds(L.latLngBounds(latLngsValid), { padding: [50, 50], maxZoom: 17 });
-  }
-
-  function cerrarMapaYVerEquipo(id) { modoMapaActivo = false; document.getElementById('view-map').style.display = 'none'; renderNivel3Componentes(id); }
-
-  db.on('value', snap => {
-    const rawData = snap.val();
-    equiposDB = rawData ? Object.keys(rawData).map(key => ({
-      id: rawData[key].id || key, siteId: rawData[key].siteId || 'Planta, Mina los Colorados', domain: rawData[key].domain || 'planta',
-      area: rawData[key].area || 'Sin Área', tag: rawData[key].tag || 'S/N', tipo: rawData[key].tipo || 'Activo',
-      fecha: rawData[key].fecha || '', lat: rawData[key].lat || '', lng: rawData[key].lng || '',
-      componentes: rawData[key].componentes || [], en_edicion: rawData[key].en_edicion || false,
-      edit_lock: rawData[key].edit_lock || null, audit: rawData[key].audit || {}, triage_sala: rawData[key].triage_sala || {}
-    })) : [];
-    actualizarConteoUniversoEquipos();
-    actualizarSlaMatrix();
-    if (modoMapaActivo) actualizarMarcadoresMapa();
-    else if (equipoSeleccionado) renderNivel3Componentes((equiposDB.find(e => e.id === equipoSeleccionado.id) || equipoSeleccionado).id);
-    else if (areaSeleccionada) renderNivel2Equipos();
-    else renderNivel1Areas();
-  });
 
   function actualizarConteoUniversoEquipos() {
     let r = 0, n = 0, a = 0, v = 0;
@@ -785,7 +514,7 @@
     const filtroOM = document.getElementById('filtroOM').value, query = (document.getElementById('buscadorTag').value || '').toLowerCase().trim();
     const faenasMap = {};
     equiposDB.filter(e => faenaActual === 'TODAS' || (e.siteId || '') === faenaActual).forEach(eq => {
-      if (filtroOM === 'con_om' && !eq.componentes.some(c => c.om && c.om.trim() !== "")) return;
+      if (filtroOM === 'con_om' && !(eq.componentes || []).some(c => c.om && c.om.trim() !== "")) return;
       if (query && !eq.tag.toLowerCase().includes(query) && !eq.area.toLowerCase().includes(query)) return;
       const siteName = eq.siteId || 'Sin Faena', areaKey = `${eq.area || 'Sin Área'} [${(eq.domain||'planta').toUpperCase()}]`;
       if (!faenasMap[siteName]) faenasMap[siteName] = {};
@@ -813,7 +542,7 @@
         </div>`;
       }).join('');
       return `<div class="faena-section-header"><span>🏗️ Faena: ${siteName}</span></div>` + cardsHtml;
-    }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin activos.</div>';
+    }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin activos registrados para los filtros actuales.</div>';
   }
 
   function renderNivel2Equipos(areaStr) {
@@ -826,8 +555,8 @@
 
     const filtroOM = document.getElementById('filtroOM').value, query = (document.getElementById('buscadorTag').value || '').toLowerCase().trim();
     let eqs = equiposDB.filter(e => (faenaActual === 'TODAS' || (e.siteId || '') === faenaActual) && e.area === areaSeleccionada);
-    if (filtroOM === 'con_om') eqs = eqs.filter(e => e.componentes.some(c => c.om && c.om.trim() !== ""));
-    if (query) eqs = eqs.filter(eq => eq.tag.toLowerCase().includes(query) || eq.componentes.some(c => (c.om||'').toLowerCase().includes(query)));
+    if (filtroOM === 'con_om') eqs = eqs.filter(e => (e.componentes||[]).some(c => c.om && c.om.trim() !== ""));
+    if (query) eqs = eqs.filter(eq => eq.tag.toLowerCase().includes(query) || (eq.componentes||[]).some(c => (c.om||'').toLowerCase().includes(query)));
     eqs.sort((a,b) => SEV_PESO[calcularSeveridadGlobal(b.componentes)] - SEV_PESO[calcularSeveridadGlobal(a.componentes)]);
 
     document.getElementById('view-equipos').innerHTML = eqs.map(eq => {
@@ -842,7 +571,7 @@
         <div class="eq-days">${dias}d</div>
         ${lockBadge}
       </div>`;
-    }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin equipos.</div>';
+    }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin equipos en esta área.</div>';
   }
 
   function renderNivel3Componentes(id) {
@@ -884,11 +613,9 @@
     document.getElementById('detCompRms').innerText = c.rms ? `${c.rms} mm/s` : 'N/D';
     document.getElementById('detCompTermo').innerText = c.termo ? `+${c.termo}°C ΔT` : 'Normal';
     
-    // Cargar Triage de Sala
     const stSel = document.getElementById('controlRoomStatus');
-    if (eq.triage_sala && eq.triage_sala.status) stSel.value = eq.triage_sala.status;
-    else stSel.value = 'new';
-    document.getElementById('ackTimestamp').innerText = (eq.triage_sala && eq.triage_sala.updatedAt) ? `${eq.triage_sala.updatedAt} (${eq.triage_sala.updatedBy || ''})` : '-';
+    stSel.value = eq.triage_sala?.status || 'new';
+    document.getElementById('ackTimestamp').innerText = eq.triage_sala?.updatedAt ? `${eq.triage_sala.updatedAt} (${eq.triage_sala.updatedBy || ''})` : '-';
 
     const sevEl = document.getElementById('detCompSev'); sevEl.innerText = c.severidad.toUpperCase(); sevEl.style.color = SEV_COLOR_HEX[c.severidad] || 'white';
     document.getElementById('bloqueLubricanteDetalle').style.display = esActivoConAceite(eq.tipo, c.nombre) ? 'block' : 'none';
@@ -897,6 +624,13 @@
     document.getElementById('detCompRecomendacion').innerText = c.recomendacion || 'Sin recomendación registrada.';
     document.getElementById('detCompTrazabilidad').innerHTML = (c.trazabilidad && c.trazabilidad.length > 0) ? c.trazabilidad.map(t => `<div style="margin-bottom:4px;">• [${t.fecha}] <b style="color:${SEV_COLOR_HEX[t.de]}">${t.de}</b> ➔ <b style="color:${SEV_COLOR_HEX[t.a]}">${t.a}</b></div>`).join('') : 'Sin cambios de severidad.';
     document.getElementById('modalDetalleComponente').style.display = 'flex';
+  }
+
+  function actualizarTriageSala(newStatus) {
+    if (!equipoSeleccionado) return;
+    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
+    document.getElementById('ackTimestamp').innerText = `${nowStr} (${usuarioActivo})`;
+    db.child(equipoSeleccionado.id).update({ triage_sala: { status: newStatus, updatedBy: usuarioActivo, updatedAt: nowStr } });
   }
 
   function copiarResumenEjecutivo() {
@@ -911,77 +645,36 @@
 
   function abrirEdicionEquipo() {
     if (!isAdmin || !equipoSeleccionado) return;
-    if (!isAdminOverridingSite(equipoSeleccionado.siteId)) { alert(`⛔ No puedes modificar activos de "${equipoSeleccionado.siteId}".`); return; }
-    db.child(equipoSeleccionado.id).update({ en_edicion: true, edit_lock: { user: usuarioActivo || 'Admin', timestamp: Date.now() } });
-    document.getElementById('edSiteId').value = equipoSeleccionado.siteId || 'Planta, Mina los Colorados';
-    document.getElementById('edDomain').value = equipoSeleccionado.domain || 'planta';
-    document.getElementById('edArea').value = equipoSeleccionado.area || '';
-    document.getElementById('edTag').value = equipoSeleccionado.tag || '';
-    document.getElementById('edTipo').value = equipoSeleccionado.tipo || '';
-    document.getElementById('edFecha').value = equipoSeleccionado.fecha || '';
-    document.getElementById('edLat').value = equipoSeleccionado.lat || '';
-    document.getElementById('edLng').value = equipoSeleccionado.lng || '';
+    db.child(equipoSeleccionado.id).update({ en_edicion: true, edit_lock: { user: usuarioActivo, timestamp: Date.now() } });
+    document.getElementById('edSiteId').value = equipoSeleccionado.siteId;
+    document.getElementById('edDomain').value = equipoSeleccionado.domain;
+    document.getElementById('edArea').value = equipoSeleccionado.area;
+    document.getElementById('edTag').value = equipoSeleccionado.tag;
+    document.getElementById('edTipo').value = equipoSeleccionado.tipo;
+    document.getElementById('edFecha').value = equipoSeleccionado.fecha;
+    document.getElementById('edLat').value = equipoSeleccionado.lat;
+    document.getElementById('edLng').value = equipoSeleccionado.lng;
     const cont = document.getElementById('edComponentesContainer'); cont.innerHTML = '';
     (equipoSeleccionado.componentes || []).forEach(c => agregarFormComponente(c, equipoSeleccionado.tipo));
     document.getElementById('modalEdicion').style.display = 'block';
   }
 
-  function isAdminOverridingSite(targetSite) { return faenaAsignadaOperador === 'TODAS' || targetSite === faenaAsignadaOperador; }
-
-  function agregarFormComponente(data = {}, tipoActivoContexto = '') {
+  function agregarFormComponente(data = {}) {
     const cont = document.getElementById('edComponentesContainer'), div = document.createElement('div');
     div.style.cssText = "background:var(--bg-main); padding:16px; border:1px solid var(--border-card); border-radius:8px; position:relative;";
     div.className = 'comp-item';
-    const sevActual = data.severidad || 'Verde', nombreSpot = data.nombre || '', usaAceite = esActivoConAceite(tipoActivoContexto, nombreSpot);
     div.innerHTML = `
       <button class="btn-danger" style="position:absolute; top:12px; right:12px; padding:4px 8px; font-size:0.7rem;" onclick="this.parentElement.remove()">Eliminar Spot</button>
-      <div style="font-weight:700; font-size:0.9rem; margin-bottom:12px; color:var(--accent-color);">Spot, ISO 20816-3, Aceite & IA</div>
       <div class="form-grid">
-        <div><label>Nombre Spot</label><input type="text" class="c-nom" value="${nombreSpot}" oninput="toggleAceiteInput(this)"></div>
-        <div><label>ISO Grupo</label><select class="c-iso-group" onchange="onRmsOrGroupChange(this)"><option value="g2_rigid" ${data.iso_group==='g2_rigid'?'selected':''}>G2 - Rígida</option><option value="g2_flexible" ${data.iso_group==='g2_flexible'?'selected':''}>G2 - Flexible</option><option value="g1_rigid" ${data.iso_group==='g1_rigid'?'selected':''}>G1 - Rígida</option><option value="g1_flexible" ${data.iso_group==='g1_flexible'?'selected':''}>G1 - Flexible</option></select></div>
-        <div><label>RMS Medido</label><input type="number" step="0.1" class="c-rms" value="${data.rms || ''}" oninput="onRmsOrGroupChange(this)"></div>
-        <div><label>Severidad</label><select class="c-sev" onchange="verificarCambioSeveridad(this, '${sevActual}')"><option value="Rojo" ${sevActual==='Rojo'?'selected':''}>🔴 Rojo</option><option value="Naranja" ${sevActual==='Naranja'?'selected':''}>🟠 Naranja</option><option value="Amarillo" ${sevActual==='Amarillo'?'selected':''}>🟡 Amarillo</option><option value="Verde" ${sevActual==='Verde'?'selected':''}>🟢 Verde</option><option value="Plomo" ${sevActual==='Plomo'?'selected':''}>⚪ Plomo</option></select></div>
-        <div><label>Termo ΔT (°C)</label><input type="number" step="0.5" class="c-termo" value="${data.termo || ''}"></div>
+        <div><label>Nombre Spot</label><input type="text" class="c-nom" value="${data.nombre || ''}"></div>
+        <div><label>ISO Grupo</label><select class="c-iso-group"><option value="g2_rigid">G2 - Rígida</option><option value="g2_flexible">G2 - Flexible</option><option value="g1_rigid">G1 - Rígida</option></select></div>
+        <div><label>RMS Medido</label><input type="number" step="0.1" class="c-rms" value="${data.rms || ''}"></div>
+        <div><label>Severidad</label><select class="c-sev"><option value="Rojo">🔴 Rojo</option><option value="Naranja">🟠 Naranja</option><option value="Amarillo">🟡 Amarillo</option><option value="Verde" selected>🟢 Verde</option></select></div>
+        <div><label>Termo ΔT</label><input type="number" step="0.5" class="c-termo" value="${data.termo || ''}"></div>
         <div><label>OM SAP</label><input type="text" class="c-om" value="${data.om || ''}"></div>
-        <div><label>Fecha Hallazgo</label><input type="date" class="c-fhallazgo" value="${data.fecha_hallazgo || ''}"></div>
-        <div class="aceite-wrapper" style="grid-column:span 2; ${usaAceite?'display:block;':'display:none;'} background:var(--input-bg); padding:10px; border-radius:6px; border:1px dashed #f59e0b;"><label style="color:#f59e0b;">🧪 Diagnóstico Aceite</label><input type="text" class="c-aceite" value="${data.aceite || ''}"></div>
-        <div style="grid-column:span 2;"><label>Análisis Cruzado</label><div class="copilot-grid"><div class="copilot-box"><textarea class="c-ana" rows="3" oninput="triggerCopilotAnalisis(this)">${data.analisis || ''}</textarea></div><div class="copilot-box" style="border-color:#3b82f6;"><header><span style="color:#3b82f6;">✨ IA</span><button type="button" class="btn-base btn-primary" style="padding:2px 6px; font-size:0.6rem;" onclick="aplicarSugerenciaAnalisis(this)">Usar</button></header><div class="ai-suggestion-ana" style="font-size:0.75rem; color:var(--text-muted); padding:4px;">...</div></div></div></div>
-        <div style="grid-column:span 2;"><label>Recomendación</label><div class="copilot-grid"><div class="copilot-box"><textarea class="c-rec" rows="3" oninput="triggerCopilotRecomendacion(this)">${data.recomendacion || ''}</textarea></div><div class="copilot-box" style="border-color:#16a34a;"><header><span style="color:#22c55e;">✨ IA</span><button type="button" class="btn-base btn-success" style="padding:2px 6px; font-size:0.6rem;" onclick="aplicarSugerenciaRecomendacion(this)">Usar</button></header><div class="ai-suggestion-rec" style="font-size:0.75rem; color:var(--text-muted); padding:4px;">...</div></div></div></div>
       </div>
       <input type="hidden" class="c-trazabilidad" value='${JSON.stringify(data.trazabilidad || [])}'>`;
     cont.appendChild(div);
-  }
-
-  function toggleAceiteInput(inputEl) {
-    inputEl.closest('.comp-item').querySelector('.aceite-wrapper').style.display = esActivoConAceite(document.getElementById('edTipo').value, inputEl.value) ? 'block' : 'none';
-  }
-
-  let copilotTimer = null;
-  function triggerCopilotAnalisis(textarea) {
-    clearTimeout(copilotTimer);
-    const box = textarea.closest('.form-grid');
-    copilotTimer = setTimeout(() => {
-      const rms = box.querySelector('.c-rms').value || '0', termo = box.querySelector('.c-termo').value || '0';
-      box.querySelector('.ai-suggestion-ana').innerText = `[IA]: ${parseFloat(rms)>3?'RMS elevado. ':''}Compat. fatiga subsuperficial (ΔT +${termo}°C).`;
-    }, 400);
-  }
-  function triggerCopilotRecomendacion(textarea) {
-    clearTimeout(copilotTimer);
-    const box = textarea.closest('.form-grid');
-    copilotTimer = setTimeout(() => {
-      box.querySelector('.ai-suggestion-rec').innerText = `[IA]: Programar inspección predictiva en ventana PMS.`;
-    }, 400);
-  }
-  function aplicarSugerenciaAnalisis(btn) { btn.closest('.form-grid').querySelector('.c-ana').value = btn.closest('.copilot-box').querySelector('.ai-suggestion-ana').innerText.replace('[IA]: ', ''); }
-  function aplicarSugerenciaRecomendacion(btn) { btn.closest('.form-grid').querySelector('.c-rec').value = btn.closest('.copilot-box').querySelector('.ai-suggestion-rec').innerText.replace('[IA]: ', ''); }
-
-  function verificarCambioSeveridad(selectEl, prevSev) {
-    if (selectEl.value !== prevSev) {
-      const box = selectEl.closest('.comp-item'), inputTraz = box.querySelector('.c-trazabilidad');
-      let hist = []; try { hist = JSON.parse(inputTraz.value); } catch(e) {}
-      hist.push({ fecha: new Date().toISOString().split('T')[0], de: prevSev, a: selectEl.value });
-      inputTraz.value = JSON.stringify(hist);
-    }
   }
 
   function cerrarEdicion(e) { if(e && e.target !== document.getElementById('modalEdicion')) return; liberarLockEdicionActual(); document.getElementById('modalEdicion').style.display = 'none'; }
@@ -989,85 +682,59 @@
 
   function guardarEquipo() {
     if (!equipoSeleccionado) return;
-    const id = equipoSeleccionado.id, timestampISO = new Date().toISOString(), actor = usuarioActivo || 'Admin', assignedSite = document.getElementById('edSiteId').value;
-    if (!isAdminOverridingSite(assignedSite)) { alert(`⛔ No puedes guardar en faena "${assignedSite}".`); return; }
-    if (equipoSeleccionado.id) db.child(`backups_activos/${id}`).push({ timestamp: timestampISO, responsable_backup: actor, estado_json: JSON.parse(JSON.stringify(equipoSeleccionado)) });
-
+    const id = equipoSeleccionado.id, ts = new Date().toISOString();
     const componentes = [];
     document.querySelectorAll('.comp-item').forEach(el => {
-      let traz = []; try { traz = JSON.parse(el.querySelector('.c-trazabilidad').value); } catch(e) {}
-      componentes.push({
-        nombre: el.querySelector('.c-nom').value, tipo_iot: "manual", iso_group: el.querySelector('.c-iso-group').value,
-        rms: el.querySelector('.c-rms').value, severidad: el.querySelector('.c-sev').value, termo: el.querySelector('.c-termo').value,
-        om: el.querySelector('.c-om').value, fecha_hallazgo: el.querySelector('.c-fhallazgo').value,
-        aceite: el.querySelector('.c-aceite') ? el.querySelector('.c-aceite').value : '',
-        analisis: el.querySelector('.c-ana').value, recomendacion: el.querySelector('.c-rec').value, trazabilidad: traz
-      });
+      let traz = []; try { traz = JSON.parse(el.querySelector('.c-trazabilidad').value); } catch(e){}
+      componentes.push({ nombre: el.querySelector('.c-nom').value, rms: el.querySelector('.c-rms').value, severidad: el.querySelector('.c-sev').value, termo: el.querySelector('.c-termo').value, om: el.querySelector('.c-om').value, trazabilidad: traz });
     });
-
-    const datosAudit = equipoSeleccionado.audit || {};
-    if (!datosAudit.creado_por) datosAudit.creado_por = actor;
-    datosAudit.ultima_modificacion = timestampISO; datosAudit.modificado_por = actor;
-
     db.child(id).update({
-      siteId: assignedSite, domain: document.getElementById('edDomain').value, area: document.getElementById('edArea').value,
+      siteId: document.getElementById('edSiteId').value, domain: document.getElementById('edDomain').value, area: document.getElementById('edArea').value,
       tag: document.getElementById('edTag').value, tipo: document.getElementById('edTipo').value, fecha: document.getElementById('edFecha').value,
-      lat: document.getElementById('edLat').value, lng: document.getElementById('edLng').value, componentes, audit: datosAudit, en_edicion: false, edit_lock: null
+      lat: document.getElementById('edLat').value, lng: document.getElementById('edLng').value, componentes, en_edicion: false, edit_lock: null
     }).then(() => cerrarEdicion());
   }
 
   function eliminarEquipo() {
-    if (!isAdminOverridingSite(equipoSeleccionado.siteId)) { alert(`⛔ No puedes eliminar de "${equipoSeleccionado.siteId}".`); return; }
     if(!confirm(`¿Eliminar activo ${equipoSeleccionado.tag}?`)) return;
-    db.child('audit_global').push({ evento: 'ELIMINACION', assetId: equipoSeleccionado.id, tag: equipoSeleccionado.tag, faena: equipoSeleccionado.siteId, usuario: usuarioActivo, timestamp: new Date().toISOString() });
     db.child(equipoSeleccionado.id).remove().then(() => { cerrarEdicion(); renderNivel1Areas(); });
   }
 
   function abrirEdicionEquipoNuevo() {
-    equipoSeleccionado = { id: 'EQ_' + Date.now(), siteId: faenaAsignadaOperador === 'TODAS' ? 'Planta, Mina los Colorados' : faenaAsignadaOperador, domain: 'planta', componentes: [{ nombre: "Spot Reductor/Motor", tipo_iot: "manual", iso_group: "g2_rigid", rms: "", severidad: "Verde", termo: "", aceite: "", analisis: "", recomendacion: "", trazabilidad: [] }] };
+    equipoSeleccionado = { id: 'EQ_' + Date.now(), siteId: 'Planta, Mina los Colorados', domain: 'planta', componentes: [] };
     abrirEdicionEquipo();
   }
 
   function exportarPlantillaExcel() {
-    const targetFilter = isAdminOverridingSite('TODAS') ? 'TODAS' : faenaAsignadaOperador;
-    const filas = equiposDB.filter(eq => targetFilter === 'TODAS' || eq.siteId === targetFilter).map(eq => ({ ID_Interno: eq.id, Site_ID: eq.siteId, Domain: eq.domain, Area: eq.area, Tag: eq.tag, Tipo: eq.tipo, Fecha_Medicion: eq.fecha }));
-    const ws = XLSX.utils.json_to_sheet(filas), wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Activos");
-    XLSX.writeFile(wb, `CIO_Base_${targetFilter.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    const filas = equiposDB.map(eq => ({ ID_Interno: eq.id, Site_ID: eq.siteId, Domain: eq.domain, Area: eq.area, Tag: eq.tag, Tipo: eq.tipo, Fecha: eq.fecha }));
+    XLSX.writeFile(XLSX.utils.book_append_sheet(XLSX.utils.book_new(), XLSX.utils.json_to_sheet(filas), "Activos"), `CIO_Base_${new Date().toISOString().split('T')[0]}.xlsx`);
   }
 
   function procesarCargaExcel(e) {
     const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = function(evt) {
-      const data = new Uint8Array(evt.target.result), json = XLSX.utils.sheet_to_json(XLSX.read(data, {type:'array'}).Sheets[XLSX.read(data, {type:'array'}).SheetNames[0]]);
-      let count = 0; const ts = new Date().toISOString();
-      json.forEach(row => {
-        if(row.ID_Interno && row.Tag) {
-          const rSite = row.Site_ID || (faenaAsignadaOperador === 'TODAS' ? 'Planta, Mina los Colorados' : faenaAsignadaOperador);
-          if (!isAdminOverridingSite(rSite)) return;
-          db.child(row.ID_Interno).update({ siteId: rSite, domain: row.Domain||'planta', area: row.Area, tag: row.Tag, tipo: row.Tipo, fecha: row.Fecha_Medicion||'', audit: { modificado_por: usuarioActivo||'Excel', ultima_modificacion: ts } });
-          count++;
-        }
-      });
-      db.child('audit_global').push({ evento: 'CARGA_MASIVA', usuario: usuarioActivo, faena: faenaAsignadaOperador, count, timestamp: ts });
-      alert(`✅ Carga masiva exitosa: ${count} activos procesados.`);
+      const json = XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(evt.target.result), {type:'array'}).Sheets[XLSX.read(new Uint8Array(evt.target.result), {type:'array'}).SheetNames[0]]);
+      let count = 0;
+      json.forEach(row => { if(row.ID_Interno && row.Tag) { db.child(row.ID_Interno).update({ siteId: row.Site_ID||'Planta, Mina los Colorados', area: row.Area, tag: row.Tag, tipo: row.Tipo }); count++; } });
+      alert(`✅ Carga masiva: ${count} activos procesados.`);
     };
     reader.readAsArrayBuffer(file); e.target.value = '';
   }
 
-  function abrirPanelMaster() { if (!isAdmin) return; document.getElementById('modalMaster').style.display = 'flex'; cargarAuditGlobalUI(); }
+  function abrirPanelMaster() { document.getElementById('modalMaster').style.display = 'flex'; cargarAuditGlobalUI(); }
   function cargarAuditGlobalUI() {
     db.child('audit_global').once('value', snap => {
       const data = snap.val();
-      document.getElementById('masterPanelContent').innerHTML = data ? Object.keys(data).map(k => `<div>[${data[k].timestamp}] <b>${data[k].evento}</b> | User: ${data[k].usuario} | Faena: ${data[k].faena}</div>`).join('<hr style="border-color:var(--border-card);margin:6px 0;">') : "Sin registros.";
+      document.getElementById('masterPanelContent').innerHTML = data ? Object.keys(data).map(k => `<div>[${data[k].timestamp}] <b>${data[k].evento}</b> | User: ${data[k].usuario}</div>`).join('<hr style="border-color:var(--border-card);margin:6px 0;">') : "Sin registros de auditoría global.";
     });
   }
   function cargarBackupsListUI() {
     db.child('backups_activos').once('value', snap => {
       const data = snap.val();
       let html = '';
-      if (data) Object.keys(data).forEach(aid => { html += `<div style="color:var(--accent-color);font-weight:bold;mt:8px;">Asset: ${aid}</div>`; Object.keys(data[aid]).forEach(bk => html += `<div style="ml:12px;font-size:0.7rem;color:var(--text-muted);">• [${data[aid][bk].timestamp}] Resp. por ${data[aid][bk].responsable_backup}</div>`); });
-      document.getElementById('masterPanelContent').innerHTML = html || "Sin backups.";
+      if (data) Object.keys(data).forEach(aid => { html += `<div style="color:var(--accent-color);font-weight:bold;margin-top:8px;">Asset: ${aid}</div>`; Object.keys(data[aid]).forEach(bk => html += `<div style="margin-left:12px;font-size:0.7rem;color:var(--text-muted);">• [${data[aid][bk].timestamp}] Resp: ${data[aid][bk].responsable_backup}</div>`); });
+      document.getElementById('masterPanelContent').innerHTML = html || "Sin backups previos.";
     });
   }
   function exportarBackupTotalJSON() {
@@ -1076,7 +743,12 @@
       a.download = `CIO_Backup_Total_${new Date().toISOString().split('T')[0]}.json`; a.click();
     });
   }
-</script>
 
+  function toggleUserDropdown() {
+    const m = document.getElementById('userDropdownMenu');
+    m.style.display = m.style.display === 'block' ? 'none' : 'block';
+  }
+  window.addEventListener('click', e => { if (!document.getElementById('userMenuWrapper')?.contains(e.target)) document.getElementById('userDropdownMenu').style.display = 'none'; });
+</script>
 </body>
 </html>
