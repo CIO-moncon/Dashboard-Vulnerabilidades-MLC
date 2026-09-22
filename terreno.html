@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TERRENO / RONDA - CAPTURA RÁPIDA DE ANOMALÍAS [CPF]</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-main: #090a0f;
+    --text-main: #f3f4f6;
+    --text-muted: #9ca3af;
+    --accent-color: #3b82f6;
+    --bg-panel: #14161f;
+    --border-card: #27272a;
+    --input-bg: #1f2230;
+  }
+  body {
+    background-color: var(--bg-main); color: var(--text-main);
+    font-family: 'Inter', sans-serif; padding: 14px; margin: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .app-container {
+    max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px;
+  }
+  .app-header {
+    background: var(--bg-panel); border: 1px solid var(--border-card);
+    border-radius: 12px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .app-header h1 { font-size: 0.95rem; margin: 0; text-transform: uppercase; font-weight: 800; color: #ef4444; letter-spacing: 0.5px; }
+  .badge-field { font-size: 0.6rem; background: rgba(239,68,68,0.2); color: #ef4444; padding: 3px 8px; border-radius: 6px; font-weight: bold; border: 1px solid rgba(239,68,68,0.4); }
+
+  .card-field {
+    background: var(--bg-panel); border: 1px solid var(--border-card);
+    border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  label { font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px; }
+  input, select, textarea {
+    width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-card);
+    background: var(--input-bg); color: var(--text-main); font-size: 1rem; font-family: 'Inter', sans-serif;
+    box-sizing: border-box; outline: none; transition: 0.2s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent-color); }
+  .code-font { font-family: 'Roboto Mono', monospace; font-size: 1.15rem; font-weight: 700; text-transform: uppercase; }
+
+  /* Chips rápidos táctiles (ergonomía en faena) */
+  .chips-container { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    background: var(--input-bg); border: 1px solid var(--border-card); color: var(--text-muted);
+    padding: 9px 13px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; cursor: pointer;
+    transition: 0.15s; user-select: none; display: flex; align-items: center; gap: 4px;
+  }
+  .chip.active { background: rgba(59,130,246,0.25); border-color: var(--accent-color); color: white; box-shadow: 0 0 8px rgba(59,130,246,0.3); }
+
+  /* Acordeón / Más Fallas */
+  .more-failures-box { background: var(--input-bg); border: 1px dashed var(--border-card); border-radius: 8px; padding: 10px; margin-top: 6px; }
+
+  /* Foto preview */
+  .photo-preview-box { position: relative; margin-top: 8px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-card); background: #000; display: none; }
+  .photo-preview-box img { width: 100%; max-height: 180px; object-fit: cover; display: block; }
+  .btn-remove-photo { position: absolute; top: 6px; right: 6px; background: rgba(220,38,38,0.85); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; cursor: pointer; }
+
+  .sev-selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .sev-btn {
+    padding: 12px 8px; border-radius: 8px; border: 1px solid var(--border-card); background: var(--input-bg);
+    color: var(--text-muted); font-weight: 700; font-size: 0.75rem; cursor: pointer; text-align: center; transition: 0.15s;
+  }
+  .sev-btn.sel-rojo { background: rgba(239,68,68,0.25); border-color: #ef4444; color: #ef4444; font-weight: 800; }
+  .sev-btn.sel-naranja { background: rgba(249,115,22,0.25); border-color: #f97316; color: #f97316; font-weight: 800; }
+  .sev-btn.sel-amarillo { background: rgba(234,179,8,0.25); border-color: #eab308; color: #eab308; font-weight: 800; }
+
+  .btn-transmitir {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white; border: none; padding: 18px; border-radius: 12px; font-weight: 900;
+    font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.8px; cursor: pointer;
+    box-shadow: 0 6px 20px rgba(239,68,68,0.45); text-align: center; display: block; width: 100%;
+    transition: 0.15s;
+  }
+  .btn-transmitir:active { transform: scale(0.97); }
+
+  .toast-ok {
+    display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #16a34a; color: white; padding: 12px 24px; border-radius: 8px; font-weight: bold;
+    font-size: 0.85rem; box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 9999;
+  }
+</style>
+</head>
+<body>
+
+<div class="toast-ok" id="toastConfirm">📡 ¡Alerta transmitida a Sala CIO!</div>
+<canvas id="resizeCanvas" style="display:none;"></canvas>
+
+<div class="app-container">
+  <div class="app-header">
+    <h1>📱 Terreno / Ronda OEM</h1>
+    <span class="badge-field">CPF | LIVE-SYNC</span>
+  </div>
+
+  <div class="card-field">
+    <div>
+      <label>1. Seleccionar Faena</label>
+      <select id="fieldFaena">
+        <option value="Planta, Mina los Colorados">Planta, Mina los Colorados</option>
+        <option value="Mina, Mina los Colorados">Mina, Mina los Colorados</option>
+        <option value="Planta de Pellets">Planta de Pellets</option>
+        <option value="Planta, Mina el Romeral">Planta, Mina el Romeral</option>
+        <option value="Mina, Mina el Romeral">Mina, Mina el Romeral</option>
+      </select>
+    </div>
+
+    <div>
+      <label>2. Tag / Identificador Activo</label>
+      <input type="text" id="fieldTag" class="code-font" placeholder="Ej: MH2706">
+    </div>
+
+    <div>
+      <label>3. Hallazgo / Falla Rápida</label>
+      <div class="chips-container" id="quickChips">
+        <div class="chip" onclick="toggleChip(this, 'Fuga de aceite activa')">🛢️ Fuga aceite</div>
+        <div class="chip" onclick="toggleChip(this, 'Alto ruido / zumbido en reductor')">🔊 Alto ruido reductor</div>
+        <div class="chip" onclick="toggleChip(this, 'Vibración estructural anómala')">⚠️ Vibración alta</div>
+        <div class="chip" onclick="toggleChip(this, 'Temperatura elevada en carcasa/cojinete')">🔥 Alta temperatura</div>
+        <div class="chip" onclick="toggleChip(this, 'Holgura en acoplamiento / pernos sueltos')">🔩 Pernos / Holgura</div>
+      </div>
+
+      <!-- Más fallas / Categoria extendida -->
+      <details style="margin-top:10px;">
+        <summary style="font-size:0.75rem; color:var(--accent-color); cursor:pointer; font-weight:700;">➕ Ver más categorías / Añadir falla personalizada</summary>
+        <div class="more-failures-box">
+          <div class="chips-container" style="margin-bottom:8px;">
+            <div class="chip" onclick="toggleChip(this, 'Fisura en base/chasis estructural')">🏚️ Fisura base</div>
+            <div class="chip" onclick="toggleChip(this, 'Fuga de grasa en sello laberíntico')">💧 Fuga grasa</div>
+            <div class="chip" onclick="toggleChip(this, 'Desalineación óptica/láser evidente')">📐 Desalineación</div>
+            <div class="chip" onclick="toggleChip(this, 'Contaminación por polvo de mineral/pellet')">🏜️ Contam. mineral</div>
+            <div class="chip" onclick="toggleChip(this, 'Consumo de corriente motor elevado')">⚡ Sobreconsumo eléc.</div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="customFallaInput" placeholder="Otra falla específica..." style="font-size:0.85rem; padding:8px;">
+            <button type="button" onclick="addCustomChip()" style="background:var(--accent-color); color:white; border:none; border-radius:8px; padding:0 12px; font-weight:bold; font-size:0.75rem;">+ Agregar</button>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div>
+      <label>4. Notas / Detalle Adicional</label>
+      <textarea id="fieldDetalle" rows="2" placeholder="Ej: Sello laberíntico lado libre..."></textarea>
+    </div>
+
+    <div>
+      <label>5. Evidencia Fotográfica (Cámara / Galería)</label>
+      <input type="file" id="fieldFotoInput" accept="image/*" capture="environment" style="font-size:0.8rem; padding:8px;" onchange="handlePhotoUpload(event)">
+      <div class="photo-preview-box" id="photoPreviewBox">
+        <img id="photoPreviewImg" alt="Vista previa">
+        <button type="button" class="btn-remove-photo" onclick="removePhoto()">🗑️ Quitar foto</button>
+      </div>
+    </div>
+
+    <div>
+      <label>6. Severidad Preliminar</label>
+      <div class="sev-selector">
+        <div class="sev-btn sel-rojo" id="sev_Rojo" onclick="selectSev('Rojo')">🔴 Crítico</div>
+        <div class="sev-btn" id="sev_Naranja" onclick="selectSev('Naranja')">🟠 Alerta</div>
+        <div class="sev-btn" id="sev_Amarillo" onclick="selectSev('Amarillo')">🟡 Seguimiento</div>
+      </div>
+      <input type="hidden" id="fieldSev" value="Rojo">
+    </div>
+  </div>
+
+  <button class="btn-transmitir" id="btnTransmitir" onclick="enviarReporteCampo()">
+    📡 TRANSMITIR A SALA CIO EN TIEMPO REAL
+  </button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBd5MEZdMmgzBs1xCyeGYeKtQx5gJIeY3w",
+    authDomain: "dashboard-vulnerabilidades-mlc.firebaseapp.com",
+    databaseURL: "https://dashboard-vulnerabilidades-mlc-default-rtdb.firebaseio.com",
+    projectId: "dashboard-vulnerabilidades-mlc"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database().ref('alertas_terreno');
+
+  let selectedSeverity = 'Rojo';
+  let compressedPhotoBase64 = null;
+
+  function selectSev(sev) {
+    selectedSeverity = sev;
+    document.getElementById('fieldSev').value = sev;
+    ['Rojo', 'Naranja', 'Amarillo'].forEach(s => {
+      const el = document.getElementById('sev_' + s);
+      el.className = 'sev-btn' + (s === sev ? ` sel-${sev.toLowerCase()}` : '');
+    });
+  }
+
+  function toggleChip(chipEl, text) {
+    const area = document.getElementById('fieldDetalle');
+    const current = area.value.trim();
+    if (!current.includes(text)) {
+      area.value = current ? current + ' | ' + text : text;
+      chipEl.classList.add('active');
+    } else {
+      area.value = current.split(' | ').filter(t => t !== text).join(' | ');
+      chipEl.classList.remove('active');
+    }
+  }
+
+  function addCustomChip() {
+    const customTxt = document.getElementById('customFallaInput').value.trim();
+    if (!customTxt) return;
+    const box = document.getElementById('quickChips');
+    const newChip = document.createElement('div');
+    newChip.className = 'chip active';
+    newChip.innerHTML = `📌 ${customTxt}`;
+    newChip.onclick = function() { toggleChip(this, customTxt); };
+    box.appendChild(newChip);
+    toggleChip(newChip, customTxt);
+    document.getElementById('customFallaInput').value = '';
+  }
+
+  // Redimensionar imagen a max 600px para comprimir base64 (evitar saturar RTDB)
+  function handlePhotoUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.getElementById('resizeCanvas');
+        const ctx = canvas.getContext('2d');
+        const MAX_WIDTH = 600;
+        let width = img.width, height = img.height;
+        if (width > MAX_WIDTH) { height = Math.round((height * MAX_WIDTH) / width); width = MAX_WIDTH; }
+        canvas.width = width; canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+        compressedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.65);
+        document.getElementById('photoPreviewImg').src = compressedPhotoBase64;
+        document.getElementById('photoPreviewBox').style.display = 'block';
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removePhoto() {
+    compressedPhotoBase64 = null;
+    document.getElementById('fieldFotoInput').value = '';
+    document.getElementById('photoPreviewBox').style.display = 'none';
+  }
+
+  function mostrarToast(msg) {
+    const t = document.getElementById('toastConfirm');
+    t.innerText = msg; t.style.display = 'block';
+    setTimeout(() => { t.style.display = 'none'; }, 3500);
+  }
+
+  function enviarReporteCampo() {
+    const faena = document.getElementById('fieldFaena').value;
+    const tag = (document.getElementById('fieldTag').value || 'SIN-TAG').trim().toUpperCase();
+    const detalle = document.getElementById('fieldDetalle').value.trim();
+    const sev = document.getElementById('fieldSev').value;
+    const btn = document.getElementById('btnTransmitir');
+
+    if (!tag || tag === 'SIN-TAG') { alert("⚠️ Ingrese el Tag del equipo (ej: MH2706)."); return; }
+
+    btn.disabled = true; btn.innerText = "⏳ TRANSMITIENDO...";
+
+    const payload = {
+      faena, tag, severidad: sev,
+      detalle: detalle || 'Reporte de ronda rápida sin nota escrita.',
+      fotoBase64: compressedPhotoBase64 || null,
+      timestamp: new Date().toISOString(),
+      estado: 'nuevo'
+    };
+
+    db.push(payload).then(() => {
+      if (navigator.vibrate) navigator.vibrate([100, 60, 100]);
+      mostrarToast(`📡 Alerta transmitida para ${tag} (${sev}).`);
+      document.getElementById('fieldTag').value = '';
+      document.getElementById('fieldDetalle').value = '';
+      removePhoto();
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    }).catch(err => {
+      alert("❌ Error de transmisión: " + err.message);
+    }).finally(() => {
+      btn.disabled = false; btn.innerText = "📡 TRANSMITIR A SALA CIO EN TIEMPO REAL";
+    });
+  }
+</script>
+</body>
+</html>
