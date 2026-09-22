@@ -14,48 +14,26 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg-main: #0f1012;
-    --text-main: #f3f4f6; 
-    --text-muted: #9ca3af;
-    --accent-color: #3b82f6; 
-    --bg-panel: #18181b;
-    --bg-card: #202024;
-    --border-card: #27272a;
-    --input-bg: #121214;
-    --btn-bg: #27272a;
-    --btn-hover: #3f3f46;
+    --bg-main: #0f1012; --text-main: #f3f4f6; --text-muted: #9ca3af;
+    --accent-color: #3b82f6; --bg-panel: #18181b; --bg-card: #202024;
+    --border-card: #27272a; --input-bg: #121214; --btn-bg: #27272a; --btn-hover: #3f3f46;
   }
-
   body.light-mode {
-    --bg-main: #f4f4f5;
-    --text-main: #18181b;
-    --text-muted: #52525b;
-    --accent-color: #2563eb;
-    --bg-panel: #ffffff;
-    --bg-card: #ffffff;
-    --border-card: #e4e4e7;
-    --input-bg: #f8fafc;
-    --btn-bg: #e4e4e7;
-    --btn-hover: #d4d4d8;
+    --bg-main: #f4f4f5; --text-main: #18181b; --text-muted: #52525b;
+    --accent-color: #2563eb; --bg-panel: #ffffff; --bg-card: #ffffff;
+    --border-card: #e4e4e7; --input-bg: #f8fafc; --btn-bg: #e4e4e7; --btn-hover: #d4d4d8;
   }
-
   body { background-color: var(--bg-main); color: var(--text-main); font-family: 'Inter', sans-serif; padding: 20px; margin: 0; -webkit-font-smoothing: antialiased; transition: background 0.2s, color 0.2s; }
   .code-font { font-family: 'Roboto Mono', monospace; }
   
-  /* Cabecera Principal */
   .header { border: 1px solid var(--border-card); padding: 14px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-panel); border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); flex-wrap: wrap; gap: 14px; }
   .header-brand { display: flex; align-items: center; gap: 20px; }
-  
-  /* Fondo más claro y legible para el logo CPF */
-  .logos-container { display: flex; align-items: center; background: rgba(240, 244, 248, 0.94); padding: 10px 22px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
-  body.light-mode .logos-container { background: rgba(228, 228, 231, 0.96); border: 1px solid rgba(0, 0, 0, 0.2); }
-  .logo-cpf { height: 48px; width: auto; object-fit: contain; transform: scale(1.15); display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15)); }
-
+  .logos-container { display: flex; align-items: center; background: var(--bg-card); padding: 10px 20px; border-radius: 10px; border: 1px solid var(--border-card); box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
+  .logo-cpf { height: 46px; width: auto; object-fit: contain; transform: scale(1.15); display: block; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3)); }
   .header-titles h1 { font-size: 1.25rem; margin: 0 0 2px 0; text-transform: uppercase; font-weight: 900; letter-spacing: 0.8px; color: var(--text-main); }
   .header-titles p { color: var(--text-muted); margin: 0; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
   .header-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   
-  /* Botones */
   .btn-base { background: var(--btn-bg); border: 1px solid var(--border-card); color: var(--text-main); padding: 7px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.75rem; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
   .btn-base:hover { background: var(--btn-hover); border-color: var(--text-muted); }
   .btn-primary { background: #2563eb; color: white; border-color: #3b82f6; }
@@ -73,14 +51,18 @@
   .user-authenticated-only { display: none !important; }
   body.user-authenticated .user-authenticated-only { display: grid !important; }
 
-  /* Panel Ejecutivo & PMS Semanal (Visible solo logueado) */
   .executive-banner { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
   .pms-weekly-banner { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; background: rgba(59, 130, 246, 0.05); padding: 10px; border-radius: 8px; border: 1px dashed var(--border-card); }
   .exec-card { background: var(--bg-panel); border: 1px solid var(--border-card); border-radius: 8px; padding: 12px 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: space-between; }
   .exec-card-title { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
   .exec-card-value { font-size: 1.15rem; font-weight: 800; color: var(--text-main); margin-top: 6px; font-family: 'Roboto Mono', monospace; display: flex; align-items: center; justify-content: space-between; }
 
-  /* Barra de Navegación & Indicadores Mineros en tiempo real */
+  /* Matriz SLA Ultra-wide de Sala */
+  .sla-matrix-banner { background: var(--bg-panel); border: 1px solid var(--border-card); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .sla-table { width: 100%; border-collapse: collapse; font-family: 'Roboto Mono', monospace; font-size: 0.75rem; }
+  .sla-table th { text-align: left; color: var(--text-muted); font-size: 0.6rem; text-transform: uppercase; border-bottom: 1px solid var(--border-card); padding-bottom: 4px; }
+  .sla-table td { padding: 6px 0; border-bottom: 1px dashed var(--border-card); color: var(--text-main); }
+
   .nav-bar-global { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; background: var(--bg-panel); padding: 10px 20px; border-radius: 8px; border: 1px solid var(--border-card); box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex-wrap: wrap; gap: 12px; }
   .nav-breadcrumb-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   .nav-breadcrumb { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 8px; margin-left: 8px; border-left: 2px solid var(--border-card); padding-left: 12px; }
@@ -90,28 +72,28 @@
   .mining-ticker { display: flex; align-items: center; gap: 14px; background: var(--input-bg); padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border-card); font-size: 0.72rem; font-family: 'Roboto Mono', monospace; font-weight: 600; }
   .ticker-item { display: flex; align-items: center; gap: 4px; }
 
-  /* Secciones globales por faena */
   .faena-section-header { grid-column: 1 / -1; font-size: 0.95rem; font-weight: 800; color: var(--accent-color); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 14px; margin-bottom: 4px; padding-bottom: 6px; border-bottom: 2px solid var(--border-card); display: flex; align-items: center; gap: 8px; }
   .faena-section-header:first-of-type { margin-top: 0; }
 
-  /* Grids y Mapa */
   .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
   .grid-equipos { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
   .grid-componentes { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
   
   #view-map { width: 100%; height: 700px; border-radius: 8px; border: 1px solid var(--border-card); display: none; margin-bottom: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.3); z-index: 10; }
 
-  /* Tarjetas */
   .card-area { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 8px; padding: 16px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
   .card-area:hover { transform: translateY(-2px); border-color: var(--text-muted); }
   
   .card-equipo { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 8px; padding: 14px 10px; position: relative; cursor: pointer; text-align: center; transition: 0.15s; min-height: 85px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
   .card-equipo:hover { transform: translateY(-2px); border-color: var(--text-muted); }
 
+  .sensor-badge { position: absolute; top: 6px; right: 6px; font-size: 0.48rem; padding: 2px 5px; border-radius: 4px; font-family: 'Roboto Mono', monospace; font-weight: 700; background: rgba(59,130,246,0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
+  .sensor-badge.alert-sensor { background: rgba(239,68,68,0.2); color: #ef4444; border-color: rgba(239,68,68,0.4); animation: pulseAlert 1.5s infinite; }
+  @keyframes pulseAlert { 0% { opacity: 1; } 50% { opacity: 0.55; } 100% { opacity: 1; } }
+
   .card-componente { padding: 14px 12px; text-align: left; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; min-height: 100px; transition: 0.2s; }
   .card-componente:hover { transform: translateY(-2px); border-color: var(--accent-color); } 
   
-  /* Severidades */
   .sev-rojo { border-left: 5px solid #ef4444; }
   .sev-naranja { border-left: 5px solid #f97316; }
   .sev-amarillo { border-left: 5px solid #eab308; }
@@ -125,7 +107,6 @@
   .eq-days { font-size: 0.55rem; font-weight: 600; background: var(--input-bg); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-card); margin-top: 4px; display: inline-block; color: var(--text-muted); }
   .lock-badge { font-size: 0.5rem; background: rgba(249,115,22,0.15); color: #f97316; padding: 1px 4px; border-radius: 3px; font-weight: bold; margin-top: 2px; }
 
-  /* Modales Estándar y Edición Pantalla Completa */
   .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; backdrop-filter: blur(4px); }
   .modal-content { background: var(--bg-panel); padding: 24px; border-radius: 12px; border: 1px solid var(--border-card); width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
   
@@ -187,7 +168,30 @@
   </div>
 </div>
 
-<!-- Panel Ejecutivo & PMS Semanal (Visible solo logueado) -->
+<!-- Matriz SLA Multi-Site (Vista de Controlador Sala Ultra-Wide) -->
+<div class="sla-matrix-banner user-authenticated-only">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <span style="font-size:0.75rem; font-weight:800; color:var(--accent-color); text-transform:uppercase;">📊 Semáforo Corporativo SLA / Control de Sala CIO</span>
+    <span style="font-size:0.65rem; color:var(--text-muted);">Sincronización en tiempo real</span>
+  </div>
+  <table class="sla-table">
+    <thead>
+      <tr>
+        <th>Faena Operativa</th>
+        <th>Críticos (Rojo)</th>
+        <th>Alertas (Naranja)</th>
+        <th>OM Abiertas SAP</th>
+        <th>SLA Breached Window</th>
+        <th>Triage General Sala</th>
+      </tr>
+    </thead>
+    <tbody id="slaMatrixBody">
+      <!-- Inyectado dinámicamente o resumen agregado -->
+    </tbody>
+  </table>
+</div>
+
+<!-- Panel Ejecutivo & KPI de Alta Gerencia (Visible solo logueado) -->
 <div class="executive-banner user-authenticated-only">
   <div class="exec-card">
     <div class="exec-card-title">Salud Operacional Global</div>
@@ -210,6 +214,10 @@
   <div class="exec-card" style="border-left: 3px solid #22c55e;">
     <div class="exec-card-title">🟢 Universos Verdes</div>
     <div class="exec-card-value" id="kpiTotalVerdes" style="color: #22c55e;">0</div>
+  </div>
+  <div class="exec-card admin-only" style="border-left: 3px solid #3b82f6; cursor:pointer;" onclick="exportarReporteGerenciaAlta()">
+    <div class="exec-card-title">📊 Alta Gerencia (Reporte Ejecutivo)</div>
+    <div class="exec-card-value" style="font-size:0.75rem; color:#3b82f6;">📥 Exportar / Resumen SLA</div>
   </div>
 </div>
 
@@ -244,11 +252,11 @@
   </div>
   
   <div class="mining-ticker" id="miningTickerBar">
-    <div class="ticker-item" title="Tipo de cambio USD/CLP en tiempo real">💵 <b>USD/CLP:</b> <span id="tickerUsdClp">945.72</span></div>
+    <div class="ticker-item" title="Tipo de cambio USD/CLP">💵 <b>USD/CLP:</b> <span id="tickerUsdClp">945.72</span></div>
     <div style="width:1px; height:16px; background:var(--border-card);"></div>
     <div class="ticker-item" title="Índice Spot Mineral de Hierro Fines 62% Fe CFR China">⛏️ <b>Fe 62%:</b> <span id="tickerHierroFe">98.02 USD/t</span></div>
     <div style="width:1px; height:16px; background:var(--border-card);"></div>
-    <div class="ticker-item" title="Equivalencia CLP por Tonelada de Hierro (Fe 62% * USD/CLP)">💱 <b>Hierro/CLP:</b> <span id="tickerHierroClp">92,700 CLP/t</span></div>
+    <div class="ticker-item" title="Equivalencia CLP por Tonelada de Hierro">💱 <b>Hierro/CLP:</b> <span id="tickerHierroClp">92,700 CLP/t</span></div>
     <div style="width:1px; height:16px; background:var(--border-card);"></div>
     <div class="ticker-item" title="Clima Estación Huasco / Vallenar">☀️ <b>Clima:</b> <span id="tickerClima">22°C (Vallenar)</span></div>
   </div>
@@ -273,7 +281,7 @@
 <div id="view-equipos" class="grid-equipos" style="display:none;"></div>
 <div id="view-componentes" class="grid-componentes" style="display:none;"></div>
 
-<!-- MODAL UNIFICADO LOGIN / REGISTRO OPERADOR CON ELECCIÓN DE FAENA ESCRITORIO/ASIGNADA -->
+<!-- MODAL UNIFICADO LOGIN / REGISTRO OPERADOR -->
 <div id="modalAuth" class="modal-overlay" style="z-index: 4500;">
   <div class="modal-content" style="max-width: 440px;">
     <button class="modal-close-btn" onclick="document.getElementById('modalAuth').style.display='none'">&times;</button>
@@ -326,7 +334,7 @@
   </div>
 </div>
 
-<!-- MODAL DETALLE DE COMPONENTE & TRAZABILIDAD -->
+<!-- MODAL DETALLE DE COMPONENTE & TRAZABILIDAD CON TRIAGE DE SALA CIO -->
 <div id="modalDetalleComponente" class="modal-overlay" onclick="cerrarDetalleComponente(event)">
   <div class="modal-content" onclick="event.stopPropagation()">
     <button class="modal-close-btn" onclick="cerrarDetalleComponente()" title="Cerrar">&times;</button>
@@ -337,6 +345,23 @@
         <h2 id="detCompNombre" class="code-font" style="margin: 2px 0 0 0; font-size: 1.2rem;">Nombre Spot</h2>
       </div>
       <button class="btn-base btn-primary" style="padding: 5px 10px; font-size: 0.7rem;" onclick="copiarResumenEjecutivo()">📋 Copiar Resumen</button>
+    </div>
+
+    <!-- Triage de Sala de Control (CIO) -->
+    <div style="background:var(--input-bg); padding:10px; border-radius:6px; border:1px solid var(--border-card); margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div class="label-muted">Estatus de Triage de Sala (CIO)</div>
+        <select id="controlRoomStatus" class="filter-select" style="margin-top:4px;" onchange="actualizarTriageSala(this.value)">
+          <option value="new">🔴 Nueva / Sin Atender</option>
+          <option value="acked">🟡 Reconocida (En Rango de Análisis)</option>
+          <option value="sap_linked">🔵 Derivada a SAP / OM Vinculada</option>
+          <option value="resolved">🟢 Monitoreo Reforzado (Estabilizado)</option>
+        </select>
+      </div>
+      <div style="text-align:right;">
+        <div class="label-muted">Último Ack</div>
+        <div id="ackTimestamp" class="code-font" style="font-size:0.75rem; color:var(--text-muted);">-</div>
+      </div>
     </div>
 
     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px;">
@@ -449,27 +474,11 @@
   const db = firebase.database().ref('activos_criticos');
   const dbUsers = firebase.database().ref('usuarios_registrados');
 
-  let isUserAuthenticated = false;
-  let isAdmin = false;
-  let usuarioActivo = null;
-  let faenaAsignadaOperador = 'TODAS'; 
-  let modoAuthActual = 'login'; 
-  let equiposDB = [];
-  let areaSeleccionada = null;
-  let equipoSeleccionado = null;
-  let componenteActualDetalle = null;
-  let mapaLeaflet = null;
-  let capaMarcadores = null;
-  let modoMapaActivo = false;
-  let faenaActual = 'TODAS';
-  
-  let geoPickerLeaflet = null;
-  let tempGeoMarker = null;
-  let selectedLat = null;
-  let selectedLng = null;
-  
-  let currentUsdClp = 945.72;
-  const currentHierroUsdFe62 = 98.02;
+  let isUserAuthenticated = false, isAdmin = false, usuarioActivo = null, faenaAsignadaOperador = 'TODAS';
+  let modoAuthActual = 'login', equiposDB = [], areaSeleccionada = null, equipoSeleccionado = null;
+  let componenteActualDetalle = null, mapaLeaflet = null, capaMarcadores = null, modoMapaActivo = false;
+  let faenaActual = 'TODAS', geoPickerLeaflet = null, tempGeoMarker = null, selectedLat = null, selectedLng = null;
+  let currentUsdClp = 945.72; const currentHierroUsdFe62 = 98.02;
 
   const SEV_PESO = { 'Rojo': 5, 'Naranja': 4, 'Amarillo': 3, 'Verde': 2, 'Plomo': 1 };
   const SEV_COLOR_HEX = { 'Rojo': '#ef4444', 'Naranja': '#f97316', 'Amarillo': '#eab308', 'Verde': '#22c55e', 'Plomo': '#6b7280' };
@@ -478,24 +487,39 @@
     try {
       currentUsdClp = 945.72 + (Math.random() * 0.8 - 0.4);
       const clpValue = Math.round(currentHierroUsdFe62 * currentUsdClp * 10) / 10;
-      
-      const elUsd = document.getElementById('tickerUsdClp');
-      const elClp = document.getElementById('tickerHierroClp');
-      if (elUsd) elUsd.innerText = currentUsdClp.toFixed(2);
-      if (elClp) elClp.innerText = clpValue.toLocaleString('es-CL', { maximumFractionDigits: 0 }) + ' CLP/t';
+      document.getElementById('tickerUsdClp')?.innerText = currentUsdClp.toFixed(2);
+      document.getElementById('tickerHierroClp')?.innerText = clpValue.toLocaleString('es-CL', { maximumFractionDigits: 0 }) + ' CLP/t';
     } catch(e) {}
   }
   setInterval(actualizarTickerMineroEnTiempoReal, 15000);
   actualizarTickerMineroEnTiempoReal();
 
+  function actualizarSlaMatrix() {
+    const tableBody = document.getElementById('slaMatrixBody');
+    if (!tableBody) return;
+    const ordenFaenas = ['Planta, Mina los Colorados', 'Mina, Mina los Colorados', 'Planta de Pellets', 'Planta, Mina el Romeral', 'Mina, Mina el Romeral'];
+    tableBody.innerHTML = ordenFaenas.map(siteName => {
+      const eqSite = equiposDB.filter(e => (e.siteId || '') === siteName);
+      let r = 0, n = 0, om = 0;
+      eqSite.forEach(eq => {
+        eq.componentes.forEach(c => {
+          if (c.severidad === 'Rojo') r++;
+          if (c.severidad === 'Naranja') n++;
+          if (c.om && c.om.trim() !== "") om++;
+        });
+      });
+      const triageBadge = r > 0 ? '🔴 Escalado / Crítico' : (n > 0 ? '🟡 Monitoreo Activo' : '🟢 Nominal / SLA OK');
+      const slaWin = r > 0 ? '< 6 hrs' : '72 hrs';
+      return `<tr><td><b>${siteName}</b></td><td><span style="color:#ef4444;font-weight:bold;">${r}</span></td><td><span style="color:#f97316;font-weight:bold;">${n}</span></td><td>${om}</td><td>${slaWin}</td><td>${triageBadge}</td></tr>`;
+    }).join('');
+  }
+
   function toggleUserDropdown() {
     const menu = document.getElementById('userDropdownMenu');
     menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
   }
-
-  window.addEventListener('click', function(e) {
-    const wrapper = document.getElementById('userMenuWrapper');
-    if (wrapper && !wrapper.contains(e.target)) {
+  window.addEventListener('click', e => {
+    if (!document.getElementById('userMenuWrapper')?.contains(e.target)) {
       document.getElementById('userDropdownMenu').style.display = 'none';
     }
   });
@@ -503,25 +527,11 @@
   function abrirModalAuth(tipo) {
     document.getElementById('userDropdownMenu').style.display = 'none';
     modoAuthActual = tipo;
-    const title = document.getElementById('authModalTitle');
-    const desc = document.getElementById('authModalDesc');
-    const fieldReg = document.getElementById('fieldRegistroNombre');
-    const fieldFaena = document.getElementById('fieldAsignacionFaena');
-    const btnSub = document.getElementById('btnSubmitAuth');
-
-    if (tipo === 'register') {
-      title.innerText = "📝 Registrar Nuevo Operador";
-      desc.innerText = "Cree su perfil y seleccione su faena de asignación de escritura.";
-      fieldReg.style.display = 'block';
-      fieldFaena.style.display = 'block';
-      btnSub.innerText = "Registrarse y Entrar";
-    } else {
-      title.innerText = "🔑 Iniciar Sesión Operador";
-      desc.innerText = "Ingrese sus credenciales de operador.";
-      fieldReg.style.display = 'none';
-      fieldFaena.style.display = 'block';
-      btnSub.innerText = "Iniciar Sesión";
-    }
+    document.getElementById('authModalTitle').innerText = tipo === 'register' ? '📝 Registrar Nuevo Operador' : '🔑 Iniciar Sesión Operador';
+    document.getElementById('authModalDesc').innerText = tipo === 'register' ? 'Cree su perfil y seleccione su faena de asignación.' : 'Ingrese sus credenciales de operador.';
+    document.getElementById('fieldRegistroNombre').style.display = tipo === 'register' ? 'block' : 'none';
+    document.getElementById('fieldAsignacionFaena').style.display = 'block';
+    document.getElementById('btnSubmitAuth').innerText = tipo === 'register' ? 'Registrarse y Entrar' : 'Iniciar Sesión';
     document.getElementById('authFullname').value = '';
     document.getElementById('authUsername').value = '';
     document.getElementById('authPassword').value = '';
@@ -533,62 +543,35 @@
     const passVal = (document.getElementById('authPassword').value || '').trim();
     const fullnameVal = (document.getElementById('authFullname').value || '').trim();
     const selectedSite = document.getElementById('authSelectedSite').value;
+    if (!userVal || !passVal) { alert("⚠️ Complete usuario y contraseña."); return; }
 
-    if (!userVal || !passVal) {
-      alert("⚠️ Complete usuario y contraseña.");
-      return;
-    }
-
+    const lookupId = userVal.replace(/[^a-zA-Z0-9]/g, '_');
     if (modoAuthActual === 'register') {
-      if (!fullnameVal) {
-        alert("⚠️ Ingrese su nombre completo.");
-        return;
-      }
-      const newUserId = userVal.replace(/[^a-zA-Z0-9]/g, '_');
-      dbUsers.child(newUserId).set({
-        nombreCompleto: fullnameVal,
-        usuario: userVal,
-        password: passVal,
-        faenaAsignada: selectedSite,
-        creadoEn: new Date().toISOString()
-      }).then(() => {
-        alert("✅ Usuario registrado exitosamente.");
-        document.getElementById('modalAuth').style.display = 'none';
-        loguearUsuarioDirecto(fullnameVal, selectedSite);
-      }).catch(err => {
-        alert("❌ Error al registrar usuario: " + err.message);
-      });
+      if (!fullnameVal) { alert("⚠️ Ingrese su nombre completo."); return; }
+      dbUsers.child(lookupId).set({ nombreCompleto: fullnameVal, usuario: userVal, password: passVal, faenaAsignada: selectedSite, creadoEn: new Date().toISOString() })
+        .then(() => { alert("✅ Usuario registrado."); document.getElementById('modalAuth').style.display = 'none'; loguearUsuarioDirecto(fullnameVal, selectedSite); });
     } else {
-      const lookupId = userVal.replace(/[^a-zA-Z0-9]/g, '_');
       dbUsers.child(lookupId).once('value', snap => {
         const uData = snap.val();
-        if (uData && uData.password === passVal) {
-          loguearUsuarioDirecto(uData.nombreCompleto || uData.usuario, uData.faenaAsignada || selectedSite);
-          document.getElementById('modalAuth').style.display = 'none';
-        } else {
-          loguearUsuarioDirecto(userVal, selectedSite);
-          document.getElementById('modalAuth').style.display = 'none';
-        }
+        loguearUsuarioDirecto((uData && uData.password === passVal) ? (uData.nombreCompleto || uData.usuario) : userVal, uData?.faenaAsignada || selectedSite);
+        document.getElementById('modalAuth').style.display = 'none';
       });
     }
   }
 
   function loguearUsuarioDirecto(nombreVisible, faenaAsignada) {
-    usuarioActivo = nombreVisible;
-    isUserAuthenticated = true;
-    faenaAsignadaOperador = faenaAsignada;
+    usuarioActivo = nombreVisible; isUserAuthenticated = true; faenaAsignadaOperador = faenaAsignada;
     document.body.classList.add('user-authenticated');
     document.getElementById('labelUsuarioBtn').innerText = nombreVisible.split(' ')[0];
     document.getElementById('dropUserInfo').innerText = `Activo: ${nombreVisible} | Faena: ${faenaAsignada}`;
     document.getElementById('subinfoFaenaUsuario').innerText = `Acceso escritura restringido a: ${faenaAsignada}`;
     document.getElementById('btnCerrarSesionDrop').style.display = 'block';
-    alert(`✅ Sesión iniciada: ${nombreVisible}.\n📍 Escritura acotada a faena: ${faenaAsignada}. Visualización global habilitada.`);
+    actualizarSlaMatrix();
+    alert(`✅ Sesión iniciada: ${nombreVisible}.\n📍 Escritura acotada a faena: ${faenaAsignada}.`);
   }
 
   function cerrarSesionUsuario() {
-    isUserAuthenticated = false;
-    usuarioActivo = null;
-    faenaAsignadaOperador = 'TODAS';
+    isUserAuthenticated = false; usuarioActivo = null; faenaAsignadaOperador = 'TODAS';
     if (isAdmin) solicitarPermisoSuperAdmin();
     document.body.classList.remove('user-authenticated');
     document.getElementById('labelUsuarioBtn').innerText = 'Usuario';
@@ -600,83 +583,90 @@
   }
 
   function solicitarPermisoSuperAdmin() {
-    if (!isUserAuthenticated) {
-      alert("⚠️ Debe iniciar sesión o registrarse como operador primero.");
-      abrirModalAuth('login');
-      return;
-    }
+    if (!isUserAuthenticated) { abrirModalAuth('login'); return; }
     if (isAdmin) {
-      liberarLockEdicionActual();
-      isAdmin = false;
+      liberarLockEdicionActual(); isAdmin = false;
       document.body.classList.remove('admin-mode');
       document.getElementById('btnAdminGate').innerText = '🛡️ Admin';
-      faenaAsignadaOperador = usuarioActivo ? (faenaAsignadaOperador || 'Planta, Mina los Colorados') : 'TODAS';
+      faenaAsignadaOperador = faenaAsignadaOperador || 'Planta, Mina los Colorados';
       document.getElementById('subinfoFaenaUsuario').innerText = `Acceso escritura restringido a: ${faenaAsignadaOperador}`;
-      cerrarEdicion();
-      alert("🔒 Modo SuperAdmin cerrado. Retorna a restricción de faena asignada.");
-      return;
+      cerrarEdicion(); alert("🔒 Modo SuperAdmin cerrado."); return;
     }
     const pass = prompt("🔑 Ingrese clave SuperAdmin (Moncon2026):");
     if (pass === "Moncon2026") {
-      isAdmin = true;
-      document.body.classList.add('admin-mode');
+      isAdmin = true; document.body.classList.add('admin-mode');
       document.getElementById('btnAdminGate').innerText = '🛡️ SuperAdmin ON';
       faenaAsignadaOperador = 'TODAS';
-      document.getElementById('subinfoFaenaUsuario').innerText = '⚡ SUPERADMIN: Acceso total de escritura multifaena habilitado';
-      alert(`✅ SuperAdmin activado por ${usuarioActivo}. Acceso de modificación abierto a TODAS las faenas.`);
-    } else if (pass !== null) {
-      alert("❌ Clave SuperAdmin incorrecta.");
-    }
+      document.getElementById('subinfoFaenaUsuario').innerText = '⚡ SUPERADMIN: Acceso total multifaena habilitado';
+      alert(`✅ SuperAdmin activado por ${usuarioActivo}.`);
+    } else if (pass !== null) alert("❌ Clave SuperAdmin incorrecta.");
+  }
+
+  function actualizarTriageSala(newStatus) {
+    if (!equipoSeleccionado) return;
+    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
+    document.getElementById('ackTimestamp').innerText = nowStr + ' (' + (usuarioActivo || 'Controlador') + ')';
+    // Persistir ack o estatus en equipo
+    db.child(equipoSeleccionado.id).update({
+      triage_sala: { status: newStatus, updatedBy: usuarioActivo, updatedAt: nowStr }
+    });
+  }
+
+  function exportarReporteGerenciaAlta() {
+    if (!isAdmin) return;
+    const timestampISO = new Date().toISOString();
+    let resumenRojos = 0, resumenNaranjos = 0, totalActivos = equiposDB.length, resumenPorFaena = {};
+    equiposDB.forEach(eq => {
+      const f = eq.siteId || 'Sin Faena';
+      if (!resumenPorFaena[f]) resumenPorFaena[f] = { total: 0, rojas: 0, naranjas: 0 };
+      resumenPorFaena[f].total++;
+      const sev = calcularSeveridadGlobal(eq.componentes);
+      if (sev === 'Rojo') { resumenRojos++; resumenPorFaena[f].rojas++; }
+      if (sev === 'Naranja') { resumenNaranjos++; resumenPorFaena[f].naranjas++; }
+    });
+    const reportLines = [
+      `======================================================`,
+      `REPORTABILIDAD EJECUTIVA ALTA GERENCIA - CIO MULTI-SITE`,
+      `Fecha/Hora: ${timestampISO} | Generado por: ${usuarioActivo}`,
+      `Activos Global: ${totalActivos} | Rojos: ${resumenRojos} | Naranjos: ${resumenNaranjos}`,
+      `USD/CLP: ${currentUsdClp.toFixed(2)} | Fe 62%: ${currentHierroUsdFe62} USD/t`,
+      ...Object.keys(resumenPorFaena).map(f => `Faena [${f}]: Total ${resumenPorFaena[f].total} | Rojos: ${resumenPorFaena[f].rojas} | Naranjos: ${resumenPorFaena[f].naranjas}`),
+      `======================================================`
+    ];
+    const blob = new Blob([reportLines.join('\n')], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Reporte_Alta_Gerencia_CIO_${timestampISO.split('T')[0]}.txt`; a.click();
+    alert("📊 Reporte ejecutivo descargado.");
   }
 
   function esActivoConAceite(tipoActivo = '', nombreSpot = '') {
-    const texto = (tipoActivo + ' ' + nombreSpot).toLowerCase();
-    return texto.includes('reductor') || texto.includes('caja') || texto.includes('engranaje') || texto.includes('hidraulico') || texto.includes('lubricante') || texto.includes('aceite');
+    return (tipoActivo + ' ' + nombreSpot).toLowerCase().match(/reductor|caja|engranaje|hidraulico|lubricante|aceite/);
   }
 
   function evaluarIso20816ByGroup(rms, groupClass) {
-    const v = parseFloat(rms);
-    if (isNaN(v)) return 'Verde';
+    const v = parseFloat(rms); if (isNaN(v)) return 'Verde';
     let bC = 2.8, cD = 4.5;
-    if (groupClass === 'g2_flexible') { bC = 4.5; cD = 7.1; }
-    else if (groupClass === 'g1_rigid') { bC = 4.5; cD = 7.1; }
+    if (groupClass === 'g2_flexible' || groupClass === 'g1_rigid') { bC = 4.5; cD = 7.1; }
     else if (groupClass === 'g1_flexible') { bC = 7.1; cD = 11.0; }
-    
-    if (v >= cD) return 'Rojo';
-    if (v >= bC) return 'Naranja';
-    return 'Verde';
+    return v >= cD ? 'Rojo' : (v >= bC ? 'Naranja' : 'Verde');
   }
 
   function onRmsOrGroupChange(el) {
     const box = el.closest('.comp-item');
-    const rmsVal = box.querySelector('.c-rms').value;
-    const groupVal = box.querySelector('.c-iso-group').value;
-    const sevSelect = box.querySelector('.c-sev');
-    const suggestedSev = evaluarIso20816ByGroup(rmsVal, groupVal);
-    if (suggestedSev) sevSelect.value = suggestedSev;
+    box.querySelector('.c-sev').value = evaluarIso20816ByGroup(box.querySelector('.c-rms').value, box.querySelector('.c-iso-group').value);
   }
 
   function cambiarFaenaGlobal() {
     faenaActual = document.getElementById('selectorSite').value;
-    const labelSite = document.getElementById('labelSiteGlobal');
-    labelSite.innerText = faenaActual === 'TODAS' ? 'TODAS LAS FAENAS (GLOBAL)' : faenaActual.toUpperCase();
+    document.getElementById('labelSiteGlobal').innerText = faenaActual === 'TODAS' ? 'TODAS LAS FAENAS (GLOBAL)' : faenaActual.toUpperCase();
     irAInicio();
   }
 
-  function toggleTheme() {
-    document.body.classList.toggle('light-mode');
-  }
+  function toggleTheme() { document.body.classList.toggle('light-mode'); }
 
   function inicializarMapa() {
-    if (mapaLeaflet) {
-      mapaLeaflet.invalidateSize();
-      return;
-    }
-    mapaLeaflet = L.map('view-map').setView([-28.2876, -70.8130], 10);
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 20,
-      attribution: 'Esri World Imagery'
-    }).addTo(mapaLeaflet);
+    if (mapaLeaflet) { mapaLeaflet.invalidateSize(); return; }
+    mapaLeaflet = L.map('view-map').setView([-28.2876, -70.8130], 11);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20 }).addTo(mapaLeaflet);
     capaMarcadores = L.layerGroup().addTo(mapaLeaflet);
   }
 
@@ -684,158 +674,93 @@
     document.getElementById('modalGeoMapa').style.display = 'flex';
     const currentLat = parseFloat(document.getElementById('edLat').value) || -28.2876;
     const currentLng = parseFloat(document.getElementById('edLng').value) || -70.8130;
-    
     setTimeout(() => {
       if (!geoPickerLeaflet) {
         geoPickerLeaflet = L.map('geoPickerMap').setView([currentLat, currentLng], 15);
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-          maxZoom: 20
-        }).addTo(geoPickerLeaflet);
-        
-        geoPickerLeaflet.on('click', function(e) {
-          selectedLat = e.latlng.lat.toFixed(6);
-          selectedLng = e.latlng.lng.toFixed(6);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20 }).addTo(geoPickerLeaflet);
+        geoPickerLeaflet.on('click', e => {
+          selectedLat = e.latlng.lat.toFixed(6); selectedLng = e.latlng.lng.toFixed(6);
           if (tempGeoMarker) geoPickerLeaflet.removeLayer(tempGeoMarker);
           tempGeoMarker = L.marker([selectedLat, selectedLng]).addTo(geoPickerLeaflet);
         });
-      } else {
-        geoPickerLeaflet.invalidateSize();
-        geoPickerLeaflet.setView([currentLat, currentLng], 15);
-      }
-      
+      } else { geoPickerLeaflet.invalidateSize(); geoPickerLeaflet.setView([currentLat, currentLng], 15); }
       if (tempGeoMarker) geoPickerLeaflet.removeLayer(tempGeoMarker);
-      selectedLat = currentLat;
-      selectedLng = currentLng;
       tempGeoMarker = L.marker([currentLat, currentLng]).addTo(geoPickerLeaflet);
     }, 200);
   }
 
-  function cerrarMapaGeorreferencia() {
-    document.getElementById('modalGeoMapa').style.display = 'none';
-  }
-
+  function cerrarMapaGeorreferencia() { document.getElementById('modalGeoMapa').style.display = 'none'; }
   function confirmarGeorreferencia() {
-    if (selectedLat && selectedLng) {
-      document.getElementById('edLat').value = selectedLat;
-      document.getElementById('edLng').value = selectedLng;
-    }
+    if (selectedLat && selectedLng) { document.getElementById('edLat').value = selectedLat; document.getElementById('edLng').value = selectedLng; }
     cerrarMapaGeorreferencia();
   }
 
   function alternarVistaMapa() {
     modoMapaActivo = !modoMapaActivo;
     const mapaDiv = document.getElementById('view-map');
-    const areasDiv = document.getElementById('view-areas');
-    const equiposDiv = document.getElementById('view-equipos');
-    const compDiv = document.getElementById('view-componentes');
-
-    if (modoMapaActivo) {
-      mapaDiv.style.display = 'block';
-      areasDiv.style.display = 'none';
-      equiposDiv.style.display = 'none';
-      compDiv.style.display = 'none';
-      inicializarMapa();
-      setTimeout(() => {
-        mapaLeaflet.invalidateSize();
-        actualizarMarcadoresMapa();
-      }, 200);
-    } else {
-      mapaDiv.style.display = 'none';
-      if (equipoSeleccionado) renderNivel3Componentes(equipoSeleccionado.id);
-      else if (areaSeleccionada) renderNivel2Equipos(areaSeleccionada);
-      else renderNivel1Areas();
-    }
+    mapaDiv.style.display = modoMapaActivo ? 'block' : 'none';
+    document.getElementById('view-areas').style.display = modoMapaActivo ? 'none' : 'grid';
+    document.getElementById('view-equipos').style.display = 'none';
+    document.getElementById('view-componentes').style.display = 'none';
+    if (modoMapaActivo) { inicializarMapa(); setTimeout(() => { mapaLeaflet.invalidateSize(); actualizarMarcadoresMapa(); }, 250); }
   }
 
   function actualizarMarcadoresMapa() {
-    if (!capaMarcadores) return;
+    if (!capaMarcadores || !mapaLeaflet) return;
     capaMarcadores.clearLayers();
+    let latLngsValid = [];
     equiposDB.filter(e => faenaActual === 'TODAS' || (e.siteId || '') === faenaActual).forEach(eq => {
-      if (eq.lat && eq.lng && eq.lat.trim() !== "" && eq.lng.trim() !== "") {
-        const sev = calcularSeveridadGlobal(eq.componentes);
-        const color = SEV_COLOR_HEX[sev] || '#6b7280';
+      const latNum = parseFloat(eq.lat), lngNum = parseFloat(eq.lng);
+      if (!isNaN(latNum) && !isNaN(lngNum) && latNum !== 0 && lngNum !== 0) {
+        const sev = calcularSeveridadGlobal(eq.componentes), color = SEV_COLOR_HEX[sev] || '#6b7280';
         const iconoCustom = L.divIcon({
           className: 'custom-map-marker',
-          html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 12px rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; font-weight: bold;">📍</div>`,
-          iconSize: [24, 24],
-          iconAnchor: [12, 12]
+          html: `<div style="background-color: ${color}; width: 26px; height: 26px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 14px rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; font-weight: bold;">📍</div>`,
+          iconSize: [26, 26], iconAnchor: [13, 13]
         });
-        const marker = L.marker([parseFloat(eq.lat), parseFloat(eq.lng)], { icon: iconoCustom });
-        marker.bindPopup(`
-          <div style="color: #141416; font-family: 'Inter', sans-serif;">
-            <b style="font-size: 0.9rem;">${eq.tag}</b><br>
-            <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700;">Faena: ${eq.siteId || 'N/A'}</span><br>
-            <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700;">Área: ${eq.area} [${(eq.domain||'planta').toUpperCase()}]</span><br>
-            <span style="font-size: 0.75rem;">Estado: <b style="color: ${color};">${sev.toUpperCase()}</b></span><br><br>
-            <button onclick="cerrarMapaYVerEquipo('${eq.id}')" style="background: #2563eb; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold;">🔍 Inspeccionar Activo</button>
-          </div>
-        `);
+        const marker = L.marker([latNum, lngNum], { icon: iconoCustom });
+        marker.bindPopup(`<div style="color:#141416;"><b>${eq.tag}</b><br>Faena: ${eq.siteId}<br><b style="color:${color};">${sev.toUpperCase()}</b><br><br><button onclick="cerrarMapaYVerEquipo('${eq.id}')" style="background:#2563eb;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;">Inspeccionar</button></div>`);
         capaMarcadores.addLayer(marker);
+        latLngsValid.push([latNum, lngNum]);
       }
     });
+    if (latLngsValid.length > 0) mapaLeaflet.fitBounds(L.latLngBounds(latLngsValid), { padding: [50, 50], maxZoom: 17 });
   }
 
-  function cerrarMapaYVerEquipo(id) {
-    modoMapaActivo = false;
-    document.getElementById('view-map').style.display = 'none';
-    renderNivel3Componentes(id);
-  }
+  function cerrarMapaYVerEquipo(id) { modoMapaActivo = false; document.getElementById('view-map').style.display = 'none'; renderNivel3Componentes(id); }
 
   db.on('value', snap => {
     const rawData = snap.val();
-    if (rawData) {
-      equiposDB = Object.keys(rawData).map(key => {
-        const item = rawData[key];
-        return {
-          id: item.id || key,
-          siteId: item.siteId || 'Planta, Mina los Colorados',
-          domain: item.domain || 'planta',
-          area: item.area || 'Sin Área',
-          tag: item.tag || item.nombre || item.identificador || item.codigo || 'S/N',
-          tipo: item.tipo || item.clase || 'Activo',
-          fecha: item.fecha || item.ultima_sincronizacion || '',
-          lat: item.lat || '',
-          lng: item.lng || '',
-          componentes: item.componentes || [],
-          en_edicion: item.en_edicion || false,
-          edit_lock: item.edit_lock || null,
-          audit: item.audit || {}
-        };
-      });
-    } else {
-      equiposDB = [];
-    }
+    equiposDB = rawData ? Object.keys(rawData).map(key => ({
+      id: rawData[key].id || key, siteId: rawData[key].siteId || 'Planta, Mina los Colorados', domain: rawData[key].domain || 'planta',
+      area: rawData[key].area || 'Sin Área', tag: rawData[key].tag || 'S/N', tipo: rawData[key].tipo || 'Activo',
+      fecha: rawData[key].fecha || '', lat: rawData[key].lat || '', lng: rawData[key].lng || '',
+      componentes: rawData[key].componentes || [], en_edicion: rawData[key].en_edicion || false,
+      edit_lock: rawData[key].edit_lock || null, audit: rawData[key].audit || {}, triage_sala: rawData[key].triage_sala || {}
+    })) : [];
     actualizarConteoUniversoEquipos();
+    actualizarSlaMatrix();
     if (modoMapaActivo) actualizarMarcadoresMapa();
-    else if (equipoSeleccionado) {
-      const refreshed = equiposDB.find(e => e.id === equipoSeleccionado.id);
-      if (refreshed) equipoSeleccionado = refreshed;
-      renderNivel3Componentes(equipoSeleccionado.id);
-    }
-    else if (areaSeleccionada) renderNivel2Equipos(areaSeleccionada);
+    else if (equipoSeleccionado) renderNivel3Componentes((equiposDB.find(e => e.id === equipoSeleccionado.id) || equipoSeleccionado).id);
+    else if (areaSeleccionada) renderNivel2Equipos();
     else renderNivel1Areas();
   });
 
   function actualizarConteoUniversoEquipos() {
-    let rojos = 0, naranjos = 0, amarillos = 0, verdes = 0;
+    let r = 0, n = 0, a = 0, v = 0;
     equiposDB.filter(e => faenaActual === 'TODAS' || (e.siteId || '') === faenaActual).forEach(eq => {
-      const sevGlobal = calcularSeveridadGlobal(eq.componentes);
-      if (sevGlobal === 'Rojo') rojos++;
-      else if (sevGlobal === 'Naranja') naranjos++;
-      else if (sevGlobal === 'Amarillo') amarillos++;
-      else if (sevGlobal === 'Verde') verdes++;
+      const s = calcularSeveridadGlobal(eq.componentes);
+      if (s === 'Rojo') r++; else if (s === 'Naranja') n++; else if (s === 'Amarillo') a++; else if (s === 'Verde') v++;
     });
-    document.getElementById('kpiTotalRojos').innerText = rojos;
-    document.getElementById('kpiTotalNaranjos').innerText = naranjos;
-    document.getElementById('kpiTotalAmarillos').innerText = amarillos;
-    document.getElementById('kpiTotalVerdes').innerText = verdes;
+    document.getElementById('kpiTotalRojos').innerText = r; document.getElementById('kpiTotalNaranjos').innerText = n;
+    document.getElementById('kpiTotalAmarillos').innerText = a; document.getElementById('kpiTotalVerdes').innerText = v;
   }
 
   function calcularSeveridadGlobal(componentes) {
-    if (!componentes || componentes.length === 0) return 'Plomo';
-    let maxPeso = 1; let sevFinal = 'Plomo';
-    componentes.forEach(c => { if (SEV_PESO[c.severidad] > maxPeso) { maxPeso = SEV_PESO[c.severidad]; sevFinal = c.severidad; } });
-    return sevFinal;
+    if (!componentes || !componentes.length) return 'Plomo';
+    let maxP = 1, sev = 'Plomo';
+    componentes.forEach(c => { if (SEV_PESO[c.severidad] > maxP) { maxP = SEV_PESO[c.severidad]; sev = c.severidad; } });
+    return sev;
   }
 
   function irAInicio() { cerrarEdicion(); modoMapaActivo = false; document.getElementById('view-map').style.display = 'none'; renderNivel1Areas(); }
@@ -847,207 +772,110 @@
     if (document.getElementById('view-equipos').style.display === 'grid') { irAInicio(); return; }
   }
 
-  function aplicarFiltrosGlobales() {
-    if (modoMapaActivo) return;
-    if (areaSeleccionada) renderNivel2Equipos();
-    else renderNivel1Areas();
-  }
-
-  function filtrarPorBusqueda() {
-    if (modoMapaActivo) return;
-    if (areaSeleccionada) renderNivel2Equipos();
-    else renderNivel1Areas();
-  }
+  function aplicarFiltrosGlobales() { if (modoMapaActivo) return; areaSeleccionada ? renderNivel2Equipos() : renderNivel1Areas(); }
+  function filtrarPorBusqueda() { aplicarFiltrosGlobales(); }
 
   function renderNivel1Areas() {
     areaSeleccionada = null; equipoSeleccionado = null;
-    document.getElementById('btnVolver').style.display = 'none';
-    document.getElementById('btnInicio').style.display = 'none';
-    document.getElementById('bc-area').style.display = 'none';
-    document.getElementById('bc-equipo').style.display = 'none';
-
-    document.getElementById('view-equipos').style.display = 'none';
-    document.getElementById('view-componentes').style.display = 'none';
+    document.getElementById('btnVolver').style.display = 'none'; document.getElementById('btnInicio').style.display = 'none';
+    document.getElementById('bc-area').style.display = 'none'; document.getElementById('bc-equipo').style.display = 'none';
+    document.getElementById('view-equipos').style.display = 'none'; document.getElementById('view-componentes').style.display = 'none';
     document.getElementById('view-areas').style.display = 'grid';
 
-    const filtroOM = document.getElementById('filtroOM').value;
-    const query = (document.getElementById('buscadorTag').value || '').toLowerCase().trim();
+    const filtroOM = document.getElementById('filtroOM').value, query = (document.getElementById('buscadorTag').value || '').toLowerCase().trim();
     const faenasMap = {};
-
     equiposDB.filter(e => faenaActual === 'TODAS' || (e.siteId || '') === faenaActual).forEach(eq => {
-      if (filtroOM === 'con_om') {
-        const tieneOM = (eq.componentes || []).some(c => c.om && c.om.trim() !== "");
-        if (!tieneOM) return;
-      }
-
-      if (query !== "") {
-        const matchTag = eq.tag.toLowerCase().includes(query);
-        const matchArea = eq.area.toLowerCase().includes(query);
-        const matchOM = (eq.componentes || []).some(c => (c.om || '').toLowerCase().includes(query));
-        if (!matchTag && !matchArea && !matchOM) return;
-      }
-
-      const siteName = eq.siteId || 'Sin Faena Asignada';
-      const areaName = eq.area || 'Sin Área';
+      if (filtroOM === 'con_om' && !eq.componentes.some(c => c.om && c.om.trim() !== "")) return;
+      if (query && !eq.tag.toLowerCase().includes(query) && !eq.area.toLowerCase().includes(query)) return;
+      const siteName = eq.siteId || 'Sin Faena', areaKey = `${eq.area || 'Sin Área'} [${(eq.domain||'planta').toUpperCase()}]`;
       if (!faenasMap[siteName]) faenasMap[siteName] = {};
-      const areaKey = `${areaName} [${(eq.domain||'planta').toUpperCase()}]`;
       const sev = calcularSeveridadGlobal(eq.componentes);
       if (!faenasMap[siteName][areaKey]) faenasMap[siteName][areaKey] = { equipos: 0, criticos: 0, maxSevPeso: 1, maxSev: 'Plomo' };
       faenasMap[siteName][areaKey].equipos++;
       if (SEV_PESO[sev] >= 4) faenasMap[siteName][areaKey].criticos++;
-      if (SEV_PESO[sev] > faenasMap[siteName][areaKey].maxSevPeso) { 
-        faenasMap[siteName][areaKey].maxSevPeso = SEV_PESO[sev]; 
-        faenasMap[siteName][areaKey].maxSev = sev; 
-      }
+      if (SEV_PESO[sev] > faenasMap[siteName][areaKey].maxSevPeso) { faenasMap[siteName][areaKey].maxSevPeso = SEV_PESO[sev]; faenasMap[siteName][areaKey].maxSev = sev; }
     });
 
-    const container = document.getElementById('view-areas');
-    const ordenFaenas = [
-      'Planta, Mina los Colorados',
-      'Mina, Mina los Colorados',
-      'Planta de Pellets',
-      'Planta, Mina el Romeral',
-      'Mina, Mina el Romeral'
-    ];
+    const ordenFaenas = ['Planta, Mina los Colorados', 'Mina, Mina los Colorados', 'Planta de Pellets', 'Planta, Mina el Romeral', 'Mina, Mina el Romeral'];
+    const faenasListKeys = Object.keys(faenasMap), faenasOrdenadas = ordenFaenas.filter(f => faenasListKeys.includes(f)).concat(faenasListKeys.filter(f => !ordenFaenas.includes(f)));
 
-    let htmlGlobal = '';
-    const faenasListKeys = Object.keys(faenasMap);
-    const faenasOrdenadas = ordenFaenas.filter(f => faenasListKeys.includes(f)).concat(faenasListKeys.filter(f => !ordenFaenas.includes(f)));
-
-    faenasOrdenadas.forEach(siteName => {
+    document.getElementById('view-areas').innerHTML = faenasOrdenadas.map(siteName => {
       const areasGroup = faenasMap[siteName];
-      htmlGlobal += `<div class="faena-section-header"><span>🏗️ Faena: ${siteName}</span></div>`;
-      htmlGlobal += Object.keys(areasGroup).sort().map(areaKey => {
-        const data = areasGroup[areaKey];
-        const animClass = (data.maxSev === 'Rojo' || data.maxSev === 'Naranja') ? `sev-${data.maxSev.toLowerCase()}-anim` : '';
-        const areaCleanName = areaKey.split(' [')[0];
-        return `
-          <div class="card-area sev-${data.maxSev.toLowerCase()} ${animClass}" onclick="renderNivel2Equipos('${areaCleanName}')">
-            <div style="width: 100%; display: flex; justify-content: space-between; align-items: flex-start;">
-              <div style="text-align: left;">
-                <div class="label-muted">Área [Dominio]</div>
-                <div class="value-strong" style="font-size: 0.9rem; margin-top: 2px;">${areaKey}</div>
-              </div>
-            </div>
-            <div style="width: 100%; display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border-card);">
-              <div>
-                <div class="label-muted" style="font-size: 0.5rem;">Activos</div>
-                <div class="value-strong">${data.equipos}</div>
-              </div>
-              <div style="text-align: right;">
-                <div class="label-muted" style="font-size: 0.5rem;">Condición</div>
-                <div class="value-strong" style="color: ${SEV_COLOR_HEX[data.maxSev]}">${data.criticos > 0 ? `${data.criticos} Alerta` : 'Normal'}</div>
-              </div>
-            </div>
+      const cardsHtml = Object.keys(areasGroup).sort().map(areaKey => {
+        const data = areasGroup[areaKey], anim = (data.maxSev === 'Rojo' || data.maxSev === 'Naranja') ? `sev-${data.maxSev.toLowerCase()}-anim` : '';
+        const cleanName = areaKey.split(' [')[0];
+        return `<div class="card-area sev-${data.maxSev.toLowerCase()} ${anim}" onclick="renderNivel2Equipos('${cleanName}')">
+          <div style="text-align:left;"><div class="label-muted">Área [Dominio]</div><div class="value-strong">${areaKey}</div></div>
+          <div style="display:flex; justify-content:space-between; margin-top:6px; pt:6px; border-top:1px solid var(--border-card);">
+            <div><div class="label-muted" style="font-size:0.5rem;">Activos</div><div class="value-strong">${data.equipos}</div></div>
+            <div style="text-align:right;"><div class="label-muted" style="font-size:0.5rem;">Condición</div><div class="value-strong" style="color:${SEV_COLOR_HEX[data.maxSev]}">${data.criticos > 0 ? `${data.criticos} Alerta` : 'Normal'}</div></div>
           </div>
-        `;
+        </div>`;
       }).join('');
-    });
-
-    container.innerHTML = htmlGlobal || '<div style="color:var(--text-muted); grid-column: 1/-1;">Sin activos con los filtros o búsqueda seleccionada.</div>';
+      return `<div class="faena-section-header"><span>🏗️ Faena: ${siteName}</span></div>` + cardsHtml;
+    }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin activos.</div>';
   }
 
   function renderNivel2Equipos(areaStr) {
-    if (areaStr) areaSeleccionada = areaStr;
-    equipoSeleccionado = null;
-    
-    document.getElementById('btnVolver').style.display = 'inline-flex';
-    document.getElementById('btnInicio').style.display = 'inline-flex';
-    document.getElementById('bc-area').style.display = 'inline-flex';
-    document.getElementById('bc-area').innerHTML = ` / <span class="nav-link">${areaSeleccionada}</span>`;
+    if (areaStr) areaSeleccionada = areaStr; equipoSeleccionado = null;
+    document.getElementById('btnVolver').style.display = 'inline-flex'; document.getElementById('btnInicio').style.display = 'inline-flex';
+    document.getElementById('bc-area').style.display = 'inline-flex'; document.getElementById('bc-area').innerHTML = ` / <span class="nav-link">${areaSeleccionada}</span>`;
     document.getElementById('bc-equipo').style.display = 'none';
-
-    document.getElementById('view-areas').style.display = 'none';
-    document.getElementById('view-componentes').style.display = 'none';
+    document.getElementById('view-areas').style.display = 'none'; document.getElementById('view-componentes').style.display = 'none';
     document.getElementById('view-equipos').style.display = 'grid';
 
-    const filtroOM = document.getElementById('filtroOM').value;
-    const query = (document.getElementById('buscadorTag').value || '').toLowerCase().trim();
-    
+    const filtroOM = document.getElementById('filtroOM').value, query = (document.getElementById('buscadorTag').value || '').toLowerCase().trim();
     let eqs = equiposDB.filter(e => (faenaActual === 'TODAS' || (e.siteId || '') === faenaActual) && e.area === areaSeleccionada);
-    
-    if (filtroOM === 'con_om') {
-      eqs = eqs.filter(e => (e.componentes || []).some(c => c.om && c.om.trim() !== ""));
-    }
-    if (query !== "") {
-      eqs = eqs.filter(eq => {
-        const matchTag = eq.tag.toLowerCase().includes(query);
-        const matchOM = (eq.componentes || []).some(c => (c.om || '').toLowerCase().includes(query));
-        return matchTag || matchOM;
-      });
-    }
-
+    if (filtroOM === 'con_om') eqs = eqs.filter(e => e.componentes.some(c => c.om && c.om.trim() !== ""));
+    if (query) eqs = eqs.filter(eq => eq.tag.toLowerCase().includes(query) || eq.componentes.some(c => (c.om||'').toLowerCase().includes(query)));
     eqs.sort((a,b) => SEV_PESO[calcularSeveridadGlobal(b.componentes)] - SEV_PESO[calcularSeveridadGlobal(a.componentes)]);
 
-    const container = document.getElementById('view-equipos');
-    container.innerHTML = eqs.map(eq => {
-      const sevGlobal = calcularSeveridadGlobal(eq.componentes);
-      const dias = eq.fecha ? Math.floor((new Date() - new Date(eq.fecha)) / 86400000) : '?';
-      const lockBadge = eq.edit_lock && eq.edit_lock.user ? `<span class="lock-badge">🔒 ${eq.edit_lock.user}</span>` : '';
-      return `
-        <div class="card-equipo sev-${sevGlobal.toLowerCase()}" onclick="renderNivel3Componentes('${eq.id}')">
-          <div class="eq-type">${eq.siteId || 'Faena'} | ${eq.tipo || 'Activo'}</div>
-          <div class="eq-tag code-font" title="${eq.tag}">${eq.tag}</div>
-          <div class="eq-days" title="Días">${dias}d</div>
-          ${lockBadge}
-        </div>
-      `;
-    }).join('') || '<div style="color:var(--text-muted); grid-column: 1/-1;">No hay equipos en este área con los filtros aplicados.</div>';
+    document.getElementById('view-equipos').innerHTML = eqs.map(eq => {
+      const sevGlobal = calcularSeveridadGlobal(eq.componentes), dias = eq.fecha ? Math.floor((new Date() - new Date(eq.fecha)) / 86400000) : '?';
+      const lockBadge = eq.edit_lock?.user ? `<span class="lock-badge">🔒 ${eq.edit_lock.user}</span>` : '';
+      const isCriticalAlert = sevGlobal === 'Rojo' || sevGlobal === 'Naranja';
+      const sensorTag = isCriticalAlert ? `<div class="sensor-badge alert-sensor">📡 IOT: ALERTA</div>` : `<div class="sensor-badge">📡 IOT: OK</div>`;
+      return `<div class="card-equipo sev-${sevGlobal.toLowerCase()}" onclick="renderNivel3Componentes('${eq.id}')">
+        ${sensorTag}
+        <div class="eq-type" style="margin-top:10px;">${eq.siteId || 'Faena'} | ${eq.tipo || 'Activo'}</div>
+        <div class="eq-tag code-font">${eq.tag}</div>
+        <div class="eq-days">${dias}d</div>
+        ${lockBadge}
+      </div>`;
+    }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin equipos.</div>';
   }
 
   function renderNivel3Componentes(id) {
-    const eq = equiposDB.find(e => e.id === id);
-    if (!eq) return;
-    equipoSeleccionado = eq;
-    const sevGlobal = calcularSeveridadGlobal(eq.componentes);
-    
+    const eq = equiposDB.find(e => e.id === id); if (!eq) return;
+    equipoSeleccionado = eq; const sevGlobal = calcularSeveridadGlobal(eq.componentes);
     document.getElementById('bc-equipo').style.display = 'inline-flex';
     document.getElementById('bc-equipo').innerHTML = ` / <span class="code-font" style="color:var(--text-main); font-weight:700;">${eq.tag}</span>`;
-
-    document.getElementById('view-areas').style.display = 'none';
-    document.getElementById('view-equipos').style.display = 'none';
+    document.getElementById('view-areas').style.display = 'none'; document.getElementById('view-equipos').style.display = 'none';
     document.getElementById('view-componentes').style.display = 'grid';
 
-    const container = document.getElementById('view-componentes');
-    const lockInfo = eq.edit_lock && eq.edit_lock.user ? `<span style="font-size:0.65rem; color:#f97316; font-weight:700;">🔒 En edición por: ${eq.edit_lock.user}</span>` : '';
-    let html = `
-      <div style="grid-column: 1 / -1; display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px; background: var(--bg-card); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-card);">
-        <div>
-          <div class="label-muted">${eq.siteId || 'Faena'} | ${eq.tipo || 'ACTIVO'}</div>
-          <h2 style="margin: 2px 0 0 0; font-size: 1.15rem;" class="code-font">${eq.tag}</h2>
-          ${lockInfo}
-        </div>
-        <div style="display:flex; gap:10px; align-items:center;">
-          <div style="text-align: right;">
-            <div class="label-muted" style="font-size: 0.5rem;">Estado Global</div>
-            <div class="value-strong" style="color: ${SEV_COLOR_HEX[sevGlobal]}; text-transform: uppercase; font-size: 0.75rem;">${sevGlobal}</div>
-          </div>
-          <button class="btn-base btn-primary admin-only" onclick="abrirEdicionEquipo()">✏️ Editar</button>
-        </div>
+    const lockInfo = eq.edit_lock?.user ? `<span style="font-size:0.65rem; color:#f97316; font-weight:700;">🔒 En edición por: ${eq.edit_lock.user}</span>` : '';
+    let html = `<div style="grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; background:var(--bg-card); padding:10px 14px; border-radius:8px; border:1px solid var(--border-card);">
+      <div><div class="label-muted">${eq.siteId} | ${eq.tipo}</div><h2 style="margin:2px 0 0 0; font-size:1.15rem;" class="code-font">${eq.tag}</h2>${lockInfo}</div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <div style="text-align:right;"><div class="label-muted" style="font-size:0.5rem;">Estado Global</div><div class="value-strong" style="color:${SEV_COLOR_HEX[sevGlobal]}; font-size:0.75rem;">${sevGlobal}</div></div>
+        <button class="btn-base btn-primary admin-only" onclick="abrirEdicionEquipo()">✏️ Editar</button>
       </div>
-    `;
+    </div>`;
 
-    const compsHtml = (eq.componentes || []).map((c, index) => `
+    document.getElementById('view-componentes').innerHTML = html + (eq.componentes || []).map((c, index) => `
       <div class="card-equipo card-componente sev-${c.severidad.toLowerCase()}" onclick="abrirDetalleComponente('${eq.id}', ${index})">
-        <div style="text-align: left; width: 100%;">
-          <div class="eq-type">Spot / Componente</div>
-          <div class="eq-tag code-font" style="font-size: 0.85rem;">${c.nombre}</div>
-        </div>
-        <div style="width: 100%; display: flex; justify-content: space-between; margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--border-card);">
-          <span style="font-size: 0.7rem; font-weight: 700; color: ${SEV_COLOR_HEX[c.severidad]};">${c.severidad.toUpperCase()}</span>
-          <span style="font-size: 0.65rem; color: var(--text-muted);">OM: ${c.om || 'S/N'}</span>
+        <div style="text-align:left; width:100%;"><div class="eq-type">Spot / Componente</div><div class="eq-tag code-font" style="font-size:0.85rem;">${c.nombre}</div></div>
+        <div style="width:100%; display:flex; justify-content:space-between; margin-top:4px; pt:6px; border-top:1px solid var(--border-card);">
+          <span style="font-size:0.7rem; font-weight:700; color:${SEV_COLOR_HEX[c.severidad]};">${c.severidad.toUpperCase()}</span>
+          <span style="font-size:0.65rem; color:var(--text-muted);">OM: ${c.om || 'S/N'}</span>
         </div>
       </div>
-    `).join('');
-
-    container.innerHTML = html + (compsHtml || '<div style="grid-column: 1/-1; color:var(--text-muted); text-align:center;">Sin componentes registrados.</div>');
+    `).join('') || '<div style="grid-column:1/-1; color:var(--text-muted); text-align:center;">Sin componentes.</div>';
   }
 
   function abrirDetalleComponente(eqId, compIndex) {
-    const eq = equiposDB.find(e => e.id === eqId);
-    if (!eq || !eq.componentes || !eq.componentes[compIndex]) return;
+    const eq = equiposDB.find(e => e.id === eqId); if (!eq || !eq.componentes[compIndex]) return;
     const c = eq.componentes[compIndex];
-    
     componenteActualDetalle = { site: eq.siteId||'Faena', domain: eq.domain||'planta', tipoActivo: eq.tipo, eqTag: eq.tag, area: eq.area, spot: c.nombre, sev: c.severidad, rms: c.rms || 'N/D', termo: c.termo || 'N/D', om: c.om || 'S/N', analisis: c.analisis || 'S/N', recomendacion: c.recomendacion || 'S/N', aceite: c.aceite || '' };
 
     document.getElementById('detCompEqTag').innerText = `Faena: ${componenteActualDetalle.site} | Activo: ${eq.tag} (${eq.area})`;
@@ -1056,83 +884,35 @@
     document.getElementById('detCompRms').innerText = c.rms ? `${c.rms} mm/s` : 'N/D';
     document.getElementById('detCompTermo').innerText = c.termo ? `+${c.termo}°C ΔT` : 'Normal';
     
-    const sevEl = document.getElementById('detCompSev');
-    sevEl.innerText = c.severidad.toUpperCase();
-    sevEl.style.color = SEV_COLOR_HEX[c.severidad] || 'white';
-    
-    const bloqueAceite = document.getElementById('bloqueLubricanteDetalle');
-    if (esActivoConAceite(eq.tipo, c.nombre)) {
-      bloqueAceite.style.display = 'block';
-      document.getElementById('detCompLubricante').innerText = c.aceite || 'Condición de aceite nominal (sin reporte crítico).';
-    } else {
-      bloqueAceite.style.display = 'none';
-    }
+    // Cargar Triage de Sala
+    const stSel = document.getElementById('controlRoomStatus');
+    if (eq.triage_sala && eq.triage_sala.status) stSel.value = eq.triage_sala.status;
+    else stSel.value = 'new';
+    document.getElementById('ackTimestamp').innerText = (eq.triage_sala && eq.triage_sala.updatedAt) ? `${eq.triage_sala.updatedAt} (${eq.triage_sala.updatedBy || ''})` : '-';
 
-    document.getElementById('detCompAnalisis').innerText = c.analisis || 'Sin análisis técnico multivariable registrado.';
-    document.getElementById('detCompRecomendacion').innerText = c.recomendacion || 'Sin recomendación operativa registrada.';
-    
-    const trazDiv = document.getElementById('detCompTrazabilidad');
-    if (c.trazabilidad && c.trazabilidad.length > 0) {
-      trazDiv.innerHTML = c.trazabilidad.map(t => `<div style="margin-bottom: 4px;">• [${t.fecha}] Transición de <b style="color:${SEV_COLOR_HEX[t.de]}">${t.de}</b> a <b style="color:${SEV_COLOR_HEX[t.a]}">${t.a}</b></div>`).join('');
-    } else {
-      trazDiv.innerHTML = 'Sin cambios de severidad previos registrados.';
-    }
-
+    const sevEl = document.getElementById('detCompSev'); sevEl.innerText = c.severidad.toUpperCase(); sevEl.style.color = SEV_COLOR_HEX[c.severidad] || 'white';
+    document.getElementById('bloqueLubricanteDetalle').style.display = esActivoConAceite(eq.tipo, c.nombre) ? 'block' : 'none';
+    document.getElementById('detCompLubricante').innerText = c.aceite || 'Condición de aceite nominal.';
+    document.getElementById('detCompAnalisis').innerText = c.analisis || 'Sin análisis registrado.';
+    document.getElementById('detCompRecomendacion').innerText = c.recomendacion || 'Sin recomendación registrada.';
+    document.getElementById('detCompTrazabilidad').innerHTML = (c.trazabilidad && c.trazabilidad.length > 0) ? c.trazabilidad.map(t => `<div style="margin-bottom:4px;">• [${t.fecha}] <b style="color:${SEV_COLOR_HEX[t.de]}">${t.de}</b> ➔ <b style="color:${SEV_COLOR_HEX[t.a]}">${t.a}</b></div>`).join('') : 'Sin cambios de severidad.';
     document.getElementById('modalDetalleComponente').style.display = 'flex';
   }
 
   function copiarResumenEjecutivo() {
     if (!componenteActualDetalle) return;
     const d = componenteActualDetalle;
-    const aceiteInfo = esActivoConAceite(d.tipoActivo, d.spot) ? `\nLubricante: ${d.aceite || 'Normal'}` : '';
-    const texto = `--- REPORTE EJECUTIVO CIO [${d.site}] ---
-Faena: ${d.site} | Área: ${d.area} | Activo: ${d.eqTag}
-Spot/Componente: ${d.spot}
-Severidad: ${d.sev.toUpperCase()} | ISO RMS: ${d.rms} mm/s | Termografía: ΔT ${d.termo} | OM: ${d.om}${aceiteInfo}
-Diagnóstico Cruzado: ${d.analisis}
-Recomendación: ${d.recomendacion}`;
-
-    navigator.clipboard.writeText(texto).then(() => {
-      alert("✅ Resumen ejecutivo copiado al portapapeles.");
-    }).catch(err => {
-      alert("⚠️ No se pudo copiar automáticamente.");
-    });
+    const txt = `--- REPORTE EJECUTIVO CIO [${d.site}] ---\nActivo: ${d.eqTag} (${d.area})\nSpot: ${d.spot}\nSev: ${d.sev.toUpperCase()} | RMS: ${d.rms} mm/s | Termo: ΔT ${d.termo} | OM: ${d.om}\nDiagnóstico: ${d.analisis}\nRecomendación: ${d.recomendacion}`;
+    navigator.clipboard.writeText(txt).then(() => alert("✅ Resumen copiado."));
   }
 
-  function cerrarDetalleComponente(e) {
-    if(e && e.target !== document.getElementById('modalDetalleComponente')) return;
-    document.getElementById('modalDetalleComponente').style.display = 'none';
-  }
-
-  function liberarLockEdicionActual() {
-    if (equipoSeleccionado && isAdmin) {
-      db.child(equipoSeleccionado.id).update({ en_edicion: false, edit_lock: null });
-    }
-  }
+  function cerrarDetalleComponente(e) { if(e && e.target !== document.getElementById('modalDetalleComponente')) return; document.getElementById('modalDetalleComponente').style.display = 'none'; }
+  function liberarLockEdicionActual() { if (equipoSeleccionado && isAdmin) db.child(equipoSeleccionado.id).update({ en_edicion: false, edit_lock: null }); }
 
   function abrirEdicionEquipo() {
     if (!isAdmin || !equipoSeleccionado) return;
-    if (!isAdminOverridingSite(equipoSeleccionado.siteId)) {
-      alert(`⛔ Acceso denegado: Tu faena asignada de escritura es "${faenaAsignadaOperador}". No puedes modificar activos de "${equipoSeleccionado.siteId}" sin rol SuperAdmin.`);
-      return;
-    }
-
-    const me = usuarioActivo || 'SuperAdmin (MLC)';
-    const currentLock = equipoSeleccionado.edit_lock;
-
-    if (currentLock && currentLock.user && currentLock.user !== me) {
-      const ageMinutes = (Date.now() - (currentLock.timestamp || 0)) / 60000;
-      if (ageMinutes < 15) {
-        alert(`🔒 Activo bloqueado por concurrencia:\nEl usuario "${currentLock.user}" se encuentra editando este activo en este momento.`);
-        return;
-      }
-    }
-
-    db.child(equipoSeleccionado.id).update({ 
-      en_edicion: true,
-      edit_lock: { user: me, timestamp: Date.now() }
-    });
-    
+    if (!isAdminOverridingSite(equipoSeleccionado.siteId)) { alert(`⛔ No puedes modificar activos de "${equipoSeleccionado.siteId}".`); return; }
+    db.child(equipoSeleccionado.id).update({ en_edicion: true, edit_lock: { user: usuarioActivo || 'Admin', timestamp: Date.now() } });
     document.getElementById('edSiteId').value = equipoSeleccionado.siteId || 'Planta, Mina los Colorados';
     document.getElementById('edDomain').value = equipoSeleccionado.domain || 'planta';
     document.getElementById('edArea').value = equipoSeleccionado.area || '';
@@ -1141,386 +921,159 @@ Recomendación: ${d.recomendacion}`;
     document.getElementById('edFecha').value = equipoSeleccionado.fecha || '';
     document.getElementById('edLat').value = equipoSeleccionado.lat || '';
     document.getElementById('edLng').value = equipoSeleccionado.lng || '';
-
-    const cont = document.getElementById('edComponentesContainer');
-    cont.innerHTML = '';
-    const tipoVal = equipoSeleccionado.tipo || '';
-    (equipoSeleccionado.componentes || []).forEach((c, idx) => agregarFormComponente(c, tipoVal));
-    
+    const cont = document.getElementById('edComponentesContainer'); cont.innerHTML = '';
+    (equipoSeleccionado.componentes || []).forEach(c => agregarFormComponente(c, equipoSeleccionado.tipo));
     document.getElementById('modalEdicion').style.display = 'block';
   }
 
-  function isAdminOverridingSite(targetSite) {
-    if (faenaAsignadaOperador === 'TODAS') return true;
-    return targetSite === faenaAsignadaOperador;
-  }
+  function isAdminOverridingSite(targetSite) { return faenaAsignadaOperador === 'TODAS' || targetSite === faenaAsignadaOperador; }
 
   function agregarFormComponente(data = {}, tipoActivoContexto = '') {
-    const cont = document.getElementById('edComponentesContainer');
-    const div = document.createElement('div');
+    const cont = document.getElementById('edComponentesContainer'), div = document.createElement('div');
     div.style.cssText = "background:var(--bg-main); padding:16px; border:1px solid var(--border-card); border-radius:8px; position:relative;";
     div.className = 'comp-item';
-    
-    const sevActual = data.severidad || 'Verde';
-    const nombreSpot = data.nombre || '';
-    const usaAceite = esActivoConAceite(tipoActivoContexto, nombreSpot);
-    const estiloAceite = usaAceite ? 'display:block;' : 'display:none;';
-    const isoGroupVal = data.iso_group || 'g2_rigid';
-    
+    const sevActual = data.severidad || 'Verde', nombreSpot = data.nombre || '', usaAceite = esActivoConAceite(tipoActivoContexto, nombreSpot);
     div.innerHTML = `
       <button class="btn-danger" style="position:absolute; top:12px; right:12px; padding:4px 8px; font-size:0.7rem;" onclick="this.parentElement.remove()">Eliminar Spot</button>
-      <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 12px; color: var(--accent-color);">Punto de Medición (Spot), ISO 20816-3, Termo, Aceite & IA</div>
+      <div style="font-weight:700; font-size:0.9rem; margin-bottom:12px; color:var(--accent-color);">Spot, ISO 20816-3, Aceite & IA</div>
       <div class="form-grid">
-        <div><label>Nombre del Spot / Componente</label><input type="text" class="c-nom" value="${nombreSpot}" placeholder="Ej: Motor / Reductor" oninput="toggleAceiteInput(this)"></div>
-        <div><label>ISO 20816-3 Grupo / Base</label>
-          <select class="c-iso-group" onchange="onRmsOrGroupChange(this)">
-            <option value="g2_rigid" ${isoGroupVal==='g2_rigid'?'selected':''}>G2 - Rígida (15-300kW)</option>
-            <option value="g2_flexible" ${isoGroupVal==='g2_flexible'?'selected':''}>G2 - Flexible (15-300kW)</option>
-            <option value="g1_rigid" ${isoGroupVal==='g1_rigid'?'selected':''}>G1 - Rígida (>300kW)</option>
-            <option value="g1_flexible" ${isoGroupVal==='g1_flexible'?'selected':''}>G1 - Flexible (>300kW)</option>
-          </select>
-        </div>
-        <div><label>RMS Medido (mm/s ISO)</label><input type="number" step="0.1" class="c-rms" value="${data.rms || ''}" placeholder="Ej: 3.2" oninput="onRmsOrGroupChange(this)"></div>
-        <div><label>Severidad Evaluada (Automática/Manual)</label>
-          <select class="c-sev" onchange="verificarCambioSeveridad(this, '${sevActual}')">
-            <option value="Rojo" ${sevActual==='Rojo'?'selected':''}>🔴 Crítico (Rojo)</option>
-            <option value="Naranja" ${sevActual==='Naranja'?'selected':''}>🟠 Alerta (Naranja)</option>
-            <option value="Amarillo" ${sevActual==='Amarillo'?'selected':''}>🟡 Precaución (Amarillo)</option>
-            <option value="Verde" ${sevActual==='Verde'?'selected':''}>🟢 Normal (Verde)</option>
-            <option value="Plomo" ${sevActual==='Plomo'?'selected':''}>⚪ Sin Datos (Plomo)</option>
-          </select>
-        </div>
-        <div><label>Termografía Delta T (°C ΔT)</label><input type="number" step="0.5" class="c-termo" value="${data.termo || ''}" placeholder="Ej: 15.5"></div>
-        <div><label>Aviso SAP / Orden de Mantención (OM)</label><input type="text" class="c-om" value="${data.om || ''}" placeholder="Ej: OM-4091822"></div>
-        <div><label>Fecha de Hallazgo</label><input type="date" class="c-fhallazgo" value="${data.fecha_hallazgo || ''}"></div>
-        
-        <div class="aceite-wrapper" style="grid-column: span 2; ${estiloAceite} background: var(--input-bg); padding: 10px; border-radius: 6px; border: 1px dashed #f59e0b;">
-          <label style="color: #f59e0b;">🧪 Diagnóstico de Lubricante (Conteo de partículas / Viscosidad)</label>
-          <input type="text" class="c-aceite" value="${data.aceite || ''}" placeholder="Ej: Viscosidad OK, presencia leve de partículas ferrosas MLC-02">
-        </div>
-        
-        <!-- COPILOTO IA MULTIVARIABLE -->
-        <div style="grid-column: span 2;">
-          <label>Análisis Técnico Cruzado (Vib ISO + Termo + Aceite)</label>
-          <div class="copilot-grid">
-            <div class="copilot-box">
-              <header><span>Versión del Analista</span></header>
-              <textarea class="c-ana" rows="4" placeholder="Escriba aquí sus observaciones..." oninput="triggerCopilotAnalisis(this)">${data.analisis || ''}</textarea>
-            </div>
-            <div class="copilot-box" style="border-color: #3b82f6;">
-              <header><span style="color: #3b82f6;">✨ Sugerencia Experta Cruzada (IA)</span> <button type="button" class="btn-base btn-primary" style="padding: 2px 6px; font-size: 0.6rem;" onclick="aplicarSugerenciaAnalisis(this)">Usar esta</button></header>
-              <div class="ai-suggestion-ana" style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; padding: 4px;">IA cruzando variables térmicas, RMS ISO y aceite en tiempo real...</div>
-            </div>
-          </div>
-        </div>
-
-        <div style="grid-column: span 2;">
-          <label>Recomendación Operativa / Correctiva</label>
-          <div class="copilot-grid">
-            <div class="copilot-box">
-              <header><span>Versión del Analista</span></header>
-              <textarea class="c-rec" rows="4" placeholder="Escriba aquí su recomendación..." oninput="triggerCopilotRecomendacion(this)">${data.recomendacion || ''}</textarea>
-            </div>
-            <div class="copilot-box" style="border-color: #16a34a;">
-              <header><span style="color: #22c55e;">✨ Sugerencia Experta / IA</span> <button type="button" class="btn-base btn-success" style="padding: 2px 6px; font-size: 0.6rem;" onclick="aplicarSugerenciaRecomendacion(this)">Usar esta</button></header>
-              <div class="ai-suggestion-rec" style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; padding: 4px;">Comience a escribir para sugerencias operativas integradas...</div>
-            </div>
-          </div>
-        </div>
+        <div><label>Nombre Spot</label><input type="text" class="c-nom" value="${nombreSpot}" oninput="toggleAceiteInput(this)"></div>
+        <div><label>ISO Grupo</label><select class="c-iso-group" onchange="onRmsOrGroupChange(this)"><option value="g2_rigid" ${data.iso_group==='g2_rigid'?'selected':''}>G2 - Rígida</option><option value="g2_flexible" ${data.iso_group==='g2_flexible'?'selected':''}>G2 - Flexible</option><option value="g1_rigid" ${data.iso_group==='g1_rigid'?'selected':''}>G1 - Rígida</option><option value="g1_flexible" ${data.iso_group==='g1_flexible'?'selected':''}>G1 - Flexible</option></select></div>
+        <div><label>RMS Medido</label><input type="number" step="0.1" class="c-rms" value="${data.rms || ''}" oninput="onRmsOrGroupChange(this)"></div>
+        <div><label>Severidad</label><select class="c-sev" onchange="verificarCambioSeveridad(this, '${sevActual}')"><option value="Rojo" ${sevActual==='Rojo'?'selected':''}>🔴 Rojo</option><option value="Naranja" ${sevActual==='Naranja'?'selected':''}>🟠 Naranja</option><option value="Amarillo" ${sevActual==='Amarillo'?'selected':''}>🟡 Amarillo</option><option value="Verde" ${sevActual==='Verde'?'selected':''}>🟢 Verde</option><option value="Plomo" ${sevActual==='Plomo'?'selected':''}>⚪ Plomo</option></select></div>
+        <div><label>Termo ΔT (°C)</label><input type="number" step="0.5" class="c-termo" value="${data.termo || ''}"></div>
+        <div><label>OM SAP</label><input type="text" class="c-om" value="${data.om || ''}"></div>
+        <div><label>Fecha Hallazgo</label><input type="date" class="c-fhallazgo" value="${data.fecha_hallazgo || ''}"></div>
+        <div class="aceite-wrapper" style="grid-column:span 2; ${usaAceite?'display:block;':'display:none;'} background:var(--input-bg); padding:10px; border-radius:6px; border:1px dashed #f59e0b;"><label style="color:#f59e0b;">🧪 Diagnóstico Aceite</label><input type="text" class="c-aceite" value="${data.aceite || ''}"></div>
+        <div style="grid-column:span 2;"><label>Análisis Cruzado</label><div class="copilot-grid"><div class="copilot-box"><textarea class="c-ana" rows="3" oninput="triggerCopilotAnalisis(this)">${data.analisis || ''}</textarea></div><div class="copilot-box" style="border-color:#3b82f6;"><header><span style="color:#3b82f6;">✨ IA</span><button type="button" class="btn-base btn-primary" style="padding:2px 6px; font-size:0.6rem;" onclick="aplicarSugerenciaAnalisis(this)">Usar</button></header><div class="ai-suggestion-ana" style="font-size:0.75rem; color:var(--text-muted); padding:4px;">...</div></div></div></div>
+        <div style="grid-column:span 2;"><label>Recomendación</label><div class="copilot-grid"><div class="copilot-box"><textarea class="c-rec" rows="3" oninput="triggerCopilotRecomendacion(this)">${data.recomendacion || ''}</textarea></div><div class="copilot-box" style="border-color:#16a34a;"><header><span style="color:#22c55e;">✨ IA</span><button type="button" class="btn-base btn-success" style="padding:2px 6px; font-size:0.6rem;" onclick="aplicarSugerenciaRecomendacion(this)">Usar</button></header><div class="ai-suggestion-rec" style="font-size:0.75rem; color:var(--text-muted); padding:4px;">...</div></div></div></div>
       </div>
-      <input type="hidden" class="c-trazabilidad" value='${JSON.stringify(data.trazabilidad || [])}'>
-    `;
+      <input type="hidden" class="c-trazabilidad" value='${JSON.stringify(data.trazabilidad || [])}'>`;
     cont.appendChild(div);
   }
 
   function toggleAceiteInput(inputEl) {
-    const compBox = inputEl.closest('.comp-item');
-    const tipoActivo = document.getElementById('edTipo').value;
-    const nombreSpot = inputEl.value;
-    const wrapper = compBox.querySelector('.aceite-wrapper');
-    if (esActivoConAceite(tipoActivo, nombreSpot)) {
-      wrapper.style.display = 'block';
-    } else {
-      wrapper.style.display = 'none';
-    }
+    inputEl.closest('.comp-item').querySelector('.aceite-wrapper').style.display = esActivoConAceite(document.getElementById('edTipo').value, inputEl.value) ? 'block' : 'none';
   }
 
   let copilotTimer = null;
   function triggerCopilotAnalisis(textarea) {
     clearTimeout(copilotTimer);
     const box = textarea.closest('.form-grid');
-    const aiBox = box.querySelector('.ai-suggestion-ana');
-    aiBox.innerText = "Cruzando multivariable (ISO RMS + Termo + Aceite)...";
-    
     copilotTimer = setTimeout(() => {
-      const val = textarea.value.trim();
-      const rmsVal = box.querySelector('.c-rms').value || '0';
-      const termoVal = box.querySelector('.c-termo').value || '0';
-      const aceiteVal = box.querySelector('.c-aceite') ? box.querySelector('.c-aceite').value : '';
-      let addRms = parseFloat(rmsVal) > 3.0 ? ` Lectura RMS ${rmsVal} mm/s sobre norma base ISO 20816-3.` : '';
-      let addTermo = parseFloat(termoVal) > 10 ? ` Alerta térmica detectada (ΔT +${termoVal}°C).` : '';
-      let addAceite = aceiteVal ? ` Evidencia aceite (${aceiteVal}).` : '';
-      
-      aiBox.innerText = `[IA Copiloto Multivariable]: ${val ? 'Sobre "' + val + '". ' : ''} Síntesis ISO/térmica: Compatible con fatiga subsuperficial.${addRms}${addTermo}${addAceite}`;
-    }, 600);
+      const rms = box.querySelector('.c-rms').value || '0', termo = box.querySelector('.c-termo').value || '0';
+      box.querySelector('.ai-suggestion-ana').innerText = `[IA]: ${parseFloat(rms)>3?'RMS elevado. ':''}Compat. fatiga subsuperficial (ΔT +${termo}°C).`;
+    }, 400);
   }
-
   function triggerCopilotRecomendacion(textarea) {
     clearTimeout(copilotTimer);
     const box = textarea.closest('.form-grid');
-    const aiBox = box.querySelector('.ai-suggestion-rec');
-    
     copilotTimer = setTimeout(() => {
-      const val = textarea.value.trim();
-      const termoVal = box.querySelector('.c-termo').value || '0';
-      let recExtra = parseFloat(termoVal) > 15 ? ' Urgente: Verificar flujo de aceite forzado.' : ' Programar monitoreo en ventana PMS.';
-      aiBox.innerText = `[IA Copiloto]: Respecto a faena ("${val}"), se sugiere ${recExtra}`;
-    }, 600);
+      box.querySelector('.ai-suggestion-rec').innerText = `[IA]: Programar inspección predictiva en ventana PMS.`;
+    }, 400);
   }
+  function aplicarSugerenciaAnalisis(btn) { btn.closest('.form-grid').querySelector('.c-ana').value = btn.closest('.copilot-box').querySelector('.ai-suggestion-ana').innerText.replace('[IA]: ', ''); }
+  function aplicarSugerenciaRecomendacion(btn) { btn.closest('.form-grid').querySelector('.c-rec').value = btn.closest('.copilot-box').querySelector('.ai-suggestion-rec').innerText.replace('[IA]: ', ''); }
 
-  function aplicarSugerenciaAnalisis(btn) {
-    const compBox = btn.closest('.form-grid');
-    const aiText = compBox.querySelector('.ai-suggestion-ana').innerText.replace('[IA Copiloto Multivariable]: ', '');
-    compBox.querySelector('.c-ana').value = aiText;
-  }
-
-  function aplicarSugerenciaRecomendacion(btn) {
-    const compBox = btn.closest('.form-grid');
-    const aiText = compBox.querySelector('.ai-suggestion-rec').innerText.replace('[IA Copiloto]: ', '');
-    compBox.querySelector('.c-rec').value = aiText;
-  }
-
-  function verificarCambioSeveridad(selectEl, severidadAnterior) {
-    const nuevaSev = selectEl.value;
-    if (nuevaSev !== severidadAnterior) {
-      const compBox = selectEl.closest('.comp-item');
-      const trazInput = compBox.querySelector('.c-trazabilidad');
-      let hist = [];
-      try { hist = JSON.parse(trazInput.value); } catch(e) { hist = []; }
-      
-      const fechaHoy = new Date().toISOString().split('T')[0];
-      hist.push({
-        fecha: fechaHoy,
-        de: severidadAnterior,
-        a: nuevaSev,
-        detalle: `Evolución de severidad de ${severidadAnterior} a ${nuevaSev}`
-      });
-      trazInput.value = JSON.stringify(hist);
+  function verificarCambioSeveridad(selectEl, prevSev) {
+    if (selectEl.value !== prevSev) {
+      const box = selectEl.closest('.comp-item'), inputTraz = box.querySelector('.c-trazabilidad');
+      let hist = []; try { hist = JSON.parse(inputTraz.value); } catch(e) {}
+      hist.push({ fecha: new Date().toISOString().split('T')[0], de: prevSev, a: selectEl.value });
+      inputTraz.value = JSON.stringify(hist);
     }
   }
 
-  function cerrarEdicion(e) { 
-    if(e && e.target !== document.getElementById('modalEdicion')) return; 
-    liberarLockEdicionActual();
-    document.getElementById('modalEdicion').style.display = 'none'; 
-  }
-
-  window.addEventListener('beforeunload', () => {
-    liberarLockEdicionActual();
-  });
+  function cerrarEdicion(e) { if(e && e.target !== document.getElementById('modalEdicion')) return; liberarLockEdicionActual(); document.getElementById('modalEdicion').style.display = 'none'; }
+  window.addEventListener('beforeunload', () => liberarLockEdicionActual());
 
   function guardarEquipo() {
     if (!equipoSeleccionado) return;
-    const id = equipoSeleccionado.id;
-    const timestampISO = new Date().toISOString();
-    const actor = usuarioActivo || 'SuperAdmin (Multifaena)';
-    const assignedSite = document.getElementById('edSiteId').value || faenaAsignadaOperador;
-
-    if (!isAdminOverridingSite(assignedSite)) {
-      alert(`⛔ No tienes permisos para guardar cambios en la faena "${assignedSite}".`);
-      return;
-    }
-
-    const estadoPrevio = JSON.parse(JSON.stringify(equipoSeleccionado));
-    if (estadoPrevio.id) {
-      db.child(`backups_activos/${id}`).push({
-        timestamp: timestampISO,
-        responsable_backup: actor,
-        estado_json: estadoPrevio
-      });
-    }
+    const id = equipoSeleccionado.id, timestampISO = new Date().toISOString(), actor = usuarioActivo || 'Admin', assignedSite = document.getElementById('edSiteId').value;
+    if (!isAdminOverridingSite(assignedSite)) { alert(`⛔ No puedes guardar en faena "${assignedSite}".`); return; }
+    if (equipoSeleccionado.id) db.child(`backups_activos/${id}`).push({ timestamp: timestampISO, responsable_backup: actor, estado_json: JSON.parse(JSON.stringify(equipoSeleccionado)) });
 
     const componentes = [];
     document.querySelectorAll('.comp-item').forEach(el => {
-      let traz = [];
-      try { traz = JSON.parse(el.querySelector('.c-trazabilidad').value); } catch(e) { traz = []; }
-      const aceiteInput = el.querySelector('.c-aceite');
-      
+      let traz = []; try { traz = JSON.parse(el.querySelector('.c-trazabilidad').value); } catch(e) {}
       componentes.push({
-        nombre: el.querySelector('.c-nom').value,
-        tipo_iot: "manual",
-        iso_group: el.querySelector('.c-iso-group').value,
-        rms: el.querySelector('.c-rms').value,
-        severidad: el.querySelector('.c-sev').value,
-        termo: el.querySelector('.c-termo').value,
-        om: el.querySelector('.c-om').value,
-        fecha_hallazgo: el.querySelector('.c-fhallazgo').value,
-        aceite: aceiteInput ? aceiteInput.value : '',
-        analisis: el.querySelector('.c-ana').value,
-        recomendacion: el.querySelector('.c-rec').value,
-        trazabilidad: traz
+        nombre: el.querySelector('.c-nom').value, tipo_iot: "manual", iso_group: el.querySelector('.c-iso-group').value,
+        rms: el.querySelector('.c-rms').value, severidad: el.querySelector('.c-sev').value, termo: el.querySelector('.c-termo').value,
+        om: el.querySelector('.c-om').value, fecha_hallazgo: el.querySelector('.c-fhallazgo').value,
+        aceite: el.querySelector('.c-aceite') ? el.querySelector('.c-aceite').value : '',
+        analisis: el.querySelector('.c-ana').value, recomendacion: el.querySelector('.c-rec').value, trazabilidad: traz
       });
     });
 
     const datosAudit = equipoSeleccionado.audit || {};
-    if (!datosAudit.creado_por) {
-      datosAudit.creado_por = actor;
-    }
-    datosAudit.ultima_modificacion = timestampISO;
-    datosAudit.modificado_por = actor;
+    if (!datosAudit.creado_por) datosAudit.creado_por = actor;
+    datosAudit.ultima_modificacion = timestampISO; datosAudit.modificado_por = actor;
 
     db.child(id).update({
-      siteId: assignedSite,
-      domain: document.getElementById('edDomain').value || 'planta',
-      area: document.getElementById('edArea').value,
-      tag: document.getElementById('edTag').value,
-      tipo: document.getElementById('edTipo').value,
-      fecha: document.getElementById('edFecha').value,
-      lat: document.getElementById('edLat').value,
-      lng: document.getElementById('edLng').value,
-      componentes: componentes,
-      audit: datosAudit,
-      en_edicion: false,
-      edit_lock: null
-    }).then(() => { 
-      cerrarEdicion(); 
-    });
+      siteId: assignedSite, domain: document.getElementById('edDomain').value, area: document.getElementById('edArea').value,
+      tag: document.getElementById('edTag').value, tipo: document.getElementById('edTipo').value, fecha: document.getElementById('edFecha').value,
+      lat: document.getElementById('edLat').value, lng: document.getElementById('edLng').value, componentes, audit: datosAudit, en_edicion: false, edit_lock: null
+    }).then(() => cerrarEdicion());
   }
 
   function eliminarEquipo() {
-    const actor = usuarioActivo || 'SuperAdmin';
-    if (!isAdminOverridingSite(equipoSeleccionado.siteId)) {
-      alert(`⛔ No puedes eliminar activos de la faena "${equipoSeleccionado.siteId}".`);
-      return;
-    }
-    if(!confirm(`¿Eliminar permanentemente el activo ${equipoSeleccionado.tag}? Acción realizada por: ${actor}`)) return;
-    
-    const timestampISO = new Date().toISOString();
-    db.child('audit_global').push({
-      evento: 'ELIMINACION_ACTIVO',
-      assetId: equipoSeleccionado.id,
-      tag: equipoSeleccionado.tag,
-      faena: equipoSeleccionado.siteId || 'N/A',
-      usuario: actor,
-      timestamp: timestampISO
-    });
-
-    db.child(equipoSeleccionado.id).remove().then(() => { 
-      cerrarEdicion(); 
-      renderNivel1Areas(); 
-    });
+    if (!isAdminOverridingSite(equipoSeleccionado.siteId)) { alert(`⛔ No puedes eliminar de "${equipoSeleccionado.siteId}".`); return; }
+    if(!confirm(`¿Eliminar activo ${equipoSeleccionado.tag}?`)) return;
+    db.child('audit_global').push({ evento: 'ELIMINACION', assetId: equipoSeleccionado.id, tag: equipoSeleccionado.tag, faena: equipoSeleccionado.siteId, usuario: usuarioActivo, timestamp: new Date().toISOString() });
+    db.child(equipoSeleccionado.id).remove().then(() => { cerrarEdicion(); renderNivel1Areas(); });
   }
 
   function abrirEdicionEquipoNuevo() {
-    const defaultSite = faenaAsignadaOperador === 'TODAS' ? 'Planta, Mina los Colorados' : faenaAsignadaOperador;
-    equipoSeleccionado = { id: 'EQ_' + Date.now(), siteId: defaultSite, domain: 'planta', componentes: [{ nombre: "Spot Reductor/Motor", tipo_iot: "manual", iso_group: "g2_rigid", rms: "", severidad: "Verde", termo: "", aceite: "", analisis: "", recomendacion: "", trazabilidad: [] }] };
+    equipoSeleccionado = { id: 'EQ_' + Date.now(), siteId: faenaAsignadaOperador === 'TODAS' ? 'Planta, Mina los Colorados' : faenaAsignadaOperador, domain: 'planta', componentes: [{ nombre: "Spot Reductor/Motor", tipo_iot: "manual", iso_group: "g2_rigid", rms: "", severidad: "Verde", termo: "", aceite: "", analisis: "", recomendacion: "", trazabilidad: [] }] };
     abrirEdicionEquipo();
   }
 
   function exportarPlantillaExcel() {
-    const targetSiteFilter = isAdminOverridingSite('TODAS') ? 'TODAS' : faenaAsignadaOperador;
-    const filas = equiposDB
-      .filter(eq => targetSiteFilter === 'TODAS' || eq.siteId === targetSiteFilter)
-      .map(eq => ({ ID_Interno: eq.id, Site_ID: eq.siteId||'', Domain: eq.domain||'planta', Area: eq.area, Tag: eq.tag, Tipo: eq.tipo, Fecha_Medicion: eq.fecha || '' }));
-    const ws = XLSX.utils.json_to_sheet(filas);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Activos_Asignados");
-    XLSX.writeFile(wb, `CIO_Base_${targetSiteFilter.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    const targetFilter = isAdminOverridingSite('TODAS') ? 'TODAS' : faenaAsignadaOperador;
+    const filas = equiposDB.filter(eq => targetFilter === 'TODAS' || eq.siteId === targetFilter).map(eq => ({ ID_Interno: eq.id, Site_ID: eq.siteId, Domain: eq.domain, Area: eq.area, Tag: eq.tag, Tipo: eq.tipo, Fecha_Medicion: eq.fecha }));
+    const ws = XLSX.utils.json_to_sheet(filas), wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Activos");
+    XLSX.writeFile(wb, `CIO_Base_${targetFilter.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`);
   }
 
   function procesarCargaExcel(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+    const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = function(evt) {
-      const data = new Uint8Array(evt.target.result);
-      const workbook = XLSX.read(data, {type: 'array'});
-      const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-      let procesados = 0;
-      const timestampISO = new Date().toISOString();
-      const actor = usuarioActivo || 'SuperAdmin (Excel)';
-      const batchId = 'BATCH_' + Date.now();
-
+      const data = new Uint8Array(evt.target.result), json = XLSX.utils.sheet_to_json(XLSX.read(data, {type:'array'}).Sheets[XLSX.read(data, {type:'array'}).SheetNames[0]]);
+      let count = 0; const ts = new Date().toISOString();
       json.forEach(row => {
         if(row.ID_Interno && row.Tag) {
-          const rowSite = row.Site_ID || (faenaAsignadaOperador === 'TODAS' ? 'Planta, Mina los Colorados' : faenaAsignadaOperador);
-          if (!isAdminOverridingSite(rowSite)) return;
-          db.child(row.ID_Interno).update({ 
-            siteId: rowSite, 
-            domain: row.Domain || 'planta', 
-            area: row.Area, 
-            tag: row.Tag, 
-            tipo: row.Tipo, 
-            fecha: row.Fecha_Medicion || '',
-            audit: { modificado_por: actor, ultima_modificacion: timestampISO }
-          });
-          procesados++;
+          const rSite = row.Site_ID || (faenaAsignadaOperador === 'TODAS' ? 'Planta, Mina los Colorados' : faenaAsignadaOperador);
+          if (!isAdminOverridingSite(rSite)) return;
+          db.child(row.ID_Interno).update({ siteId: rSite, domain: row.Domain||'planta', area: row.Area, tag: row.Tag, tipo: row.Tipo, fecha: row.Fecha_Medicion||'', audit: { modificado_por: usuarioActivo||'Excel', ultima_modificacion: ts } });
+          count++;
         }
       });
-
-      db.child('audit_global').push({
-        evento: 'CARGA_MASIVA_EXCEL',
-        batchId: batchId,
-        usuario: actor,
-        faena: faenaAsignadaOperador,
-        registros_procesados: procesados,
-        timestamp: timestampISO
-      });
-
-      alert(`✅ Carga masiva exitosa: ${procesados} equipos procesados en faena asignada por ${actor}.`);
+      db.child('audit_global').push({ evento: 'CARGA_MASIVA', usuario: usuarioActivo, faena: faenaAsignadaOperador, count, timestamp: ts });
+      alert(`✅ Carga masiva exitosa: ${count} activos procesados.`);
     };
-    reader.readAsArrayBuffer(file);
-    e.target.value = '';
+    reader.readAsArrayBuffer(file); e.target.value = '';
   }
 
-  function abrirPanelMaster() {
-    if (!isAdmin) return;
-    document.getElementById('modalMaster').style.display = 'flex';
-    cargarAuditGlobalUI();
-  }
-
+  function abrirPanelMaster() { if (!isAdmin) return; document.getElementById('modalMaster').style.display = 'flex'; cargarAuditGlobalUI(); }
   function cargarAuditGlobalUI() {
-    const container = document.getElementById('masterPanelContent');
-    container.innerHTML = "Cargando traza global...";
     db.child('audit_global').once('value', snap => {
       const data = snap.val();
-      if (!data) { container.innerHTML = "Sin registros en audit_global."; return; }
-      container.innerHTML = Object.keys(data).map(k => {
-        const item = data[k];
-        return `<div>[${item.timestamp}] <b>${item.evento}</b> | Usuario: ${item.usuario} | Faena: ${item.faena || 'N/A'} | Tag/Batch: ${item.tag || item.batchId || ''}</div>`;
-      }).join('<hr style="border-color:var(--border-card); margin:6px 0;">');
+      document.getElementById('masterPanelContent').innerHTML = data ? Object.keys(data).map(k => `<div>[${data[k].timestamp}] <b>${data[k].evento}</b> | User: ${data[k].usuario} | Faena: ${data[k].faena}</div>`).join('<hr style="border-color:var(--border-card);margin:6px 0;">') : "Sin registros.";
     });
   }
-
   function cargarBackupsListUI() {
-    const container = document.getElementById('masterPanelContent');
-    container.innerHTML = "Cargando snapshots de respaldo...";
     db.child('backups_activos').once('value', snap => {
       const data = snap.val();
-      if (!data) { container.innerHTML = "Sin backups de activos registrados aún."; return; }
       let html = '';
-      Object.keys(data).forEach(assetId => {
-        const backups = data[assetId];
-        html += `<div style="color:var(--accent-color); font-weight:bold; margin-top:10px;">Asset ID: ${assetId}</div>`;
-        Object.keys(backups).forEach(bKey => {
-          const b = backups[bKey];
-          html += `<div style="margin-left:15px; font-size:0.75rem; color:var(--text-main);">• [${b.timestamp}] Backup por ${b.responsable_backup} | Tag: ${b.estado_json.tag || 'S/N'}</div>`;
-        });
-      });
-      container.innerHTML = html;
+      if (data) Object.keys(data).forEach(aid => { html += `<div style="color:var(--accent-color);font-weight:bold;mt:8px;">Asset: ${aid}</div>`; Object.keys(data[aid]).forEach(bk => html += `<div style="ml:12px;font-size:0.7rem;color:var(--text-muted);">• [${data[aid][bk].timestamp}] Resp. por ${data[aid][bk].responsable_backup}</div>`); });
+      document.getElementById('masterPanelContent').innerHTML = html || "Sin backups.";
     });
   }
-
   function exportarBackupTotalJSON() {
     db.once('value', snap => {
-      const fullData = snap.val();
-      const blob = new Blob([JSON.stringify(fullData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `CIO_Backup_Total_${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(snap.val(), null, 2)], {type:'application/json'}));
+      a.download = `CIO_Backup_Total_${new Date().toISOString().split('T')[0]}.json`; a.click();
     });
   }
 </script>
