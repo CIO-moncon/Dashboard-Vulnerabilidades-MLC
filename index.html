@@ -80,6 +80,7 @@
   .eq-tag { font-size: 0.85rem; font-weight: 700; margin: 2px 0; color: var(--text-main); }
   .eq-type { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
 
+  #view-site-map { width: 100%; height: 350px; border-radius: 8px; border: 1px solid var(--border-card); display: none; margin-bottom: 16px; z-index: 10; }
   #view-map { width: 100%; height: 550px; border-radius: 8px; border: 1px solid var(--border-card); margin-bottom: 16px; z-index: 10; }
 
   /* Modales Estándar y Edición Pantalla Completa */
@@ -142,7 +143,7 @@
   <div id="viewScreen1Content" class="grid-container"></div>
 </div>
 
-<!-- PANTALLA 2 -->
+<!-- PANTALLA 2 (CON MAPA AUTOMÁTICO SI LA FAENA TIENE GEORREFERENCIA) -->
 <div id="screen-2" class="screen-view">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
     <div>
@@ -154,6 +155,7 @@
       <button class="btn-base btn-warning auth-only-element" onclick="solicitarPermisoSuperAdmin()">🛡️ SuperAdmin (Multi-faena)</button>
     </div>
   </div>
+  <div id="view-site-map"></div>
   <div id="viewScreen2Equipos" class="grid-equipos"></div>
 </div>
 
@@ -251,6 +253,7 @@
   let faenaSeleccionadaScreen2 = null;
   let equipoSeleccionado = null;
   let mapaGlobalInstancia = null, capaGlobalMarkers = null;
+  let mapaSiteInstancia = null, capaSiteMarkers = null;
 
   const FAENAS_LIST = [
     'Planta, Mina los Colorados',
@@ -263,7 +266,7 @@
   const SEV_PESO = { 'Rojo': 5, 'Naranja': 4, 'Amarillo': 3, 'Verde': 2, 'Plomo': 1 };
   const SEV_COLOR_HEX = { 'Rojo': '#ef4444', 'Naranja': '#f97316', 'Amarillo': '#eab308', 'Verde': '#22c55e', 'Plomo': '#6b7280' };
 
-  // Generador de simulación masiva escalada a 207 equipos en Mina los Colorados si la DB está vacía o ligera
+  // Generador de simulación masiva escalada a 207 equipos en Mina los Colorados
   function generarSeedMasivoColorados() {
     const list = [];
     const areasColorados = ['Chancado Primario', 'Molienda SAG', 'Correas Transporte', 'Despacho Fino', 'Stockpile', 'SSEE Principal'];
@@ -278,12 +281,11 @@
         tag: `MLC-TAG-${1000 + i}`,
         tipo: i % 3 === 0 ? 'Reductor' : 'Motor/Correa',
         fecha: '2026-09-20',
-        lat: (-28.2876 + (Math.random()*0.02 - 0.01)).toFixed(5),
-        lng: (-70.8130 + (Math.random()*0.02 - 0.01)).toFixed(5),
+        lat: (-28.2876 + (Math.random()*0.018 - 0.009)).toFixed(5),
+        lng: (-70.8130 + (Math.random()*0.018 - 0.009)).toFixed(5),
         componentes: [{ nombre: 'Spot Principal', severidad: sevRand, rms: (2.0 + Math.random()*3).toFixed(1) }]
       });
     }
-    // Agregar otros de las demás faenas
     list.push({ id: 'rom_1', siteId: 'Mina, Mina el Romeral', domain: 'mina', area: 'Pit Principal', tag: 'ROM-PALA-01', tipo: 'Hidráulica', lat: '-29.7340', lng: '-71.2510', componentes: [{severidad:'Verde', rms:'1.5'}] });
     list.push({ id: 'pel_1', siteId: 'Planta de Pellets', domain: 'planta', area: 'Induración', tag: 'PEL-HORNO-01', tipo: 'Horno', lat: '-27.3670', lng: '-70.3335', componentes: [{severidad:'Naranja', rms:'3.9'}] });
     return list;
@@ -303,11 +305,7 @@
 
   db.on('value', snap => {
     const raw = snap.val();
-    if (raw) {
-      equiposDB = Object.keys(raw).map(k => ({ id: k, ...raw[k], componentes: raw[k].componentes || [] }));
-    } else {
-      equiposDB = generarSeedMasivoColorados();
-    }
+    equiposDB = raw ? Object.keys(raw).map(k => ({ id: k, ...raw[k], componentes: raw[k].componentes || [] })) : generarSeedMasivoColorados();
     refreshCurrentScreen();
     actualizarMapaGlobalSiActivo();
   });
@@ -374,6 +372,49 @@
         <div class="eq-type" style="color:${SEV_COLOR_HEX[sev]}">${sev.toUpperCase()}</div>
       </div>`;
     }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">No hay equipos registrados en esta faena.</div>';
+
+    actualizarMapaSiteAutomatico(eqs, targetSite);
+  }
+
+  function actualizarMapaSiteAutomatico(eqs, targetSite) {
+    const mapDiv = document.getElementById('view-site-map');
+    const valid = eqs.filter(eq => {
+      const lat = parseFloat(eq.lat), lng = parseFloat(eq.lng);
+      return !isNaN(lat) && !isNaN(lng) && lat !== 0;
+    });
+
+    if (valid.length === 0) {
+      if (mapDiv) mapDiv.style.display = 'none';
+      return;
+    }
+
+    if (mapDiv) mapDiv.style.display = 'block';
+    setTimeout(() => {
+      if (!mapaSiteInstancia) {
+        mapaSiteInstancia = L.map('view-site-map').setView([-28.2876, -70.8130], 13);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:20}).addTo(mapaSiteInstancia);
+        capaSiteMarkers = L.layerGroup().addTo(mapaSiteInstancia);
+      } else {
+        mapaSiteInstancia.invalidateSize();
+      }
+      if (capaSiteMarkers) {
+        capaSiteMarkers.clearLayers();
+        let validLatLngs = [];
+        valid.forEach(eq => {
+          const lat = parseFloat(eq.lat), lng = parseFloat(eq.lng);
+          const sev = calcMaxSev(eq.componentes);
+          const col = SEV_COLOR_HEX[sev] || '#6b7280';
+          const icono = L.divIcon({
+            className: 'custom-map-marker',
+            html: `<div style="background-color: ${col}; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.8);"></div>`,
+            iconSize: [22, 22], iconAnchor: [11, 11]
+          });
+          L.marker([lat, lng], {icon: icono}).bindPopup(`<b>${eq.tag}</b><br>Área: ${eq.area}<br><b style="color:${col};">${sev.toUpperCase()}</b>`).addTo(capaSiteMarkers);
+          validLatLngs.push([lat, lng]);
+        });
+        if (validLatLngs.length) mapaSiteInstancia.fitBounds(L.latLngBounds(validLatLngs), {padding:[40,40], maxZoom:17});
+      }
+    }, 150);
   }
 
   function renderScreen3Global() {
@@ -532,7 +573,6 @@
   }
   function exportarReporteGerenciaAlta() { alert('Generando reporte ejecutivo alta gerencia multifaena...'); }
 
-  // Init pantalla 1 al cargar
   setTimeout(() => renderScreen1Public(), 300);
 </script>
 </body>
