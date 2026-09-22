@@ -25,8 +25,11 @@
   /* Cabecera Principal */
   .header { border: 1px solid var(--border-card); padding: 14px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-panel); border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); flex-wrap: wrap; gap: 14px; }
   .header-brand { display: flex; align-items: center; gap: 20px; cursor: pointer; }
-  .logos-container { display: flex; align-items: center; background: var(--bg-card); padding: 10px 20px; border-radius: 10px; border: 1px solid var(--border-card); }
-  .logo-cpf { height: 44px; width: auto; object-fit: contain; transform: scale(1.15); display: block; }
+  
+  /* Logo CPF con fondo blanco y alto protagonismo */
+  .logos-container { display: flex; align-items: center; background: #ffffff; padding: 10px 24px; border-radius: 10px; border: 2px solid #d4d4d8; box-shadow: 0 4px 14px rgba(0,0,0,0.35); }
+  .logo-cpf { height: 48px; width: auto; object-fit: contain; transform: scale(1.2); display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2)); }
+
   .header-titles h1 { font-size: 1.15rem; margin: 0 0 2px 0; text-transform: uppercase; font-weight: 900; letter-spacing: 0.8px; color: var(--text-main); }
   .header-titles p { color: var(--text-muted); margin: 0; font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
   .header-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -59,16 +62,12 @@
   .faena-section-header { grid-column: 1 / -1; font-size: 0.95rem; font-weight: 800; color: var(--accent-color); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 14px; margin-bottom: 4px; padding-bottom: 6px; border-bottom: 2px solid var(--border-card); display: flex; align-items: center; gap: 8px; }
   .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
   .grid-equipos { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
-  .grid-componentes { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
 
   .card-area { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 8px; padding: 16px; transition: 0.2s; display: flex; flex-direction: column; gap: 8px; cursor: pointer; }
   .card-area:hover { transform: translateY(-2px); border-color: var(--text-muted); }
 
   .card-equipo { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 8px; padding: 14px 10px; position: relative; cursor: pointer; text-align: center; transition: 0.15s; min-height: 85px; display: flex; flex-direction: column; justify-content: center; }
   .card-equipo:hover { transform: translateY(-2px); border-color: var(--text-muted); }
-
-  .sensor-badge { position: absolute; top: 6px; right: 6px; font-size: 0.48rem; padding: 2px 5px; border-radius: 4px; font-family: 'Roboto Mono', monospace; font-weight: 700; background: rgba(59,130,246,0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
-  .sensor-badge.alert-sensor { background: rgba(239,68,68,0.2); color: #ef4444; border-color: rgba(239,68,68,0.4); }
 
   .sev-rojo { border-left: 5px solid #ef4444; }
   .sev-naranja { border-left: 5px solid #f97316; }
@@ -81,14 +80,14 @@
   .eq-tag { font-size: 0.85rem; font-weight: 700; margin: 2px 0; color: var(--text-main); }
   .eq-type { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
 
-  #view-map { width: 100%; height: 500px; border-radius: 8px; border: 1px solid var(--border-card); margin-bottom: 16px; }
+  #view-map { width: 100%; height: 550px; border-radius: 8px; border: 1px solid var(--border-card); margin-bottom: 16px; z-index: 10; }
 
   /* Modales Estándar y Edición Pantalla Completa */
   .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 2000; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; backdrop-filter: blur(4px); }
   .modal-content { background: var(--bg-panel); padding: 24px; border-radius: 12px; border: 1px solid var(--border-card); width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
   .modal-fullscreen { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-main); z-index: 2500; overflow-y: auto; padding: 30px; box-sizing: border-box; }
   .fullscreen-container { max-width: 1250px; margin: 0 auto; background: var(--bg-panel); border: 1px solid var(--border-card); border-radius: 12px; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; }
-  .modal-close-btn { position: absolute; top: 16px; right: 16px; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 50まります; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+  .modal-close-btn { position: absolute; top: 16px; right: 16px; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
   
   .form-group { margin-bottom: 12px; }
   .form-group label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; display: block; }
@@ -135,9 +134,7 @@
   <div class="ticker-item">☀️ <b>Clima:</b> <span id="tickerClima">22°C (Vallenar)</span></div>
 </div>
 
-<!-- =========================================================================
-     PANTALLA 1: PÚBLICA / RESUMEN GLOBAL (Solo visualizar áreas, faenas y macro)
-     ========================================================================= -->
+<!-- PANTALLA 1 -->
 <div id="screen-1" class="screen-view active">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
     <h2 style="font-size:1rem; margin:0; text-transform:uppercase; color:var(--text-muted);">Visualización Global de Faenas y Áreas (Solo Lectura)</h2>
@@ -145,9 +142,7 @@
   <div id="viewScreen1Content" class="grid-container"></div>
 </div>
 
-<!-- =========================================================================
-     PANTALLA 2: DETALLE DE FAENA ASIGNADA + BOTÓN SUPER ADMIN (POST-LOGIN)
-     ========================================================================= -->
+<!-- PANTALLA 2 -->
 <div id="screen-2" class="screen-view">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
     <div>
@@ -156,17 +151,13 @@
     </div>
     <div style="display:flex; gap:10px; align-items:center;">
       <span id="badgeFaenaAsignada" style="font-size:0.75rem; background:rgba(59,130,246,0.15); color:var(--accent-color); padding:4px 10px; border-radius:6px; font-weight:700;">Faena</span>
-      
-      <!-- BOTÓN SUPER ADMIN APARECE ESTRICTAMENTE TRAS LOGUEARSE COMO USUARIO/OPERADOR -->
       <button class="btn-base btn-warning auth-only-element" onclick="solicitarPermisoSuperAdmin()">🛡️ SuperAdmin (Multi-faena)</button>
     </div>
   </div>
   <div id="viewScreen2Equipos" class="grid-equipos"></div>
 </div>
 
-<!-- =========================================================================
-     PANTALLA 3: CONSOLA GLOBAL SUPERADMIN (Todas las faenas, editar, catastro)
-     ========================================================================= -->
+<!-- PANTALLA 3 -->
 <div id="screen-3" class="screen-view">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
     <div>
@@ -176,7 +167,7 @@
     <div style="display:flex; gap:8px;">
       <button class="btn-base btn-success" onclick="abrirEdicionGlobalNuevo()">➕ Crear Activo Global</button>
       <button class="btn-base btn-primary" onclick="exportarReporteGerenciaAlta()">📊 Reporte Alta Gerencia</button>
-      <button class="btn-base btn-primary" onclick="toggleMapModal()">🗺️ Mapa Global</button>
+      <button class="btn-base btn-primary" onclick="toggleMapModal()">🗺️ Mapa Global Georreferenciado</button>
     </div>
   </div>
   <div style="margin-bottom:12px;">
@@ -189,7 +180,7 @@
       <option value="Mina, Mina el Romeral">Mina, Mina el Romeral</option>
     </select>
   </div>
-  <div id="viewMapGlobalContainer" style="display:none; margin-bottom:16px;"><div id="view-map"></div></div>
+  <div id="viewMapGlobalContainer" style="display:block; margin-bottom:16px;"><div id="view-map"></div></div>
   <div id="viewScreen3Global" class="grid-equipos"></div>
 </div>
 
@@ -227,8 +218,8 @@
       <div><label>Clase</label><input type="text" id="edTipo"></div>
       <div><label>Fecha</label><input type="date" id="edFecha"></div>
       <div style="grid-column: span 2;">
-        <label>Georreferencia (Lat, Lng) <button type="button" class="btn-base btn-primary" style="display:inline;padding:2px 8px;" onclick="abrirMapaGeorreferencia()">📍 Mapa</button></label>
-        <div style="display:flex; gap:10px;"><input type="text" id="edLat"><input type="text" id="edLng"></div>
+        <label>Georreferencia (Lat, Lng)</label>
+        <div style="display:flex; gap:10px;"><input type="text" id="edLat" placeholder="-28.2880"><input type="text" id="edLng" placeholder="-70.8125"></div>
       </div>
     </div>
     <div style="margin-top: 20px;"><button class="btn-base btn-success" onclick="agregarFormComponente()">+ Añadir Spot</button></div>
@@ -272,16 +263,53 @@
   const SEV_PESO = { 'Rojo': 5, 'Naranja': 4, 'Amarillo': 3, 'Verde': 2, 'Plomo': 1 };
   const SEV_COLOR_HEX = { 'Rojo': '#ef4444', 'Naranja': '#f97316', 'Amarillo': '#eab308', 'Verde': '#22c55e', 'Plomo': '#6b7280' };
 
-  const MOCK_DATA = [
-    { id: 'm1', siteId: 'Planta, Mina los Colorados', domain: 'planta', area: 'Chancado Primario', tag: 'CH-01-MTR', tipo: 'Motor', lat: '-28.2880', lng: '-70.8125', componentes: [{severidad:'Rojo', rms:'4.5'}] },
-    { id: 'm2', siteId: 'Planta de Pellets', domain: 'planta', area: 'Horno Induración', tag: 'PEL-FAN-02', tipo: 'Ventilador', lat: '-27.3670', lng: '-70.3335', componentes: [{severidad:'Naranja', rms:'3.8'}] },
-    { id: 'm3', siteId: 'Mina, Mina el Romeral', domain: 'mina', area: 'Palas', tag: 'ROM-PALA-01', tipo: 'Hidráulica', lat: '-29.7340', lng: '-71.2510', componentes: [{severidad:'Verde', rms:'1.5'}] }
-  ];
+  // Generador de simulación masiva escalada a 207 equipos en Mina los Colorados si la DB está vacía o ligera
+  function generarSeedMasivoColorados() {
+    const list = [];
+    const areasColorados = ['Chancado Primario', 'Molienda SAG', 'Correas Transporte', 'Despacho Fino', 'Stockpile', 'SSEE Principal'];
+    for(let i=1; i<=207; i++) {
+      const area = areasColorados[i % areasColorados.length];
+      const sevRand = i % 18 === 0 ? 'Rojo' : (i % 7 === 0 ? 'Naranja' : 'Verde');
+      list.push({
+        id: `mlc_eq_${i}`,
+        siteId: 'Planta, Mina los Colorados',
+        domain: i % 2 === 0 ? 'planta' : 'mina',
+        area: area,
+        tag: `MLC-TAG-${1000 + i}`,
+        tipo: i % 3 === 0 ? 'Reductor' : 'Motor/Correa',
+        fecha: '2026-09-20',
+        lat: (-28.2876 + (Math.random()*0.02 - 0.01)).toFixed(5),
+        lng: (-70.8130 + (Math.random()*0.02 - 0.01)).toFixed(5),
+        componentes: [{ nombre: 'Spot Principal', severidad: sevRand, rms: (2.0 + Math.random()*3).toFixed(1) }]
+      });
+    }
+    // Agregar otros de las demás faenas
+    list.push({ id: 'rom_1', siteId: 'Mina, Mina el Romeral', domain: 'mina', area: 'Pit Principal', tag: 'ROM-PALA-01', tipo: 'Hidráulica', lat: '-29.7340', lng: '-71.2510', componentes: [{severidad:'Verde', rms:'1.5'}] });
+    list.push({ id: 'pel_1', siteId: 'Planta de Pellets', domain: 'planta', area: 'Induración', tag: 'PEL-HORNO-01', tipo: 'Horno', lat: '-27.3670', lng: '-70.3335', componentes: [{severidad:'Naranja', rms:'3.9'}] });
+    return list;
+  }
+
+  function inicializarSeedMasivoSiVacio() {
+    db.once('value', snap => {
+      if (!snap.val()) {
+        const seedList = generarSeedMasivoColorados();
+        const obj = {};
+        seedList.forEach(item => obj[item.id] = item);
+        db.set(obj);
+      }
+    });
+  }
+  inicializarSeedMasivoSiVacio();
 
   db.on('value', snap => {
     const raw = snap.val();
-    equiposDB = raw ? Object.keys(raw).map(k => ({ id: k, ...raw[k], componentes: raw[k].componentes || [] })) : MOCK_DATA;
+    if (raw) {
+      equiposDB = Object.keys(raw).map(k => ({ id: k, ...raw[k], componentes: raw[k].componentes || [] }));
+    } else {
+      equiposDB = generarSeedMasivoColorados();
+    }
     refreshCurrentScreen();
+    actualizarMapaGlobalSiActivo();
   });
 
   function goScreen(num) {
@@ -291,6 +319,7 @@
     const titles = { 1: 'VISTA PÚBLICA (GLOBAL)', 2: `FAENA: ${faenaSeleccionadaScreen2 || 'ASIGNADA'}`, 3: 'CONSOLA GLOBAL SUPERADMIN' };
     document.getElementById('headerScreenTitle').innerText = titles[num] || 'CIO';
     refreshCurrentScreen();
+    if (num === 3) initMapaGlobal();
   }
 
   function refreshCurrentScreen() {
@@ -362,35 +391,50 @@
         </div>
       </div>`;
     }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin activos en filtro global.</div>';
+    actualizarMapaGlobalSiActivo();
+  }
+
+  function initMapaGlobal() {
+    setTimeout(() => {
+      if (!mapaGlobalInstancia) {
+        mapaGlobalInstancia = L.map('view-map').setView([-28.2876, -70.8130], 10);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:20}).addTo(mapaGlobalInstancia);
+        capaGlobalMarkers = L.layerGroup().addTo(mapaGlobalInstancia);
+      } else {
+        mapaGlobalInstancia.invalidateSize();
+      }
+      actualizarMapaGlobalSiActivo();
+    }, 250);
+  }
+
+  function actualizarMapaGlobalSiActivo() {
+    if (!mapaGlobalInstancia || !capaGlobalMarkers) return;
+    capaGlobalMarkers.clearLayers();
+    const filter = document.getElementById('superAdminFilterSite')?.value || 'TODAS';
+    const eqs = filter === 'TODAS' ? equiposDB : equiposDB.filter(e => e.siteId === filter);
+    let valid = [];
+    eqs.forEach(eq => {
+      const lat = parseFloat(eq.lat), lng = parseFloat(eq.lng);
+      if (!isNaN(lat) && !isNaN(lng) && lat !== 0) {
+        const sev = calcMaxSev(eq.componentes);
+        const col = SEV_COLOR_HEX[sev] || '#6b7280';
+        const icono = L.divIcon({
+          className: 'custom-map-marker',
+          html: `<div style="background-color: ${col}; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.8);"></div>`,
+          iconSize: [22, 22], iconAnchor: [11, 11]
+        });
+        L.marker([lat, lng], {icon: icono}).bindPopup(`<b>${eq.tag}</b><br>${eq.siteId}<br><b style="color:${col};">${sev.toUpperCase()}</b>`).addTo(capaGlobalMarkers);
+        valid.push([lat, lng]);
+      }
+    });
+    if (valid.length) mapaGlobalInstancia.fitBounds(L.latLngBounds(valid), {padding:[40,40], maxZoom:16});
   }
 
   function toggleMapModal() {
     const box = document.getElementById('viewMapGlobalContainer');
     const isHidden = box.style.display === 'none';
     box.style.display = isHidden ? 'block' : 'none';
-    if (isHidden) {
-      setTimeout(() => {
-        if (!mapaGlobalInstancia) {
-          mapaGlobalInstancia = L.map('view-map').setView([-28.2876, -70.8130], 10);
-          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:20}).addTo(mapaGlobalInstancia);
-          capaGlobalMarkers = L.layerGroup().addTo(mapaGlobalInstancia);
-        } else {
-          mapaGlobalInstancia.invalidateSize();
-        }
-        if (capaGlobalMarkers) {
-          capaGlobalMarkers.clearLayers();
-          let valid = [];
-          equiposDB.forEach(eq => {
-            const lat = parseFloat(eq.lat), lng = parseFloat(eq.lng);
-            if (!isNaN(lat) && !isNaN(lng) && lat !== 0) {
-              L.marker([lat, lng]).bindPopup(`<b>${eq.tag}</b> (${eq.siteId})`).addTo(capaGlobalMarkers);
-              valid.push([lat, lng]);
-            }
-          });
-          if (valid.length) mapaGlobalInstancia.fitBounds(L.latLngBounds(valid), {padding:[30,30]});
-        }
-      }, 200);
-    }
+    if (isHidden) initMapaGlobal();
   }
 
   function calcMaxSev(comps) {
@@ -486,8 +530,10 @@
   function eliminarEquipo() {
     if (confirm('¿Eliminar activo?')) db.child(equipoSeleccionado.id).remove().then(() => cerrarEdicion());
   }
-  function abrirMapaGeorreferencia() { alert('Usa el modo mapa global o escribe coordenadas directas lat/lng.'); }
   function exportarReporteGerenciaAlta() { alert('Generando reporte ejecutivo alta gerencia multifaena...'); }
+
+  // Init pantalla 1 al cargar
+  setTimeout(() => renderScreen1Public(), 300);
 </script>
 </body>
 </html>
