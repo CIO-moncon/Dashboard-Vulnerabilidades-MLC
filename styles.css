@@ -49,7 +49,9 @@ body {
 
 .code-font { font-family: 'Roboto Mono', monospace; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
-.is-hidden { display: none !important; }
+
+/* Corrección crítica de especificidad */
+.is-hidden, [hidden] { display: none !important; }
 
 /* Animaciones */
 @keyframes pulseGlowRed {
@@ -67,7 +69,7 @@ body {
 .anim-rojo { animation: pulseGlowRed 2s infinite; }
 .map-pin-pulse { animation: markerPulseRed 1.8s infinite; }
 
-/* Cabecera */
+/* Cabecera Principal */
 .app-header {
   background: var(--glass-surface);
   backdrop-filter: var(--glass-blur);
@@ -120,7 +122,7 @@ body {
 
 .header-nav { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
-/* Botones Glassmorphism */
+/* Botones */
 .btn-base {
   background: var(--btn-bg);
   backdrop-filter: blur(8px);
@@ -227,7 +229,6 @@ body.user-authenticated .auth-only { display: inline-flex !important; }
 .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; width: 100%; }
 .grid-equipos { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 12px; width: 100%; }
 
-/* Tarjetas Glassmorphism de Áreas */
 .card-area {
   background: var(--glass-card);
   backdrop-filter: var(--glass-blur);
@@ -249,7 +250,6 @@ body.user-authenticated .auth-only { display: inline-flex !important; }
   box-shadow: 0 18px 40px -10px rgba(0,0,0,0.85), inset 0 1px 1px 0 rgba(255, 255, 255, 0.15);
 }
 
-/* Tarjetas Glassmorphism de Equipos */
 .card-equipo {
   background: rgba(22, 24, 32, 0.65);
   backdrop-filter: blur(12px);
@@ -288,7 +288,6 @@ body.user-authenticated .auth-only { display: inline-flex !important; }
   z-index: 2;
 }
 
-/* Severidades */
 .sev-rojo {
   border-left: 5px solid #ef4444 !important;
   box-shadow: 0 0 24px -6px rgba(239, 68, 68, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.12);
@@ -308,7 +307,6 @@ body.user-authenticated .auth-only { display: inline-flex !important; }
 .eq-tag { font-size: 0.95rem; font-weight: 800; margin: 3px 0; color: #ffffff; letter-spacing: 0.5px; }
 .eq-type { font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
 
-/* Barra de Faena */
 .site-nav-bar {
   display: flex;
   justify-content: space-between;
@@ -342,7 +340,7 @@ body.user-authenticated .auth-only { display: inline-flex !important; }
 #view-map { height: 550px; display: block; }
 .map-global-wrapper { display: block; margin-bottom: 16px; }
 
-/* Modales Nativos Glassmorphism */
+/* Modales Nativos */
 .modal-dialog, .modal-dialog-lightbox, .modal-fullscreen-dialog {
   border: none;
   padding: 0;
@@ -401,13 +399,11 @@ body.user-authenticated .auth-only { display: inline-flex !important; }
 }
 
 .modal-close-btn:hover { color: #fff; background: rgba(60, 65, 85, 0.9); }
-
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .label-field { color: var(--accent-color); font-weight: 700; margin-bottom: 8px; }
 .spots-list, .field-list { display: flex; flex-direction: column; gap: 10px; }
 .field-list { max-height: 55vh; overflow-y: auto; }
 
-/* Detalle Ampliado a 2 Columnas */
 .detalle-grid-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -520,8 +516,16 @@ body.user-authenticated .auth-only { display: inline-flex !important; }
 .auth-header h3 { font-size: 1.25rem; font-weight: 800; margin: 0 0 6px 0; color: #ffffff; }
 .auth-header p { margin: 0; font-size: 0.76rem; color: var(--text-muted); line-height: 1.4; }
 
-.auth-form-vertical { display: flex !important; flex-direction: column !important; gap: 16px !important; }
-.auth-input-group { display: flex !important; flex-direction: column !important; gap: 6px !important; text-align: left !important; }
+.auth-form-vertical { display: flex; flex-direction: column; gap: 16px; }
+
+/* Sin !important forzado para permitir ocultar dinámicamente */
+.auth-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
 .auth-input-group label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #a1a1aa; margin: 0; display: block; }
 .auth-input-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
 .auth-input-icon { position: absolute; left: 14px; font-size: 0.95rem; color: #71717a; pointer-events: none; z-index: 2; }
