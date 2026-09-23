@@ -24,7 +24,7 @@
   
   /* Animaciones Críticas Industriales */
   @keyframes pulseGlowRed {
-    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5), inset 3ns 0 0 0 #ef4444; border-color: rgba(239, 68, 68, 0.8); }
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5), inset 3px 0 0 0 #ef4444; border-color: rgba(239, 68, 68, 0.8); }
     70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
     100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
   }
@@ -62,6 +62,14 @@
   .btn-success { background: #16a34a; color: white; border-color: #22c55e; }
   .btn-warning { background: #ca8a04; color: white; border-color: #eab308; }
   .btn-danger { background: #dc2626; color: white; border-color: #ef4444; }
+
+  /* Botón de navegación principal de Faena más grande y visible */
+  .btn-back-nav {
+    background: #27272a; border: 1.5px solid #3f3f46; color: white;
+    padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 0.85rem;
+    cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s;
+  }
+  .btn-back-nav:hover { background: #3f3f46; border-color: #60a5fa; transform: translateY(-1px); }
 
   .filter-select, .search-input { background: var(--input-bg); border: 1px solid var(--border-card); color: var(--text-main); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; outline: none; }
   .search-input { width: 140px; }
@@ -108,7 +116,7 @@
   .modal-content { background: var(--bg-panel); padding: 28px; border-radius: 12px; border: 1px solid var(--border-card); width: 100%; max-width: 420px; position: relative; box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
   .modal-fullscreen { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-main); z-index: 2500; overflow-y: auto; padding: 30px; box-sizing: border-box; }
   .fullscreen-container { max-width: 1250px; margin: 0 auto; background: var(--bg-panel); border: 1px solid var(--border-card); border-radius: 12px; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; }
-  .modal-close-btn { position: absolute; top: 16px; right: 16px; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 50まります; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+  .modal-close-btn { position: absolute; top: 16px; right: 16px; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
   
   .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
   .form-grid label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; display: block; }
@@ -148,7 +156,7 @@
   <div style="width:1px; height:14px; background:var(--border-card);"></div>
   <div class="ticker-item">💱 <b>Hierro/CLP:</b> <span id="tickerHierroClp">92,700 CLP/t</span></div>
   <div style="width:1px; height:14px; background:var(--border-card);"></div>
-  <div class="ticker-item">☀️ <b>Clima:</b> <span id="tickerClima">22°C (Vallenar)</span></div>
+  <div style="display:flex; align-items:center; gap:6px;">☀️ <b>Clima:</b> <span id="tickerClima">22°C (Vallenar)</span></div>
 </div>
 
 <!-- PANTALLA 1 -->
@@ -159,17 +167,20 @@
   <div id="viewScreen1Content" class="grid-container"></div>
 </div>
 
-<!-- PANTALLA 2 (ÁREAS Y PRIORIDAD CRÍTICOS) -->
+<!-- PANTALLA 2 (NAVEGACIÓN PASO A PASO, MAPA TOGGLE Y PRIORIDAD ROJA) -->
 <div id="screen-2" class="screen-view">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
-    <div>
-      <button class="btn-base" onclick="goScreen(1)">⬅️ Volver a Global</button>
-      <h2 id="screen2SiteTitle" style="font-size:1.1rem; margin:6px 0 0 0;">Faena Seleccionada</h2>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px; background:var(--bg-panel); padding:14px 18px; border-radius:10px; border:1px solid var(--border-card);">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <button class="btn-back-nav" onclick="stepBackScreen2()">⬅️ <span id="labelStepBack">Volver a Global</span></button>
+      <div>
+        <div class="label-muted" id="subBreadcrumbSite">Faena Operativa</div>
+        <h2 id="screen2SiteTitle" style="font-size:1.15rem; margin:2px 0 0 0;">Faena Seleccionada</h2>
+      </div>
     </div>
     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-      <span id="badgeFaenaAsignada" style="font-size:0.75rem; background:rgba(59,130,246,0.15); color:var(--accent-color); padding:4px 10px; border-radius:6px; font-weight:700;">Faena</span>
-      <button class="btn-base btn-primary" onclick="toggleSiteMapTab()">🗺️ <span id="labelToggleSiteMap">Ver Mapa de Faena</span></button>
-      <button class="btn-base btn-warning auth-only-element" onclick="solicitarPermisoSuperAdmin()">🛡️ SuperAdmin (Multi-faena)</button>
+      <span id="badgeFaenaAsignada" style="font-size:0.75rem; background:rgba(59,130,246,0.15); color:var(--accent-color); padding:6px 12px; border-radius:6px; font-weight:700;">Faena</span>
+      <button class="btn-base btn-primary" style="padding:9px 16px; font-size:0.8rem;" onclick="toggleSiteMapTab()">🗺️ <span id="labelToggleSiteMap">Ver Mapa de Faena</span></button>
+      <button class="btn-base btn-warning auth-only-element" style="padding:9px 16px; font-size:0.8rem;" onclick="solicitarPermisoSuperAdmin()">🛡️ SuperAdmin</button>
     </div>
   </div>
   <div id="view-site-map"></div>
@@ -180,8 +191,8 @@
 <div id="screen-3" class="screen-view">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
     <div>
-      <button class="btn-base" onclick="goScreen(2)">⬅️ Salir SuperAdmin</button>
-      <h2 style="font-size:1.1rem; margin:6px 0 0 0; color:#ca8a04;">⚡ Consola Global SuperAdmin (Todas las Faenas)</h2>
+      <button class="btn-back-nav" onclick="goScreen(2)">⬅️ Salir SuperAdmin</button>
+      <h2 style="font-size:1.15rem; margin:6px 0 0 0; color:#ca8a04;">⚡ Consola Global SuperAdmin (Todas las Faenas)</h2>
     </div>
     <div style="display:flex; gap:8px;">
       <button class="btn-base btn-success" onclick="abrirEdicionGlobalNuevo()">➕ Crear Activo Global</button>
@@ -393,6 +404,36 @@
     if (num === 3) initMapaGlobal();
   }
 
+  function stepBackScreen2() {
+    if (siteMapVisible) {
+      toggleSiteMapTab();
+      return;
+    }
+    if (siteAreaSeleccionadaScreen2) {
+      siteAreaSeleccionadaScreen2 = null;
+      renderScreen2Site();
+      return;
+    }
+    goScreen(1);
+  }
+
+  function updateScreen2NavigationUI() {
+    const btnBack = document.querySelector('#screen-2 .btn-back-nav span');
+    const breadcrumb = document.getElementById('subBreadcrumbSite');
+    const targetSite = faenaSeleccionadaScreen2 || faenaAsignadaOperador || FAENAS_LIST[0];
+
+    if (siteMapVisible) {
+      if(btnBack) btnBack.innerText = 'Ocultar Mapa';
+      if(breadcrumb) breadcrumb.innerText = `Faena / ${targetSite} [Mapa Activo]`;
+    } else if (siteAreaSeleccionadaScreen2) {
+      if(btnBack) btnBack.innerText = 'Volver a Áreas';
+      if(breadcrumb) breadcrumb.innerText = `Faena / ${targetSite} / ${siteAreaSeleccionadaScreen2}`;
+    } else {
+      if(btnBack) btnBack.innerText = 'Volver a Global';
+      if(breadcrumb) breadcrumb.innerText = `Faena / ${targetSite}`;
+    }
+  }
+
   function refreshCurrentScreen() {
     if (currentScreen === 1) renderScreen1Public();
     else if (currentScreen === 2) renderScreen2Site();
@@ -452,12 +493,13 @@
 
     if (siteMapVisible) {
       if(md) md.style.display = 'block';
-      lbl.innerText = 'Ocultar Mapa de Faena';
+      lbl.innerText = 'Ocultar Mapa';
       actualizarMapaSiteAutomatico(eqs, targetSite);
     } else {
       if(md) md.style.display = 'none';
       lbl.innerText = 'Ver Mapa de Faena';
     }
+    updateScreen2NavigationUI();
   }
 
   function renderScreen2Site() {
@@ -467,7 +509,6 @@
     const container = document.getElementById('viewScreen2Container');
 
     if (!siteAreaSeleccionadaScreen2) {
-      // Priorizar áreas con más rojos primero
       const areasMap = {};
       eqs.forEach(eq => {
         const ar = eq.area || 'Sin Área';
@@ -499,19 +540,11 @@
         </div>`;
       }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin áreas registradas en esta faena.</div>';
     } else {
-      // Mostrar equipos de la área seleccionada, con prioridad a lo rojo
       container.className = 'grid-equipos';
       const eqsArea = eqs.filter(e => (e.area || 'Sin Área') === siteAreaSeleccionadaScreen2);
       eqsArea.sort((a, b) => SEV_PESO[calcMaxSev(b.componentes)] - SEV_PESO[calcMaxSev(a.componentes)]);
 
-      let headerBack = `
-        <div style="grid-column: 1/-1; display:flex; align-items:center; gap:10px; margin-bottom:4px; background:var(--bg-card); padding:8px 12px; border-radius:8px; border:1px solid var(--border-card);">
-          <button class="btn-base" style="padding:4px 10px; font-size:0.7rem;" onclick="volverAreasScreen2()">⬅️ Volver a Áreas</button>
-          <span style="font-weight:700; color:var(--accent-color); font-size:0.85rem;">Área: ${siteAreaSeleccionadaScreen2}</span>
-        </div>
-      `;
-
-      container.innerHTML = headerBack + (eqsArea.map(eq => {
+      container.innerHTML = eqsArea.map(eq => {
         const sev = calcMaxSev(eq.componentes);
         const anim = (sev === 'Rojo' || sev === 'Naranja') ? `anim-${sev.toLowerCase()}` : '';
         return `<div class="card-equipo sev-${sev.toLowerCase()} ${anim}" onclick="abrirDetalleActivoModal('${eq.id}')">
@@ -519,19 +552,15 @@
           <div class="eq-tag code-font">${eq.tag}</div>
           <div class="eq-type" style="color:${SEV_COLOR_HEX[sev]}">${sev.toUpperCase()}</div>
         </div>`;
-      }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin equipos en esta área.</div>');
+      }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin equipos en esta área.</div>';
     }
     
+    updateScreen2NavigationUI();
     if (siteMapVisible) actualizarMapaSiteAutomatico(eqs, targetSite);
   }
 
   function seleccionarAreaScreen2(areaName) {
     siteAreaSeleccionadaScreen2 = areaName;
-    renderScreen2Site();
-  }
-
-  function volverAreasScreen2() {
-    siteAreaSeleccionadaScreen2 = null;
     renderScreen2Site();
   }
 
@@ -542,7 +571,6 @@
     document.getElementById('detTitle').innerText = `${eq.tipo} - ${eq.area}`;
     const list = document.getElementById('detComponentesList');
     
-    // Priorizar componentes rojos en la lista de detalles
     const sortedComps = [...(eq.componentes || [])].sort((a,b) => SEV_PESO[b.severidad||'Plomo'] - SEV_PESO[a.severidad||'Plomo']);
 
     list.innerHTML = sortedComps.map(c => `
