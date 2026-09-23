@@ -511,8 +511,9 @@
       const desc = document.getElementById('authModalHeaderDesc');
       const btn = document.getElementById('authSubmitActionBtn');
 
-      if (boxName) boxName.classList.toggle('is-hidden', !isReg);
-      if (boxSite) boxSite.classList.toggle('is-hidden', !isReg);
+      // Modificación directa de style.display para anular cualquier regla CSS conflictiva
+      if (boxName) boxName.style.display = isReg ? 'flex' : 'none';
+      if (boxSite) boxSite.style.display = isReg ? 'flex' : 'none';
 
       if (tabLogin) tabLogin.classList.toggle('is-active', !isReg);
       if (tabRegister) tabRegister.classList.toggle('is-active', isReg);
