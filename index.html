@@ -110,10 +110,10 @@
   <div class="header-controls">
     <button class="btn-base" onclick="toggleTheme()" title="Cambiar Tema Claro/Oscuro">☀️ / 🌙</button>
     <div style="position:relative; display:inline-block;" id="userMenuWrapper">
-      <button class="btn-base btn-primary" id="btnUsuarioMenu" onclick="toggleUserDropdown()">👤 <span id="labelUsuarioBtn">Entrar</span> ▾</button>
+      <!-- Al hacer clic en este botón principal, abre directamente la modal o despliega si está logueado -->
+      <button class="btn-base btn-primary" id="btnUsuarioMenu" onclick="handleUserBtnClick()">👤 <span id="labelUsuarioBtn">Entrar</span> ▾</button>
       <div id="userDropdownMenu" style="display:none; position:absolute; right:0; top:110%; background:var(--bg-panel); border:1px solid var(--border-card); border-radius:6px; box-shadow:0 8px 16px rgba(0,0,0,0.5); min-width:200px; z-index:3000; padding:6px 0;">
         <div style="padding:8px 12px; font-size:0.65rem; color:var(--text-muted); border-bottom:1px solid var(--border-card);" id="dropUserInfo">Invitado (Solo Lectura)</div>
-        <button class="btn-base" id="dropLoginBtn" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent;" onclick="abrirModalAuth('login')">🔑 Ingresar / Registrar Operador</button>
         <button class="btn-base" id="dropLogoutBtn" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent; color:#ef4444; display:none;" onclick="cerrarSesionUsuario()">🚪 Cerrar Sesión</button>
       </div>
     </div>
@@ -184,14 +184,24 @@
   <div id="viewScreen3Global" class="grid-equipos"></div>
 </div>
 
+<!-- MODAL DETALLE DE EQUIPO/SPOT -->
+<div id="modalDetalleActivo" class="modal-overlay">
+  <div class="modal-content" style="max-width:580px;">
+    <div class="modal-close-btn" onclick="document.getElementById('modalDetalleActivo').style.display='none'">&times;</div>
+    <div class="label-muted" id="detSiteTag">FAENA / TAG</div>
+    <h3 id="detTitle" style="margin:4px 0 12px 0;">Detalle Activo</h3>
+    <div id="detComponentesList" style="display:flex; flex-direction:column; gap:10px;"></div>
+  </div>
+</div>
+
 <!-- MODAL AUTH REDISEÑADO CON SEGMENTED CONTROL (LOGIN / REGISTER) -->
 <div id="modalAuth" class="modal-overlay">
   <div class="modal-content">
-    <button class="modal-close-btn" onclick="document.getElementById('modalAuth').style.display='none'">&times;</button>
+    <button class="modal-close-btn" onclick="document.getElementById('modalAuth').style.display='none'">&times;</div>
     
     <div style="display: flex; background: var(--input-bg); border-radius: 8px; padding: 4px; margin-bottom: 24px; border: 1px solid var(--border-card);">
-      <button type="button" id="tabBtnLogin" onclick="setAuthMode('login')" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: var(--accent-color); color: white; font-weight: 700; cursor: pointer; font-size: 0.78rem; transition: 0.2s;">Iniciar Sesión</button>
-      <button type="button" id="tabBtnRegister" onclick="setAuthMode('register')" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer; font-size: 0.78rem; transition: 0.2s;">Crear Cuenta</button>
+      <button type="button" id="tabBtnLogin" onclick="setAuthMode('login')" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: var(--accent-color); color: white; font-weight: 700; cursor: pointer; font-size: 0.78rem;">Iniciar Sesión</button>
+      <button type="button" id="tabBtnRegister" onclick="setAuthMode('register')" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer; font-size: 0.78rem;">Crear Cuenta</button>
     </div>
 
     <div style="margin-bottom: 20px;">
@@ -215,7 +225,8 @@
         <input type="password" id="authPassword" placeholder="••••••••" style="width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-card); background: var(--input-bg); color: var(--text-main); font-size: 0.85rem; box-sizing: border-box;">
       </div>
 
-      <div id="boxFaenaSite">
+      <!-- Visible solo al crear cuenta -->
+      <div id="boxFaenaSite" style="display: none;">
         <label style="font-size: 0.68rem; color: var(--accent-color); font-weight: 700; text-transform: uppercase; margin-bottom: 5px; display: block;">📍 Faena Asignada (Escritura)</label>
         <select id="authSelectedSite" style="width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-card); background: var(--input-bg); color: var(--text-main); font-size: 0.85rem; box-sizing: border-box; font-weight: 600;">
           <option value="Planta, Mina los Colorados">Planta, Mina los Colorados</option>
@@ -293,7 +304,11 @@
   const SEV_PESO = { 'Rojo': 5, 'Naranja': 4, 'Amarillo': 3, 'Verde': 2, 'Plomo': 1 };
   const SEV_COLOR_HEX = { 'Rojo': '#ef4444', 'Naranja': '#f97316', 'Amarillo': '#eab308', 'Verde': '#22c55e', 'Plomo': '#6b7280' };
 
-  // Generador de simulación masiva escalada a 207 equipos en Mina los Colorados
+  function normalizarSiteId(siteRaw) {
+    if (FAENAS_LIST.includes(siteRaw)) return siteRaw;
+    return 'Planta, Mina los Colorados';
+  }
+
   function generarSeedMasivoColorados() {
     const list = [];
     const areasColorados = ['Chancado Primario', 'Molienda SAG', 'Correas Transporte', 'Despacho Fino', 'Stockpile', 'SSEE Principal'];
@@ -310,7 +325,7 @@
         fecha: '2026-09-20',
         lat: (-28.2876 + (Math.random()*0.018 - 0.009)).toFixed(5),
         lng: (-70.8130 + (Math.random()*0.018 - 0.009)).toFixed(5),
-        componentes: [{ nombre: 'Spot Principal', severidad: sevRand, rms: (2.0 + Math.random()*3).toFixed(1) }]
+        componentes: [{ nombre: 'Spot Principal', severidad: sevRand, rms: (2.0 + Math.random()*3).toFixed(1), om: i%12===0?`OM-${4000+i}`:'' }]
       });
     }
     list.push({ id: 'rom_1', siteId: 'Mina, Mina el Romeral', domain: 'mina', area: 'Pit Principal', tag: 'ROM-PALA-01', tipo: 'Hidráulica', lat: '-29.7340', lng: '-71.2510', componentes: [{severidad:'Verde', rms:'1.5'}] });
@@ -332,7 +347,25 @@
 
   db.on('value', snap => {
     const raw = snap.val();
-    equiposDB = raw ? Object.keys(raw).map(k => ({ id: k, ...raw[k], componentes: raw[k].componentes || [] })) : generarSeedMasivoColorados();
+    if (raw) {
+      equiposDB = Object.keys(raw).map(k => {
+        const item = raw[k];
+        return {
+          id: k,
+          siteId: normalizarSiteId(item.siteId),
+          domain: item.domain || 'planta',
+          area: item.area || 'Área General',
+          tag: item.tag || k,
+          tipo: item.tipo || 'Activo',
+          fecha: item.fecha || '',
+          lat: item.lat || '',
+          lng: item.lng || '',
+          componentes: item.componentes || []
+        };
+      });
+    } else {
+      equiposDB = generarSeedMasivoColorados();
+    }
     refreshCurrentScreen();
     actualizarMapaGlobalSiActivo();
   });
@@ -358,17 +391,18 @@
     const container = document.getElementById('viewScreen1Content');
     const faenasGroup = {};
     FAENAS_LIST.forEach(f => faenasGroup[f] = { count: 0, critical: 0 });
+    
     equiposDB.forEach(eq => {
-      const f = eq.siteId || 'Sin Faena';
+      const f = normalizarSiteId(eq.siteId);
       if (!faenasGroup[f]) faenasGroup[f] = { count: 0, critical: 0 };
       faenasGroup[f].count++;
       const sev = calcMaxSev(eq.componentes);
       if (sev === 'Rojo' || sev === 'Naranja') faenasGroup[f].critical++;
     });
 
-    container.innerHTML = Object.keys(faenasGroup).map(f => {
-      const d = faenasGroup[f];
-      return `<div class="card-area" onclick="seleccionarFaenaScreen2('${f}')">
+    container.innerHTML = FAENAS_LIST.map(f => {
+      const d = faenasGroup[f] || { count: 0, critical: 0 };
+      return `<div class="card-area" onclick="seleccionarFaenaScreen2('${f.replace(/'/g, "\\'")}')">
         <div class="label-muted">Faena Operativa CMP</div>
         <div class="value-strong" style="font-size:0.95rem; margin:4px 0;">${f}</div>
         <div style="display:flex; justify-content:space-between; margin-top:10px; padding-top:6px; border-top:1px solid var(--border-card);">
@@ -394,7 +428,7 @@
     const md = document.getElementById('view-site-map');
     const lbl = document.getElementById('labelToggleSiteMap');
     const targetSite = faenaSeleccionadaScreen2 || faenaAsignadaOperador || FAENAS_LIST[0];
-    const eqs = equiposDB.filter(e => e.siteId === targetSite);
+    const eqs = equiposDB.filter(e => normalizarSiteId(e.siteId) === targetSite);
 
     if (siteMapVisible) {
       if(md) md.style.display = 'block';
@@ -409,12 +443,12 @@
   function renderScreen2Site() {
     const targetSite = faenaSeleccionadaScreen2 || faenaAsignadaOperador || FAENAS_LIST[0];
     document.getElementById('screen2SiteTitle').innerText = targetSite;
-    const eqs = equiposDB.filter(e => e.siteId === targetSite);
+    const eqs = equiposDB.filter(e => normalizarSiteId(e.siteId) === targetSite);
     const container = document.getElementById('viewScreen2Equipos');
     
     container.innerHTML = eqs.map(eq => {
       const sev = calcMaxSev(eq.componentes);
-      return `<div class="card-equipo sev-${sev.toLowerCase()}">
+      return `<div class="card-equipo sev-${sev.toLowerCase()}" onclick="abrirDetalleActivoModal('${eq.id}')">
         <div class="eq-type">${eq.area || 'Planta'}</div>
         <div class="eq-tag code-font">${eq.tag}</div>
         <div class="eq-type" style="color:${SEV_COLOR_HEX[sev]}">${sev.toUpperCase()}</div>
@@ -424,8 +458,25 @@
     if (siteMapVisible) actualizarMapaSiteAutomatico(eqs, targetSite);
   }
 
+  function abrirDetalleActivoModal(eqId) {
+    const eq = equiposDB.find(e => e.id === eqId);
+    if (!eq) return;
+    document.getElementById('detSiteTag').innerText = `${eq.siteId} | TAG: ${eq.tag}`;
+    document.getElementById('detTitle').innerText = `${eq.tipo} - ${eq.area}`;
+    const list = document.getElementById('detComponentesList');
+    list.innerHTML = (eq.componentes || []).map(c => `
+      <div style="background:var(--input-bg); padding:10px; border-radius:6px; border:1px solid var(--border-card);">
+        <div style="display:flex; justify-content:space-between;">
+          <b>${c.nombre || 'Spot Principal'}</b>
+          <span style="color:${SEV_COLOR_HEX[c.severidad]||'#fff'}; font-weight:bold;">${c.severidad}</span>
+        </div>
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">RMS: ${c.rms || 'N/D'} | OM: ${c.om || 'S/N'}</div>
+      </div>
+    `).join('') || '<div style="color:var(--text-muted);">Sin spots detallados.</div>';
+    document.getElementById('modalDetalleActivo').style.display = 'flex';
+  }
+
   function actualizarMapaSiteAutomatico(eqs, targetSite) {
-    const mapDiv = document.getElementById('view-site-map');
     const valid = eqs.filter(eq => {
       const lat = parseFloat(eq.lat), lng = parseFloat(eq.lng);
       return !isNaN(lat) && !isNaN(lng) && lat !== 0;
@@ -463,7 +514,7 @@
 
   function renderScreen3Global() {
     const filter = document.getElementById('superAdminFilterSite')?.value || 'TODAS';
-    const eqs = filter === 'TODAS' ? equiposDB : equiposDB.filter(e => e.siteId === filter);
+    const eqs = filter === 'TODAS' ? equiposDB : equiposDB.filter(e => normalizarSiteId(e.siteId) === filter);
     const container = document.getElementById('viewScreen3Global');
 
     container.innerHTML = eqs.map(eq => {
@@ -496,7 +547,7 @@
     if (!mapaGlobalInstancia || !capaGlobalMarkers) return;
     capaGlobalMarkers.clearLayers();
     const filter = document.getElementById('superAdminFilterSite')?.value || 'TODAS';
-    const eqs = filter === 'TODAS' ? equiposDB : equiposDB.filter(e => e.siteId === filter);
+    const eqs = filter === 'TODAS' ? equiposDB : equiposDB.filter(e => normalizarSiteId(e.siteId) === filter);
     let valid = [];
     eqs.forEach(eq => {
       const lat = parseFloat(eq.lat), lng = parseFloat(eq.lng);
@@ -534,11 +585,21 @@
     m.style.display = m.style.display === 'block' ? 'none' : 'block';
   }
 
+  // Al hacer clic en el botón principal Entrar/Usuario de la cabecera
+  function handleUserBtnClick() {
+    if (!usuarioActivo) {
+      abrirModalAuth('login');
+    } else {
+      toggleUserDropdown();
+    }
+  }
+
   function setAuthMode(mode) {
     currentAuthMode = mode;
     const btnLogin = document.getElementById('tabBtnLogin');
     const btnRegister = document.getElementById('tabBtnRegister');
     const boxName = document.getElementById('boxFullName');
+    const boxSite = document.getElementById('boxFaenaSite');
     const title = document.getElementById('authModalHeaderTitle');
     const desc = document.getElementById('authModalHeaderDesc');
     const submitBtn = document.getElementById('authSubmitActionBtn');
@@ -547,6 +608,7 @@
       btnLogin.style.background = 'var(--accent-color)'; btnLogin.style.color = 'white'; btnLogin.style.fontWeight = '700';
       btnRegister.style.background = 'transparent'; btnRegister.style.color = 'var(--text-muted)'; btnRegister.style.fontWeight = '600';
       boxName.style.display = 'none';
+      boxSite.style.display = 'none'; // Oculto al iniciar sesión
       title.innerText = 'Acceso Operador CIO';
       desc.innerText = 'Ingresa tus credenciales autorizadas por CMP.';
       submitBtn.innerText = 'Ingresar al Sistema';
@@ -554,6 +616,7 @@
       btnRegister.style.background = 'var(--accent-color)'; btnRegister.style.color = 'white'; btnRegister.style.fontWeight = '700';
       btnLogin.style.background = 'transparent'; btnLogin.style.color = 'var(--text-muted)'; btnLogin.style.fontWeight = '600';
       boxName.style.display = 'block';
+      boxSite.style.display = 'block'; // Visible solo al crear cuenta
       title.innerText = 'Crear Cuenta de Operador';
       desc.innerText = 'Regístrate y define tu faena de escritura.';
       submitBtn.innerText = 'Registrarse y Entrar';
@@ -587,7 +650,7 @@
     } else {
       dbUsers.child(lookupId).once('value', snap => {
         const uData = snap.val();
-        loguearUsuarioDirecto((uData && uData.password === passVal) ? (uData.nombreCompleto || uData.usuario) : userVal, uData?.faenaAsignada || selectedSite);
+        loguearUsuarioDirecto((uData && uData.password === passVal) ? (uData.nombreCompleto || uData.usuario) : userVal, uData?.faenaAsignada || 'Planta, Mina los Colorados');
         document.getElementById('modalAuth').style.display = 'none';
       });
     }
