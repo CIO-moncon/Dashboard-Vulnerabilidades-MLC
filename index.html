@@ -167,7 +167,7 @@
     <div class="modal-content modal-auth-box">
       <button type="button" class="modal-close-btn" onclick="document.getElementById('modalAuth').close()" aria-label="Cerrar modal">&times;</button>
       
-      <!-- Selector de pestaña tipo switch -->
+      <!-- Selector de pestañas -->
       <nav class="auth-tabs-segmented">
         <button type="button" id="tabBtnLogin" class="auth-tab-btn is-active" onclick="window.CIO.setAuthMode('login')">Iniciar Sesión</button>
         <button type="button" id="tabBtnRegister" class="auth-tab-btn" onclick="window.CIO.setAuthMode('register')">Crear Cuenta</button>
@@ -180,6 +180,7 @@
       
       <form class="auth-form-vertical" onsubmit="event.preventDefault(); window.CIO.handleAuthSubmission();">
         
+        <!-- Oculto en Iniciar Sesión; visible solo en Crear Cuenta -->
         <div id="boxFullName" class="auth-input-group is-hidden">
           <label for="authFullname">Nombre y Apellido</label>
           <div class="auth-input-wrapper">
@@ -188,6 +189,7 @@
           </div>
         </div>
 
+        <!-- Siempre visible -->
         <div class="auth-input-group">
           <label for="authUsername">Usuario / Correo Corporativo</label>
           <div class="auth-input-wrapper">
@@ -196,6 +198,7 @@
           </div>
         </div>
 
+        <!-- Siempre visible -->
         <div class="auth-input-group">
           <label for="authPassword">Contraseña</label>
           <div class="auth-input-wrapper">
@@ -204,6 +207,7 @@
           </div>
         </div>
 
+        <!-- Oculto en Iniciar Sesión; visible solo en Crear Cuenta -->
         <div id="boxFaenaSite" class="auth-input-group is-hidden">
           <label for="authSelectedSite" style="color:var(--accent-color);">📍 Faena Asignada (Escritura)</label>
           <div class="auth-input-wrapper">
