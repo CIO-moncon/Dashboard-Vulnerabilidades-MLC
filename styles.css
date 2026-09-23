@@ -5,7 +5,7 @@
   --text-muted: #a1a1aa;
   --accent-color: #3b82f6;
 
-  /* Superficies de Cristal Glassmorphism */
+  /* Superficies Glassmorphism */
   --glass-surface: rgba(22, 23, 30, 0.75);
   --glass-card: rgba(28, 30, 40, 0.58);
   --glass-border: rgba(255, 255, 255, 0.1);
@@ -67,7 +67,7 @@ body {
 .anim-rojo { animation: pulseGlowRed 2s infinite; }
 .map-pin-pulse { animation: markerPulseRed 1.8s infinite; }
 
-/* Cabecera Principal */
+/* Cabecera */
 .app-header {
   background: var(--glass-surface);
   backdrop-filter: var(--glass-blur);
@@ -198,7 +198,7 @@ body {
 .auth-only { display: none !important; }
 body.user-authenticated .auth-only { display: inline-flex !important; }
 
-/* Ticker Traslúcido */
+/* Ticker */
 .mining-ticker {
   display: flex;
   align-items: center;
@@ -288,7 +288,7 @@ body.user-authenticated .auth-only { display: inline-flex !important; }
   z-index: 2;
 }
 
-/* Resplandores de Severidad */
+/* Severidades */
 .sev-rojo {
   border-left: 5px solid #ef4444 !important;
   box-shadow: 0 0 24px -6px rgba(239, 68, 68, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.12);
@@ -342,7 +342,7 @@ body.user-authenticated .auth-only { display: inline-flex !important; }
 #view-map { height: 550px; display: block; }
 .map-global-wrapper { display: block; margin-bottom: 16px; }
 
-/* Modales Nativos con Glassmorphism Profundo */
+/* Modales Nativos Glassmorphism */
 .modal-dialog, .modal-dialog-lightbox, .modal-fullscreen-dialog {
   border: none;
   padding: 0;
