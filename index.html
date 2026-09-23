@@ -99,7 +99,7 @@
   #view-map { width: 100%; height: 550px; border-radius: 8px; border: 1px solid var(--border-card); margin-bottom: 16px; z-index: 10; }
 
   .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 2000; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; backdrop-filter: blur(4px); }
-  .modal-content { background: var(--bg-panel); padding: 28px; border-radius: 12px; border: 1px solid var(--border-card); width: 100%; max-width: 420px; position: relative; box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
+  .modal-content { background: var(--bg-panel); padding: 28px; border-radius: 12px; border: 1px solid var(--border-card); width: 100%; max-width: 620px; position: relative; box-shadow: 0 25px 50px rgba(0,0,0,0.6); max-height: 90vh; overflow-y: auto; }
   .modal-fullscreen { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-main); z-index: 2500; overflow-y: auto; padding: 30px; box-sizing: border-box; }
   .fullscreen-container { max-width: 1250px; margin: 0 auto; background: var(--bg-panel); border: 1px solid var(--border-card); border-radius: 12px; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; }
   .modal-close-btn { position: absolute; top: 16px; right: 16px; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
@@ -202,16 +202,30 @@
   <div id="viewScreen3Global" class="grid-equipos"></div>
 </div>
 
-<!-- MODAL DETALLE DE EQUIPO/SPOT -->
+<!-- MODAL DETALLE DE EQUIPO/SPOT + BITÁCORA DE TERRENO -->
 <div id="modalDetalleActivo" class="modal-overlay">
-  <div class="modal-content" style="max-width:580px;">
+  <div class="modal-content">
     <div class="modal-close-btn" onclick="document.getElementById('modalDetalleActivo').style.display='none'">&times;</div>
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
       <div class="label-muted" id="detSiteTag">FAENA / TAG</div>
-      <button class="btn-base btn-primary auth-only-element" style="padding:4px 10px; font-size:0.7rem;" id="btnEditarDesdeDetalle" onclick="editarActivoActualDesdeDetalle()">✏️ Editar Activo / Añadir Spots</button>
+      <button class="btn-base btn-primary auth-only-element" style="padding:4px 10px; font-size:0.7rem;" id="btnEditarDesdeDetalle" onclick="editarActivoActualDesdeDetalle()">✏️ Editar Activo Oficial</button>
     </div>
     <h3 id="detTitle" style="margin:4px 0 12px 0;">Detalle Activo</h3>
-    <div id="detComponentesList" style="display:flex; flex-direction:column; gap:10px;"></div>
+    
+    <div class="label-muted" style="margin-bottom:6px;">Monitoreo / Spots Oficiales (ISO / RMS)</div>
+    <div id="detComponentesList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:18px;"></div>
+
+    <div style="border-top:1px solid var(--border-card); padding-top:14px;">
+      <div class="label-muted" style="color:var(--accent-color); margin-bottom:8px;">💬 Bitácora de Hallazgos de Terreno (No oficial)</div>
+      <div id="detTerrenoList" style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VISOR FOTO TERRENO -->
+<div id="modalVisorFoto" class="modal-overlay" style="z-index:3500;" onclick="this.style.display='none'">
+  <div style="background:#000; padding:12px; border-radius:8px; max-width:90vw; max-height:90vh; text-align:center;">
+    <img id="imgVisorFull" src="" style="max-width:100%; max-height:80vh; object-fit:contain; border-radius:4px;">
   </div>
 </div>
 
@@ -272,7 +286,7 @@
         <div style="display:flex; gap:10px;"><input type="text" id="edLat" placeholder="-28.2880"><input type="text" id="edLng" placeholder="-70.8125"></div>
       </div>
     </div>
-    <div style="margin-top: 20px;"><button class="btn-base btn-success" onclick="agregarFormComponente()">+ Añadir Spot / Falla</button></div>
+    <div style="margin-top: 20px;"><button class="btn-base btn-success" onclick="agregarFormComponente()">+ Añadir Spot Oficial</button></div>
     <div id="edComponentesContainer" style="display:flex; flex-direction:column; gap:16px; margin-top:14px;"></div>
     <div style="margin-top: 30px; display: flex; gap: 12px; justify-content: flex-end;">
       <button class="btn-base btn-danger" onclick="eliminarEquipo()">🗑️ Eliminar</button>
@@ -293,12 +307,14 @@
   try { firebase.initializeApp(firebaseConfig); } catch(e){}
   const db = firebase.database().ref('activos_criticos');
   const dbUsers = firebase.database().ref('usuarios_registrados');
+  const dbAlertasTerreno = firebase.database().ref('alertas_terreno');
 
   let currentScreen = 1;
   let usuarioActivo = null;
   let faenaAsignadaOperador = null;
   let isSuperAdmin = false;
   let equiposDB = [];
+  let alertasTerrenoDB = [];
   let faenaSeleccionadaScreen2 = null;
   let siteAreaSeleccionadaScreen2 = null;
   let equipoSeleccionado = null;
@@ -349,19 +365,6 @@
     return list;
   }
 
-  function inicializarSeedMasivoSiVacio() {
-    db.once('value', snap => {
-      if (!snap.val()) {
-        const seedList = generarSeedMasivoColorados();
-        const obj = {};
-        seedList.forEach(item => obj[item.id] = item);
-        db.set(obj);
-      }
-    });
-  }
-  inicializarSeedMasivoSiVacio();
-
-  // Asignar seed por defecto inmediato para evitar parpadeos en blanco
   equiposDB = generarSeedMasivoColorados();
 
   db.on('value', snap => {
@@ -386,26 +389,32 @@
     refreshCurrentScreen();
     actualizarMapaGlobalSiActivo();
   }, () => {
-    // En caso de fallo de red/Firebase, usar seed local
     equiposDB = generarSeedMasivoColorados();
     refreshCurrentScreen();
   });
 
-  // Listener para reportes de terreno en vivo hacia Sala CIO
-  firebase.database().ref('alertas_terreno').limitToLast(1).on('child_added', snap => {
+  // Escuchar reportes de terreno para badges y bitácora
+  dbAlertasTerreno.on('value', snap => {
+    const raw = snap.val();
+    alertasTerrenoDB = raw ? Object.keys(raw).map(k => ({ id: k, ...raw[k] })) : [];
+    refreshCurrentScreen();
+  });
+
+  // Notificación toast en tiempo real sala CIO
+  dbAlertasTerreno.limitToLast(1).on('child_added', snap => {
     const data = snap.val();
     if (!data) return;
     const toast = document.createElement('div');
     toast.style.cssText = 'position:fixed; bottom:25px; right:25px; background:#18181b; border:2px solid #ef4444; color:white; padding:18px; border-radius:10px; z-index:9999; box-shadow:0 12px 35px rgba(0,0,0,0.9); max-width:340px; animation: pulseGlowRed 1.5s infinite;';
     toast.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <b style="color:#ef4444; font-size:0.85rem;">🚨 NUEVO REPORTE DE TERRENO</b>
+        <b style="color:#ef4444; font-size:0.85rem;">💬 REPORTE DE TERRENO</b>
         <button onclick="this.parentElement.parentElement.remove()" style="background:transparent; border:none; color:white; font-size:1.1rem; cursor:pointer;">&times;</button>
       </div>
       <div style="font-size:0.75rem; line-height:1.4;">
         <b>Faena:</b> ${data.faena} (${data.area})<br>
         <b>Tag:</b> <span class="code-font" style="color:#3b82f6;">${data.tag}</span> | <b>Sev:</b> <span style="color:#ef4444;font-weight:bold;">${data.severidad}</span><br>
-        <b>Hallazgo:</b> ${data.detalle}
+        <b>Nota:</b> ${data.detalle}
       </div>
     `;
     document.body.appendChild(toast);
@@ -571,7 +580,14 @@
       container.innerHTML = eqsArea.map(eq => {
         const sev = calcMaxSev(eq.componentes);
         const anim = (sev === 'Rojo' || sev === 'Naranja') ? `anim-${sev.toLowerCase()}` : '';
+        // Buscar si tiene reportes de terreno pendientes/asociados a este tag
+        const fieldCount = alertasTerrenoDB.filter(a => a.tag === eq.tag).length;
+        const fieldBadge = fieldCount > 0 
+          ? `<div style="position:absolute; top:4px; right:4px; background:rgba(59,130,246,0.25); color:#60a5fa; border:1px solid #3b82f6; font-size:0.55rem; padding:2px 5px; border-radius:4px; font-weight:700;">💬 Terreno (${fieldCount})</div>` 
+          : '';
+
         return `<div class="card-equipo sev-${sev.toLowerCase()} ${anim}" onclick="abrirDetalleActivoModal('${eq.id}')">
+          ${fieldBadge}
           <div class="eq-type">${eq.area || 'Planta'}</div>
           <div class="eq-tag code-font">${eq.tag}</div>
           <div class="eq-type" style="color:${SEV_COLOR_HEX[sev]}">${sev.toUpperCase()}</div>
@@ -606,8 +622,28 @@
         </div>
         <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">RMS: ${c.rms || 'N/D'} | OM: ${c.om || 'S/N'}</div>
       </div>
-    `).join('') || '<div style="color:var(--text-muted);">Sin spots detallados.</div>';
+    `).join('') || '<div style="color:var(--text-muted);">Sin spots oficiales detallados.</div>';
+
+    // Rellenar Bitácora de Terreno para este Tag
+    const terList = document.getElementById('detTerrenoList');
+    const myReports = alertasTerrenoDB.filter(a => a.tag === eq.tag).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+    terList.innerHTML = myReports.length > 0 ? myReports.map(r => `
+      <div style="background:var(--input-bg); padding:10px; border-radius:6px; border:1px solid var(--border-card); font-size:0.78rem;">
+        <div style="display:flex; justify-content:space-between; color:var(--text-muted); font-size:0.68rem; margin-bottom:4px;">
+          <span>🕒 ${new Date(r.timestamp).toLocaleString()}</span>
+          <span style="color:${SEV_COLOR_HEX[r.severidad]||'#fff'}; font-weight:bold;">${r.severidad}</span>
+        </div>
+        <div>${r.detalle}</div>
+        ${r.fotoBase64 ? `<div style="margin-top:6px;"><img src="${r.fotoBase64}" style="height:55px; border-radius:4px; cursor:pointer; border:1px solid var(--border-card);" onclick="verFotoFull('${r.fotoBase64}')"></div>` : ''}
+      </div>
+    `).join('') : '<div style="color:var(--text-muted); font-size:0.78rem;">Sin reportes tácticos de terreno registrados para este tag.</div>';
+
     document.getElementById('modalDetalleActivo').style.display = 'flex';
+  }
+
+  function verFotoFull(b64) {
+    document.getElementById('imgVisorFull').src = b64;
+    document.getElementById('modalVisorFoto').style.display = 'flex';
   }
 
   function editarActivoActualDesdeDetalle() {
@@ -643,7 +679,7 @@
           const icono = L.divIcon({
             className: 'custom-map-marker',
             html: `<div class="${pulseClass}" style="background-color: ${col}; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 12px ${col};"></div>`,
-            iconSize: [22, 22], iconAnchor: [11, 11]
+            iconSize: [22, 22], iconAnchor:
           });
           L.marker([lat, lng], {icon: icono}).bindPopup(`<b>${eq.tag}</b><br>Área: ${eq.area}<br><b style="color:${col};">${sev.toUpperCase()}</b>`).addTo(capaSiteMarkers);
           validLatLngs.push([lat, lng]);
@@ -702,7 +738,7 @@
         const icono = L.divIcon({
           className: 'custom-map-marker',
           html: `<div class="${pulseClass}" style="background-color: ${col}; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 12px ${col};"></div>`,
-          iconSize: [22, 22], iconAnchor: [11, 11]
+          iconSize: [22, 22], iconAnchor:
         });
         L.marker([lat, lng], {icon: icono}).bindPopup(`<b>${eq.tag}</b><br>${eq.siteId}<br><b style="color:${col};">${sev.toUpperCase()}</b>`).addTo(capaGlobalMarkers);
         valid.push([lat, lng]);
@@ -931,9 +967,7 @@
   }
 
   window.addEventListener('click', e => { if (!document.getElementById('userMenuWrapper')?.contains(e.target)) document.getElementById('userDropdownMenu').style.display = 'none'; });
-  
-  // Arranque inicial forzado
-  setTimeout(() => { refreshCurrentScreen(); }, 200);
+  setTimeout(() => renderScreen1Public(), 300);
 </script>
 </body>
 </html>
