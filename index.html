@@ -28,11 +28,6 @@
     70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
     100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
   }
-  @keyframes pulseGlowOrange {
-    0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
-    70% { box-shadow: 0 0 0 6px rgba(249, 115, 22, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
-  }
   @keyframes markerPulseRed {
     0% { transform: scale(1); opacity: 1; }
     50% { transform: scale(1.4); opacity: 0.6; }
@@ -40,7 +35,6 @@
   }
 
   .anim-rojo { animation: pulseGlowRed 2s infinite; }
-  .anim-naranja { animation: pulseGlowOrange 2.5s infinite; }
   .map-pin-pulse { animation: markerPulseRed 1.8s infinite; }
 
   /* Cabecera Principal */
@@ -108,7 +102,7 @@
   .eq-tag { font-size: 0.85rem; font-weight: 700; margin: 2px 0; color: var(--text-main); }
   .eq-type { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
 
-  #view-site-map { width: 100%; height: 420px; border-radius: 8px; border: 1px solid var(--border-card); display: none; margin-bottom: 16px; z-index: 10; }
+  #view-site-map { width: 100%; height: 72vh; border-radius: 10px; border: 1px solid var(--border-card); display: none; margin-bottom: 16px; z-index: 10; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
   #view-map { width: 100%; height: 550px; border-radius: 8px; border: 1px solid var(--border-card); margin-bottom: 16px; z-index: 10; }
 
   /* Modales Estándar y Edición Pantalla Completa */
@@ -167,7 +161,7 @@
   <div id="viewScreen1Content" class="grid-container"></div>
 </div>
 
-<!-- PANTALLA 2 (NAVEGACIÓN PASO A PASO, MAPA TOGGLE Y PRIORIDAD ROJA + EDICIÓN USUARIO) -->
+<!-- PANTALLA 2 (MAPA FULL O CUADROS, NUNCA AMBOS) -->
 <div id="screen-2" class="screen-view">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px; background:var(--bg-panel); padding:14px 18px; border-radius:10px; border:1px solid var(--border-card);">
     <div style="display:flex; align-items:center; gap:12px;">
@@ -195,7 +189,7 @@
   <div id="viewScreen2Container"></div>
 </div>
 
-<!-- PANTALLA 3 (SUPERADMIN: REPORTES GLOBALES Y POR FAENA + CATASTRO) -->
+<!-- PANTALLA 3 -->
 <div id="screen-3" class="screen-view">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
     <div>
@@ -223,7 +217,7 @@
   <div id="viewScreen3Global" class="grid-equipos"></div>
 </div>
 
-<!-- MODAL DETALLE DE EQUIPO/SPOT CON PRIORIDAD ROJA Y EDICIÓN RÁPIDA -->
+<!-- MODAL DETALLE DE EQUIPO/SPOT -->
 <div id="modalDetalleActivo" class="modal-overlay">
   <div class="modal-content" style="max-width:580px;">
     <div class="modal-close-btn" onclick="document.getElementById('modalDetalleActivo').style.display='none'">&times;</div>
@@ -236,10 +230,10 @@
   </div>
 </div>
 
-<!-- MODAL AUTH REDISEÑADO CON SEGMENTED CONTROL (LOGIN / REGISTER) -->
+<!-- MODAL AUTH -->
 <div id="modalAuth" class="modal-overlay">
   <div class="modal-content" style="max-width: 420px; padding: 28px;">
-    <button class="modal-close-btn" onclick="document.getElementById('modalAuth').style.display='none'">&times;</button>
+    <button class="modal-close-btn" onclick="document.getElementById('modalAuth').style.display='none'">&times;</div>
     <div style="display: flex; background: var(--input-bg); border-radius: 8px; padding: 4px; margin-bottom: 24px; border: 1px solid var(--border-card);">
       <button type="button" id="tabBtnLogin" onclick="setAuthMode('login')" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: var(--accent-color); color: white; font-weight: 700; cursor: pointer; font-size: 0.78rem;">Iniciar Sesión</button>
       <button type="button" id="tabBtnRegister" onclick="setAuthMode('register')" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer; font-size: 0.78rem;">Crear Cuenta</button>
@@ -437,8 +431,8 @@
     const targetSite = faenaSeleccionadaScreen2 || faenaAsignadaOperador || FAENAS_LIST[0];
 
     if (siteMapVisible) {
-      if(btnBack) btnBack.innerText = 'Ocultar Mapa';
-      if(breadcrumb) breadcrumb.innerText = `Faena / ${targetSite} [Mapa Activo]`;
+      if(btnBack) btnBack.innerText = 'Volver a Tarjetas';
+      if(breadcrumb) breadcrumb.innerText = `Faena / ${targetSite} [Modo GIS Full-Width]`;
     } else if (siteAreaSeleccionadaScreen2) {
       if(btnBack) btnBack.innerText = 'Volver a Áreas';
       if(breadcrumb) breadcrumb.innerText = `Faena / ${targetSite} / ${siteAreaSeleccionadaScreen2}`;
@@ -501,16 +495,19 @@
   function toggleSiteMapTab() {
     siteMapVisible = !siteMapVisible;
     const md = document.getElementById('view-site-map');
+    const container = document.getElementById('viewScreen2Container');
     const lbl = document.getElementById('labelToggleSiteMap');
     const targetSite = faenaSeleccionadaScreen2 || faenaAsignadaOperador || FAENAS_LIST[0];
     const eqs = equiposDB.filter(e => normalizarSiteId(e.siteId) === targetSite);
 
     if (siteMapVisible) {
       if(md) md.style.display = 'block';
+      if(container) container.style.display = 'none'; // Ocultar cuadros al ver mapa exclusivo
       lbl.innerText = 'Ocultar Mapa';
       actualizarMapaSiteAutomatico(eqs, targetSite);
     } else {
       if(md) md.style.display = 'none';
+      if(container) container.style.display = ''; // Restaurar cuadros
       lbl.innerText = 'Ver Mapa de Faena';
     }
     updateScreen2NavigationUI();
@@ -521,6 +518,7 @@
     document.getElementById('screen2SiteTitle').innerText = targetSite;
     const eqs = equiposDB.filter(e => normalizarSiteId(e.siteId) === targetSite);
     const container = document.getElementById('viewScreen2Container');
+    if (container) container.style.display = siteMapVisible ? 'none' : '';
 
     if (!siteAreaSeleccionadaScreen2) {
       const areasMap = {};
@@ -633,7 +631,7 @@
           const icono = L.divIcon({
             className: 'custom-map-marker',
             html: `<div class="${pulseClass}" style="background-color: ${col}; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 12px ${col};"></div>`,
-            iconSize: [22, 22], iconAnchor: [11, 11]
+            iconSize: [22, 22], iconAnchor:
           });
           L.marker([lat, lng], {icon: icono}).bindPopup(`<b>${eq.tag}</b><br>Área: ${eq.area}<br><b style="color:${col};">${sev.toUpperCase()}</b>`).addTo(capaSiteMarkers);
           validLatLngs.push([lat, lng]);
@@ -691,7 +689,7 @@
         const icono = L.divIcon({
           className: 'custom-map-marker',
           html: `<div class="${pulseClass}" style="background-color: ${col}; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 12px ${col};"></div>`,
-          iconSize: [22, 22], iconAnchor: [11, 11]
+          iconSize: [22, 22], iconAnchor:
         });
         L.marker([lat, lng], {icon: icono}).bindPopup(`<b>${eq.tag}</b><br>${eq.siteId}<br><b style="color:${col};">${sev.toUpperCase()}</b>`).addTo(capaGlobalMarkers);
         valid.push([lat, lng]);
@@ -874,7 +872,6 @@
     if (confirm('¿Eliminar activo?')) db.child(equipoSeleccionado.id).remove().then(() => cerrarEdicion());
   }
 
-  // Carga masiva por faena (usuario autenticado)
   function procesarCargaExcelFaena(e) {
     const file = e.target.files[0]; if (!file) return;
     const targetSite = faenaSeleccionadaScreen2 || faenaAsignadaOperador || 'Planta, Mina los Colorados';
