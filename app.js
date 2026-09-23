@@ -56,9 +56,17 @@
   function generarSeedLocal() {
     const list = [];
     const areas = ['AREA 52', 'Chancado Primario', 'Molienda SAG', 'Correas Transporte', 'Despacho Fino', 'Stockpile'];
+    const now = new Date();
+
     for (let i = 1; i <= 207; i++) {
       const area = areas[i % areas.length];
       const sevRand = i % 18 === 0 ? 'Rojo' : (i % 7 === 0 ? 'Naranja' : 'Verde');
+      
+      // Simular fechas: algunos al día y otros con más de 30 días para activar la alerta
+      const diasAtras = (i % 5 === 0) ? 38 : (i % 2 === 0 ? 12 : 24);
+      const fechaMed = new Date(now.getTime() - diasAtras * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const fechaHal = new Date(now.getTime() - (diasAtras - 2) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
       list.push({
         id: `mlc_eq_${i}`,
         siteId: 'Planta, Mina los Colorados',
@@ -68,6 +76,15 @@
         tipo: i % 3 === 0 ? 'Reductor' : 'Motor/Correa',
         lat: (-28.2876 + (Math.random() * 0.018 - 0.009)).toFixed(5),
         lng: (-70.8130 + (Math.random() * 0.018 - 0.009)).toFixed(5),
+        fechaMedicion: fechaMed,
+        fechaHallazgo: fechaHal,
+        estatusHallazgo: sevRand === 'Rojo' ? 'Abierto' : (sevRand === 'Naranja' ? 'En Ejecución' : 'Cerrado / Normal'),
+        avisoSap: `AV-100${200 + i}`,
+        omSap: `OM-400${100 + i}`,
+        analisis: sevRand === 'Rojo' ? 'Pico armónico a 1X y 2X predominante con modulación en frecuencia de engrane.' : 'Parámetros dinámicos en rango admisible.',
+        recomendacion: sevRand === 'Rojo' ? 'Verificar holgura axial y realizar alineamiento láser de precisión.' : 'Mantener ruta rutinaria.',
+        analisisIA: '',
+        recomendacionIA: '',
         componentes: [{ nombre: 'Spot Principal', severidad: sevRand, rms: (2.0 + Math.random() * 3).toFixed(1), om: i % 12 === 0 ? `OM-${4000 + i}` : '' }]
       });
     }
@@ -83,6 +100,28 @@
     if (!t1 || !t2) return false;
     const clean = (s) => String(s).trim().toUpperCase().replace(/[\s\-_]/g, '');
     return clean(t1) === clean(t2);
+  }
+
+  // Auditoría del contador de días desde la última fecha de medición
+  function calcularDiasDesdeMedicion(fechaStr) {
+    if (!fechaStr) return { dias: null, vencido: true, texto: 'Sin fecha registrada' };
+    const partes = fechaStr.split('-');
+    if (partes.length !== 3) return { dias: null, vencido: true, texto: 'Fecha no válida' };
+    
+    const fechaMed = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    fechaMed.setHours(0, 0, 0, 0);
+
+    const diffMs = hoy.getTime() - fechaMed.getTime();
+    const dias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const vencido = dias > 30;
+
+    return {
+      dias: dias,
+      vencido: vencido,
+      texto: dias >= 0 ? `Hace ${dias} día${dias === 1 ? '' : 's'}` : `En ${Math.abs(dias)} día(s)`
+    };
   }
 
   function calcMaxSev(comps) {
@@ -195,9 +234,14 @@
         const fieldCount = state.alertasTerreno.filter((a) => matchTags(a.tag, tagValue)).length;
         const badge = fieldCount > 0 ? `<span class="badge-field-floating">💬 Terreno (${fieldCount})</span>` : '';
 
+        // Comprobación de contador > 30 días
+        const aud = calcularDiasDesdeMedicion(eq.fechaMedicion);
+        const badgeVencido = aud.vencido ? `<span class="badge-vencido-floating" title="Medición vencida: ${aud.texto}">⏱️ >30d</span>` : '';
+
         return `
           <article class="card-equipo sev-${s.toLowerCase()} ${anim}" onclick="window.CIO.abrirDetalle('${eq.id}')">
             ${badge}
+            ${badgeVencido}
             <span class="eq-type">${sanitize(eq.area)}</span>
             <div class="eq-tag code-font">${sanitize(tagValue)}</div>
             <span class="eq-type" style="color:${SEV_COLOR[s]}">${s.toUpperCase()}</span>
@@ -269,7 +313,7 @@
     if (bounds.length) state.mapaSite.fitBounds(L.latLngBounds(bounds), { padding: [30, 30] });
   }
 
-  // Recepción en Tiempo Real desde Firebase
+  // Sincronización en tiempo real desde Firebase
   if (db) {
     db.on('value', (snap) => {
       const raw = snap.val();
@@ -287,7 +331,16 @@
             area: detectedArea,
             tag: detectedTag,
             tipo: item.tipo || item.Tipo || 'Activo',
-            componentes: item.componentes || item.spots || []
+            componentes: item.componentes || item.spots || [],
+            fechaMedicion: item.fechaMedicion || item.fecha || '',
+            fechaHallazgo: item.fechaHallazgo || '',
+            estatusHallazgo: item.estatusHallazgo || 'Abierto',
+            avisoSap: item.avisoSap || '',
+            omSap: item.omSap || '',
+            analisis: item.analisis || '',
+            recomendacion: item.recomendacion || '',
+            analisisIA: item.analisisIA || '',
+            recomendacionIA: item.recomendacionIA || ''
           };
         });
       }
@@ -297,14 +350,12 @@
     if (dbAlertasTerreno) {
       let inicializacionCompletada = false;
 
-      // Escucha continua de alertas de terreno para mantener la bitácora siempre al día
       dbAlertasTerreno.on('value', (snap) => {
         const raw = snap.val();
         state.alertasTerreno = raw ? Object.keys(raw).map((k) => ({ id: k, ...(raw[k] || {}) })) : [];
         inicializacionCompletada = true;
         refresh();
 
-        // Si el modal de detalle está abierto, refrescar la bitácora en vivo
         if (state.equipoIdModal) {
           const currentEq = state.equipos.find((e) => e.id === state.equipoIdModal);
           if (currentEq) {
@@ -313,7 +364,6 @@
         }
       });
 
-      // Disparo de notificación visual/sonora solo ante nuevos reportes en vivo
       dbAlertasTerreno.limitToLast(1).on('child_added', (snap) => {
         if (!inicializacionCompletada) return;
         const data = snap.val();
@@ -452,6 +502,48 @@
       document.getElementById('detSiteTag').innerText = `${eq.siteId} | TAG: ${tagValue}`;
       document.getElementById('detTitle').innerText = `${eq.tipo || 'Activo'} - ${eq.area}`;
 
+      // Auditoría de días de medición en cabecera
+      const aud = calcularDiasDesdeMedicion(eq.fechaMedicion);
+      const contadorBox = document.getElementById('detContadorMedicionBanner');
+      if (contadorBox) {
+        contadorBox.innerHTML = aud.vencido
+          ? `<span class="banner-contador-alerta vencido">⚠️ ALERTA RUTA: Medición realizada ${aud.texto} (> 30 días sin inspeccionar)</span>`
+          : `<span class="banner-contador-alerta al-dia">✅ RUTA AL DÍA: Última medición ${aud.texto} (dentro de ciclo)</span>`;
+      }
+
+      // Panel descriptivo con diagnóstico, aviso y OM SAP
+      const diagBox = document.getElementById('detDiagnosticoBox');
+      if (diagBox) {
+        diagBox.innerHTML = `
+          <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; border-bottom:1px solid var(--glass-border); padding-bottom:10px;">
+            <div>
+              <span class="label-muted">Estatus de Hallazgo</span>
+              <div style="font-weight:800; font-size:0.95rem; margin-top:2px;">${sanitize(eq.estatusHallazgo || 'Abierto')}</div>
+            </div>
+            <div>
+              <span class="label-muted">Aviso SAP</span>
+              <div class="code-font" style="font-weight:700; color:#60a5fa; margin-top:2px;">${sanitize(eq.avisoSap || 'Sin Aviso')}</div>
+            </div>
+            <div>
+              <span class="label-muted">OM SAP</span>
+              <div class="code-font" style="font-weight:700; color:#34d399; margin-top:2px;">${sanitize(eq.omSap || 'Sin OM')}</div>
+            </div>
+            <div>
+              <span class="label-muted">Fecha Medición / Hallazgo</span>
+              <div style="font-size:0.85rem; font-weight:700; margin-top:2px;">${eq.fechaMedicion || 'S/F'} / ${eq.fechaHallazgo || 'S/F'}</div>
+            </div>
+          </div>
+          <div style="margin-top:6px;">
+            <span class="label-muted">Análisis Diagnóstico del Activo</span>
+            <div style="font-size:0.88rem; color:#f3f4f6; margin-top:4px; line-height:1.4;">${sanitize(eq.analisis || 'Sin análisis registrado')}</div>
+          </div>
+          <div style="margin-top:6px;">
+            <span class="label-muted" style="color:#34d399;">Recomendación Operativa / Mantención</span>
+            <div style="font-size:0.88rem; color:#a7f3d0; margin-top:4px; line-height:1.4;">${sanitize(eq.recomendacion || 'Sin recomendación formulada')}</div>
+          </div>
+        `;
+      }
+
       // Spots oficiales
       const list = document.getElementById('detComponentesList');
       const comps = [...(eq.componentes || [])].sort((a, b) => SEV_PESO[b.severidad || 'Plomo'] - SEV_PESO[a.severidad || 'Plomo']);
@@ -511,9 +603,8 @@
       const desc = document.getElementById('authModalHeaderDesc');
       const btn = document.getElementById('authSubmitActionBtn');
 
-      // Modificación directa de style.display para anular cualquier regla CSS conflictiva
-      if (boxName) boxName.style.display = isReg ? 'flex' : 'none';
-      if (boxSite) boxSite.style.display = isReg ? 'flex' : 'none';
+      if (boxName) boxName.style.setProperty('display', isReg ? 'flex' : 'none', 'important');
+      if (boxSite) boxSite.style.setProperty('display', isReg ? 'flex' : 'none', 'important');
 
       if (tabLogin) tabLogin.classList.toggle('is-active', !isReg);
       if (tabRegister) tabRegister.classList.toggle('is-active', isReg);
@@ -633,13 +724,142 @@
       a.click();
     },
 
+    // --- ASISTENTE DE ANÁLISIS PREDICTIVO CON IA GENERATIVA ---
+    seleccionarPestanaAnalisis: (tab) => {
+      const pnlHumano = document.getElementById('panelAnalisisHumano');
+      const pnlIA = document.getElementById('panelAnalisisIA');
+      const tabHumano = document.getElementById('tabAnalistaHumano');
+      const tabIA = document.getElementById('tabAnalisisIA');
+
+      if (tab === 'humano') {
+        pnlHumano.style.display = 'block';
+        pnlIA.style.display = 'none';
+        tabHumano.classList.add('is-active');
+        tabIA.classList.remove('is-active');
+      } else {
+        pnlHumano.style.display = 'none';
+        pnlIA.style.display = 'block';
+        tabHumano.classList.remove('is-active');
+        tabIA.classList.add('is-active');
+      }
+    },
+
+    ejecutarGeneracionIA: () => {
+      const tag = document.getElementById('edTag').value || 'Activo';
+      const clase = document.getElementById('edTipo').value || 'Equipo Mecánico';
+      const area = document.getElementById('edArea').value || 'Planta';
+      
+      // Recolectar severidades y RMS ingresados
+      const spots = [];
+      document.querySelectorAll('.comp-item').forEach(el => {
+        spots.push({
+          nom: el.querySelector('.c-nom')?.value || 'Punto',
+          rms: parseFloat(el.querySelector('.c-rms')?.value) || 0,
+          sev: el.querySelector('.c-sev')?.value || 'Verde'
+        });
+      });
+
+      const maxComp = spots.reduce((prev, curr) => (SEV_PESO[curr.sev] > SEV_PESO[prev.sev] ? curr : prev), { sev: 'Plomo', rms: 0, nom: '' });
+      const sevMax = maxComp.sev;
+
+      let diagnosticoGenerado = "";
+      let recomendacionGenerada = "";
+
+      if (sevMax === 'Rojo') {
+        diagnosticoGenerado = `[IA Predictiva - Criticidad Alta en ${tag}]: Energía vibratoria crítica en ${maxComp.nom} (RMS: ${maxComp.rms || 'Elevado'}). El patrón espectral modela armónicos a 1X y 2X consistentes con desalineación angular/paralela severa acoplada a holgura mecánica estructural. Probabilidad de degradación en camino de rodadura (>85%).`;
+        recomendacionGenerada = `1) Realizar inspección termográfica en descansos y acople en las próximas 24h. 2) Programar detención para chequeo de apriete pernos basales y alineamiento láser de precisión. 3) Tomar muestra de aceite para ferrografía analítica y descartar desprendimiento metálico.`;
+      } else if (sevMax === 'Naranja') {
+        diagnosticoGenerado = `[IA Predictiva - Condición de Alerta en ${tag}]: Se registra incremento de vibración global en ${maxComp.nom}. La respuesta en frecuencia sugiere inicio de desbalanceo dinámico o desgate incipiente en elementos rodantes (modulación en frotamiento).`;
+        recomendacionGenerada = `1) Reducir frecuencia de inspección de ruta de 30 a 7 días. 2) Efectuar relubricación de acuerdo a carta de mantención verificando temperatura de estabilización. 3) Planificar chequeo estroboscópico de correas y poleas.`;
+      } else if (sevMax === 'Amarillo') {
+        diagnosticoGenerado = `[IA Predictiva - Seguimiento]: Parámetros dentro de zona de advertencia según norma ISO 10816-3. Ligera modulación en frecuencias de paso de álaves/dientes sin impacto en disponibilidad inmediata.`;
+        recomendacionGenerada = `Mantener monitoreo regular en próxima ruta mensual. Comparar espectros en cascada (Waterfall) para verificar tasa de crecimiento de la velocidad RMS.`;
+      } else {
+        diagnosticoGenerado = `[IA Predictiva - Condición Normal]: Estado mecánico y dinámico del activo ${tag} (${clase} en ${area}) satisfactorio. Valores RMS por debajo de los umbrales de severidad de la norma.`;
+        recomendacionGenerada = `Continuar con la frecuencia de medición rutinaria estándar cada 30 días.`;
+      }
+
+      document.getElementById('edAnalisisIA').value = diagnosticoGenerado;
+      document.getElementById('edRecomendacionIA').value = recomendacionGenerada;
+
+      // Cambiar automáticamente a la pestaña de IA para que el analista lo revise
+      window.CIO.seleccionarPestanaAnalisis('ia');
+    },
+
+    adoptarDiagnosticoIA: (tipo) => {
+      const iaAnalisis = document.getElementById('edAnalisisIA').value;
+      const iaRecom = document.getElementById('edRecomendacionIA').value;
+
+      if (!iaAnalisis && !iaRecom) {
+        alert("Primero presiona 'Generar Diagnóstico IA'.");
+        return;
+      }
+
+      if (tipo === 'analisis' || tipo === 'todo') {
+        document.getElementById('edAnalisisHumano').value = iaAnalisis;
+      }
+      if (tipo === 'recomendacion' || tipo === 'todo') {
+        document.getElementById('edRecomendacionHumano').value = iaRecom;
+      }
+
+      // Regresar a la vista del experto para que edite o confirme
+      window.CIO.seleccionarPestanaAnalisis('humano');
+      alert("✅ Diagnóstico de la IA transferido a tu panel de experto. Puedes complementarlo o guardarlo directamente.");
+    },
+
+    auditarDiasMedicionForm: () => {
+      const val = document.getElementById('edFechaMedicion').value;
+      const box = document.getElementById('edFeedbackContadorDias');
+      if (!box) return;
+
+      const aud = calcularDiasDesdeMedicion(val);
+      if (!val) {
+        box.innerHTML = '';
+        return;
+      }
+
+      box.innerHTML = aud.vencido
+        ? `<span class="banner-contador-alerta vencido" style="font-size:0.7rem; padding:4px 8px;">⚠️ RUTA VENCIDA: Han transcurrido ${aud.dias} días (> 30 días sin medir)</span>`
+        : `<span class="banner-contador-alerta al-dia" style="font-size:0.7rem; padding:4px 8px;">✅ Medición vigente: ${aud.texto} (dentro de plazo)</span>`;
+    },
+
     abrirEdicionEquipoNuevoAuth: () => {
-      state.equipoSeleccionado = { id: 'EQ_' + Date.now(), siteId: state.faenaSeleccionada || FAENAS[0], domain: 'planta', area: state.areaSeleccionada || 'Área General', componentes: [] };
+      const targetSite = state.faenaSeleccionada || state.faenaAsignada || FAENAS[0];
+      state.equipoSeleccionado = {
+        id: 'EQ_' + Date.now(),
+        siteId: targetSite,
+        domain: 'planta',
+        area: state.areaSeleccionada || 'Área General',
+        componentes: [],
+        fechaMedicion: new Date().toISOString().split('T')[0],
+        fechaHallazgo: new Date().toISOString().split('T')[0],
+        estatusHallazgo: 'Abierto',
+        avisoSap: '',
+        omSap: '',
+        analisis: '',
+        recomendacion: '',
+        analisisIA: '',
+        recomendacionIA: ''
+      };
       window.CIO.abrirEdicionModalObj();
     },
 
     abrirEdicionGlobalNuevo: () => {
-      state.equipoSeleccionado = { id: 'EQ_' + Date.now(), siteId: FAENAS[0], domain: 'planta', componentes: [] };
+      state.equipoSeleccionado = {
+        id: 'EQ_' + Date.now(),
+        siteId: FAENAS[0],
+        domain: 'planta',
+        componentes: [],
+        fechaMedicion: new Date().toISOString().split('T')[0],
+        fechaHallazgo: new Date().toISOString().split('T')[0],
+        estatusHallazgo: 'Abierto',
+        avisoSap: '',
+        omSap: '',
+        analisis: '',
+        recomendacion: '',
+        analisisIA: '',
+        recomendacionIA: ''
+      };
       window.CIO.abrirEdicionModalObj();
     },
 
@@ -655,9 +875,25 @@
       document.getElementById('edArea').value = eq.area || '';
       document.getElementById('edTag').value = eq.tag || eq.Tag || eq.id || '';
       document.getElementById('edTipo').value = eq.tipo || '';
-      document.getElementById('edFecha').value = eq.fecha || '';
       document.getElementById('edLat').value = eq.lat || '';
       document.getElementById('edLng').value = eq.lng || '';
+
+      // Nuevos campos de gestión
+      document.getElementById('edEstatusHallazgo').value = eq.estatusHallazgo || 'Abierto';
+      document.getElementById('edAvisoSap').value = eq.avisoSap || '';
+      document.getElementById('edOmSap').value = eq.omSap || '';
+      document.getElementById('edFechaMedicion').value = eq.fechaMedicion || eq.fecha || '';
+      document.getElementById('edFechaHallazgo').value = eq.fechaHallazgo || '';
+
+      // Diagnóstico del experto e IA
+      document.getElementById('edAnalisisHumano').value = eq.analisis || '';
+      document.getElementById('edRecomendacionHumano').value = eq.recomendacion || '';
+      document.getElementById('edAnalisisIA').value = eq.analisisIA || '';
+      document.getElementById('edRecomendacionIA').value = eq.recomendacionIA || '';
+
+      window.CIO.seleccionarPestanaAnalisis('humano');
+      window.CIO.auditarDiasMedicionForm();
+
       const cont = document.getElementById('edComponentesContainer');
       cont.innerHTML = '';
       (eq.componentes || []).forEach((c) => window.CIO.agregarFormComponente(c));
@@ -674,7 +910,7 @@
         <div class="form-grid">
           <div><label>Spot</label><input type="text" class="c-nom" value="${data.nombre || ''}"></div>
           <div><label>RMS</label><input type="text" class="c-rms" value="${data.rms || ''}"></div>
-          <div class="span-2"><label>Severidad</label><select class="c-sev"><option value="Rojo" ${data.severidad==='Rojo'?'selected':''}>Rojo</option><option value="Naranja" ${data.severidad==='Naranja'?'selected':''}>Naranja</option><option value="Verde" ${data.severidad==='Verde'?'selected':''}>Verde</option></select></div>
+          <div class="span-2"><label>Severidad</label><select class="c-sev"><option value="Rojo" ${data.severidad==='Rojo'?'selected':''}>Rojo</option><option value="Naranja" ${data.severidad==='Naranja'?'selected':''}>Naranja</option><option value="Amarillo" ${data.severidad==='Amarillo'?'selected':''}>Amarillo</option><option value="Verde" ${data.severidad==='Verde'?'selected':''}>Verde</option></select></div>
         </div>
       `;
       cont.appendChild(div);
@@ -690,6 +926,7 @@
           severidad: el.querySelector('.c-sev')?.value || 'Verde'
         });
       });
+
       const payload = {
         siteId: document.getElementById('edSiteId').value,
         domain: document.getElementById('edDomain').value,
@@ -698,8 +935,18 @@
         tipo: document.getElementById('edTipo').value,
         lat: document.getElementById('edLat').value,
         lng: document.getElementById('edLng').value,
+        fechaMedicion: document.getElementById('edFechaMedicion').value,
+        fechaHallazgo: document.getElementById('edFechaHallazgo').value,
+        estatusHallazgo: document.getElementById('edEstatusHallazgo').value,
+        avisoSap: document.getElementById('edAvisoSap').value,
+        omSap: document.getElementById('edOmSap').value,
+        analisis: document.getElementById('edAnalisisHumano').value,
+        recomendacion: document.getElementById('edRecomendacionHumano').value,
+        analisisIA: document.getElementById('edAnalisisIA').value,
+        recomendacionIA: document.getElementById('edRecomendacionIA').value,
         componentes: comps
       };
+
       if (db) db.child(state.equipoSeleccionado.id).update(payload);
       document.getElementById('modalEdicion').close();
     },
@@ -740,6 +987,8 @@
               tipo: row.Tipo || row.tipo || 'Activo',
               lat: row.Lat || row.lat || '',
               lng: row.Lng || row.lng || '',
+              fechaMedicion: new Date().toISOString().split('T')[0],
+              estatusHallazgo: 'Abierto',
               componentes: [{ nombre: 'Spot Masivo', severidad: 'Verde' }]
             });
             count++;
