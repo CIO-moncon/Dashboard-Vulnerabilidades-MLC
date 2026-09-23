@@ -55,7 +55,7 @@
 
   function generarSeedLocal() {
     const list = [];
-    const areas = ['Chancado Primario', 'Molienda SAG', 'Correas Transporte', 'Despacho Fino', 'Stockpile', 'SSEE Principal'];
+    const areas = ['AREA 52', 'Chancado Primario', 'Molienda SAG', 'Correas Transporte', 'Despacho Fino', 'Stockpile'];
     for (let i = 1; i <= 207; i++) {
       const area = areas[i % areas.length];
       const sevRand = i % 18 === 0 ? 'Rojo' : (i % 7 === 0 ? 'Naranja' : 'Verde');
@@ -64,7 +64,7 @@
         siteId: 'Planta, Mina los Colorados',
         domain: i % 2 === 0 ? 'planta' : 'mina',
         area: area,
-        tag: `MLC-TAG-${1000 + i}`,
+        tag: `MH${2700 + i}`,
         tipo: i % 3 === 0 ? 'Reductor' : 'Motor/Correa',
         lat: (-28.2876 + (Math.random() * 0.018 - 0.009)).toFixed(5),
         lng: (-70.8130 + (Math.random() * 0.018 - 0.009)).toFixed(5),
@@ -185,14 +185,15 @@
       container.innerHTML = navHeader + eqsArea.map((eq) => {
         const s = calcMaxSev(eq.componentes);
         const anim = (s === 'Rojo' || s === 'Naranja') ? `anim-${s.toLowerCase()}` : '';
-        const fieldCount = state.alertasTerreno.filter((a) => (a.tag || '').trim().toUpperCase() === (eq.tag || '').trim().toUpperCase()).length;
+        const tagValue = eq.tag || eq.Tag || eq.TAG || eq.equipo || eq.id || 'S/T';
+        const fieldCount = state.alertasTerreno.filter((a) => (a.tag || '').trim().toUpperCase() === tagValue.trim().toUpperCase()).length;
         const badge = fieldCount > 0 ? `<span class="badge-field-floating">💬 Terreno (${fieldCount})</span>` : '';
 
         return `
           <article class="card-equipo sev-${s.toLowerCase()} ${anim}" onclick="window.CIO.abrirDetalle('${eq.id}')">
             ${badge}
             <span class="eq-type">${sanitize(eq.area)}</span>
-            <div class="eq-tag code-font">${sanitize(eq.tag)}</div>
+            <div class="eq-tag code-font">${sanitize(tagValue)}</div>
             <span class="eq-type" style="color:${SEV_COLOR[s]}">${s.toUpperCase()}</span>
           </article>
         `;
@@ -211,10 +212,11 @@
     container.innerHTML = eqs.map((eq) => {
       const s = calcMaxSev(eq.componentes);
       const anim = (s === 'Rojo' || s === 'Naranja') ? `anim-${s.toLowerCase()}` : '';
+      const tagValue = eq.tag || eq.Tag || eq.TAG || eq.id || 'S/T';
       return `
         <article class="card-equipo sev-${s.toLowerCase()} ${anim}">
           <span class="label-muted">${sanitize(eq.siteId)}</span>
-          <div class="eq-tag code-font">${sanitize(eq.tag)}</div>
+          <div class="eq-tag code-font">${sanitize(tagValue)}</div>
           <div style="margin-top:6px;">
             <button class="btn-base btn-primary" type="button" style="padding:2px 8px; font-size:0.65rem;" onclick="window.CIO.abrirEdicion('${eq.id}')">✏️ Editar</button>
           </div>
@@ -246,13 +248,14 @@
         const s = calcMaxSev(eq.componentes);
         const col = SEV_COLOR[s] || '#6b7280';
         const pulse = s === 'Rojo' ? 'map-pin-pulse' : '';
+        const tagValue = eq.tag || eq.Tag || eq.id || 'S/T';
         const icon = L.divIcon({
           className: 'custom-pin',
           html: `<div class="${pulse}" style="background:${col}; width:20px; height:20px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 10px ${col};"></div>`,
           iconSize: [20, 20],
           iconAnchor: [10, 10]
         });
-        L.marker([lat, lng], { icon }).bindPopup(`<strong>${sanitize(eq.tag)}</strong><br>${sanitize(eq.area)}<br><span style="color:${col};font-weight:bold;">${s}</span>`).addTo(state.capaSite);
+        L.marker([lat, lng], { icon }).bindPopup(`<strong>${sanitize(tagValue)}</strong><br>${sanitize(eq.area)}<br><span style="color:${col};font-weight:bold;">${s}</span>`).addTo(state.capaSite);
         bounds.push([lat, lng]);
       }
     });
@@ -260,18 +263,38 @@
     if (bounds.length) state.mapaSite.fitBounds(L.latLngBounds(bounds), { padding: [30, 30] });
   }
 
+  // Recepción con mapeo flexible de campos
   if (db) {
     db.on('value', (snap) => {
       const raw = snap.val();
-      if (raw) state.equipos = Object.keys(raw).map((k) => ({ id: k, ...(raw[k] || {}) }));
+      if (raw) {
+        state.equipos = Object.keys(raw).map((k) => {
+          const item = raw[k] || {};
+          const detectedTag = item.tag || item.Tag || item.TAG || item.equipo || item.Equipo || item.nombre || k;
+          const detectedArea = item.area || item.Area || item.AREA || 'Sin Área';
+          const detectedSite = item.siteId || item.site || item.faena || item.Faena || 'Planta, Mina los Colorados';
+
+          return {
+            id: k,
+            ...item,
+            siteId: normalizarFaena(detectedSite),
+            area: detectedArea,
+            tag: detectedTag,
+            tipo: item.tipo || item.Tipo || 'Activo',
+            componentes: item.componentes || item.spots || []
+          };
+        });
+      }
       refresh();
     });
 
-    dbAlertasTerreno.on('value', (snap) => {
-      const raw = snap.val();
-      state.alertasTerreno = raw ? Object.keys(raw).map((k) => ({ id: k, ...(raw[k] || {}) })) : [];
-      refresh();
-    });
+    if (dbAlertasTerreno) {
+      dbAlertasTerreno.on('value', (snap) => {
+        const raw = snap.val();
+        state.alertasTerreno = raw ? Object.keys(raw).map((k) => ({ id: k, ...(raw[k] || {}) })) : [];
+        refresh();
+      });
+    }
   }
 
   function refresh() {
@@ -345,7 +368,8 @@
       const eq = state.equipos.find((e) => e.id === id);
       if (!eq) return;
 
-      document.getElementById('detSiteTag').innerText = `${eq.siteId} | ${eq.tag}`;
+      const tagValue = eq.tag || eq.Tag || eq.id || 'S/T';
+      document.getElementById('detSiteTag').innerText = `${eq.siteId} | ${tagValue}`;
       document.getElementById('detTitle').innerText = `${eq.tipo || 'Activo'} - ${eq.area}`;
 
       const list = document.getElementById('detComponentesList');
@@ -353,7 +377,7 @@
       list.innerHTML = comps.map((c) => `
         <div style="background:var(--input-bg); padding:10px; border-radius:6px; border:1px solid var(--border-card); ${c.severidad === 'Rojo' ? 'border-left:4px solid #ef4444;' : ''}">
           <div style="display:flex; justify-content:space-between;">
-            <strong>${sanitize(c.nombre)}</strong>
+            <strong>${sanitize(c.nombre || c.spot)}</strong>
             <span style="color:${SEV_COLOR[c.severidad]}; font-weight:bold;">${c.severidad}</span>
           </div>
           <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">RMS: ${c.rms || 'N/D'} | OM: ${c.om || 'S/N'}</div>
@@ -361,7 +385,7 @@
       `).join('') || '<div class="label-muted">Sin spots oficiales.</div>';
 
       const terList = document.getElementById('detTerrenoList');
-      const myReports = state.alertasTerreno.filter((a) => (a.tag || '').trim().toUpperCase() === (eq.tag || '').trim().toUpperCase());
+      const myReports = state.alertasTerreno.filter((a) => (a.tag || '').trim().toUpperCase() === tagValue.trim().toUpperCase());
       terList.innerHTML = myReports.length > 0 ? myReports.map((r) => `
         <div style="background:var(--input-bg); padding:8px; border-radius:6px; border:1px solid var(--border-card); border-left:3px solid #3b82f6; font-size:0.75rem;">
           <div style="display:flex; justify-content:space-between; color:var(--text-muted); font-size:0.65rem;">
@@ -472,7 +496,7 @@
       document.getElementById('edSiteId').value = eq.siteId;
       document.getElementById('edDomain').value = eq.domain || 'planta';
       document.getElementById('edArea').value = eq.area || '';
-      document.getElementById('edTag').value = eq.tag || '';
+      document.getElementById('edTag').value = eq.tag || eq.Tag || eq.id || '';
       document.getElementById('edTipo').value = eq.tipo || '';
       document.getElementById('edFecha').value = eq.fecha || '';
       document.getElementById('edLat').value = eq.lat || '';
@@ -541,16 +565,17 @@
         const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
         let count = 0;
         json.forEach((row) => {
-          if (row && row.Tag) {
+          const rowTag = row.Tag || row.tag || row.TAG || row.Equipo || row.equipo;
+          if (row && rowTag) {
             const id = 'EQ_EXCEL_' + Date.now() + '_' + count;
             db.child(id).set({
               siteId: target,
               domain: 'planta',
-              area: row.Area || 'General',
-              tag: row.Tag,
-              tipo: row.Tipo || 'Activo',
-              lat: row.Lat || '',
-              lng: row.Lng || '',
+              area: row.Area || row.area || row.AREA || 'General',
+              tag: rowTag,
+              tipo: row.Tipo || row.tipo || 'Activo',
+              lat: row.Lat || row.lat || '',
+              lng: row.Lng || row.lng || '',
               componentes: [{ nombre: 'Spot Masivo', severidad: 'Verde' }]
             });
             count++;
