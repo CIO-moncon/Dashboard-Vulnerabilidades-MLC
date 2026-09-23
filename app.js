@@ -79,6 +79,12 @@
   const sanitize = (str) => (str || '').replace(/[<>&"']/g, (m) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[m]));
   const normalizarFaena = (f) => FAENAS.includes(f) ? f : FAENAS[0];
 
+  function matchTags(t1, t2) {
+    if (!t1 || !t2) return false;
+    const clean = (s) => String(s).trim().toUpperCase().replace(/[\s\-_]/g, '');
+    return clean(t1) === clean(t2);
+  }
+
   function calcMaxSev(comps) {
     if (!comps || !comps.length) return 'Plomo';
     let max = 1;
@@ -186,7 +192,7 @@
         const s = calcMaxSev(eq.componentes);
         const anim = (s === 'Rojo' || s === 'Naranja') ? `anim-${s.toLowerCase()}` : '';
         const tagValue = eq.tag || eq.Tag || eq.TAG || eq.equipo || eq.id || 'S/T';
-        const fieldCount = state.alertasTerreno.filter((a) => (a.tag || '').trim().toUpperCase() === tagValue.trim().toUpperCase()).length;
+        const fieldCount = state.alertasTerreno.filter((a) => matchTags(a.tag, tagValue)).length;
         const badge = fieldCount > 0 ? `<span class="badge-field-floating">💬 Terreno (${fieldCount})</span>` : '';
 
         return `
@@ -290,13 +296,24 @@
 
     if (dbAlertasTerreno) {
       let inicializacionCompletada = false;
-      dbAlertasTerreno.once('value', (snap) => {
+
+      // Escucha continua de alertas de terreno para mantener la bitácora siempre al día
+      dbAlertasTerreno.on('value', (snap) => {
         const raw = snap.val();
         state.alertasTerreno = raw ? Object.keys(raw).map((k) => ({ id: k, ...(raw[k] || {}) })) : [];
         inicializacionCompletada = true;
         refresh();
+
+        // Si el modal de detalle está abierto, refrescar la bitácora en vivo
+        if (state.equipoIdModal) {
+          const currentEq = state.equipos.find((e) => e.id === state.equipoIdModal);
+          if (currentEq) {
+            window.CIO.renderBitacoraTerreno(currentEq);
+          }
+        }
       });
 
+      // Disparo de notificación visual/sonora solo ante nuevos reportes en vivo
       dbAlertasTerreno.limitToLast(1).on('child_added', (snap) => {
         if (!inicializacionCompletada) return;
         const data = snap.val();
@@ -397,35 +414,20 @@
       }
     },
 
-    abrirDetalle: (id) => {
-      state.equipoIdModal = id;
-      const eq = state.equipos.find((e) => e.id === id);
-      if (!eq) return;
-
-      const tagValue = eq.tag || eq.Tag || eq.id || 'S/T';
-      document.getElementById('detSiteTag').innerText = `${eq.siteId} | TAG: ${tagValue}`;
-      document.getElementById('detTitle').innerText = `${eq.tipo || 'Activo'} - ${eq.area}`;
-
-      const list = document.getElementById('detComponentesList');
-      const comps = [...(eq.componentes || [])].sort((a, b) => SEV_PESO[b.severidad || 'Plomo'] - SEV_PESO[a.severidad || 'Plomo']);
-      list.innerHTML = comps.map((c) => `
-        <div style="background:var(--input-bg); padding:12px 16px; border-radius:8px; border:1px solid var(--glass-border); ${c.severidad === 'Rojo' ? 'border-left:4px solid #ef4444;' : ''}">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <strong style="font-size:0.95rem;">${sanitize(c.nombre || c.spot)}</strong>
-            <span style="color:${SEV_COLOR[c.severidad]}; font-weight:800; text-transform:uppercase;">${c.severidad}</span>
-          </div>
-          <div style="font-size:0.8rem; color:var(--text-muted); margin-top:6px;">RMS: <strong>${c.rms || 'N/D'}</strong> | Orden de Trabajo: <strong>${c.om || 'S/N'}</strong></div>
-        </div>
-      `).join('') || '<div class="label-muted" style="padding:14px;">Sin spots oficiales registrados.</div>';
-
+    renderBitacoraTerreno: (eq) => {
       const terList = document.getElementById('detTerrenoList');
-      const myReports = state.alertasTerreno.filter((a) => (a.tag || '').trim().toUpperCase() === tagValue.trim().toUpperCase());
+      if (!terList) return;
+      const tagValue = eq.tag || eq.Tag || eq.id || 'S/T';
       
+      const myReports = state.alertasTerreno
+        .filter((a) => matchTags(a.tag, tagValue))
+        .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+
       terList.innerHTML = myReports.length > 0 ? myReports.map((r) => `
         <article class="card-reporte-terreno-lg">
           <div style="display:flex; justify-content:space-between; color:var(--text-muted); font-size:0.75rem;">
             <span>🕒 <strong>${r.timestamp ? new Date(r.timestamp).toLocaleString() : 'N/D'}</strong></span>
-            <span style="color:${SEV_COLOR[r.severidad]}; font-weight:bold; font-size:0.85rem;">${r.severidad}</span>
+            <span style="color:${SEV_COLOR[r.severidad] || '#fff'}; font-weight:bold; font-size:0.85rem;">${r.severidad || 'Seguimiento'}</span>
           </div>
           <div style="font-size:0.9rem; color:#fff; line-height:1.4;">${sanitize(r.detalle)}</div>
           
@@ -439,12 +441,38 @@
           ` : ''}
         </article>
       `).join('') : '<div class="label-muted" style="padding:14px; font-style:italic;">No hay reportes de ronda para este activo.</div>';
+    },
+
+    abrirDetalle: (id) => {
+      state.equipoIdModal = id;
+      const eq = state.equipos.find((e) => e.id === id);
+      if (!eq) return;
+
+      const tagValue = eq.tag || eq.Tag || eq.id || 'S/T';
+      document.getElementById('detSiteTag').innerText = `${eq.siteId} | TAG: ${tagValue}`;
+      document.getElementById('detTitle').innerText = `${eq.tipo || 'Activo'} - ${eq.area}`;
+
+      // Spots oficiales
+      const list = document.getElementById('detComponentesList');
+      const comps = [...(eq.componentes || [])].sort((a, b) => SEV_PESO[b.severidad || 'Plomo'] - SEV_PESO[a.severidad || 'Plomo']);
+      list.innerHTML = comps.map((c) => `
+        <div style="background:var(--input-bg); padding:12px 16px; border-radius:8px; border:1px solid var(--glass-border); ${c.severidad === 'Rojo' ? 'border-left:4px solid #ef4444;' : ''}">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong style="font-size:0.95rem;">${sanitize(c.nombre || c.spot)}</strong>
+            <span style="color:${SEV_COLOR[c.severidad]}; font-weight:800; text-transform:uppercase;">${c.severidad}</span>
+          </div>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin-top:6px;">RMS: <strong>${c.rms || 'N/D'}</strong> | Orden de Trabajo: <strong>${c.om || 'S/N'}</strong></div>
+        </div>
+      `).join('') || '<div class="label-muted" style="padding:14px;">Sin spots oficiales registrados.</div>';
+
+      // Bitácora de hallazgos
+      window.CIO.renderBitacoraTerreno(eq);
 
       document.getElementById('modalDetalleActivo').showModal();
     },
 
     abrirDetallePorTag: (tag) => {
-      const eq = state.equipos.find((e) => (e.tag || '').trim().toUpperCase() === tag.trim().toUpperCase());
+      const eq = state.equipos.find((e) => matchTags(e.tag, tag));
       if (eq) {
         window.CIO.abrirDetalle(eq.id);
       }
@@ -455,7 +483,11 @@
       win.document.write(`<body style="margin:0; background:#0a0a0c; display:flex; justify-content:center; align-items:center; height:100vh;"><img src="${base64Data}" style="max-width:98%; max-height:98%; object-fit:contain; border-radius:6px; box-shadow:0 0 30px rgba(0,0,0,0.8);" /></body>`);
     },
 
-    cerrarModalDetalle: () => document.getElementById('modalDetalleActivo').close(),
+    cerrarModalDetalle: () => {
+      state.equipoIdModal = null;
+      document.getElementById('modalDetalleActivo').close();
+    },
+
     toggleTheme: () => document.body.classList.toggle('light-mode'),
 
     handleUserBtnClick: () => {
@@ -491,7 +523,7 @@
         btn.innerText = 'Registrarse y Entrar';
       } else {
         title.innerText = 'Acceso Operador CIO';
-        desc.innerText = 'Ingresa tus credenciales autorizadas por CMP para gestionar condición de activos.';
+        desc.innerText = 'Ingresa tus credenciales autorizadas por CPF para gestionar condición de activos.';
         btn.innerText = 'Ingresar al Sistema';
       }
     },
@@ -529,7 +561,6 @@
           loginLocal(fullname, selectedSite);
         }
       } else {
-        // En modo login: se lee la faena asociada en la cuenta
         if (dbUsers) {
           dbUsers.child(lookupId).once('value', snap => {
             const uData = snap.val();
@@ -681,8 +712,9 @@
 
     editarActivoActualDesdeDetalle: () => {
       if (!state.equipoIdModal) return;
-      document.getElementById('modalDetalleActivo').close();
-      window.CIO.abrirEdicion(state.equipoIdModal);
+      const idToEdit = state.equipoIdModal;
+      window.CIO.cerrarModalDetalle();
+      window.CIO.abrirEdicion(idToEdit);
     },
 
     procesarCargaExcelFaena: (e) => {
