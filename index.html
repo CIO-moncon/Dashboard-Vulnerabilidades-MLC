@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CIO - CENTRO INTEGRADO DE OPERACIONES | MULTI-SITE 3-SCREEN ARCHITECTURE</title>
+<title>CIO - CENTRO INTEGRADO DE OPERACIONES | CMP MULTI-SITE</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -40,7 +40,7 @@
   .header { border: 1px solid var(--border-card); padding: 14px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-panel); border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); flex-wrap: wrap; gap: 14px; }
   .header-brand { display: flex; align-items: center; gap: 20px; cursor: pointer; }
   
-  .logos-container { display: flex; align-items: center; background: #ffffff; padding: 10px 24px; border-radius: 10px; border: 2px solid #d4d4d8; box-shadow: 0 4px 14px rgba(0,0,0,0.35); }
+  .logos-container { display: flex; align-items: center; background: #ffffff; padding: 10px 24px; border-radius: 10px; border: 2px solid #d4d4d8; box-shadow: 0 4px 14px rgba(0,0,0,0.35); min-width: 90px; min-height: 48px; justify-content: center; }
   .logo-cpf { height: 48px; width: auto; object-fit: contain; transform: scale(1.2); display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2)); }
 
   .header-titles h1 { font-size: 1.15rem; margin: 0 0 2px 0; text-transform: uppercase; font-weight: 900; letter-spacing: 0.8px; color: var(--text-main); }
@@ -63,9 +63,7 @@
   .btn-back-nav:hover { background: #3f3f46; border-color: #60a5fa; transform: translateY(-1px); }
 
   .filter-select, .search-input { background: var(--input-bg); border: 1px solid var(--border-card); color: var(--text-main); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; outline: none; }
-  .search-input { width: 140px; }
-  .search-input:focus { border-color: var(--accent-color); }
-
+  
   .auth-only-element { display: none !important; }
   body.user-authenticated .auth-only-element { display: inline-flex !important; }
 
@@ -75,8 +73,8 @@
   .screen-view { display: none; }
   .screen-view.active { display: block; }
 
-  .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
-  .grid-equipos { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+  .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; width: 100%; min-height: 120px; }
+  .grid-equipos { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; width: 100%; }
 
   .card-area { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 8px; padding: 16px; transition: 0.2s; display: flex; flex-direction: column; gap: 8px; cursor: pointer; }
   .card-area:hover { transform: translateY(-2px); border-color: var(--text-muted); }
@@ -100,8 +98,6 @@
 
   .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 2000; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; backdrop-filter: blur(4px); }
   .modal-content { background: var(--bg-panel); padding: 28px; border-radius: 12px; border: 1px solid var(--border-card); width: 100%; max-width: 620px; position: relative; box-shadow: 0 25px 50px rgba(0,0,0,0.6); max-height: 90vh; overflow-y: auto; }
-  .modal-fullscreen { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-main); z-index: 2500; overflow-y: auto; padding: 30px; box-sizing: border-box; }
-  .fullscreen-container { max-width: 1250px; margin: 0 auto; background: var(--bg-panel); border: 1px solid var(--border-card); border-radius: 12px; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; }
   .modal-close-btn { position: absolute; top: 16px; right: 16px; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
   
   .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
@@ -114,7 +110,7 @@
 <div class="header">
   <div class="header-brand" onclick="goScreen(1)">
     <div class="logos-container">
-      <img src="logo-cpf.png" alt="Logo CPF" class="logo-cpf" onerror="this.style.display='none'">
+      <img src="logo-cpf.png" alt="CPF" class="logo-cpf" onerror="this.outerHTML='<span style=\x27font-weight:900;color:#18181b;font-size:1.1rem;\x27>CPF</span>'">
     </div>
     <div class="header-titles">
       <h1>CIO - <span id="headerScreenTitle">VISTA PÚBLICA (GLOBAL)</span></h1>
@@ -232,7 +228,7 @@
 <!-- MODAL AUTH -->
 <div id="modalAuth" class="modal-overlay">
   <div class="modal-content" style="max-width: 420px; padding: 28px;">
-    <button class="modal-close-btn" onclick="document.getElementById('modalAuth').style.display='none'">&times;</div>
+    <button class="modal-close-btn" onclick="document.getElementById('modalAuth').style.display='none'">&times;</button>
     <div style="display: flex; background: var(--input-bg); border-radius: 8px; padding: 4px; margin-bottom: 24px; border: 1px solid var(--border-card);">
       <button type="button" id="tabBtnLogin" onclick="setAuthMode('login')" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: var(--accent-color); color: white; font-weight: 700; cursor: pointer; font-size: 0.78rem;">Iniciar Sesión</button>
       <button type="button" id="tabBtnRegister" onclick="setAuthMode('register')" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer; font-size: 0.78rem;">Crear Cuenta</button>
@@ -298,23 +294,31 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyBd5MEZdMmgzBs1xCyeGYeKtQx5gJIeY3w",
-    authDomain: "dashboard-vulnerabilidades-mlc.firebaseapp.com",
-    databaseURL: "https://dashboard-vulnerabilidades-mlc-default-rtdb.firebaseio.com",
-    projectId: "dashboard-vulnerabilidades-mlc"
-  };
-  try { firebase.initializeApp(firebaseConfig); } catch(e){}
-  const db = firebase.database().ref('activos_criticos');
-  const dbUsers = firebase.database().ref('usuarios_registrados');
-  const dbAlertasTerreno = firebase.database().ref('alertas_terreno');
+  let db = null;
+  let dbUsers = null;
+  let dbAlertasTerreno = null;
+
+  try {
+    const firebaseConfig = {
+      apiKey: "AIzaSyBd5MEZdMmgzBs1xCyeGYeKtQx5gJIeY3w",
+      authDomain: "dashboard-vulnerabilidades-mlc.firebaseapp.com",
+      databaseURL: "https://dashboard-vulnerabilidades-mlc-default-rtdb.firebaseio.com",
+      projectId: "dashboard-vulnerabilidades-mlc"
+    };
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    db = firebase.database().ref('activos_criticos');
+    dbUsers = firebase.database().ref('usuarios_registrados');
+    dbAlertasTerreno = firebase.database().ref('alertas_terreno');
+  } catch(e) {
+    console.warn("Firebase Init Warning:", e);
+  }
 
   let currentScreen = 1;
   let usuarioActivo = null;
   let faenaAsignadaOperador = null;
   let isSuperAdmin = false;
-  let equiposDB = [];
-  let alertasTerrenoDB = [];
   let faenaSeleccionadaScreen2 = null;
   let siteAreaSeleccionadaScreen2 = null;
   let equipoSeleccionado = null;
@@ -365,64 +369,75 @@
     return list;
   }
 
-  equiposDB = generarSeedMasivoColorados();
+  let equiposDB = generarSeedMasivoColorados();
+  let alertasTerrenoDB = [];
 
-  db.on('value', snap => {
-    const raw = snap.val();
-    if (raw) {
-      equiposDB = Object.keys(raw).map(k => {
-        const item = raw[k];
-        return {
-          id: k,
-          siteId: normalizarSiteId(item.siteId),
-          domain: item.domain || 'planta',
-          area: item.area || 'Área General',
-          tag: item.tag || k,
-          tipo: item.tipo || 'Activo',
-          fecha: item.fecha || '',
-          lat: item.lat || '',
-          lng: item.lng || '',
-          componentes: item.componentes || []
-        };
-      });
-    }
-    refreshCurrentScreen();
-  }, () => {
-    equiposDB = generarSeedMasivoColorados();
-    refreshCurrentScreen();
-  });
+  if (db) {
+    db.on('value', snap => {
+      try {
+        const raw = snap.val();
+        if (raw) {
+          equiposDB = Object.keys(raw).map(k => {
+            const item = raw[k] || {};
+            return {
+              id: k,
+              siteId: normalizarSiteId(item.siteId),
+              domain: item.domain || 'planta',
+              area: item.area || 'Área General',
+              tag: item.tag || k,
+              tipo: item.tipo || 'Activo',
+              fecha: item.fecha || '',
+              lat: item.lat || '',
+              lng: item.lng || '',
+              componentes: item.componentes || []
+            };
+          });
+        }
+        refreshCurrentScreen();
+        actualizarMapaGlobalSiActivo();
+      } catch(err) {
+        console.error("Error procesando DB activos:", err);
+      }
+    }, () => {
+      refreshCurrentScreen();
+    });
 
-  dbAlertasTerreno.on('value', snap => {
-    const raw = snap.val();
-    alertasTerrenoDB = raw ? Object.keys(raw).map(k => ({ id: k, ...raw[k] })) : [];
-    refreshCurrentScreen();
-  });
+    dbAlertasTerreno.on('value', snap => {
+      try {
+        const raw = snap.val();
+        alertasTerrenoDB = raw ? Object.keys(raw).map(k => ({ id: k, ...(raw[k]||{}) })) : [];
+        refreshCurrentScreen();
+      } catch(e) {}
+    });
 
-  dbAlertasTerreno.limitToLast(1).on('child_added', snap => {
-    const data = snap.val();
-    if (!data) return;
-    const toast = document.createElement('div');
-    toast.style.cssText = 'position:fixed; bottom:25px; right:25px; background:#18181b; border:2px solid #ef4444; color:white; padding:18px; border-radius:10px; z-index:9999; box-shadow:0 12px 35px rgba(0,0,0,0.9); max-width:340px; animation: pulseGlowRed 1.5s infinite;';
-    toast.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <b style="color:#ef4444; font-size:0.85rem;">💬 REPORTE DE TERRENO</b>
-        <button onclick="this.parentElement.parentElement.remove()" style="background:transparent; border:none; color:white; font-size:1.1rem; cursor:pointer;">&times;</button>
-      </div>
-      <div style="font-size:0.75rem; line-height:1.4;">
-        <b>Faena:</b> ${data.faena} (${data.area})<br>
-        <b>Tag:</b> <span class="code-font" style="color:#3b82f6;">${data.tag}</span> | <b>Sev:</b> <span style="color:#ef4444;font-weight:bold;">${data.severidad}</span><br>
-        <b>Nota:</b> ${data.detalle}
-      </div>
-    `;
-    document.body.appendChild(toast);
-  });
+    dbAlertasTerreno.limitToLast(1).on('child_added', snap => {
+      const data = snap.val();
+      if (!data) return;
+      const toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed; bottom:25px; right:25px; background:#18181b; border:2px solid #ef4444; color:white; padding:18px; border-radius:10px; z-index:9999; box-shadow:0 12px 35px rgba(0,0,0,0.9); max-width:340px; animation: pulseGlowRed 1.5s infinite;';
+      toast.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <b style="color:#ef4444; font-size:0.85rem;">💬 REPORTE DE TERRENO</b>
+          <button onclick="this.parentElement.parentElement.remove()" style="background:transparent; border:none; color:white; font-size:1.1rem; cursor:pointer;">&times;</button>
+        </div>
+        <div style="font-size:0.75rem; line-height:1.4;">
+          <b>Faena:</b> ${data.faena||'General'} (${data.area||''})<br>
+          <b>Tag:</b> <span class="code-font" style="color:#3b82f6;">${data.tag||''}</span> | <b>Sev:</b> <span style="color:#ef4444;font-weight:bold;">${data.severidad||''}</span><br>
+          <b>Nota:</b> ${data.detalle||''}
+        </div>
+      `;
+      document.body.appendChild(toast);
+    });
+  }
 
   function goScreen(num) {
     currentScreen = num;
     document.querySelectorAll('.screen-view').forEach(el => el.classList.remove('active'));
-    document.getElementById(`screen-${num}`).classList.add('active');
+    const target = document.getElementById(`screen-${num}`);
+    if (target) target.classList.add('active');
     const titles = { 1: 'VISTA PÚBLICA (GLOBAL)', 2: `FAENA: ${faenaSeleccionadaScreen2 || 'ASIGNADA'}`, 3: 'CONSOLA GLOBAL SUPERADMIN' };
-    document.getElementById('headerScreenTitle').innerText = titles[num] || 'CIO';
+    const hTitle = document.getElementById('headerScreenTitle');
+    if (hTitle) hTitle.innerText = titles[num] || 'CIO';
     if (num !== 2) { siteMapVisible = false; const md = document.getElementById('view-site-map'); if (md) md.style.display = 'none'; }
     refreshCurrentScreen();
     if (num === 3) initMapaGlobal();
@@ -459,9 +474,13 @@
   }
 
   function refreshCurrentScreen() {
-    if (currentScreen === 1) renderScreen1Public();
-    else if (currentScreen === 2) renderScreen2Site();
-    else if (currentScreen === 3) renderScreen3Global();
+    try {
+      if (currentScreen === 1) renderScreen1Public();
+      else if (currentScreen === 2) renderScreen2Site();
+      else if (currentScreen === 3) renderScreen3Global();
+    } catch(err) {
+      console.error("Error refreshing screen:", err);
+    }
   }
 
   function renderScreen1Public() {
@@ -470,7 +489,7 @@
     const faenasGroup = {};
     FAENAS_LIST.forEach(f => faenasGroup[f] = { count: 0, critical: 0, maxSevPeso: 1, maxSev: 'Plomo' });
     
-    equiposDB.forEach(eq => {
+    (equiposDB || []).forEach(eq => {
       const f = normalizarSiteId(eq.siteId);
       if (!faenasGroup[f]) faenasGroup[f] = { count: 0, critical: 0, maxSevPeso: 1, maxSev: 'Plomo' };
       faenasGroup[f].count++;
@@ -482,17 +501,18 @@
       }
     });
 
-    const faenasArr = FAENAS_LIST.map(f => ({ name: f, ...faenasGroup[f] }));
+    const faenasArr = FAENAS_LIST.map(f => ({ name: f, ...(faenasGroup[f]||{ count:0, critical:0, maxSevPeso:1, maxSev:'Plomo' }) }));
     faenasArr.sort((a, b) => b.maxSevPeso - a.maxSevPeso || b.critical - a.critical);
 
     container.innerHTML = faenasArr.map(d => {
       const animClass = (d.maxSev === 'Rojo' || d.maxSev === 'Naranja') ? `anim-${d.maxSev.toLowerCase()}` : '';
-      return `<div class="card-area ${animClass}" onclick="seleccionarFaenaScreen2('${d.name.replace(/'/g, "\\'")}')">
+      const safeName = (d.name||'').replace(/'/g, "\\'");
+      return `<div class="card-area ${animClass}" onclick="seleccionarFaenaScreen2('${safeName}')">
         <div class="label-muted">Faena Operativa CMP</div>
         <div class="value-strong" style="font-size:0.95rem; margin:4px 0;">${d.name}</div>
         <div style="display:flex; justify-content:space-between; margin-top:10px; padding-top:6px; border-top:1px solid var(--border-card);">
           <div><div class="label-muted">Activos</div><div class="value-strong">${d.count}</div></div>
-          <div><div class="label-muted">Condición</div><div class="value-strong" style="color:${SEV_COLOR_HEX[d.maxSev]}">${d.critical > 0 ? d.critical + ' Alerta' : 'Normal'}</div></div>
+          <div><div class="label-muted">Condición</div><div class="value-strong" style="color:${SEV_COLOR_HEX[d.maxSev]||'#fff'}">${d.critical > 0 ? d.critical + ' Alerta' : 'Normal'}</div></div>
         </div>
       </div>`;
     }).join('');
@@ -502,10 +522,11 @@
     faenaSeleccionadaScreen2 = faenaName;
     siteAreaSeleccionadaScreen2 = null;
     if (!usuarioActivo) faenaAsignadaOperador = faenaName;
-    document.getElementById('badgeFaenaAsignada').innerText = faenaName;
+    const badge = document.getElementById('badgeFaenaAsignada');
+    if (badge) badge.innerText = faenaName;
     siteMapVisible = false;
     const md = document.getElementById('view-site-map'); if(md) md.style.display = 'none';
-    document.getElementById('labelToggleSiteMap').innerText = 'Ver Mapa de Faena';
+    const lblMap = document.getElementById('labelToggleSiteMap'); if(lblMap) lblMap.innerText = 'Ver Mapa de Faena';
     goScreen(2);
   }
 
@@ -515,25 +536,26 @@
     const container = document.getElementById('viewScreen2Container');
     const lbl = document.getElementById('labelToggleSiteMap');
     const targetSite = faenaSeleccionadaScreen2 || faenaAsignadaOperador || FAENAS_LIST[0];
-    const eqs = equiposDB.filter(e => normalizarSiteId(e.siteId) === targetSite);
+    const eqs = (equiposDB||[]).filter(e => normalizarSiteId(e.siteId) === targetSite);
 
     if (siteMapVisible) {
       if(md) md.style.display = 'block';
       if(container) container.style.display = 'none';
-      lbl.innerText = 'Ocultar Mapa';
+      if(lbl) lbl.innerText = 'Ocultar Mapa';
       actualizarMapaSiteAutomatico(eqs, targetSite);
     } else {
       if(md) md.style.display = 'none';
       if(container) container.style.display = '';
-      lbl.innerText = 'Ver Mapa de Faena';
+      if(lbl) lbl.innerText = 'Ver Mapa de Faena';
     }
     updateScreen2NavigationUI();
   }
 
   function renderScreen2Site() {
     const targetSite = faenaSeleccionadaScreen2 || faenaAsignadaOperador || FAENAS_LIST[0];
-    document.getElementById('screen2SiteTitle').innerText = targetSite;
-    const eqs = equiposDB.filter(e => normalizarSiteId(e.siteId) === targetSite);
+    const titleEl = document.getElementById('screen2SiteTitle');
+    if (titleEl) titleEl.innerText = targetSite;
+    const eqs = (equiposDB||[]).filter(e => normalizarSiteId(e.siteId) === targetSite);
     const container = document.getElementById('viewScreen2Container');
     if (!container) return;
     container.style.display = siteMapVisible ? 'none' : '';
@@ -560,12 +582,13 @@
       container.innerHTML = areasArr.map(d => {
         const animClass = (d.maxSev === 'Rojo' || d.maxSev === 'Naranja') ? `anim-${d.maxSev.toLowerCase()}` : '';
         const critTotal = d.criticalRojo + d.criticalNaranja;
-        return `<div class="card-area ${animClass}" onclick="seleccionarAreaScreen2('${d.name.replace(/'/g, "\\'")}')">
+        const safeArea = d.name.replace(/'/g, "\\'");
+        return `<div class="card-area ${animClass}" onclick="seleccionarAreaScreen2('${safeArea}')">
           <div class="label-muted">Área Operacional</div>
           <div class="value-strong" style="font-size:0.95rem; margin:4px 0;">${d.name}</div>
           <div style="display:flex; justify-content:space-between; margin-top:10px; padding-top:6px; border-top:1px solid var(--border-card);">
             <div><div class="label-muted">Activos</div><div class="value-strong">${d.count}</div></div>
-            <div><div class="label-muted">Condición</div><div class="value-strong" style="color:${SEV_COLOR_HEX[d.maxSev]}">${critTotal > 0 ? critTotal + ' Alerta' : 'Normal'}</div></div>
+            <div><div class="label-muted">Condición</div><div class="value-strong" style="color:${SEV_COLOR_HEX[d.maxSev]||'#fff'}">${critTotal > 0 ? critTotal + ' Alerta' : 'Normal'}</div></div>
           </div>
         </div>`;
       }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin áreas registradas en esta faena.</div>';
@@ -574,10 +597,17 @@
       const eqsArea = eqs.filter(e => (e.area || 'Sin Área') === siteAreaSeleccionadaScreen2);
       eqsArea.sort((a, b) => SEV_PESO[calcMaxSev(b.componentes)] - SEV_PESO[calcMaxSev(a.componentes)]);
 
-      container.innerHTML = eqsArea.map(eq => {
+      let headerBack = `
+        <div style="grid-column: 1/-1; display:flex; align-items:center; gap:10px; margin-bottom:4px; background:var(--bg-card); padding:8px 12px; border-radius:8px; border:1px solid var(--border-card);">
+          <button class="btn-base" style="padding:4px 10px; font-size:0.7rem;" onclick="volverAreasScreen2()">⬅️ Volver a Áreas</button>
+          <span style="font-weight:700; color:var(--accent-color); font-size:0.85rem;">Área: ${siteAreaSeleccionadaScreen2}</span>
+        </div>
+      `;
+
+      container.innerHTML = headerBack + (eqsArea.map(eq => {
         const sev = calcMaxSev(eq.componentes);
         const anim = (sev === 'Rojo' || sev === 'Naranja') ? `anim-${sev.toLowerCase()}` : '';
-        const fieldCount = alertasTerrenoDB.filter(a => (a.tag || '').trim().toUpperCase() === (eq.tag || '').trim().toUpperCase()).length;
+        const fieldCount = (alertasTerrenoDB||[]).filter(a => (a.tag || '').trim().toUpperCase() === (eq.tag || '').trim().toUpperCase()).length;
         const fieldBadge = fieldCount > 0 
           ? `<div style="position:absolute; top:4px; right:4px; background:rgba(59,130,246,0.3); color:#60a5fa; border:1px solid #3b82f6; font-size:0.55rem; padding:2px 5px; border-radius:4px; font-weight:700; z-index:2;">💬 Terreno (${fieldCount})</div>` 
           : '';
@@ -586,9 +616,9 @@
           ${fieldBadge}
           <div class="eq-type">${eq.area || 'Planta'}</div>
           <div class="eq-tag code-font">${eq.tag}</div>
-          <div class="eq-type" style="color:${SEV_COLOR_HEX[sev]}">${sev.toUpperCase()}</div>
+          <div class="eq-type" style="color:${SEV_COLOR_HEX[sev]||'#fff'}">${sev.toUpperCase()}</div>
         </div>`;
-      }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin equipos en esta área.</div>';
+      }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin equipos en esta área.</div>');
     }
     
     updateScreen2NavigationUI();
@@ -600,13 +630,19 @@
     renderScreen2Site();
   }
 
+  function volverAreasScreen2() {
+    siteAreaSeleccionadaScreen2 = null;
+    renderScreen2Site();
+  }
+
   function abrirDetalleActivoModal(eqId) {
     equipoIdActualModalDetalle = eqId;
-    const eq = equiposDB.find(e => e.id === eqId);
+    const eq = (equiposDB||[]).find(e => e.id === eqId);
     if (!eq) return;
-    document.getElementById('detSiteTag').innerText = `${eq.siteId} | TAG: ${eq.tag}`;
-    document.getElementById('detTitle').innerText = `${eq.tipo} - ${eq.area}`;
+    const stTag = document.getElementById('detSiteTag'); if(stTag) stTag.innerText = `${eq.siteId} | TAG: ${eq.tag}`;
+    const dtTitle = document.getElementById('detTitle'); if(dtTitle) dtTitle.innerText = `${eq.tipo} - ${eq.area}`;
     const list = document.getElementById('detComponentesList');
+    if (!list) return;
     
     const sortedComps = [...(eq.componentes || [])].sort((a,b) => SEV_PESO[b.severidad||'Plomo'] - SEV_PESO[a.severidad||'Plomo']);
 
@@ -614,44 +650,49 @@
       <div style="background:var(--input-bg); padding:10px; border-radius:6px; border:1px solid var(--border-card); ${c.severidad==='Rojo'?'border-left:4px solid #ef4444;':''}">
         <div style="display:flex; justify-content:space-between;">
           <b>${c.nombre || 'Spot Principal'}</b>
-          <span style="color:${SEV_COLOR_HEX[c.severidad]||'#fff'}; font-weight:bold;">${c.severidad}</span>
+          <span style="color:${SEV_COLOR_HEX[c.severidad]||'#fff'}; font-weight:bold;">${c.severidad||'Plomo'}</span>
         </div>
         <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">RMS: ${c.rms || 'N/D'} | OM: ${c.om || 'S/N'}</div>
       </div>
     `).join('') || '<div style="color:var(--text-muted);">Sin spots oficiales detallados.</div>';
 
     const terList = document.getElementById('detTerrenoList');
-    const targetTag = (eq.tag || '').trim().toUpperCase();
-    const myReports = alertasTerrenoDB.filter(a => (a.tag || '').trim().toUpperCase() === targetTag)
-                                     .sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+    if (terList) {
+      const targetTag = (eq.tag || '').trim().toUpperCase();
+      const myReports = (alertasTerrenoDB||[]).filter(a => (a.tag || '').trim().toUpperCase() === targetTag)
+                                       .sort((a,b) => new Date(b.timestamp||0) - new Date(a.timestamp||0));
 
-    terList.innerHTML = myReports.length > 0 ? myReports.map(r => `
-      <div style="background:var(--input-bg); padding:10px; border-radius:6px; border:1px solid var(--border-card); border-left:3px solid #3b82f6; font-size:0.78rem;">
-        <div style="display:flex; justify-content:space-between; color:var(--text-muted); font-size:0.68rem; margin-bottom:4px;">
-          <span>🕒 ${new Date(r.timestamp).toLocaleString()}</span>
-          <span style="color:${SEV_COLOR_HEX[r.severidad]||'#fff'}; font-weight:bold;">${r.severidad}</span>
+      terList.innerHTML = myReports.length > 0 ? myReports.map(r => `
+        <div style="background:var(--input-bg); padding:10px; border-radius:6px; border:1px solid var(--border-card); border-left:3px solid #3b82f6; font-size:0.78rem;">
+          <div style="display:flex; justify-content:space-between; color:var(--text-muted); font-size:0.68rem; margin-bottom:4px;">
+            <span>🕒 ${r.timestamp ? new Date(r.timestamp).toLocaleString() : 'Fecha N/D'}</span>
+            <span style="color:${SEV_COLOR_HEX[r.severidad]||'#fff'}; font-weight:bold;">${r.severidad||''}</span>
+          </div>
+          <div><b>Hallazgo:</b> ${r.detalle||''}</div>
+          ${r.fotoBase64 ? `<div style="margin-top:6px;"><img src="${r.fotoBase64}" style="height:60px; border-radius:4px; cursor:pointer; border:1px solid var(--border-card);" onclick="verFotoFull('${r.fotoBase64}')"></div>` : ''}
         </div>
-        <div><b>Hallazgo:</b> ${r.detalle}</div>
-        ${r.fotoBase64 ? `<div style="margin-top:6px;"><img src="${r.fotoBase64}" style="height:60px; border-radius:4px; cursor:pointer; border:1px solid var(--border-card);" onclick="verFotoFull('${r.fotoBase64}')"></div>` : ''}
-      </div>
-    `).join('') : '<div style="color:var(--text-muted); font-size:0.78rem; font-style:italic;">Sin reportes tácticos de terreno registrados para este tag.</div>';
+      `).join('') : '<div style="color:var(--text-muted); font-size:0.78rem; font-style:italic;">Sin reportes tácticos de terreno registrados para este tag.</div>';
+    }
 
-    document.getElementById('modalDetalleActivo').style.display = 'flex';
+    const modalDet = document.getElementById('modalDetalleActivo');
+    if(modalDet) modalDet.style.display = 'flex';
   }
 
   function verFotoFull(b64) {
-    document.getElementById('imgVisorFull').src = b64;
-    document.getElementById('modalVisorFoto').style.display = 'flex';
+    const imgEl = document.getElementById('imgVisorFull');
+    if(imgEl) imgEl.src = b64;
+    const md = document.getElementById('modalVisorFoto');
+    if(md) md.style.display = 'flex';
   }
 
   function editarActivoActualDesdeDetalle() {
     if (!equipoIdActualModalDetalle) return;
-    document.getElementById('modalDetalleActivo').style.display = 'none';
+    const md = document.getElementById('modalDetalleActivo'); if(md) md.style.display = 'none';
     abrirEdicionEquipoGlobal(equipoIdActualModalDetalle);
   }
 
   function actualizarMapaSiteAutomatico(eqs, targetSite) {
-    const valid = eqs.filter(eq => {
+    const valid = (eqs||[]).filter(eq => {
       const lat = parseFloat(eq.lat), lng = parseFloat(eq.lng);
       return !isNaN(lat) && !isNaN(lng) && lat !== 0;
     });
@@ -659,6 +700,8 @@
     if (valid.length === 0) return;
 
     setTimeout(() => {
+      const mapDiv = document.getElementById('view-site-map');
+      if (!mapDiv) return;
       if (!mapaSiteInstancia) {
         mapaSiteInstancia = L.map('view-site-map').setView([-28.2876, -70.8130], 13);
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:20}).addTo(mapaSiteInstancia);
@@ -677,7 +720,8 @@
           const icono = L.divIcon({
             className: 'custom-map-marker',
             html: `<div class="${pulseClass}" style="background-color: ${col}; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 12px ${col};"></div>`,
-            iconSize: [22, 22], iconAnchor:
+            iconSize: [22, 22],
+            iconAnchor:
           });
           L.marker([lat, lng], {icon: icono}).bindPopup(`<b>${eq.tag}</b><br>Área: ${eq.area}<br><b style="color:${col};">${sev.toUpperCase()}</b>`).addTo(capaSiteMarkers);
           validLatLngs.push([lat, lng]);
@@ -688,8 +732,9 @@
   }
 
   function renderScreen3Global() {
-    const filter = document.getElementById('superAdminFilterSite')?.value || 'TODAS';
-    const eqs = filter === 'TODAS' ? equiposDB : equiposDB.filter(e => normalizarSiteId(e.siteId) === filter);
+    const filterEl = document.getElementById('superAdminFilterSite');
+    const filter = filterEl ? filterEl.value : 'TODAS';
+    const eqs = filter === 'TODAS' ? (equiposDB||[]) : (equiposDB||[]).filter(e => normalizarSiteId(e.siteId) === filter);
     eqs.sort((a, b) => SEV_PESO[calcMaxSev(b.componentes)] - SEV_PESO[calcMaxSev(a.componentes)]);
     const container = document.getElementById('viewScreen3Global');
     if (!container) return;
@@ -710,6 +755,8 @@
 
   function initMapaGlobal() {
     setTimeout(() => {
+      const mapDiv = document.getElementById('view-map');
+      if (!mapDiv) return;
       if (!mapaGlobalInstancia) {
         mapaGlobalInstancia = L.map('view-map').setView([-28.2876, -70.8130], 10);
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:20}).addTo(mapaGlobalInstancia);
@@ -724,8 +771,9 @@
   function actualizarMapaGlobalSiActivo() {
     if (!mapaGlobalInstancia || !capaGlobalMarkers) return;
     capaGlobalMarkers.clearLayers();
-    const filter = document.getElementById('superAdminFilterSite')?.value || 'TODAS';
-    const eqs = filter === 'TODAS' ? equiposDB : equiposDB.filter(e => normalizarSiteId(e.siteId) === filter);
+    const filterEl = document.getElementById('superAdminFilterSite');
+    const filter = filterEl ? filterEl.value : 'TODAS';
+    const eqs = filter === 'TODAS' ? (equiposDB||[]) : (equiposDB||[]).filter(e => normalizarSiteId(e.siteId) === filter);
     let valid = [];
     eqs.forEach(eq => {
       const lat = parseFloat(eq.lat), lng = parseFloat(eq.lng);
@@ -736,7 +784,8 @@
         const icono = L.divIcon({
           className: 'custom-map-marker',
           html: `<div class="${pulseClass}" style="background-color: ${col}; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 12px ${col};"></div>`,
-          iconSize: [22, 22], iconAnchor:
+          iconSize: [22, 22],
+          iconAnchor:
         });
         L.marker([lat, lng], {icon: icono}).bindPopup(`<b>${eq.tag}</b><br>${eq.siteId}<br><b style="color:${col};">${sev.toUpperCase()}</b>`).addTo(capaGlobalMarkers);
         valid.push([lat, lng]);
@@ -747,6 +796,7 @@
 
   function toggleMapModal() {
     const box = document.getElementById('viewMapGlobalContainer');
+    if (!box) return;
     const isHidden = box.style.display === 'none';
     box.style.display = isHidden ? 'block' : 'none';
     if (isHidden) initMapaGlobal();
@@ -755,13 +805,13 @@
   function calcMaxSev(comps) {
     if (!comps || !comps.length) return 'Plomo';
     let maxP = 1, sev = 'Plomo';
-    comps.forEach(c => { if (SEV_PESO[c.severidad] > maxP) { maxP = SEV_PESO[c.severidad]; sev = c.severidad; } });
+    comps.forEach(c => { if (c && SEV_PESO[c.severidad] > maxP) { maxP = SEV_PESO[c.severidad]; sev = c.severidad; } });
     return sev;
   }
 
   function toggleUserDropdown() {
     const m = document.getElementById('userDropdownMenu');
-    m.style.display = m.style.display === 'block' ? 'none' : 'block';
+    if(m) m.style.display = m.style.display === 'block' ? 'none' : 'block';
   }
 
   function handleUserBtnClick() {
@@ -783,63 +833,70 @@
     const submitBtn = document.getElementById('authSubmitActionBtn');
 
     if (mode === 'login') {
-      btnLogin.style.background = 'var(--accent-color)'; btnLogin.style.color = 'white'; btnLogin.style.fontWeight = '700';
-      btnRegister.style.background = 'transparent'; btnRegister.style.color = 'var(--text-muted)'; btnRegister.style.fontWeight = '600';
-      boxName.style.display = 'none';
-      boxSite.style.display = 'none';
-      title.innerText = 'Acceso Operador CIO';
-      desc.innerText = 'Ingresa tus credenciales autorizadas por CMP.';
-      submitBtn.innerText = 'Ingresar al Sistema';
+      if(btnLogin) { btnLogin.style.background = 'var(--accent-color)'; btnLogin.style.color = 'white'; btnLogin.style.fontWeight = '700'; }
+      if(btnRegister) { btnRegister.style.background = 'transparent'; btnRegister.style.color = 'var(--text-muted)'; btnRegister.style.fontWeight = '600'; }
+      if(boxName) boxName.style.display = 'none';
+      if(boxSite) boxSite.style.display = 'none';
+      if(title) title.innerText = 'Acceso Operador CIO';
+      if(desc) desc.innerText = 'Ingresa tus credenciales autorizadas por CMP.';
+      if(submitBtn) submitBtn.innerText = 'Ingresar al Sistema';
     } else {
-      btnRegister.style.background = 'var(--accent-color)'; btnRegister.style.color = 'white'; btnRegister.style.fontWeight = '700';
-      btnLogin.style.background = 'transparent'; btnLogin.style.color = 'var(--text-muted)'; btnLogin.style.fontWeight = '600';
-      boxName.style.display = 'block';
-      boxSite.style.display = 'block';
-      title.innerText = 'Crear Cuenta de Operador';
-      desc.innerText = 'Regístrate y define tu faena de escritura.';
-      submitBtn.innerText = 'Registrarse y Entrar';
+      if(btnRegister) { btnRegister.style.background = 'var(--accent-color)'; btnRegister.style.color = 'white'; btnRegister.style.fontWeight = '700'; }
+      if(btnLogin) { btnLogin.style.background = 'transparent'; btnLogin.style.color = 'var(--text-muted)'; btnLogin.style.fontWeight = '600'; }
+      if(boxName) boxName.style.display = 'block';
+      if(boxSite) boxSite.style.display = 'block';
+      if(title) title.innerText = 'Crear Cuenta de Operador';
+      if(desc) desc.innerText = 'Regístrate y define tu faena de escritura.';
+      if(submitBtn) submitBtn.innerText = 'Registrarse y Entrar';
     }
   }
 
   function abrirModalAuth(mode = 'login') {
-    document.getElementById('userDropdownMenu').style.display = 'none';
+    const dd = document.getElementById('userDropdownMenu'); if(dd) dd.style.display = 'none';
     setAuthMode(mode);
-    document.getElementById('modalAuth').style.display = 'flex';
+    const md = document.getElementById('modalAuth'); if(md) md.style.display = 'flex';
   }
 
   function handleAuthSubmission() {
-    const userVal = (document.getElementById('authUsername').value || '').trim();
-    const passVal = (document.getElementById('authPassword').value || '').trim();
-    const selectedSite = document.getElementById('authSelectedSite').value;
-    const fullnameVal = (document.getElementById('authFullname').value || '').trim();
+    const userVal = (document.getElementById('authUsername')?.value || '').trim();
+    const passVal = (document.getElementById('authPassword')?.value || '').trim();
+    const selectedSite = document.getElementById('authSelectedSite')?.value || 'Planta, Mina los Colorados';
+    const fullnameVal = (document.getElementById('authFullname')?.value || '').trim();
 
     if (!userVal || !passVal) { alert("⚠️ Completa usuario y contraseña."); return; }
     const lookupId = userVal.replace(/[^a-zA-Z0-9]/g, '_');
 
     if (currentAuthMode === 'register') {
       if (!fullnameVal) { alert("⚠️ Ingresa tu nombre completo."); return; }
-      dbUsers.child(lookupId).set({
-        nombreCompleto: fullnameVal, usuario: userVal, password: passVal, faenaAsignada: selectedSite, creadoEn: new Date().toISOString()
-      }).then(() => {
-        alert("✅ Usuario registrado exitosamente.");
-        document.getElementById('modalAuth').style.display = 'none';
-        loguearUsuarioDirecto(fullnameVal, selectedSite);
-      }).catch(err => alert("❌ Error: " + err.message));
+      if (dbUsers) {
+        dbUsers.child(lookupId).set({
+          nombreCompleto: fullnameVal, usuario: userVal, password: passVal, faenaAsignada: selectedSite, creadoEn: new Date().toISOString()
+        }).then(() => {
+          alert("✅ Usuario registrado exitosamente.");
+          const md = document.getElementById('modalAuth'); if(md) md.style.display = 'none';
+          loguearUsuarioDirecto(fullnameVal, selectedSite);
+        }).catch(err => alert("❌ Error: " + err.message));
+      }
     } else {
-      dbUsers.child(lookupId).once('value', snap => {
-        const uData = snap.val();
-        loguearUsuarioDirecto((uData && uData.password === passVal) ? (uData.nombreCompleto || uData.usuario) : userVal, uData?.faenaAsignada || 'Planta, Mina los Colorados');
-        document.getElementById('modalAuth').style.display = 'none';
-      });
+      if (dbUsers) {
+        dbUsers.child(lookupId).once('value', snap => {
+          const uData = snap.val() || {};
+          loguearUsuarioDirecto((uData.password === passVal) ? (uData.nombreCompleto || uData.usuario) : userVal, uData.faenaAsignada || selectedSite);
+          const md = document.getElementById('modalAuth'); if(md) md.style.display = 'none';
+        });
+      } else {
+        loguearUsuarioDirecto(userVal, selectedSite);
+        const md = document.getElementById('modalAuth'); if(md) md.style.display = 'none';
+      }
     }
   }
 
   function loguearUsuarioDirecto(u, site) {
     usuarioActivo = u; faenaAsignadaOperador = site;
     document.body.classList.add('user-authenticated');
-    document.getElementById('labelUsuarioBtn').innerText = u.split('@')[0];
-    document.getElementById('dropUserInfo').innerText = `Activo: ${u} | Faena: ${site}`;
-    document.getElementById('dropLogoutBtn').style.display = 'block';
+    const lbl = document.getElementById('labelUsuarioBtn'); if(lbl) lbl.innerText = u.split('@')[0];
+    const uInfo = document.getElementById('dropUserInfo'); if(uInfo) uInfo.innerText = `Activo: ${u} | Faena: ${site}`;
+    const loBtn = document.getElementById('dropLogoutBtn'); if(loBtn) loBtn.style.display = 'block';
     alert(`✅ Bienvenido ${u}. Edición habilitada en faena: ${site}.`);
   }
 
@@ -847,9 +904,9 @@
     usuarioActivo = null; faenaAsignadaOperador = null; isSuperAdmin = false;
     document.body.classList.remove('user-authenticated');
     document.body.classList.remove('superadmin-active');
-    document.getElementById('labelUsuarioBtn').innerText = 'Entrar';
-    document.getElementById('dropUserInfo').innerText = 'Invitado (Solo Lectura)';
-    document.getElementById('dropLogoutBtn').style.display = 'none';
+    const lbl = document.getElementById('labelUsuarioBtn'); if(lbl) lbl.innerText = 'Entrar';
+    const uInfo = document.getElementById('dropUserInfo'); if(uInfo) uInfo.innerText = 'Invitado (Solo Lectura)';
+    const loBtn = document.getElementById('dropLogoutBtn'); if(loBtn) loBtn.style.display = 'none';
     goScreen(1);
     alert("🚪 Sesión cerrada.");
   }
@@ -880,65 +937,82 @@
     abrirEdicionEquipoGlobalObj();
   }
   function abrirEdicionEquipoGlobal(eqId) {
-    equipoSeleccionado = equiposDB.find(e => e.id === eqId);
+    equipoSeleccionado = (equiposDB||[]).find(e => e.id === eqId);
     if (equipoSeleccionado) abrirEdicionEquipoGlobalObj();
   }
   function abrirEdicionEquipoGlobalObj() {
-    document.getElementById('edSiteId').value = equipoSeleccionado.siteId;
-    document.getElementById('edDomain').value = equipoSeleccionado.domain || 'planta';
-    document.getElementById('edArea').value = equipoSeleccionado.area || '';
-    document.getElementById('edTag').value = equipoSeleccionado.tag || '';
-    document.getElementById('edTipo').value = equipoSeleccionado.tipo || '';
-    document.getElementById('edFecha').value = equipoSeleccionado.fecha || '';
-    document.getElementById('edLat').value = equipoSeleccionado.lat || '';
-    document.getElementById('edLng').value = equipoSeleccionado.lng || '';
-    const cont = document.getElementById('edComponentesContainer'); cont.innerHTML = '';
-    (equipoSeleccionado.componentes || []).forEach(c => agregarFormComponente(c));
-    document.getElementById('modalEdicion').style.display = 'block';
+    if(!equipoSeleccionado) return;
+    const setVal = (id, v) => { const el = document.getElementById(id); if(el) el.value = v; };
+    setVal('edSiteId', equipoSeleccionado.siteId);
+    setVal('edDomain', equipoSeleccionado.domain || 'planta');
+    setVal('edArea', equipoSeleccionado.area || '');
+    setVal('edTag', equipoSeleccionado.tag || '');
+    setVal('edTipo', equipoSeleccionado.tipo || '');
+    setVal('edFecha', equipoSeleccionado.fecha || '');
+    setVal('edLat', equipoSeleccionado.lat || '');
+    setVal('edLng', equipoSeleccionado.lng || '');
+    const cont = document.getElementById('edComponentesContainer');
+    if (cont) {
+      cont.innerHTML = '';
+      (equipoSeleccionado.componentes || []).forEach(c => agregarFormComponente(c));
+    }
+    const md = document.getElementById('modalEdicion'); if(md) md.style.display = 'block';
   }
   function agregarFormComponente(data = {}) {
-    const cont = document.getElementById('edComponentesContainer'), div = document.createElement('div');
+    const cont = document.getElementById('edComponentesContainer');
+    if(!cont) return;
+    const div = document.createElement('div');
     div.style.cssText = "background:var(--bg-main); padding:14px; border:1px solid var(--border-card); border-radius:8px; position:relative;";
     div.className = 'comp-item';
-    div.innerHTML = `<button class="btn-danger" style="position:absolute; top:10px; right:10px; padding:3px 6px; font-size:0.65rem;" onclick="this.parentElement.remove()">Eliminar</button>
+    div.innerHTML = `<button type="button" class="btn-danger" style="position:absolute; top:10px; right:10px; padding:3px 6px; font-size:0.65rem;" onclick="this.parentElement.remove()">Eliminar</button>
     <div class="form-grid"><div><label>Spot / Falla</label><input type="text" class="c-nom" value="${data.nombre||''}"></div><div><label>RMS</label><input type="text" class="c-rms" value="${data.rms||''}"></div><div><label>Sev</label><select class="c-sev"><option value="Rojo" ${data.severidad==='Rojo'?'selected':''}>Rojo</option><option value="Naranja" ${data.severidad==='Naranja'?'selected':''}>Naranja</option><option value="Verde" ${data.severidad==='Verde'?'selected':''}>Verde</option></select></div></div>`;
     cont.appendChild(div);
   }
-  function cerrarEdicion() { document.getElementById('modalEdicion').style.display = 'none'; }
+  function cerrarEdicion() { const md = document.getElementById('modalEdicion'); if(md) md.style.display = 'none'; }
   function guardarEquipo() {
-    if (!equipoSeleccionado) return;
+    if (!equipoSeleccionado || !db) return;
     const comps = [];
-    document.querySelectorAll('.comp-item').forEach(el => comps.push({ nombre: el.querySelector('.c-nom').value, rms: el.querySelector('.c-rms').value, severidad: el.querySelector('.c-sev').value }));
+    document.querySelectorAll('.comp-item').forEach(el => comps.push({ 
+      nombre: el.querySelector('.c-nom')?.value || '', 
+      rms: el.querySelector('.c-rms')?.value || '', 
+      severidad: el.querySelector('.c-sev')?.value || 'Verde' 
+    }));
     db.child(equipoSeleccionado.id).update({
-      siteId: document.getElementById('edSiteId').value, domain: document.getElementById('edDomain').value,
-      area: document.getElementById('edArea').value, tag: document.getElementById('edTag').value, tipo: document.getElementById('edTipo').value,
-      lat: document.getElementById('edLat').value, lng: document.getElementById('edLng').value, componentes: comps
+      siteId: document.getElementById('edSiteId')?.value, domain: document.getElementById('edDomain')?.value,
+      area: document.getElementById('edArea')?.value, tag: document.getElementById('edTag')?.value, tipo: document.getElementById('edTipo')?.value,
+      lat: document.getElementById('edLat')?.value, lng: document.getElementById('edLng')?.value, componentes: comps
     }).then(() => cerrarEdicion());
   }
   function eliminarEquipo() {
-    if (confirm('¿Eliminar activo?')) db.child(equipoSeleccionado.id).remove().then(() => cerrarEdicion());
+    if (confirm('¿Eliminar activo?') && db && equipoSeleccionado) {
+      db.child(equipoSeleccionado.id).remove().then(() => cerrarEdicion());
+    }
   }
 
   function procesarCargaExcelFaena(e) {
-    const file = e.target.files[0]; if (!file) return;
+    const file = e.target.files[0]; if (!file || !db) return;
     const targetSite = faenaSeleccionadaScreen2 || faenaAsignadaOperador || 'Planta, Mina los Colorados';
     const reader = new FileReader();
     reader.onload = function(evt) {
-      const data = new Uint8Array(evt.target.result);
-      const workbook = XLSX.read(data, {type: 'array'});
-      const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-      let count = 0;
-      json.forEach(row => {
-        if(row.Tag) {
-          const id = 'EQ_EXCEL_' + Date.now() + '_' + count;
-          db.child(id).set({
-            siteId: targetSite, domain: 'planta', area: row.Area || 'General', tag: row.Tag, tipo: row.Tipo || 'Activo',
-            lat: row.Lat || '', lng: row.Lng || '', componentes: [{nombre:'Spot Masivo', severidad:'Verde'}]
-          });
-          count++;
-        }
-      });
-      alert(`✅ Carga masiva exitosa: ${count} activos en ${targetSite}.`);
+      try {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+        let count = 0;
+        json.forEach(row => {
+          if(row && row.Tag) {
+            const id = 'EQ_EXCEL_' + Date.now() + '_' + count;
+            db.child(id).set({
+              siteId: targetSite, domain: 'planta', area: row.Area || 'General', tag: row.Tag, tipo: row.Tipo || 'Activo',
+              lat: row.Lat || '', lng: row.Lng || '', componentes: [{nombre:'Spot Masivo', severidad:'Verde'}]
+            });
+            count++;
+          }
+        });
+        alert(`✅ Carga masiva exitosa: ${count} activos en ${targetSite}.`);
+      } catch(err) {
+        alert("Error procesando Excel: " + err.message);
+      }
     };
     reader.readAsArrayBuffer(file);
     e.target.value = '';
@@ -946,16 +1020,17 @@
 
   function exportarReporteGerenciaAlta() {
     const ts = new Date().toISOString();
-    let r=0, n=0, total=equiposDB.length;
-    equiposDB.forEach(eq => { const s = calcMaxSev(eq.componentes); if(s==='Rojo')r++; if(s==='Naranja')n++; });
+    let r=0, n=0, total=(equiposDB||[]).length;
+    (equiposDB||[]).forEach(eq => { const s = calcMaxSev(eq.componentes); if(s==='Rojo')r++; if(s==='Naranja')n++; });
     const txt = `REPORTE EJECUTIVO GLOBAL SUPERADMIN - CIO CMP\nFecha: ${ts}\nTotal Activos: ${total} | Rojos: ${r} | Naranjos: ${n}\nUSD/CLP: ${currentUsdClp} | Fe62: ${currentHierroUsdFe62}`;
     const blob = new Blob([txt], {type:'text/plain'});
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Reporte_Global_${ts.split('T')[0]}.txt`; a.click();
   }
 
   function exportarReporteGerenciaPorFaena() {
-    const targetSite = document.getElementById('superAdminFilterSite')?.value || 'Planta, Mina los Colorados';
-    const eqs = targetSite === 'TODAS' ? equiposDB : equiposDB.filter(e => normalizarSiteId(e.siteId) === targetSite);
+    const filterEl = document.getElementById('superAdminFilterSite');
+    const targetSite = filterEl ? filterEl.value : 'Planta, Mina los Colorados';
+    const eqs = targetSite === 'TODAS' ? (equiposDB||[]) : (equiposDB||[]).filter(e => normalizarSiteId(e.siteId) === targetSite);
     const ts = new Date().toISOString();
     let r=0, n=0;
     eqs.forEach(eq => { const s = calcMaxSev(eq.componentes); if(s==='Rojo')r++; if(s==='Naranja')n++; });
@@ -964,7 +1039,11 @@
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Reporte_${targetSite.replace(/[^a-zA-Z0-9]/g,'_')}.txt`; a.click();
   }
 
-  window.addEventListener('click', e => { if (!document.getElementById('userMenuWrapper')?.contains(e.target)) document.getElementById('userDropdownMenu').style.display = 'none'; });
+  window.addEventListener('click', e => { 
+    const uw = document.getElementById('userMenuWrapper');
+    const dd = document.getElementById('userDropdownMenu');
+    if (dd && uw && !uw.contains(e.target)) dd.style.display = 'none'; 
+  });
   
   window.addEventListener('DOMContentLoaded', () => { refreshCurrentScreen(); });
 </script>
