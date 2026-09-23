@@ -263,7 +263,7 @@
     if (bounds.length) state.mapaSite.fitBounds(L.latLngBounds(bounds), { padding: [30, 30] });
   }
 
-  // Recepción con mapeo flexible de campos
+  // Notificación en vivo hacia Sala CIO cuando terreno sube datos
   if (db) {
     db.on('value', (snap) => {
       const raw = snap.val();
@@ -289,10 +289,44 @@
     });
 
     if (dbAlertasTerreno) {
-      dbAlertasTerreno.on('value', (snap) => {
+      let inicializacionCompletada = false;
+      dbAlertasTerreno.once('value', (snap) => {
         const raw = snap.val();
         state.alertasTerreno = raw ? Object.keys(raw).map((k) => ({ id: k, ...(raw[k] || {}) })) : [];
+        inicializacionCompletada = true;
         refresh();
+      });
+
+      dbAlertasTerreno.limitToLast(1).on('child_added', (snap) => {
+        if (!inicializacionCompletada) return;
+        const data = snap.val();
+        if (!data) return;
+
+        try {
+          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+          audio.volume = 0.5;
+          audio.play().catch(() => {});
+        } catch(e) {}
+
+        const toast = document.createElement('aside');
+        toast.className = 'toast-terreno-alert';
+        toast.innerHTML = `
+          <div class="toast-terreno-header">
+            <span>🚨 NUEVO REPORTE EN TERRENO</span>
+            <button type="button" onclick="this.parentElement.parentElement.remove()" style="background:transparent; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">&times;</button>
+          </div>
+          <div class="toast-terreno-body">
+            <strong>Faena:</strong> ${sanitize(data.faena || 'General')} (${sanitize(data.area || '')})<br>
+            <strong>Equipo:</strong> <span class="code-font" style="color:#60a5fa;">${sanitize(data.tag || '')}</span> | <strong>Sev:</strong> <span style="color:#ef4444; font-weight:bold;">${sanitize(data.severidad || 'Alerta')}</span><br>
+            <strong>Hallazgo:</strong> ${sanitize(data.detalle || '')}
+          </div>
+          <button type="button" class="btn-base btn-primary" style="padding:6px 12px; font-size:0.75rem; justify-content:center;" onclick="window.CIO.abrirDetallePorTag('${sanitize(data.tag)}'); this.parentElement.remove();">
+            🔍 Ver Activo y Foto
+          </button>
+        `;
+        document.body.appendChild(toast);
+
+        setTimeout(() => { toast.remove(); }, 12000);
       });
     }
   }
@@ -369,43 +403,59 @@
       if (!eq) return;
 
       const tagValue = eq.tag || eq.Tag || eq.id || 'S/T';
-      document.getElementById('detSiteTag').innerText = `${eq.siteId} | ${tagValue}`;
+      document.getElementById('detSiteTag').innerText = `${eq.siteId} | TAG: ${tagValue}`;
       document.getElementById('detTitle').innerText = `${eq.tipo || 'Activo'} - ${eq.area}`;
 
       const list = document.getElementById('detComponentesList');
       const comps = [...(eq.componentes || [])].sort((a, b) => SEV_PESO[b.severidad || 'Plomo'] - SEV_PESO[a.severidad || 'Plomo']);
       list.innerHTML = comps.map((c) => `
-        <div style="background:var(--input-bg); padding:10px; border-radius:6px; border:1px solid var(--border-card); ${c.severidad === 'Rojo' ? 'border-left:4px solid #ef4444;' : ''}">
-          <div style="display:flex; justify-content:space-between;">
-            <strong>${sanitize(c.nombre || c.spot)}</strong>
-            <span style="color:${SEV_COLOR[c.severidad]}; font-weight:bold;">${c.severidad}</span>
+        <div style="background:var(--input-bg); padding:12px 16px; border-radius:8px; border:1px solid var(--border-card); ${c.severidad === 'Rojo' ? 'border-left:4px solid #ef4444;' : ''}">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong style="font-size:0.95rem;">${sanitize(c.nombre || c.spot)}</strong>
+            <span style="color:${SEV_COLOR[c.severidad]}; font-weight:800; text-transform:uppercase;">${c.severidad}</span>
           </div>
-          <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">RMS: ${c.rms || 'N/D'} | OM: ${c.om || 'S/N'}</div>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin-top:6px;">RMS: <strong>${c.rms || 'N/D'}</strong> | Orden de Trabajo: <strong>${c.om || 'S/N'}</strong></div>
         </div>
-      `).join('') || '<div class="label-muted">Sin spots oficiales.</div>';
+      `).join('') || '<div class="label-muted" style="padding:14px;">Sin spots oficiales registrados.</div>';
 
       const terList = document.getElementById('detTerrenoList');
       const myReports = state.alertasTerreno.filter((a) => (a.tag || '').trim().toUpperCase() === tagValue.trim().toUpperCase());
+      
       terList.innerHTML = myReports.length > 0 ? myReports.map((r) => `
-        <div style="background:var(--input-bg); padding:8px; border-radius:6px; border:1px solid var(--border-card); border-left:3px solid #3b82f6; font-size:0.75rem;">
-          <div style="display:flex; justify-content:space-between; color:var(--text-muted); font-size:0.65rem;">
-            <span>🕒 ${r.timestamp ? new Date(r.timestamp).toLocaleString() : 'N/D'}</span>
-            <span style="color:${SEV_COLOR[r.severidad]}; font-weight:bold;">${r.severidad}</span>
+        <article class="card-reporte-terreno-lg">
+          <div style="display:flex; justify-content:space-between; color:var(--text-muted); font-size:0.75rem;">
+            <span>🕒 <strong>${r.timestamp ? new Date(r.timestamp).toLocaleString() : 'N/D'}</strong></span>
+            <span style="color:${SEV_COLOR[r.severidad]}; font-weight:bold; font-size:0.85rem;">${r.severidad}</span>
           </div>
-          <div style="margin-top:4px;">${sanitize(r.detalle)}</div>
-          ${r.fotoBase64 ? `<img src="${r.fotoBase64}" style="height:55px; border-radius:4px; margin-top:6px; cursor:pointer;" onclick="window.CIO.verFoto('${r.fotoBase64}')" />` : ''}
-        </div>
-      `).join('') : '<div class="label-muted" style="font-style:italic;">Sin reportes tácticos para este tag.</div>';
+          <div style="font-size:0.9rem; color:#fff; line-height:1.4;">${sanitize(r.detalle)}</div>
+          
+          ${r.fotoBase64 ? `
+            <div style="margin-top:8px;">
+              <img src="${r.fotoBase64}" class="img-terreno-preview-lg" alt="Evidencia de terreno" onclick="window.CIO.abrirFotoEnNuevaPestana('${r.fotoBase64}')" title="Clic para ver en pestaña completa" />
+              <div style="display:flex; justify-content:flex-end; margin-top:4px;">
+                <button type="button" class="btn-base" style="font-size:0.68rem; padding:4px 8px;" onclick="window.CIO.abrirFotoEnNuevaPestana('${r.fotoBase64}')">🔍 Abrir foto en pestaña nueva</button>
+              </div>
+            </div>
+          ` : ''}
+        </article>
+      `).join('') : '<div class="label-muted" style="padding:14px; font-style:italic;">No hay reportes de ronda para este activo.</div>';
 
       document.getElementById('modalDetalleActivo').showModal();
     },
 
-    cerrarModalDetalle: () => document.getElementById('modalDetalleActivo').close(),
-    verFoto: (src) => {
-      document.getElementById('imgVisorFull').src = src;
-      document.getElementById('modalVisorFoto').showModal();
+    abrirDetallePorTag: (tag) => {
+      const eq = state.equipos.find((e) => (e.tag || '').trim().toUpperCase() === tag.trim().toUpperCase());
+      if (eq) {
+        window.CIO.abrirDetalle(eq.id);
+      }
     },
 
+    abrirFotoEnNuevaPestana: (base64Data) => {
+      const win = window.open("");
+      win.document.write(`<body style="margin:0; background:#0a0a0c; display:flex; justify-content:center; align-items:center; height:100vh;"><img src="${base64Data}" style="max-width:98%; max-height:98%; object-fit:contain; border-radius:6px; box-shadow:0 0 30px rgba(0,0,0,0.8);" /></body>`);
+    },
+
+    cerrarModalDetalle: () => document.getElementById('modalDetalleActivo').close(),
     toggleTheme: () => document.body.classList.toggle('light-mode'),
 
     handleUserBtnClick: () => {
@@ -552,6 +602,12 @@
         db.child(state.equipoSeleccionado.id).remove();
         document.getElementById('modalEdicion').close();
       }
+    },
+
+    editarActivoActualDesdeDetalle: () => {
+      if (!state.equipoIdModal) return;
+      document.getElementById('modalDetalleActivo').close();
+      window.CIO.abrirEdicion(state.equipoIdModal);
     },
 
     procesarCargaExcelFaena: (e) => {
