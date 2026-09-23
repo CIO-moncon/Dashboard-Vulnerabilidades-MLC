@@ -216,7 +216,7 @@
     <div id="detComponentesList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:18px;"></div>
 
     <div style="border-top:1px solid var(--border-card); padding-top:14px;">
-      <div class="label-muted" style="color:var(--accent-color); margin-bottom:8px;">💬 Bitácora de Hallazgos de Terreno (No oficial)</div>
+      <div class="label-muted" style="color:var(--accent-color); margin-bottom:8px; font-weight:700;">💬 Bitácora de Hallazgos de Terreno (No oficial)</div>
       <div id="detTerrenoList" style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto;"></div>
     </div>
   </div>
@@ -393,14 +393,12 @@
     refreshCurrentScreen();
   });
 
-  // Escuchar reportes de terreno para badges y bitácora
   dbAlertasTerreno.on('value', snap => {
     const raw = snap.val();
     alertasTerrenoDB = raw ? Object.keys(raw).map(k => ({ id: k, ...raw[k] })) : [];
     refreshCurrentScreen();
   });
 
-  // Notificación toast en tiempo real sala CIO
   dbAlertasTerreno.limitToLast(1).on('child_added', snap => {
     const data = snap.val();
     if (!data) return;
@@ -580,10 +578,9 @@
       container.innerHTML = eqsArea.map(eq => {
         const sev = calcMaxSev(eq.componentes);
         const anim = (sev === 'Rojo' || sev === 'Naranja') ? `anim-${sev.toLowerCase()}` : '';
-        // Buscar si tiene reportes de terreno pendientes/asociados a este tag
-        const fieldCount = alertasTerrenoDB.filter(a => a.tag === eq.tag).length;
+        const fieldCount = alertasTerrenoDB.filter(a => (a.tag || '').trim().toUpperCase() === (eq.tag || '').trim().toUpperCase()).length;
         const fieldBadge = fieldCount > 0 
-          ? `<div style="position:absolute; top:4px; right:4px; background:rgba(59,130,246,0.25); color:#60a5fa; border:1px solid #3b82f6; font-size:0.55rem; padding:2px 5px; border-radius:4px; font-weight:700;">💬 Terreno (${fieldCount})</div>` 
+          ? `<div style="position:absolute; top:4px; right:4px; background:rgba(59,130,246,0.3); color:#60a5fa; border:1px solid #3b82f6; font-size:0.55rem; padding:2px 5px; border-radius:4px; font-weight:700; z-index:2;">💬 Terreno (${fieldCount})</div>` 
           : '';
 
         return `<div class="card-equipo sev-${sev.toLowerCase()} ${anim}" onclick="abrirDetalleActivoModal('${eq.id}')">
@@ -624,19 +621,21 @@
       </div>
     `).join('') || '<div style="color:var(--text-muted);">Sin spots oficiales detallados.</div>';
 
-    // Rellenar Bitácora de Terreno para este Tag
     const terList = document.getElementById('detTerrenoList');
-    const myReports = alertasTerrenoDB.filter(a => a.tag === eq.tag).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const targetTag = (eq.tag || '').trim().toUpperCase();
+    const myReports = alertasTerrenoDB.filter(a => (a.tag || '').trim().toUpperCase() === targetTag)
+                                     .sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+
     terList.innerHTML = myReports.length > 0 ? myReports.map(r => `
-      <div style="background:var(--input-bg); padding:10px; border-radius:6px; border:1px solid var(--border-card); font-size:0.78rem;">
+      <div style="background:var(--input-bg); padding:10px; border-radius:6px; border:1px solid var(--border-card); border-left:3px solid #3b82f6; font-size:0.78rem;">
         <div style="display:flex; justify-content:space-between; color:var(--text-muted); font-size:0.68rem; margin-bottom:4px;">
           <span>🕒 ${new Date(r.timestamp).toLocaleString()}</span>
           <span style="color:${SEV_COLOR_HEX[r.severidad]||'#fff'}; font-weight:bold;">${r.severidad}</span>
         </div>
-        <div>${r.detalle}</div>
-        ${r.fotoBase64 ? `<div style="margin-top:6px;"><img src="${r.fotoBase64}" style="height:55px; border-radius:4px; cursor:pointer; border:1px solid var(--border-card);" onclick="verFotoFull('${r.fotoBase64}')"></div>` : ''}
+        <div><b>Hallazgo:</b> ${r.detalle}</div>
+        ${r.fotoBase64 ? `<div style="margin-top:6px;"><img src="${r.fotoBase64}" style="height:60px; border-radius:4px; cursor:pointer; border:1px solid var(--border-card);" onclick="verFotoFull('${r.fotoBase64}')"></div>` : ''}
       </div>
-    `).join('') : '<div style="color:var(--text-muted); font-size:0.78rem;">Sin reportes tácticos de terreno registrados para este tag.</div>';
+    `).join('') : '<div style="color:var(--text-muted); font-size:0.78rem; font-style:italic;">Sin reportes tácticos de terreno registrados para este tag.</div>';
 
     document.getElementById('modalDetalleActivo').style.display = 'flex';
   }
@@ -967,7 +966,7 @@
   }
 
   window.addEventListener('click', e => { if (!document.getElementById('userMenuWrapper')?.contains(e.target)) document.getElementById('userDropdownMenu').style.display = 'none'; });
-  setTimeout(() => renderScreen1Public(), 300);
+  setTimeout(() => { refreshCurrentScreen(); }, 200);
 </script>
 </body>
 </html>
