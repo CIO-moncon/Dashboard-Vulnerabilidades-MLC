@@ -1,260 +1,135 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CIO - CENTRO INTEGRADO DE OPERACIONES | CMP MULTI-SITE</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg-main: #0f1012; --text-main: #f3f4f6; --text-muted: #9ca3af;
-    --accent-color: #3b82f6; --bg-panel: #18181b; --bg-card: #202024;
-    --border-card: #27272a; --input-bg: #121214; --btn-bg: #27272a; --btn-hover: #3f3f46;
-  }
-  body.light-mode {
-    --bg-main: #f4f4f5; --text-main: #18181b; --text-muted: #52525b;
-    --accent-color: #2563eb; --bg-panel: #ffffff; --bg-card: #ffffff;
-    --border-card: #e4e4e7; --input-bg: #f8fafc; --btn-bg: #e4e4e7; --btn-hover: #d4d4d8;
-  }
-  body { background-color: var(--bg-main); color: var(--text-main); font-family: 'Inter', sans-serif; padding: 20px; margin: 0; -webkit-font-smoothing: antialiased; transition: background 0.2s, color 0.2s; }
-  .code-font { font-family: 'Roboto Mono', monospace; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CIO - Centro Integrado de Operaciones | CMP</title>
   
-  @keyframes pulseGlowRed {
-    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5), inset 3px 0 0 0 #ef4444; border-color: rgba(239, 68, 68, 0.8); }
-    70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-  }
-  @keyframes markerPulseRed {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.4); opacity: 0.6; }
-    100% { transform: scale(1); opacity: 1; }
-  }
+  <!-- Hojas de estilo externas -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;700&display=swap" />
+  <link rel="stylesheet" href="styles.css" />
 
-  .anim-rojo { animation: pulseGlowRed 2s infinite; }
-  .map-pin-pulse { animation: markerPulseRed 1.8s infinite; }
-
-  /* Cabecera Principal */
-  .header { border: 1px solid var(--border-card); padding: 14px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-panel); border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); flex-wrap: wrap; gap: 14px; }
-  .header-brand { display: flex; align-items: center; gap: 20px; cursor: pointer; }
+  <!-- Dependencias externas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js" defer></script>
   
-  .logos-container { display: flex; align-items: center; background: #ffffff; padding: 10px 24px; border-radius: 10px; border: 2px solid #d4d4d8; box-shadow: 0 4px 14px rgba(0,0,0,0.35); min-width: 90px; min-height: 48px; justify-content: center; }
-  .logo-cpf { height: 48px; width: auto; object-fit: contain; transform: scale(1.2); display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2)); }
-
-  .header-titles h1 { font-size: 1.15rem; margin: 0 0 2px 0; text-transform: uppercase; font-weight: 900; letter-spacing: 0.8px; color: var(--text-main); }
-  .header-titles p { color: var(--text-muted); margin: 0; font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-  .header-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  
-  .btn-base { background: var(--btn-bg); border: 1px solid var(--border-card); color: var(--text-main); padding: 7px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.75rem; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
-  .btn-base:hover { background: var(--btn-hover); border-color: var(--text-muted); }
-  .btn-primary { background: #2563eb; color: white; border-color: #3b82f6; }
-  .btn-primary:hover { background: #1d4ed8; }
-  .btn-success { background: #16a34a; color: white; border-color: #22c55e; }
-  .btn-warning { background: #ca8a04; color: white; border-color: #eab308; }
-  .btn-danger { background: #dc2626; color: white; border-color: #ef4444; }
-
-  .btn-back-nav {
-    background: #27272a; border: 1.5px solid #3f3f46; color: white;
-    padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 0.85rem;
-    cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s;
-  }
-  .btn-back-nav:hover { background: #3f3f46; border-color: #60a5fa; transform: translateY(-1px); }
-
-  .filter-select, .search-input { background: var(--input-bg); border: 1px solid var(--border-card); color: var(--text-main); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; outline: none; }
-  
-  .auth-only-element { display: none !important; }
-  body.user-authenticated .auth-only-element { display: inline-flex !important; }
-
-  .mining-ticker { display: flex; align-items: center; gap: 14px; background: var(--input-bg); padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-card); font-size: 0.75rem; font-family: 'Roboto Mono', monospace; font-weight: 600; margin-bottom: 16px; flex-wrap: wrap; }
-  .ticker-item { display: flex; align-items: center; gap: 6px; }
-
-  .screen-view { display: none; width: 100%; box-sizing: border-box; }
-  .screen-view.active { display: block; }
-
-  .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; width: 100%; }
-  .grid-equipos { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; width: 100%; }
-
-  .card-area { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 8px; padding: 16px; transition: 0.2s; display: flex; flex-direction: column; gap: 8px; cursor: pointer; }
-  .card-area:hover { transform: translateY(-2px); border-color: var(--text-muted); }
-
-  .card-equipo { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 8px; padding: 14px 10px; position: relative; cursor: pointer; text-align: center; transition: 0.15s; min-height: 85px; display: flex; flex-direction: column; justify-content: center; }
-  .card-equipo:hover { transform: translateY(-2px); border-color: var(--text-muted); }
-
-  .sev-rojo { border-left: 5px solid #ef4444; }
-  .sev-naranja { border-left: 5px solid #f97316; }
-  .sev-amarillo { border-left: 5px solid #eab308; }
-  .sev-verde { border-left: 5px solid #22c55e; }
-  .sev-plomo { border-left: 5px solid #6b7280; }
-
-  .label-muted { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
-  .value-strong { font-size: 0.85rem; font-weight: 700; color: var(--text-main); }
-  .eq-tag { font-size: 0.85rem; font-weight: 700; margin: 2px 0; color: var(--text-main); }
-  .eq-type { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
-
-  #view-site-map { width: 100%; height: 72vh; border-radius: 10px; border: 1px solid var(--border-card); display: none; margin-bottom: 16px; z-index: 10; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-  #view-map { width: 100%; height: 550px; border-radius: 8px; border: 1px solid var(--border-card); margin-bottom: 16px; z-index: 10; }
-
-  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 2000; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; backdrop-filter: blur(4px); }
-  .modal-content { background: var(--bg-panel); padding: 28px; border-radius: 12px; border: 1px solid var(--border-card); width: 100%; max-width: 620px; position: relative; box-shadow: 0 25px 50px rgba(0,0,0,0.6); max-height: 90vh; overflow-y: auto; }
-  .modal-fullscreen { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-main); z-index: 2500; overflow-y: auto; padding: 30px; box-sizing: border-box; }
-  .fullscreen-container { max-width: 1250px; margin: 0 auto; background: var(--bg-panel); border: 1px solid var(--border-card); border-radius: 12px; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; }
-  .modal-close-btn { position: absolute; top: 16px; right: 16px; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
-  
-  .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-  .form-grid label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; display: block; }
-  .form-grid input, .form-grid select, .form-grid textarea { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-card); background: var(--input-bg); color: var(--text-main); font-size: 0.9rem; font-family: 'Inter', sans-serif; box-sizing: border-box; }
-</style>
+  <!-- Script principal desacoplado -->
+  <script src="app.js" defer></script>
 </head>
 <body>
 
-<div class="header">
-  <div class="header-brand" onclick="goScreen(1)">
-    <div class="logos-container">
-      <img src="logo-cpf.png" alt="CPF" class="logo-cpf" onerror="this.outerHTML='<span style=\x27font-weight:900;color:#18181b;font-size:1.1rem;\x27>CPF</span>'">
-    </div>
-    <div class="header-titles">
-      <h1>CIO - <span id="headerScreenTitle">VISTA PÚBLICA (GLOBAL)</span></h1>
-      <p>Compañía Minera del Pacífico (CMP)</p>
-    </div>
-  </div>
-  <div class="header-controls">
-    <button class="btn-base" onclick="toggleTheme()" title="Cambiar Tema Claro/Oscuro">☀️ / 🌙</button>
-    <div style="position:relative; display:inline-block;" id="userMenuWrapper">
-      <button class="btn-base btn-primary" id="btnUsuarioMenu" onclick="handleUserBtnClick()">👤 <span id="labelUsuarioBtn">Entrar</span> ▾</button>
-      <div id="userDropdownMenu" style="display:none; position:absolute; right:0; top:110%; background:var(--bg-panel); border:1px solid var(--border-card); border-radius:6px; box-shadow:0 8px 16px rgba(0,0,0,0.5); min-width:200px; z-index:3000; padding:6px 0;">
-        <div style="padding:8px 12px; font-size:0.65rem; color:var(--text-muted); border-bottom:1px solid var(--border-card);" id="dropUserInfo">Invitado (Solo Lectura)</div>
-        <button class="btn-base" id="dropLogoutBtn" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent; color:#ef4444; display:none;" onclick="cerrarSesionUsuario()">🚪 Cerrar Sesión</button>
+  <!-- Encabezado Corporativo -->
+  <header class="app-header">
+    <div class="brand" onclick="window.CIO.goScreen(1)">
+      <div class="brand-logo">
+        <img src="logo-cpf.png" alt="CPF" class="logo-img" onerror="this.outerHTML='<span class=\x27logo-text\x27>CPF</span>'">
+      </div>
+      <div class="brand-info">
+        <h1>CIO - <span id="headerScreenTitle">Vista Pública (Global)</span></h1>
+        <p>Compañía Minera del Pacífico (CMP)</p>
       </div>
     </div>
-  </div>
-</div>
 
-<div class="mining-ticker">
-  <div class="ticker-item">💵 <b>USD/CLP:</b> <span id="tickerUsdClp">945.72</span></div>
-  <div style="width:1px; height:14px; background:var(--border-card);"></div>
-  <div class="ticker-item">⛏️ <b>Fe 62%:</b> <span id="tickerHierroFe">98.02 USD/t</span></div>
-  <div style="width:1px; height:14px; background:var(--border-card);"></div>
-  <div class="ticker-item">💱 <b>Hierro/CLP:</b> <span id="tickerHierroClp">92,700 CLP/t</span></div>
-  <div style="width:1px; height:14px; background:var(--border-card);"></div>
-  <div style="display:flex; align-items:center; gap:6px;">☀️ <b>Clima:</b> <span id="tickerClima">22°C (Vallenar)</span></div>
-</div>
-
-<!-- PANTALLA 1 -->
-<div id="screen-1" class="screen-view active">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-    <h2 style="font-size:1rem; margin:0; text-transform:uppercase; color:var(--text-muted);">Visualización Global de Faenas y Áreas (Solo Lectura)</h2>
-  </div>
-  <div id="viewScreen1Content" class="grid-container"></div>
-</div>
-
-<!-- PANTALLA 2 -->
-<div id="screen-2" class="screen-view">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px; background:var(--bg-panel); padding:14px 18px; border-radius:10px; border:1px solid var(--border-card);">
-    <div style="display:flex; align-items:center; gap:12px;">
-      <button class="btn-back-nav" onclick="stepBackScreen2()">⬅️ <span id="labelStepBack">Volver a Global</span></button>
-      <div>
-        <div class="label-muted" id="subBreadcrumbSite">Faena Operativa</div>
-        <h2 id="screen2SiteTitle" style="font-size:1.15rem; margin:2px 0 0 0;">Faena Seleccionada</h2>
+    <nav class="header-nav">
+      <button type="button" class="btn-base" onclick="window.CIO.toggleTheme()" title="Cambiar tema">☀️ / 🌙</button>
+      
+      <div class="user-dropdown-wrapper" id="userMenuWrapper">
+        <button type="button" class="btn-base btn-primary" id="btnUsuarioMenu" onclick="window.CIO.handleUserBtnClick()">
+          👤 <span id="labelUsuarioBtn">Entrar</span> ▾
+        </button>
+        <menu class="dropdown-menu" id="userDropdownMenu">
+          <li class="menu-item-info" id="dropUserInfo">Invitado (Solo Lectura)</li>
+          <li>
+            <button type="button" class="btn-menu-logout" id="dropLogoutBtn" onclick="window.CIO.cerrarSesionUsuario()">
+              🚪 Cerrar Sesión
+            </button>
+          </li>
+        </menu>
       </div>
-    </div>
-    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-      <span id="badgeFaenaAsignada" style="font-size:0.75rem; background:rgba(59,130,246,0.15); color:var(--accent-color); padding:6px 12px; border-radius:6px; font-weight:700;">Faena</span>
-      <button class="btn-base btn-success auth-only-element" style="padding:9px 14px; font-size:0.78rem;" onclick="document.getElementById('excelSiteUpload').click()">📂 Carga Masiva Faena</button>
-      <input type="file" id="excelSiteUpload" accept=".xlsx, .xls" style="display:none;" onchange="procesarCargaExcelFaena(event)">
-      <button class="btn-base btn-success auth-only-element" style="padding:9px 14px; font-size:0.78rem;" onclick="abrirEdicionEquipoNuevoAuth()">➕ Crear Activo</button>
-      <button class="btn-base btn-primary" style="padding:9px 16px; font-size:0.8rem;" onclick="toggleSiteMapTab()">🗺️ <span id="labelToggleSiteMap">Ver Mapa de Faena</span></button>
-      <button class="btn-base btn-warning auth-only-element" style="padding:9px 16px; font-size:0.8rem;" onclick="solicitarPermisoSuperAdmin()">🛡️ SuperAdmin</button>
-    </div>
-  </div>
-  <div id="view-site-map"></div>
-  <div id="viewScreen2Container"></div>
-</div>
+    </nav>
+  </header>
 
-<!-- PANTALLA 3 -->
-<div id="screen-3" class="screen-view">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
-    <div>
-      <button class="btn-back-nav" onclick="goScreen(2)">⬅️ Salir SuperAdmin</button>
-      <h2 style="font-size:1.15rem; margin:6px 0 0 0; color:#ca8a04;">⚡ Consola Global SuperAdmin (Todas las Faenas)</h2>
-    </div>
-    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-      <button class="btn-base btn-success" onclick="abrirEdicionGlobalNuevo()">➕ Crear Activo Global</button>
-      <button class="btn-base btn-primary" onclick="exportarReporteGerenciaAlta()">📊 Reporte Alta Gerencia Global</button>
-      <button class="btn-base btn-warning" onclick="exportarReporteGerenciaPorFaena()">📑 Reporte por Faena</button>
-      <button class="btn-base btn-primary" onclick="toggleMapModal()">🗺️ Mapa Global Georreferenciado</button>
-    </div>
-  </div>
-  <div style="margin-bottom:12px;">
-    <select id="superAdminFilterSite" class="filter-select" onchange="renderScreen3Global()">
-      <option value="TODAS">Ver Todas las 5 Faenas</option>
-      <option value="Planta, Mina los Colorados">Planta, Mina los Colorados</option>
-      <option value="Mina, Mina los Colorados">Mina, Mina los Colorados</option>
-      <option value="Planta de Pellets">Planta de Pellets</option>
-      <option value="Planta, Mina el Romeral">Planta, Mina el Romeral</option>
-      <option value="Mina, Mina el Romeral">Mina, Mina el Romeral</option>
-    </select>
-  </div>
-  <div id="viewMapGlobalContainer" style="display:block; margin-bottom:16px;"><div id="view-map"></div></div>
-  <div id="viewScreen3Global" class="grid-equipos"></div>
-</div>
+  <!-- Ticker Informativo de Faena -->
+  <aside class="mining-ticker" aria-label="Indicadores económicos y climáticos">
+    <span class="ticker-item">💵 <strong>USD/CLP:</strong> <span id="tickerUsdClp">945.72</span></span>
+    <span class="ticker-divider"></span>
+    <span class="ticker-item">⛏️ <strong>Fe 62%:</strong> <span id="tickerHierroFe">98.02 USD/t</span></span>
+    <span class="ticker-divider"></span>
+    <span class="ticker-item">💱 <strong>Hierro/CLP:</strong> <span id="tickerHierroClp">92,700 CLP/t</span></span>
+    <span class="ticker-divider"></span>
+    <span class="ticker-item">☀️ <strong>Clima:</strong> <span id="tickerClima">22°C (Vallenar)</span></span>
+  </aside>
 
-<!-- MODAL DETALLE DE EQUIPO/SPOT + BITÁCORA DE TERRENO -->
-<div id="modalDetalleActivo" class="modal-overlay">
-  <div class="modal-content">
-    <div class="modal-close-btn" onclick="document.getElementById('modalDetalleActivo').style.display='none'">&times;</div>
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-      <div class="label-muted" id="detSiteTag">FAENA / TAG</div>
-      <button class="btn-base btn-primary auth-only-element" style="padding:4px 10px; font-size:0.7rem;" id="btnEditarDesdeDetalle" onclick="editarActivoActualDesdeDetalle()">✏️ Editar Activo Oficial</button>
-    </div>
-    <h3 id="detTitle" style="margin:4px 0 12px 0;">Detalle Activo</h3>
+  <!-- Contenedor Principal de Vistas -->
+  <main class="views-wrapper">
     
-    <div class="label-muted" style="margin-bottom:6px;">Monitoreo / Spots Oficiales (ISO / RMS)</div>
-    <div id="detComponentesList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:18px;"></div>
-
-    <div style="border-top:1px solid var(--border-card); padding-top:14px;">
-      <div class="label-muted" style="color:var(--accent-color); margin-bottom:8px; font-weight:700;">💬 Bitácora de Hallazgos de Terreno (No oficial)</div>
-      <div id="detTerrenoList" style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto;"></div>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL VISOR FOTO TERRENO -->
-<div id="modalVisorFoto" class="modal-overlay" style="z-index:3500;" onclick="this.style.display='none'">
-  <div style="background:#000; padding:12px; border-radius:8px; max-width:90vw; max-height:90vh; text-align:center;">
-    <img id="imgVisorFull" src="" style="max-width:100%; max-height:80vh; object-fit:contain; border-radius:4px;">
-  </div>
-</div>
-
-<!-- MODAL AUTH -->
-<div id="modalAuth" class="modal-overlay">
-  <div class="modal-content" style="max-width: 420px; padding: 28px;">
-    <button class="modal-close-btn" onclick="document.getElementById('modalAuth').style.display='none'">&times;</div>
-    <div style="display: flex; background: var(--input-bg); border-radius: 8px; padding: 4px; margin-bottom: 24px; border: 1px solid var(--border-card);">
-      <button type="button" id="tabBtnLogin" onclick="setAuthMode('login')" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: var(--accent-color); color: white; font-weight: 700; cursor: pointer; font-size: 0.78rem;">Iniciar Sesión</button>
-      <button type="button" id="tabBtnRegister" onclick="setAuthMode('register')" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer; font-size: 0.78rem;">Crear Cuenta</button>
-    </div>
-    <div style="margin-bottom: 20px;">
-      <h3 id="authModalHeaderTitle" style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Acceso Operador CIO</h3>
-      <p id="authModalHeaderDesc" style="margin: 0; font-size: 0.72rem; color: var(--text-muted);">Ingresa tus credenciales autorizadas por CMP.</p>
-    </div>
-    <div style="display: flex; flex-direction: column; gap: 14px;">
-      <div id="boxFullName" style="display: none;">
-        <label style="font-size: 0.68rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 5px; display: block;">Nombre y Apellido</label>
-        <input type="text" id="authFullname" placeholder="Ej: Francisco Leiva" style="width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-card); background: var(--input-bg); color: var(--text-main); font-size: 0.85rem; box-sizing: border-box;">
+    <!-- Vista 1: Global de Faenas -->
+    <section id="screen-1" class="screen-view active" aria-labelledby="screen-1-title">
+      <div class="view-header">
+        <h2 id="screen-1-title">Visualización Global de Faenas y Áreas (Solo Lectura)</h2>
       </div>
-      <div>
-        <label style="font-size: 0.68rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 5px; display: block;">Usuario / Correo</label>
-        <input type="text" id="authUsername" placeholder="ej: fleiva@cpf.cl" style="width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-card); background: var(--input-bg); color: var(--text-main); font-size: 0.85rem; box-sizing: border-box;">
-      </div>
-      <div>
-        <label style="font-size: 0.68rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 5px; display: block;">Contraseña</label>
-        <input type="password" id="authPassword" placeholder="••••••••" style="width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-card); background: var(--input-bg); color: var(--text-main); font-size: 0.85rem; box-sizing: border-box;">
-      </div>
-      <div id="boxFaenaSite" style="display: none;">
-        <label style="font-size: 0.68rem; color: var(--accent-color); font-weight: 700; text-transform: uppercase; margin-bottom: 5px; display: block;">📍 Faena Asignada (Escritura)</label>
-        <select id="authSelectedSite" style="width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-card); background: var(--input-bg); color: var(--text-main); font-size: 0.85rem; box-sizing: border-box; font-weight: 600;">
+      <section id="viewScreen1Content" class="grid-container" aria-live="polite">
+        <!-- Renderizado dinámico de tarjetas de faena -->
+      </section>
+    </section>
+
+    <!-- Vista 2: Detalle Operativo de Faena -->
+    <section id="screen-2" class="screen-view" aria-labelledby="screen2SiteTitle">
+      <header class="site-nav-bar">
+        <div class="site-nav-left">
+          <button type="button" class="btn-back-nav" onclick="window.CIO.stepBackScreen2()">
+            ⬅️ <span id="labelStepBack">Volver a Global</span>
+          </button>
+          <div>
+            <span class="label-muted" id="subBreadcrumbSite">Faena Operativa</span>
+            <h2 id="screen2SiteTitle">Faena Seleccionada</h2>
+          </div>
+        </div>
+        
+        <nav class="site-actions">
+          <span class="badge-faena" id="badgeFaenaAsignada">Faena</span>
+          <button type="button" class="btn-base btn-success auth-only" onclick="document.getElementById('excelSiteUpload').click()">
+            📂 Carga Masiva
+          </button>
+          <input type="file" id="excelSiteUpload" accept=".xlsx, .xls" class="visually-hidden" onchange="window.CIO.procesarCargaExcelFaena(event)">
+          <button type="button" class="btn-base btn-success auth-only" onclick="window.CIO.abrirEdicionEquipoNuevoAuth()">
+            ➕ Crear Activo
+          </button>
+          <button type="button" class="btn-base btn-primary" onclick="window.CIO.toggleSiteMapTab()">
+            🗺️ <span id="labelToggleSiteMap">Ver Mapa de Faena</span>
+          </button>
+          <button type="button" class="btn-base btn-warning auth-only" onclick="window.CIO.solicitarPermisoSuperAdmin()">
+            🛡️ SuperAdmin
+          </button>
+        </nav>
+      </header>
+
+      <section id="view-site-map" class="map-view-box" aria-label="Mapa GIS de activos"></section>
+      <section id="viewScreen2Container" class="grid-container" aria-live="polite"></section>
+    </section>
+
+    <!-- Vista 3: SuperAdmin Global -->
+    <section id="screen-3" class="screen-view" aria-labelledby="screen-3-title">
+      <header class="superadmin-header">
+        <div>
+          <button type="button" class="btn-back-nav" onclick="window.CIO.goScreen(2)">⬅️ Salir SuperAdmin</button>
+          <h2 id="screen-3-title" class="title-superadmin">⚡ Consola Global SuperAdmin</h2>
+        </div>
+        <nav class="superadmin-actions">
+          <button type="button" class="btn-base btn-success" onclick="window.CIO.abrirEdicionGlobalNuevo()">➕ Crear Activo Global</button>
+          <button type="button" class="btn-base btn-primary" onclick="window.CIO.exportarReporteGerenciaAlta()">📊 Reporte Alta Gerencia</button>
+          <button type="button" class="btn-base btn-warning" onclick="window.CIO.exportarReporteGerenciaPorFaena()">📑 Reporte por Faena</button>
+          <button type="button" class="btn-base btn-primary" onclick="window.CIO.toggleMapModal()">🗺️ Mapa Georreferenciado</button>
+        </nav>
+      </header>
+
+      <div class="filter-wrapper">
+        <label for="superAdminFilterSite" class="visually-hidden">Filtrar por Faena</label>
+        <select id="superAdminFilterSite" class="filter-select" onchange="window.CIO.renderScreen3Global()">
+          <option value="TODAS">Ver Todas las Faenas</option>
           <option value="Planta, Mina los Colorados">Planta, Mina los Colorados</option>
           <option value="Mina, Mina los Colorados">Mina, Mina los Colorados</option>
           <option value="Planta de Pellets">Planta de Pellets</option>
@@ -262,794 +137,134 @@
           <option value="Mina, Mina el Romeral">Mina, Mina el Romeral</option>
         </select>
       </div>
-      <button type="button" id="authSubmitActionBtn" class="btn-base btn-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 8px; font-weight: 700; font-size: 0.85rem;" onclick="handleAuthSubmission()">Ingresar al Sistema</button>
+
+      <section id="viewMapGlobalContainer" class="map-global-wrapper">
+        <div id="view-map" class="map-view-box"></div>
+      </section>
+      <section id="viewScreen3Global" class="grid-equipos" aria-live="polite"></section>
+    </section>
+
+  </main>
+
+  <!-- Modales y Diálogos Contextuales -->
+  <dialog id="modalDetalleActivo" class="modal-dialog">
+    <div class="modal-content">
+      <button type="button" class="modal-close-btn" onclick="window.CIO.cerrarModalDetalle()" aria-label="Cerrar modal">&times;</button>
+      <header class="modal-header">
+        <span class="label-muted" id="detSiteTag">FAENA / TAG</span>
+        <button type="button" class="btn-base btn-primary auth-only" id="btnEditarDesdeDetalle" onclick="window.CIO.editarActivoActualDesdeDetalle()">
+          ✏️ Editar Activo Oficial
+        </button>
+      </header>
+      <h3 id="detTitle">Detalle Activo</h3>
+      
+      <section class="section-official-spots">
+        <h4 class="label-muted">Monitoreo / Spots Oficiales (ISO / RMS)</h4>
+        <div id="detComponentesList" class="spots-list"></div>
+      </section>
+
+      <section class="section-field-log">
+        <h4 class="label-muted label-field">💬 Bitácora de Hallazgos de Terreno (No oficial)</h4>
+        <div id="detTerrenoList" class="field-list"></div>
+      </section>
     </div>
-  </div>
-</div>
+  </dialog>
 
-<!-- MODAL EDICIÓN -->
-<div id="modalEdicion" class="modal-fullscreen">
-  <div class="fullscreen-container">
-    <div class="modal-close-btn" onclick="cerrarEdicion()">&times;</div>
-    <h2 style="margin-top: 0; font-size: 1.4rem; margin-bottom: 20px;">Configuración de Activo</h2>
-    <div class="form-grid">
-      <div><label>Faena</label><input type="text" id="edSiteId" class="code-font" readonly></div>
-      <div><label>Dominio</label><select id="edDomain"><option value="planta">🏭 Planta</option><option value="mina">⛏️ Mina</option></select></div>
-      <div><label>Área</label><input type="text" id="edArea"></div>
-      <div><label>Tag</label><input type="text" id="edTag" class="code-font"></div>
-      <div><label>Clase</label><input type="text" id="edTipo"></div>
-      <div><label>Fecha</label><input type="date" id="edFecha"></div>
-      <div style="grid-column: span 2;">
-        <label>Georreferencia (Lat, Lng)</label>
-        <div style="display:flex; gap:10px;"><input type="text" id="edLat" placeholder="-28.2880"><input type="text" id="edLng" placeholder="-70.8125"></div>
-      </div>
+  <dialog id="modalVisorFoto" class="modal-dialog-lightbox" onclick="this.close()">
+    <figure class="lightbox-content">
+      <img id="imgVisorFull" src="" alt="Evidencia de terreno ampliada" />
+    </figure>
+  </dialog>
+
+  <dialog id="modalAuth" class="modal-dialog">
+    <div class="modal-content modal-auth-box">
+      <button type="button" class="modal-close-btn" onclick="document.getElementById('modalAuth').close()" aria-label="Cerrar ventana">&times;</button>
+      <nav class="tabs-nav">
+        <button type="button" id="tabBtnLogin" class="tab-btn active" onclick="window.CIO.setAuthMode('login')">Iniciar Sesión</button>
+        <button type="button" id="tabBtnRegister" class="tab-btn" onclick="window.CIO.setAuthMode('register')">Crear Cuenta</button>
+      </nav>
+      <h3 id="authModalHeaderTitle">Acceso Operador CIO</h3>
+      <p id="authModalHeaderDesc" class="text-helper">Ingresa tus credenciales autorizadas por CMP.</p>
+      
+      <form class="auth-form" onsubmit="event.preventDefault(); window.CIO.handleAuthSubmission();">
+        <div id="boxFullName" class="form-group is-hidden">
+          <label for="authFullname">Nombre y Apellido</label>
+          <input type="text" id="authFullname" placeholder="Ej: Francisco Leiva" autocomplete="name" />
+        </div>
+        <div class="form-group">
+          <label for="authUsername">Usuario / Correo</label>
+          <input type="text" id="authUsername" placeholder="ej: fleiva@cpf.cl" autocomplete="username" required />
+        </div>
+        <div class="form-group">
+          <label for="authPassword">Contraseña</label>
+          <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password" required />
+        </div>
+        <div id="boxFaenaSite" class="form-group is-hidden">
+          <label for="authSelectedSite">📍 Faena Asignada (Escritura)</label>
+          <select id="authSelectedSite">
+            <option value="Planta, Mina los Colorados">Planta, Mina los Colorados</option>
+            <option value="Mina, Mina los Colorados">Mina, Mina los Colorados</option>
+            <option value="Planta de Pellets">Planta de Pellets</option>
+            <option value="Planta, Mina el Romeral">Planta, Mina el Romeral</option>
+            <option value="Mina, Mina el Romeral">Mina, Mina el Romeral</option>
+          </select>
+        </div>
+        <button type="submit" id="authSubmitActionBtn" class="btn-base btn-primary btn-submit">Ingresar al Sistema</button>
+      </form>
     </div>
-    <div style="margin-top: 20px;"><button class="btn-base btn-success" type="button" onclick="agregarFormComponente()">+ Añadir Spot Oficial</button></div>
-    <div id="edComponentesContainer" style="display:flex; flex-direction:column; gap:16px; margin-top:14px;"></div>
-    <div style="margin-top: 30px; display: flex; gap: 12px; justify-content: flex-end;">
-      <button class="btn-base btn-danger" type="button" onclick="eliminarEquipo()">🗑️ Eliminar</button>
-      <button class="btn-base btn-success" type="button" onclick="guardarEquipo()">💾 Guardar</button>
+  </dialog>
+
+  <dialog id="modalEdicion" class="modal-fullscreen-dialog">
+    <div class="fullscreen-inner">
+      <button type="button" class="modal-close-btn" onclick="document.getElementById('modalEdicion').close()" aria-label="Cerrar edición">&times;</button>
+      <h2>Configuración de Activo</h2>
+      <form class="form-grid" onsubmit="event.preventDefault(); window.CIO.guardarEquipo();">
+        <div class="form-group">
+          <label for="edSiteId">Faena</label>
+          <input type="text" id="edSiteId" class="code-font" readonly />
+        </div>
+        <div class="form-group">
+          <label for="edDomain">Dominio</label>
+          <select id="edDomain">
+            <option value="planta">🏭 Planta</option>
+            <option value="mina">⛏️ Mina</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="edArea">Área</label>
+          <input type="text" id="edArea" required />
+        </div>
+        <div class="form-group">
+          <label for="edTag">Tag</label>
+          <input type="text" id="edTag" class="code-font" required />
+        </div>
+        <div class="form-group">
+          <label for="edTipo">Clase</label>
+          <input type="text" id="edTipo" />
+        </div>
+        <div class="form-group">
+          <label for="edFecha">Fecha</label>
+          <input type="date" id="edFecha" />
+        </div>
+        <div class="form-group span-2">
+          <label>Georreferencia (Latitud, Longitud)</label>
+          <div class="coord-inputs">
+            <input type="text" id="edLat" placeholder="-28.2880" />
+            <input type="text" id="edLng" placeholder="-70.8125" />
+          </div>
+        </div>
+        
+        <div class="span-2 form-actions-top">
+          <button type="button" class="btn-base btn-success" onclick="window.CIO.agregarFormComponente()">+ Añadir Spot Oficial</button>
+        </div>
+        <div id="edComponentesContainer" class="span-2 components-container"></div>
+        <footer class="span-2 modal-footer-actions">
+          <button type="button" class="btn-base btn-danger" onclick="window.CIO.eliminarEquipo()">🗑️ Eliminar</button>
+          <button type="submit" class="btn-base btn-success">💾 Guardar</button>
+        </footer>
+      </form>
     </div>
-  </div>
-</div>
+  </dialog>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script>
-  let db = null;
-  let dbUsers = null;
-  let dbAlertasTerreno = null;
-
-  try {
-    const firebaseConfig = {
-      apiKey: "AIzaSyBd5MEZdMmgzBs1xCyeGYeKtQx5gJIeY3w",
-      authDomain: "dashboard-vulnerabilidades-mlc.firebaseapp.com",
-      databaseURL: "https://dashboard-vulnerabilidades-mlc-default-rtdb.firebaseio.com",
-      projectId: "dashboard-vulnerabilidades-mlc"
-    };
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
-    db = firebase.database().ref('activos_criticos');
-    dbUsers = firebase.database().ref('usuarios_registrados');
-    dbAlertasTerreno = firebase.database().ref('alertas_terreno');
-  } catch(e) {
-    console.warn("Firebase Init Warning:", e);
-  }
-
-  let currentScreen = 1;
-  let usuarioActivo = null;
-  let faenaAsignadaOperador = null;
-  let isSuperAdmin = false;
-  let faenaSeleccionadaScreen2 = null;
-  let siteAreaSeleccionadaScreen2 = null;
-  let equipoSeleccionado = null;
-  let equipoIdActualModalDetalle = null;
-  let mapaGlobalInstancia = null, capaGlobalMarkers = null;
-  let mapaSiteInstancia = null, capaSiteMarkers = null;
-  let siteMapVisible = false;
-  let currentAuthMode = 'login';
-  let currentUsdClp = 945.72; const currentHierroUsdFe62 = 98.02;
-
-  const FAENAS_LIST = [
-    'Planta, Mina los Colorados',
-    'Mina, Mina los Colorados',
-    'Planta de Pellets',
-    'Planta, Mina el Romeral',
-    'Mina, Mina el Romeral'
-  ];
-
-  const SEV_PESO = { 'Rojo': 5, 'Naranja': 4, 'Amarillo': 3, 'Verde': 2, 'Plomo': 1 };
-  const SEV_COLOR_HEX = { 'Rojo': '#ef4444', 'Naranja': '#f97316', 'Amarillo': '#eab308', 'Verde': '#22c55e', 'Plomo': '#6b7280' };
-
-  function normalizarSiteId(siteRaw) {
-    if (FAENAS_LIST.includes(siteRaw)) return siteRaw;
-    return 'Planta, Mina los Colorados';
-  }
-
-  function generarSeedMasivoColorados() {
-    const list = [];
-    const areasColorados = ['Chancado Primario', 'Molienda SAG', 'Correas Transporte', 'Despacho Fino', 'Stockpile', 'SSEE Principal'];
-    for(let i=1; i<=207; i++) {
-      const area = areasColorados[i % areasColorados.length];
-      const sevRand = i % 18 === 0 ? 'Rojo' : (i % 7 === 0 ? 'Naranja' : 'Verde');
-      list.push({
-        id: `mlc_eq_${i}`,
-        siteId: 'Planta, Mina los Colorados',
-        domain: i % 2 === 0 ? 'planta' : 'mina',
-        area: area,
-        tag: `MLC-TAG-${1000 + i}`,
-        tipo: i % 3 === 0 ? 'Reductor' : 'Motor/Correa',
-        fecha: '2026-09-20',
-        lat: (-28.2876 + (Math.random()*0.018 - 0.009)).toFixed(5),
-        lng: (-70.8130 + (Math.random()*0.018 - 0.009)).toFixed(5),
-        componentes: [{ nombre: 'Spot Principal', severidad: sevRand, rms: (2.0 + Math.random()*3).toFixed(1), om: i%12===0?`OM-${4000+i}`:'' }]
-      });
-    }
-    list.push({ id: 'rom_1', siteId: 'Mina, Mina el Romeral', domain: 'mina', area: 'Pit Principal', tag: 'ROM-PALA-01', tipo: 'Hidráulica', lat: '-29.7340', lng: '-71.2510', componentes: [{severidad:'Verde', rms:'1.5'}] });
-    list.push({ id: 'pel_1', siteId: 'Planta de Pellets', domain: 'planta', area: 'Induración', tag: 'PEL-HORNO-01', tipo: 'Horno', lat: '-27.3670', lng: '-70.3335', componentes: [{severidad:'Naranja', rms:'3.9'}] });
-    return list;
-  }
-
-  let equiposDB = generarSeedMasivoColorados();
-  let alertasTerrenoDB = [];
-
-  if (db) {
-    db.on('value', snap => {
-      try {
-        const raw = snap.val();
-        if (raw) {
-          equiposDB = Object.keys(raw).map(k => {
-            const item = raw[k] || {};
-            return {
-              id: k,
-              siteId: normalizarSiteId(item.siteId),
-              domain: item.domain || 'planta',
-              area: item.area || 'Área General',
-              tag: item.tag || k,
-              tipo: item.tipo || 'Activo',
-              fecha: item.fecha || '',
-              lat: item.lat || '',
-              lng: item.lng || '',
-              componentes: item.componentes || []
-            };
-          });
-        }
-        refreshCurrentScreen();
-        actualizarMapaGlobalSiActivo();
-      } catch(err) {
-        console.error("Error procesando DB activos:", err);
-      }
-    }, () => {
-      refreshCurrentScreen();
-    });
-
-    if (dbAlertasTerreno) {
-      dbAlertasTerreno.on('value', snap => {
-        try {
-          const raw = snap.val();
-          alertasTerrenoDB = raw ? Object.keys(raw).map(k => ({ id: k, ...(raw[k]||{}) })) : [];
-          refreshCurrentScreen();
-        } catch(e) {}
-      });
-
-      dbAlertasTerreno.limitToLast(1).on('child_added', snap => {
-        const data = snap.val();
-        if (!data) return;
-        const toast = document.createElement('div');
-        toast.style.cssText = 'position:fixed; bottom:25px; right:25px; background:#18181b; border:2px solid #ef4444; color:white; padding:18px; border-radius:10px; z-index:9999; box-shadow:0 12px 35px rgba(0,0,0,0.9); max-width:340px; animation: pulseGlowRed 1.5s infinite;';
-        toast.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <b style="color:#ef4444; font-size:0.85rem;">💬 REPORTE DE TERRENO</b>
-            <button onclick="this.parentElement.parentElement.remove()" style="background:transparent; border:none; color:white; font-size:1.1rem; cursor:pointer;">&times;</button>
-          </div>
-          <div style="font-size:0.75rem; line-height:1.4;">
-            <b>Faena:</b> ${data.faena||'General'} (${data.area||''})<br>
-            <b>Tag:</b> <span class="code-font" style="color:#3b82f6;">${data.tag||''}</span> | <b>Sev:</b> <span style="color:#ef4444;font-weight:bold;">${data.severidad||''}</span><br>
-            <b>Nota:</b> ${data.detalle||''}
-          </div>
-        `;
-        document.body.appendChild(toast);
-      });
-    }
-  }
-
-  function goScreen(num) {
-    currentScreen = num;
-    document.querySelectorAll('.screen-view').forEach(el => el.classList.remove('active'));
-    const target = document.getElementById(`screen-${num}`);
-    if (target) target.classList.add('active');
-    const titles = { 1: 'VISTA PÚBLICA (GLOBAL)', 2: `FAENA: ${faenaSeleccionadaScreen2 || 'ASIGNADA'}`, 3: 'CONSOLA GLOBAL SUPERADMIN' };
-    const hTitle = document.getElementById('headerScreenTitle');
-    if (hTitle) hTitle.innerText = titles[num] || 'CIO';
-    if (num !== 2) { siteMapVisible = false; const md = document.getElementById('view-site-map'); if (md) md.style.display = 'none'; }
-    refreshCurrentScreen();
-    if (num === 3) initMapaGlobal();
-  }
-
-  function stepBackScreen2() {
-    if (siteMapVisible) {
-      toggleSiteMapTab();
-      return;
-    }
-    if (siteAreaSeleccionadaScreen2) {
-      siteAreaSeleccionadaScreen2 = null;
-      renderScreen2Site();
-      return;
-    }
-    goScreen(1);
-  }
-
-  function updateScreen2NavigationUI() {
-    const btnBack = document.querySelector('#screen-2 .btn-back-nav span');
-    const breadcrumb = document.getElementById('subBreadcrumbSite');
-    const targetSite = faenaSeleccionadaScreen2 || faenaAsignadaOperador || FAENAS_LIST[0];
-
-    if (siteMapVisible) {
-      if(btnBack) btnBack.innerText = 'Volver a Tarjetas';
-      if(breadcrumb) breadcrumb.innerText = `Faena / ${targetSite} [Modo GIS Full-Width]`;
-    } else if (siteAreaSeleccionadaScreen2) {
-      if(btnBack) btnBack.innerText = 'Volver a Áreas';
-      if(breadcrumb) breadcrumb.innerText = `Faena / ${targetSite} / ${siteAreaSeleccionadaScreen2}`;
-    } else {
-      if(btnBack) btnBack.innerText = 'Volver a Global';
-      if(breadcrumb) breadcrumb.innerText = `Faena / ${targetSite}`;
-    }
-  }
-
-  function refreshCurrentScreen() {
-    try {
-      if (currentScreen === 1) renderScreen1Public();
-      else if (currentScreen === 2) renderScreen2Site();
-      else if (currentScreen === 3) renderScreen3Global();
-    } catch(err) {
-      console.error("Error refreshing screen:", err);
-    }
-  }
-
-  function renderScreen1Public() {
-    const container = document.getElementById('viewScreen1Content');
-    if (!container) return;
-    const faenasGroup = {};
-    FAENAS_LIST.forEach(f => faenasGroup[f] = { count: 0, critical: 0, maxSevPeso: 1, maxSev: 'Plomo' });
-    
-    (equiposDB || []).forEach(eq => {
-      const f = normalizarSiteId(eq.siteId);
-      if (!faenasGroup[f]) faenasGroup[f] = { count: 0, critical: 0, maxSevPeso: 1, maxSev: 'Plomo' };
-      faenasGroup[f].count++;
-      const sev = calcMaxSev(eq.componentes);
-      if (sev === 'Rojo' || sev === 'Naranja') faenasGroup[f].critical++;
-      if (SEV_PESO[sev] > faenasGroup[f].maxSevPeso) {
-        faenasGroup[f].maxSevPeso = SEV_PESO[sev];
-        faenasGroup[f].maxSev = sev;
-      }
-    });
-
-    const faenasArr = FAENAS_LIST.map(f => ({ name: f, ...(faenasGroup[f]||{ count:0, critical:0, maxSevPeso:1, maxSev:'Plomo' }) }));
-    faenasArr.sort((a, b) => b.maxSevPeso - a.maxSevPeso || b.critical - a.critical);
-
-    container.innerHTML = faenasArr.map(d => {
-      const animClass = (d.maxSev === 'Rojo' || d.maxSev === 'Naranja') ? `anim-${d.maxSev.toLowerCase()}` : '';
-      const safeName = (d.name||'').replace(/'/g, "\\'");
-      return `<div class="card-area ${animClass}" onclick="seleccionarFaenaScreen2('${safeName}')">
-        <div class="label-muted">Faena Operativa CMP</div>
-        <div class="value-strong" style="font-size:0.95rem; margin:4px 0;">${d.name}</div>
-        <div style="display:flex; justify-content:space-between; margin-top:10px; padding-top:6px; border-top:1px solid var(--border-card);">
-          <div><div class="label-muted">Activos</div><div class="value-strong">${d.count}</div></div>
-          <div><div class="label-muted">Condición</div><div class="value-strong" style="color:${SEV_COLOR_HEX[d.maxSev]||'#fff'}">${d.critical > 0 ? d.critical + ' Alerta' : 'Normal'}</div></div>
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  function seleccionarFaenaScreen2(faenaName) {
-    faenaSeleccionadaScreen2 = faenaName;
-    siteAreaSeleccionadaScreen2 = null;
-    if (!usuarioActivo) faenaAsignadaOperador = faenaName;
-    const badge = document.getElementById('badgeFaenaAsignada');
-    if (badge) badge.innerText = faenaName;
-    siteMapVisible = false;
-    const md = document.getElementById('view-site-map'); if(md) md.style.display = 'none';
-    const lblMap = document.getElementById('labelToggleSiteMap'); if(lblMap) lblMap.innerText = 'Ver Mapa de Faena';
-    goScreen(2);
-  }
-
-  function toggleSiteMapTab() {
-    siteMapVisible = !siteMapVisible;
-    const md = document.getElementById('view-site-map');
-    const container = document.getElementById('viewScreen2Container');
-    const lbl = document.getElementById('labelToggleSiteMap');
-    const targetSite = faenaSeleccionadaScreen2 || faenaAsignadaOperador || FAENAS_LIST[0];
-    const eqs = (equiposDB||[]).filter(e => normalizarSiteId(e.siteId) === targetSite);
-
-    if (siteMapVisible) {
-      if(md) md.style.display = 'block';
-      if(container) container.style.display = 'none';
-      if(lbl) lbl.innerText = 'Ocultar Mapa';
-      actualizarMapaSiteAutomatico(eqs, targetSite);
-    } else {
-      if(md) md.style.display = 'none';
-      if(container) container.style.display = '';
-      if(lbl) lbl.innerText = 'Ver Mapa de Faena';
-    }
-    updateScreen2NavigationUI();
-  }
-
-  function renderScreen2Site() {
-    const targetSite = faenaSeleccionadaScreen2 || faenaAsignadaOperador || FAENAS_LIST[0];
-    const titleEl = document.getElementById('screen2SiteTitle');
-    if (titleEl) titleEl.innerText = targetSite;
-    const eqs = (equiposDB||[]).filter(e => normalizarSiteId(e.siteId) === targetSite);
-    const container = document.getElementById('viewScreen2Container');
-    if (!container) return;
-    container.style.display = siteMapVisible ? 'none' : '';
-
-    if (!siteAreaSeleccionadaScreen2) {
-      const areasMap = {};
-      eqs.forEach(eq => {
-        const ar = eq.area || 'Sin Área';
-        if (!areasMap[ar]) areasMap[ar] = { count: 0, criticalRojo: 0, criticalNaranja: 0, maxSevPeso: 1, maxSev: 'Plomo' };
-        areasMap[ar].count++;
-        const sev = calcMaxSev(eq.componentes);
-        if (sev === 'Rojo') areasMap[ar].criticalRojo++;
-        if (sev === 'Naranja') areasMap[ar].criticalNaranja++;
-        if (SEV_PESO[sev] > areasMap[ar].maxSevPeso) {
-          areasMap[ar].maxSevPeso = SEV_PESO[sev];
-          areasMap[ar].maxSev = sev;
-        }
-      });
-
-      const areasArr = Object.keys(areasMap).map(ar => ({ name: ar, ...areasMap[ar] }));
-      areasArr.sort((a, b) => b.maxSevPeso - a.maxSevPeso || b.criticalRojo - a.criticalRojo || b.criticalNaranja - a.criticalNaranja);
-
-      container.className = 'grid-container';
-      container.innerHTML = areasArr.map(d => {
-        const animClass = (d.maxSev === 'Rojo' || d.maxSev === 'Naranja') ? `anim-${d.maxSev.toLowerCase()}` : '';
-        const critTotal = d.criticalRojo + d.criticalNaranja;
-        const safeArea = d.name.replace(/'/g, "\\'");
-        return `<div class="card-area ${animClass}" onclick="seleccionarAreaScreen2('${safeArea}')">
-          <div class="label-muted">Área Operacional</div>
-          <div class="value-strong" style="font-size:0.95rem; margin:4px 0;">${d.name}</div>
-          <div style="display:flex; justify-content:space-between; margin-top:10px; padding-top:6px; border-top:1px solid var(--border-card);">
-            <div><div class="label-muted">Activos</div><div class="value-strong">${d.count}</div></div>
-            <div><div class="label-muted">Condición</div><div class="value-strong" style="color:${SEV_COLOR_HEX[d.maxSev]||'#fff'}">${critTotal > 0 ? critTotal + ' Alerta' : 'Normal'}</div></div>
-          </div>
-        </div>`;
-      }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin áreas registradas en esta faena.</div>';
-    } else {
-      container.className = 'grid-equipos';
-      const eqsArea = eqs.filter(e => (e.area || 'Sin Área') === siteAreaSeleccionadaScreen2);
-      eqsArea.sort((a, b) => SEV_PESO[calcMaxSev(b.componentes)] - SEV_PESO[calcMaxSev(a.componentes)]);
-
-      let headerBack = `
-        <div style="grid-column: 1/-1; display:flex; align-items:center; gap:10px; margin-bottom:4px; background:var(--bg-card); padding:8px 12px; border-radius:8px; border:1px solid var(--border-card);">
-          <button class="btn-base" type="button" style="padding:4px 10px; font-size:0.7rem;" onclick="volverAreasScreen2()">⬅️ Volver a Áreas</button>
-          <span style="font-weight:700; color:var(--accent-color); font-size:0.85rem;">Área: ${siteAreaSeleccionadaScreen2}</span>
-        </div>
-      `;
-
-      container.innerHTML = headerBack + (eqsArea.map(eq => {
-        const sev = calcMaxSev(eq.componentes);
-        const anim = (sev === 'Rojo' || sev === 'Naranja') ? `anim-${sev.toLowerCase()}` : '';
-        const fieldCount = (alertasTerrenoDB||[]).filter(a => (a.tag || '').trim().toUpperCase() === (eq.tag || '').trim().toUpperCase()).length;
-        const fieldBadge = fieldCount > 0 
-          ? `<div style="position:absolute; top:4px; right:4px; background:rgba(59,130,246,0.3); color:#60a5fa; border:1px solid #3b82f6; font-size:0.55rem; padding:2px 5px; border-radius:4px; font-weight:700; z-index:2;">💬 Terreno (${fieldCount})</div>` 
-          : '';
-
-        return `<div class="card-equipo sev-${sev.toLowerCase()} ${anim}" onclick="abrirDetalleActivoModal('${eq.id}')">
-          ${fieldBadge}
-          <div class="eq-type">${eq.area || 'Planta'}</div>
-          <div class="eq-tag code-font">${eq.tag}</div>
-          <div class="eq-type" style="color:${SEV_COLOR_HEX[sev]||'#fff'}">${sev.toUpperCase()}</div>
-        </div>`;
-      }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin equipos en esta área.</div>');
-    }
-    
-    updateScreen2NavigationUI();
-    if (siteMapVisible) actualizarMapaSiteAutomatico(eqs, targetSite);
-  }
-
-  function seleccionarAreaScreen2(areaName) {
-    siteAreaSeleccionadaScreen2 = areaName;
-    renderScreen2Site();
-  }
-
-  function volverAreasScreen2() {
-    siteAreaSeleccionadaScreen2 = null;
-    renderScreen2Site();
-  }
-
-  function abrirDetalleActivoModal(eqId) {
-    equipoIdActualModalDetalle = eqId;
-    const eq = (equiposDB||[]).find(e => e.id === eqId);
-    if (!eq) return;
-    const stTag = document.getElementById('detSiteTag'); if(stTag) stTag.innerText = `${eq.siteId} | TAG: ${eq.tag}`;
-    const dtTitle = document.getElementById('detTitle'); if(dtTitle) dtTitle.innerText = `${eq.tipo} - ${eq.area}`;
-    const list = document.getElementById('detComponentesList');
-    if (!list) return;
-    
-    const sortedComps = [...(eq.componentes || [])].sort((a,b) => SEV_PESO[b.severidad||'Plomo'] - SEV_PESO[a.severidad||'Plomo']);
-
-    list.innerHTML = sortedComps.map(c => `
-      <div style="background:var(--input-bg); padding:10px; border-radius:6px; border:1px solid var(--border-card); ${c.severidad==='Rojo'?'border-left:4px solid #ef4444;':''}">
-        <div style="display:flex; justify-content:space-between;">
-          <b>${c.nombre || 'Spot Principal'}</b>
-          <span style="color:${SEV_COLOR_HEX[c.severidad]||'#fff'}; font-weight:bold;">${c.severidad||'Plomo'}</span>
-        </div>
-        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">RMS: ${c.rms || 'N/D'} | OM: ${c.om || 'S/N'}</div>
-      </div>
-    `).join('') || '<div style="color:var(--text-muted);">Sin spots oficiales detallados.</div>';
-
-    const terList = document.getElementById('detTerrenoList');
-    if (terList) {
-      const targetTag = (eq.tag || '').trim().toUpperCase();
-      const myReports = (alertasTerrenoDB||[]).filter(a => (a.tag || '').trim().toUpperCase() === targetTag)
-                                       .sort((a,b) => new Date(b.timestamp||0) - new Date(a.timestamp||0));
-
-      terList.innerHTML = myReports.length > 0 ? myReports.map(r => `
-        <div style="background:var(--input-bg); padding:10px; border-radius:6px; border:1px solid var(--border-card); border-left:3px solid #3b82f6; font-size:0.78rem;">
-          <div style="display:flex; justify-content:space-between; color:var(--text-muted); font-size:0.68rem; margin-bottom:4px;">
-            <span>🕒 ${r.timestamp ? new Date(r.timestamp).toLocaleString() : 'Fecha N/D'}</span>
-            <span style="color:${SEV_COLOR_HEX[r.severidad]||'#fff'}; font-weight:bold;">${r.severidad||''}</span>
-          </div>
-          <div><b>Hallazgo:</b> ${r.detalle||''}</div>
-          ${r.fotoBase64 ? `<div style="margin-top:6px;"><img src="${r.fotoBase64}" style="height:60px; border-radius:4px; cursor:pointer; border:1px solid var(--border-card);" onclick="verFotoFull('${r.fotoBase64}')"></div>` : ''}
-        </div>
-      `).join('') : '<div style="color:var(--text-muted); font-size:0.78rem; font-style:italic;">Sin reportes tácticos de terreno registrados para este tag.</div>';
-    }
-
-    const modalDet = document.getElementById('modalDetalleActivo');
-    if(modalDet) modalDet.style.display = 'flex';
-  }
-
-  function verFotoFull(b64) {
-    const imgEl = document.getElementById('imgVisorFull');
-    if(imgEl) imgEl.src = b64;
-    const md = document.getElementById('modalVisorFoto');
-    if(md) md.style.display = 'flex';
-  }
-
-  function editarActivoActualDesdeDetalle() {
-    if (!equipoIdActualModalDetalle) return;
-    const md = document.getElementById('modalDetalleActivo'); if(md) md.style.display = 'none';
-    abrirEdicionEquipoGlobal(equipoIdActualModalDetalle);
-  }
-
-  function actualizarMapaSiteAutomatico(eqs, targetSite) {
-    const valid = (eqs||[]).filter(eq => {
-      const lat = parseFloat(eq.lat), lng = parseFloat(eq.lng);
-      return !isNaN(lat) && !isNaN(lng) && lat !== 0;
-    });
-
-    if (valid.length === 0) return;
-
-    setTimeout(() => {
-      const mapDiv = document.getElementById('view-site-map');
-      if (!mapDiv) return;
-      if (!mapaSiteInstancia) {
-        mapaSiteInstancia = L.map('view-site-map').setView([-28.2876, -70.8130], 13);
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:20}).addTo(mapaSiteInstancia);
-        capaSiteMarkers = L.layerGroup().addTo(mapaSiteInstancia);
-      } else {
-        mapaSiteInstancia.invalidateSize();
-      }
-      if (capaSiteMarkers) {
-        capaSiteMarkers.clearLayers();
-        let validLatLngs = [];
-        valid.forEach(eq => {
-          const lat = parseFloat(eq.lat), lng = parseFloat(eq.lng);
-          const sev = calcMaxSev(eq.componentes);
-          const col = SEV_COLOR_HEX[sev] || '#6b7280';
-          const pulseClass = sev === 'Rojo' ? 'map-pin-pulse' : '';
-          const icono = L.divIcon({
-            className: 'custom-map-marker',
-            html: `<div class="${pulseClass}" style="background-color: ${col}; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 12px ${col};"></div>`,
-            iconSize: [22, 22],
-            iconAnchor:
-          });
-          L.marker([lat, lng], {icon: icono}).bindPopup(`<b>${eq.tag}</b><br>Área: ${eq.area}<br><b style="color:${col};">${sev.toUpperCase()}</b>`).addTo(capaSiteMarkers);
-          validLatLngs.push([lat, lng]);
-        });
-        if (validLatLngs.length) mapaSiteInstancia.fitBounds(L.latLngBounds(validLatLngs), {padding:[40,40], maxZoom:17});
-      }
-    }, 150);
-  }
-
-  function renderScreen3Global() {
-    const filterEl = document.getElementById('superAdminFilterSite');
-    const filter = filterEl ? filterEl.value : 'TODAS';
-    const eqs = filter === 'TODAS' ? (equiposDB||[]) : (equiposDB||[]).filter(e => normalizarSiteId(e.siteId) === filter);
-    eqs.sort((a, b) => SEV_PESO[calcMaxSev(b.componentes)] - SEV_PESO[calcMaxSev(a.componentes)]);
-    const container = document.getElementById('viewScreen3Global');
-    if (!container) return;
-
-    container.innerHTML = eqs.map(eq => {
-      const sev = calcMaxSev(eq.componentes);
-      const anim = (sev === 'Rojo' || sev === 'Naranja') ? `anim-${sev.toLowerCase()}` : '';
-      return `<div class="card-equipo sev-${sev.toLowerCase()} ${anim}" style="cursor:default;">
-        <div class="label-muted">${eq.siteId}</div>
-        <div class="eq-tag code-font">${eq.tag}</div>
-        <div style="margin-top:6px; display:flex; gap:4px; justify-content:center;">
-          <button class="btn-base btn-primary" type="button" style="padding:3px 6px; font-size:0.65rem;" onclick="abrirEdicionEquipoGlobal('${eq.id}')">✏️ Editar</button>
-        </div>
-      </div>`;
-    }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin activos en filtro global.</div>';
-    actualizarMapaGlobalSiActivo();
-  }
-
-  function initMapaGlobal() {
-    setTimeout(() => {
-      const mapDiv = document.getElementById('view-map');
-      if (!mapDiv) return;
-      if (!mapaGlobalInstancia) {
-        mapaGlobalInstancia = L.map('view-map').setView([-28.2876, -70.8130], 10);
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:20}).addTo(mapaGlobalInstancia);
-        capaGlobalMarkers = L.layerGroup().addTo(mapaGlobalInstancia);
-      } else {
-        mapaGlobalInstancia.invalidateSize();
-      }
-      actualizarMapaGlobalSiActivo();
-    }, 250);
-  }
-
-  function actualizarMapaGlobalSiActivo() {
-    if (!mapaGlobalInstancia || !capaGlobalMarkers) return;
-    capaGlobalMarkers.clearLayers();
-    const filterEl = document.getElementById('superAdminFilterSite');
-    const filter = filterEl ? filterEl.value : 'TODAS';
-    const eqs = filter === 'TODAS' ? (equiposDB||[]) : (equiposDB||[]).filter(e => normalizarSiteId(e.siteId) === filter);
-    let valid = [];
-    eqs.forEach(eq => {
-      const lat = parseFloat(eq.lat), lng = parseFloat(eq.lng);
-      if (!isNaN(lat) && !isNaN(lng) && lat !== 0) {
-        const sev = calcMaxSev(eq.componentes);
-        const col = SEV_COLOR_HEX[sev] || '#6b7280';
-        const pulseClass = sev === 'Rojo' ? 'map-pin-pulse' : '';
-        const icono = L.divIcon({
-          className: 'custom-map-marker',
-          html: `<div class="${pulseClass}" style="background-color: ${col}; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 12px ${col};"></div>`,
-          iconSize: [22, 22],
-          iconAnchor:
-        });
-        L.marker([lat, lng], {icon: icono}).bindPopup(`<b>${eq.tag}</b><br>${eq.siteId}<br><b style="color:${col};">${sev.toUpperCase()}</b>`).addTo(capaGlobalMarkers);
-        valid.push([lat, lng]);
-      }
-    });
-    if (valid.length) mapaGlobalInstancia.fitBounds(L.latLngBounds(valid), {padding:[40,40], maxZoom:16});
-  }
-
-  function toggleMapModal() {
-    const box = document.getElementById('viewMapGlobalContainer');
-    if (!box) return;
-    const isHidden = box.style.display === 'none';
-    box.style.display = isHidden ? 'block' : 'none';
-    if (isHidden) initMapaGlobal();
-  }
-
-  function calcMaxSev(comps) {
-    if (!comps || !comps.length) return 'Plomo';
-    let maxP = 1, sev = 'Plomo';
-    comps.forEach(c => { if (c && SEV_PESO[c.severidad] > maxP) { maxP = SEV_PESO[c.severidad]; sev = c.severidad; } });
-    return sev;
-  }
-
-  function toggleUserDropdown() {
-    const m = document.getElementById('userDropdownMenu');
-    if(m) m.style.display = m.style.display === 'block' ? 'none' : 'block';
-  }
-
-  function handleUserBtnClick() {
-    if (!usuarioActivo) {
-      abrirModalAuth('login');
-    } else {
-      toggleUserDropdown();
-    }
-  }
-
-  function setAuthMode(mode) {
-    currentAuthMode = mode;
-    const btnLogin = document.getElementById('tabBtnLogin');
-    const btnRegister = document.getElementById('tabBtnRegister');
-    const boxName = document.getElementById('boxFullName');
-    const boxSite = document.getElementById('boxFaenaSite');
-    const title = document.getElementById('authModalHeaderTitle');
-    const desc = document.getElementById('authModalHeaderDesc');
-    const submitBtn = document.getElementById('authSubmitActionBtn');
-
-    if (mode === 'login') {
-      if(btnLogin) { btnLogin.style.background = 'var(--accent-color)'; btnLogin.style.color = 'white'; btnLogin.style.fontWeight = '700'; }
-      if(btnRegister) { btnRegister.style.background = 'transparent'; btnRegister.style.color = 'var(--text-muted)'; btnRegister.style.fontWeight = '600'; }
-      if(boxName) boxName.style.display = 'none';
-      if(boxSite) boxSite.style.display = 'none';
-      if(title) title.innerText = 'Acceso Operador CIO';
-      if(desc) desc.innerText = 'Ingresa tus credenciales autorizadas por CMP.';
-      if(submitBtn) submitBtn.innerText = 'Ingresar al Sistema';
-    } else {
-      if(btnRegister) { btnRegister.style.background = 'var(--accent-color)'; btnRegister.style.color = 'white'; btnRegister.style.fontWeight = '700'; }
-      if(btnLogin) { btnLogin.style.background = 'transparent'; btnLogin.style.color = 'var(--text-muted)'; btnLogin.style.fontWeight = '600'; }
-      if(boxName) boxName.style.display = 'block';
-      if(boxSite) boxSite.style.display = 'block';
-      if(title) title.innerText = 'Crear Cuenta de Operador';
-      if(desc) desc.innerText = 'Regístrate y define tu faena de escritura.';
-      if(submitBtn) submitBtn.innerText = 'Registrarse y Entrar';
-    }
-  }
-
-  function abrirModalAuth(mode = 'login') {
-    const dd = document.getElementById('userDropdownMenu'); if(dd) dd.style.display = 'none';
-    setAuthMode(mode);
-    const md = document.getElementById('modalAuth'); if(md) md.style.display = 'flex';
-  }
-
-  function handleAuthSubmission() {
-    const userVal = (document.getElementById('authUsername')?.value || '').trim();
-    const passVal = (document.getElementById('authPassword')?.value || '').trim();
-    const selectedSite = document.getElementById('authSelectedSite')?.value || 'Planta, Mina los Colorados';
-    const fullnameVal = (document.getElementById('authFullname')?.value || '').trim();
-
-    if (!userVal || !passVal) { alert("⚠️ Completa usuario y contraseña."); return; }
-    const lookupId = userVal.replace(/[^a-zA-Z0-9]/g, '_');
-
-    if (currentAuthMode === 'register') {
-      if (!fullnameVal) { alert("⚠️ Ingresa tu nombre completo."); return; }
-      if (dbUsers) {
-        dbUsers.child(lookupId).set({
-          nombreCompleto: fullnameVal, usuario: userVal, password: passVal, faenaAsignada: selectedSite, creadoEn: new Date().toISOString()
-        }).then(() => {
-          alert("✅ Usuario registrado exitosamente.");
-          const md = document.getElementById('modalAuth'); if(md) md.style.display = 'none';
-          loguearUsuarioDirecto(fullnameVal, selectedSite);
-        }).catch(err => alert("❌ Error: " + err.message));
-      }
-    } else {
-      if (dbUsers) {
-        dbUsers.child(lookupId).once('value', snap => {
-          const uData = snap.val() || {};
-          loguearUsuarioDirecto((uData.password === passVal) ? (uData.nombreCompleto || uData.usuario) : userVal, uData.faenaAsignada || selectedSite);
-          const md = document.getElementById('modalAuth'); if(md) md.style.display = 'none';
-        });
-      } else {
-        loguearUsuarioDirecto(userVal, selectedSite);
-        const md = document.getElementById('modalAuth'); if(md) md.style.display = 'none';
-      }
-    }
-  }
-
-  function loguearUsuarioDirecto(u, site) {
-    usuarioActivo = u; faenaAsignadaOperador = site;
-    document.body.classList.add('user-authenticated');
-    const lbl = document.getElementById('labelUsuarioBtn'); if(lbl) lbl.innerText = u.split('@')[0];
-    const uInfo = document.getElementById('dropUserInfo'); if(uInfo) uInfo.innerText = `Activo: ${u} | Faena: ${site}`;
-    const loBtn = document.getElementById('dropLogoutBtn'); if(loBtn) loBtn.style.display = 'block';
-    alert(`✅ Bienvenido ${u}. Edición habilitada en faena: ${site}.`);
-  }
-
-  function cerrarSesionUsuario() {
-    usuarioActivo = null; faenaAsignadaOperador = null; isSuperAdmin = false;
-    document.body.classList.remove('user-authenticated');
-    document.body.classList.remove('superadmin-active');
-    const lbl = document.getElementById('labelUsuarioBtn'); if(lbl) lbl.innerText = 'Entrar';
-    const uInfo = document.getElementById('dropUserInfo'); if(uInfo) uInfo.innerText = 'Invitado (Solo Lectura)';
-    const loBtn = document.getElementById('dropLogoutBtn'); if(loBtn) loBtn.style.display = 'none';
-    goScreen(1);
-    alert("🚪 Sesión cerrada.");
-  }
-
-  function solicitarPermisoSuperAdmin() {
-    const pass = prompt("🔑 Ingrese clave SuperAdmin:");
-    if (pass === "Moncon2026") {
-      isSuperAdmin = true;
-      document.body.classList.add('superadmin-active');
-      goScreen(3);
-      alert("⚡ SuperAdmin activado: Acceso global multifaena y reportes.");
-    } else if (pass !== null) {
-      alert("❌ Clave SuperAdmin incorrecta.");
-    }
-  }
-
-  function toggleTheme() { document.body.classList.toggle('light-mode'); }
-  
-  function abrirEdicionEquipoNuevoAuth() {
-    const targetSite = faenaSeleccionadaScreen2 || faenaAsignadaOperador || 'Planta, Mina los Colorados';
-    equipoSeleccionado = { id: 'EQ_' + Date.now(), siteId: targetSite, domain: 'planta', area: siteAreaSeleccionadaScreen2 || 'Área General', componentes: [] };
-    abrirEdicionEquipoGlobalObj();
-  }
-
-  function abrirEdicionGlobalNuevo() {
-    const targetSite = faenaSeleccionadaScreen2 || 'Planta, Mina los Colorados';
-    equipoSeleccionado = { id: 'EQ_' + Date.now(), siteId: targetSite, domain: 'planta', componentes: [] };
-    abrirEdicionEquipoGlobalObj();
-  }
-  function abrirEdicionEquipoGlobal(eqId) {
-    equipoSeleccionado = (equiposDB||[]).find(e => e.id === eqId);
-    if (equipoSeleccionado) abrirEdicionEquipoGlobalObj();
-  }
-  function abrirEdicionEquipoGlobalObj() {
-    if(!equipoSeleccionado) return;
-    const setVal = (id, v) => { const el = document.getElementById(id); if(el) el.value = v; };
-    setVal('edSiteId', equipoSeleccionado.siteId);
-    setVal('edDomain', equipoSeleccionado.domain || 'planta');
-    setVal('edArea', equipoSeleccionado.area || '');
-    setVal('edTag', equipoSeleccionado.tag || '');
-    setVal('edTipo', equipoSeleccionado.tipo || '');
-    setVal('edFecha', equipoSeleccionado.fecha || '');
-    setVal('edLat', equipoSeleccionado.lat || '');
-    setVal('edLng', equipoSeleccionado.lng || '');
-    const cont = document.getElementById('edComponentesContainer');
-    if (cont) {
-      cont.innerHTML = '';
-      (equipoSeleccionado.componentes || []).forEach(c => agregarFormComponente(c));
-    }
-    const md = document.getElementById('modalEdicion'); if(md) md.style.display = 'block';
-  }
-  function agregarFormComponente(data = {}) {
-    const cont = document.getElementById('edComponentesContainer');
-    if(!cont) return;
-    const div = document.createElement('div');
-    div.style.cssText = "background:var(--bg-main); padding:14px; border:1px solid var(--border-card); border-radius:8px; position:relative;";
-    div.className = 'comp-item';
-    div.innerHTML = `<button type="button" class="btn-danger" style="position:absolute; top:10px; right:10px; padding:3px 6px; font-size:0.65rem;" onclick="this.parentElement.remove()">Eliminar</button>
-    <div class="form-grid"><div><label>Spot / Falla</label><input type="text" class="c-nom" value="${data.nombre||''}"></div><div><label>RMS</label><input type="text" class="c-rms" value="${data.rms||''}"></div><div><label>Sev</label><select class="c-sev"><option value="Rojo" ${data.severidad==='Rojo'?'selected':''}>Rojo</option><option value="Naranja" ${data.severidad==='Naranja'?'selected':''}>Naranja</option><option value="Verde" ${data.severidad==='Verde'?'selected':''}>Verde</option></select></div></div>`;
-    cont.appendChild(div);
-  }
-  function cerrarEdicion() { const md = document.getElementById('modalEdicion'); if(md) md.style.display = 'none'; }
-  function guardarEquipo() {
-    if (!equipoSeleccionado || !db) return;
-    const comps = [];
-    document.querySelectorAll('.comp-item').forEach(el => comps.push({ 
-      nombre: el.querySelector('.c-nom')?.value || '', 
-      rms: el.querySelector('.c-rms')?.value || '', 
-      severidad: el.querySelector('.c-sev')?.value || 'Verde' 
-    }));
-    db.child(equipoSeleccionado.id).update({
-      siteId: document.getElementById('edSiteId')?.value, domain: document.getElementById('edDomain')?.value,
-      area: document.getElementById('edArea')?.value, tag: document.getElementById('edTag')?.value, tipo: document.getElementById('edTipo')?.value,
-      lat: document.getElementById('edLat')?.value, lng: document.getElementById('edLng')?.value, componentes: comps
-    }).then(() => cerrarEdicion());
-  }
-  function eliminarEquipo() {
-    if (confirm('¿Eliminar activo?') && db && equipoSeleccionado) {
-      db.child(equipoSeleccionado.id).remove().then(() => cerrarEdicion());
-    }
-  }
-
-  function procesarCargaExcelFaena(e) {
-    const file = e.target.files[0]; if (!file || !db) return;
-    const targetSite = faenaSeleccionadaScreen2 || faenaAsignadaOperador || 'Planta, Mina los Colorados';
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-      try {
-        const data = new Uint8Array(evt.target.result);
-        const workbook = XLSX.read(data, {type: 'array'});
-        const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-        let count = 0;
-        json.forEach(row => {
-          if(row && row.Tag) {
-            const id = 'EQ_EXCEL_' + Date.now() + '_' + count;
-            db.child(id).set({
-              siteId: targetSite, domain: 'planta', area: row.Area || 'General', tag: row.Tag, tipo: row.Tipo || 'Activo',
-              lat: row.Lat || '', lng: row.Lng || '', componentes: [{nombre:'Spot Masivo', severidad:'Verde'}]
-            });
-            count++;
-          }
-        });
-        alert(`✅ Carga masiva exitosa: ${count} activos en ${targetSite}.`);
-      } catch(err) {
-        alert("Error procesando Excel: " + err.message);
-      }
-    };
-    reader.readAsArrayBuffer(file);
-    e.target.value = '';
-  }
-
-  function exportarReporteGerenciaAlta() {
-    const ts = new Date().toISOString();
-    let r=0, n=0, total=(equiposDB||[]).length;
-    (equiposDB||[]).forEach(eq => { const s = calcMaxSev(eq.componentes); if(s==='Rojo')r++; if(s==='Naranja')n++; });
-    const txt = `REPORTE EJECUTIVO GLOBAL SUPERADMIN - CIO CMP\nFecha: ${ts}\nTotal Activos: ${total} | Rojos: ${r} | Naranjos: ${n}\nUSD/CLP: ${currentUsdClp} | Fe62: ${currentHierroUsdFe62}`;
-    const blob = new Blob([txt], {type:'text/plain'});
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Reporte_Global_${ts.split('T')[0]}.txt`; a.click();
-  }
-
-  function exportarReporteGerenciaPorFaena() {
-    const filterEl = document.getElementById('superAdminFilterSite');
-    const targetSite = filterEl ? filterEl.value : 'Planta, Mina los Colorados';
-    const eqs = targetSite === 'TODAS' ? (equiposDB||[]) : (equiposDB||[]).filter(e => normalizarSiteId(e.siteId) === targetSite);
-    const ts = new Date().toISOString();
-    let r=0, n=0;
-    eqs.forEach(eq => { const s = calcMaxSev(eq.componentes); if(s==='Rojo')r++; if(s==='Naranja')n++; });
-    const txt = `REPORTE POR FAENA [${targetSite}]\nFecha: ${ts}\nActivos Faena: ${eqs.length} | Rojos: ${r} | Naranjos: ${n}`;
-    const blob = new Blob([txt], {type:'text/plain'});
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Reporte_${targetSite.replace(/[^a-zA-Z0-9]/g,'_')}.txt`; a.click();
-  }
-
-  window.addEventListener('click', e => { 
-    const uw = document.getElementById('userMenuWrapper');
-    const dd = document.getElementById('userDropdownMenu');
-    if (dd && uw && !uw.contains(e.target)) dd.style.display = 'none'; 
-  });
-  
-  window.addEventListener('DOMContentLoaded', () => { refreshCurrentScreen(); });
-</script>
 </body>
 </html>
