@@ -84,7 +84,7 @@
 
   /* Modales Estándar y Edición Pantalla Completa */
   .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 2000; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; backdrop-filter: blur(4px); }
-  .modal-content { background: var(--bg-panel); padding: 24px; border-radius: 12px; border: 1px solid var(--border-card); width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+  .modal-content { background: var(--bg-panel); padding: 28px; border-radius: 12px; border: 1px solid var(--border-card); width: 100%; max-width: 420px; position: relative; box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
   .modal-fullscreen { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-main); z-index: 2500; overflow-y: auto; padding: 30px; box-sizing: border-box; }
   .fullscreen-container { max-width: 1250px; margin: 0 auto; background: var(--bg-panel); border: 1px solid var(--border-card); border-radius: 12px; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; }
   .modal-close-btn { position: absolute; top: 16px; right: 16px; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
@@ -113,7 +113,7 @@
       <button class="btn-base btn-primary" id="btnUsuarioMenu" onclick="toggleUserDropdown()">👤 <span id="labelUsuarioBtn">Entrar</span> ▾</button>
       <div id="userDropdownMenu" style="display:none; position:absolute; right:0; top:110%; background:var(--bg-panel); border:1px solid var(--border-card); border-radius:6px; box-shadow:0 8px 16px rgba(0,0,0,0.5); min-width:200px; z-index:3000; padding:6px 0;">
         <div style="padding:8px 12px; font-size:0.65rem; color:var(--text-muted); border-bottom:1px solid var(--border-card);" id="dropUserInfo">Invitado (Solo Lectura)</div>
-        <button class="btn-base" id="dropLoginBtn" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent;" onclick="abrirModalAuth()">🔑 Ingresar / Registrar Operador</button>
+        <button class="btn-base" id="dropLoginBtn" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent;" onclick="abrirModalAuth('login')">🔑 Ingresar / Registrar Operador</button>
         <button class="btn-base" id="dropLogoutBtn" style="width:100%; border:none; border-radius:0; text-align:left; background:transparent; color:#ef4444; display:none;" onclick="cerrarSesionUsuario()">🚪 Cerrar Sesión</button>
       </div>
     </div>
@@ -149,6 +149,7 @@
     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
       <span id="badgeFaenaAsignada" style="font-size:0.75rem; background:rgba(59,130,246,0.15); color:var(--accent-color); padding:4px 10px; border-radius:6px; font-weight:700;">Faena</span>
       <button class="btn-base btn-primary" onclick="toggleSiteMapTab()">🗺️ <span id="labelToggleSiteMap">Ver Mapa de Faena</span></button>
+      <!-- BOTÓN SUPERADMIN APARECE ESTRICTAMENTE TRAS LOGUEARSE -->
       <button class="btn-base btn-warning auth-only-element" onclick="solicitarPermisoSuperAdmin()">🛡️ SuperAdmin (Multi-faena)</button>
     </div>
   </div>
@@ -179,28 +180,54 @@
       <option value="Mina, Mina el Romeral">Mina, Mina el Romeral</option>
     </select>
   </div>
-  <div id="viewMapGlobalContainer" style="display:none; margin-bottom:16px;"><div id="view-map"></div></div>
+  <div id="viewMapGlobalContainer" style="display:block; margin-bottom:16px;"><div id="view-map"></div></div>
   <div id="viewScreen3Global" class="grid-equipos"></div>
 </div>
 
-<!-- MODAL AUTH -->
+<!-- MODAL AUTH REDISEÑADO CON SEGMENTED CONTROL (LOGIN / REGISTER) -->
 <div id="modalAuth" class="modal-overlay">
   <div class="modal-content">
-    <div class="modal-close-btn" onclick="document.getElementById('modalAuth').style.display='none'">&times;</div>
-    <h3 style="margin-top:0;">Autenticación Operador / Usuario</h3>
-    <div class="form-group"><label>Nombre / Usuario</label><input type="text" id="authUser" placeholder="ej: fleiva@cpf.cl"></div>
-    <div class="form-group"><label>Contraseña</label><input type="password" id="authPass"></div>
-    <div class="form-group">
-      <label>Faena Asignada (Acceso Operativo de Escritura)</label>
-      <select id="authSiteSelect">
-        <option value="Planta, Mina los Colorados">Planta, Mina los Colorados</option>
-        <option value="Mina, Mina los Colorados">Mina, Mina los Colorados</option>
-        <option value="Planta de Pellets">Planta de Pellets</option>
-        <option value="Planta, Mina el Romeral">Planta, Mina el Romeral</option>
-        <option value="Mina, Mina el Romeral">Mina, Mina el Romeral</option>
-      </select>
+    <button class="modal-close-btn" onclick="document.getElementById('modalAuth').style.display='none'">&times;</button>
+    
+    <div style="display: flex; background: var(--input-bg); border-radius: 8px; padding: 4px; margin-bottom: 24px; border: 1px solid var(--border-card);">
+      <button type="button" id="tabBtnLogin" onclick="setAuthMode('login')" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: var(--accent-color); color: white; font-weight: 700; cursor: pointer; font-size: 0.78rem; transition: 0.2s;">Iniciar Sesión</button>
+      <button type="button" id="tabBtnRegister" onclick="setAuthMode('register')" style="flex: 1; padding: 10px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer; font-size: 0.78rem; transition: 0.2s;">Crear Cuenta</button>
     </div>
-    <button class="btn-base btn-primary" style="width:100%; justify-content:center; padding:12px;" onclick="ejecutarAutenticacion()">Confirmar e Iniciar Sesión</button>
+
+    <div style="margin-bottom: 20px;">
+      <h3 id="authModalHeaderTitle" style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Acceso Operador CIO</h3>
+      <p id="authModalHeaderDesc" style="margin: 0; font-size: 0.72rem; color: var(--text-muted);">Ingresa tus credenciales autorizadas por CMP.</p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <div id="boxFullName" style="display: none;">
+        <label style="font-size: 0.68rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 5px; display: block;">Nombre y Apellido</label>
+        <input type="text" id="authFullname" placeholder="Ej: Francisco Leiva" style="width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-card); background: var(--input-bg); color: var(--text-main); font-size: 0.85rem; box-sizing: border-box;">
+      </div>
+      
+      <div>
+        <label style="font-size: 0.68rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 5px; display: block;">Usuario / Correo</label>
+        <input type="text" id="authUsername" placeholder="ej: fleiva@cpf.cl" style="width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-card); background: var(--input-bg); color: var(--text-main); font-size: 0.85rem; box-sizing: border-box;">
+      </div>
+
+      <div>
+        <label style="font-size: 0.68rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 5px; display: block;">Contraseña</label>
+        <input type="password" id="authPassword" placeholder="••••••••" style="width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-card); background: var(--input-bg); color: var(--text-main); font-size: 0.85rem; box-sizing: border-box;">
+      </div>
+
+      <div id="boxFaenaSite">
+        <label style="font-size: 0.68rem; color: var(--accent-color); font-weight: 700; text-transform: uppercase; margin-bottom: 5px; display: block;">📍 Faena Asignada (Escritura)</label>
+        <select id="authSelectedSite" style="width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-card); background: var(--input-bg); color: var(--text-main); font-size: 0.85rem; box-sizing: border-box; font-weight: 600;">
+          <option value="Planta, Mina los Colorados">Planta, Mina los Colorados</option>
+          <option value="Mina, Mina los Colorados">Mina, Mina los Colorados</option>
+          <option value="Planta de Pellets">Planta de Pellets</option>
+          <option value="Planta, Mina el Romeral">Planta, Mina el Romeral</option>
+          <option value="Mina, Mina el Romeral">Mina, Mina el Romeral</option>
+        </select>
+      </div>
+
+      <button type="button" id="authSubmitActionBtn" class="btn-base btn-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 8px; font-weight: 700; font-size: 0.85rem;" onclick="handleAuthSubmission()">Ingresar al Sistema</button>
+    </div>
   </div>
 </div>
 
@@ -241,6 +268,7 @@
   };
   try { firebase.initializeApp(firebaseConfig); } catch(e){}
   const db = firebase.database().ref('activos_criticos');
+  const dbUsers = firebase.database().ref('usuarios_registrados');
 
   let currentScreen = 1;
   let usuarioActivo = null;
@@ -252,6 +280,7 @@
   let mapaGlobalInstancia = null, capaGlobalMarkers = null;
   let mapaSiteInstancia = null, capaSiteMarkers = null;
   let siteMapVisible = false;
+  let currentAuthMode = 'login';
 
   const FAENAS_LIST = [
     'Planta, Mina los Colorados',
@@ -264,6 +293,7 @@
   const SEV_PESO = { 'Rojo': 5, 'Naranja': 4, 'Amarillo': 3, 'Verde': 2, 'Plomo': 1 };
   const SEV_COLOR_HEX = { 'Rojo': '#ef4444', 'Naranja': '#f97316', 'Amarillo': '#eab308', 'Verde': '#22c55e', 'Plomo': '#6b7280' };
 
+  // Generador de simulación masiva escalada a 207 equipos en Mina los Colorados
   function generarSeedMasivoColorados() {
     const list = [];
     const areasColorados = ['Chancado Primario', 'Molienda SAG', 'Correas Transporte', 'Despacho Fino', 'Stockpile', 'SSEE Principal'];
@@ -503,22 +533,75 @@
     const m = document.getElementById('userDropdownMenu');
     m.style.display = m.style.display === 'block' ? 'none' : 'block';
   }
-  function abrirModalAuth() {
+
+  function setAuthMode(mode) {
+    currentAuthMode = mode;
+    const btnLogin = document.getElementById('tabBtnLogin');
+    const btnRegister = document.getElementById('tabBtnRegister');
+    const boxName = document.getElementById('boxFullName');
+    const title = document.getElementById('authModalHeaderTitle');
+    const desc = document.getElementById('authModalHeaderDesc');
+    const submitBtn = document.getElementById('authSubmitActionBtn');
+
+    if (mode === 'login') {
+      btnLogin.style.background = 'var(--accent-color)'; btnLogin.style.color = 'white'; btnLogin.style.fontWeight = '700';
+      btnRegister.style.background = 'transparent'; btnRegister.style.color = 'var(--text-muted)'; btnRegister.style.fontWeight = '600';
+      boxName.style.display = 'none';
+      title.innerText = 'Acceso Operador CIO';
+      desc.innerText = 'Ingresa tus credenciales autorizadas por CMP.';
+      submitBtn.innerText = 'Ingresar al Sistema';
+    } else {
+      btnRegister.style.background = 'var(--accent-color)'; btnRegister.style.color = 'white'; btnRegister.style.fontWeight = '700';
+      btnLogin.style.background = 'transparent'; btnLogin.style.color = 'var(--text-muted)'; btnLogin.style.fontWeight = '600';
+      boxName.style.display = 'block';
+      title.innerText = 'Crear Cuenta de Operador';
+      desc.innerText = 'Regístrate y define tu faena de escritura.';
+      submitBtn.innerText = 'Registrarse y Entrar';
+    }
+  }
+
+  function abrirModalAuth(mode = 'login') {
     document.getElementById('userDropdownMenu').style.display = 'none';
+    setAuthMode(mode);
     document.getElementById('modalAuth').style.display = 'flex';
   }
-  function ejecutarAutenticacion() {
-    const u = document.getElementById('authUser').value || 'Operador';
-    const site = document.getElementById('authSiteSelect').value;
-    usuarioActivo = u;
-    faenaAsignadaOperador = site;
+
+  function handleAuthSubmission() {
+    const userVal = (document.getElementById('authUsername').value || '').trim();
+    const passVal = (document.getElementById('authPassword').value || '').trim();
+    const selectedSite = document.getElementById('authSelectedSite').value;
+    const fullnameVal = (document.getElementById('authFullname').value || '').trim();
+
+    if (!userVal || !passVal) { alert("⚠️ Completa usuario y contraseña."); return; }
+    const lookupId = userVal.replace(/[^a-zA-Z0-9]/g, '_');
+
+    if (currentAuthMode === 'register') {
+      if (!fullnameVal) { alert("⚠️ Ingresa tu nombre completo."); return; }
+      dbUsers.child(lookupId).set({
+        nombreCompleto: fullnameVal, usuario: userVal, password: passVal, faenaAsignada: selectedSite, creadoEn: new Date().toISOString()
+      }).then(() => {
+        alert("✅ Usuario registrado exitosamente.");
+        document.getElementById('modalAuth').style.display = 'none';
+        loguearUsuarioDirecto(fullnameVal, selectedSite);
+      }).catch(err => alert("❌ Error: " + err.message));
+    } else {
+      dbUsers.child(lookupId).once('value', snap => {
+        const uData = snap.val();
+        loguearUsuarioDirecto((uData && uData.password === passVal) ? (uData.nombreCompleto || uData.usuario) : userVal, uData?.faenaAsignada || selectedSite);
+        document.getElementById('modalAuth').style.display = 'none';
+      });
+    }
+  }
+
+  function loguearUsuarioDirecto(u, site) {
+    usuarioActivo = u; faenaAsignadaOperador = site;
     document.body.classList.add('user-authenticated');
     document.getElementById('labelUsuarioBtn').innerText = u.split('@')[0];
     document.getElementById('dropUserInfo').innerText = `Activo: ${u} | Faena: ${site}`;
     document.getElementById('dropLogoutBtn').style.display = 'block';
-    document.getElementById('modalAuth').style.display = 'none';
     alert(`✅ Bienvenido ${u}. Sesión iniciada con faena asignada: ${site}.`);
   }
+
   function cerrarSesionUsuario() {
     usuarioActivo = null; faenaAsignadaOperador = null; isSuperAdmin = false;
     document.body.classList.remove('user-authenticated');
@@ -529,6 +612,7 @@
     goScreen(1);
     alert("🚪 Sesión cerrada.");
   }
+
   function solicitarPermisoSuperAdmin() {
     const pass = prompt("🔑 Ingrese clave SuperAdmin:");
     if (pass === "Moncon2026") {
@@ -543,7 +627,7 @@
 
   function toggleTheme() { document.body.classList.toggle('light-mode'); }
   function abrirEdicionGlobalNuevo() {
-    equipoSeleccionado = { id: 'EQ_' + Date.now(), siteId: 'Planta, Mina los Colorados', domain: 'planta', componentes: [] };
+    equipoSeleccionado = { id: 'EQ_' + Date.now(), siteId: faenaSeleccionadaScreen2 || 'Planta, Mina los Colorados', domain: 'planta', componentes: [] };
     abrirEdicionEquipoGlobalObj();
   }
   function abrirEdicionEquipoGlobal(eqId) {
@@ -587,6 +671,7 @@
   }
   function exportarReporteGerenciaAlta() { alert('Generando reporte ejecutivo alta gerencia multifaena...'); }
 
+  window.addEventListener('click', e => { if (!document.getElementById('userMenuWrapper')?.contains(e.target)) document.getElementById('userDropdownMenu').style.display = 'none'; });
   setTimeout(() => renderScreen1Public(), 300);
 </script>
 </body>
