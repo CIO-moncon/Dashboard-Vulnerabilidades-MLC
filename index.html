@@ -22,6 +22,27 @@
   body { background-color: var(--bg-main); color: var(--text-main); font-family: 'Inter', sans-serif; padding: 20px; margin: 0; -webkit-font-smoothing: antialiased; transition: background 0.2s, color 0.2s; }
   .code-font { font-family: 'Roboto Mono', monospace; }
   
+  /* Animaciones Críticas Industriales */
+  @keyframes pulseGlowRed {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5), inset 3ns 0 0 0 #ef4444; border-color: rgba(239, 68, 68, 0.8); }
+    70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  }
+  @keyframes pulseGlowOrange {
+    0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
+    70% { box-shadow: 0 0 0 6px rgba(249, 115, 22, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+  }
+  @keyframes markerPulseRed {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 0.6; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .anim-rojo { animation: pulseGlowRed 2s infinite; }
+  .anim-naranja { animation: pulseGlowOrange 2.5s infinite; }
+  .map-pin-pulse { animation: markerPulseRed 1.8s infinite; }
+
   /* Cabecera Principal */
   .header { border: 1px solid var(--border-card); padding: 14px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-panel); border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); flex-wrap: wrap; gap: 14px; }
   .header-brand { display: flex; align-items: center; gap: 20px; cursor: pointer; }
@@ -87,7 +108,7 @@
   .modal-content { background: var(--bg-panel); padding: 28px; border-radius: 12px; border: 1px solid var(--border-card); width: 100%; max-width: 420px; position: relative; box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
   .modal-fullscreen { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-main); z-index: 2500; overflow-y: auto; padding: 30px; box-sizing: border-box; }
   .fullscreen-container { max-width: 1250px; margin: 0 auto; background: var(--bg-panel); border: 1px solid var(--border-card); border-radius: 12px; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; }
-  .modal-close-btn { position: absolute; top: 16px; right: 16px; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+  .modal-close-btn { position: absolute; top: 16px; right: 16px; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 50まります; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
   
   .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
   .form-grid label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; display: block; }
@@ -182,7 +203,7 @@
   <div id="viewScreen3Global" class="grid-equipos"></div>
 </div>
 
-<!-- MODAL DETALLE DE EQUIPO/SPOT -->
+<!-- MODAL DETALLE DE EQUIPO/SPOT CON PRIORIDAD ROJA -->
 <div id="modalDetalleActivo" class="modal-overlay">
   <div class="modal-content" style="max-width:580px;">
     <div class="modal-close-btn" onclick="document.getElementById('modalDetalleActivo').style.display='none'">&times;</div>
@@ -381,24 +402,31 @@
   function renderScreen1Public() {
     const container = document.getElementById('viewScreen1Content');
     const faenasGroup = {};
-    FAENAS_LIST.forEach(f => faenasGroup[f] = { count: 0, critical: 0 });
+    FAENAS_LIST.forEach(f => faenasGroup[f] = { count: 0, critical: 0, maxSevPeso: 1, maxSev: 'Plomo' });
     
     equiposDB.forEach(eq => {
       const f = normalizarSiteId(eq.siteId);
-      if (!faenasGroup[f]) faenasGroup[f] = { count: 0, critical: 0 };
+      if (!faenasGroup[f]) faenasGroup[f] = { count: 0, critical: 0, maxSevPeso: 1, maxSev: 'Plomo' };
       faenasGroup[f].count++;
       const sev = calcMaxSev(eq.componentes);
       if (sev === 'Rojo' || sev === 'Naranja') faenasGroup[f].critical++;
+      if (SEV_PESO[sev] > faenasGroup[f].maxSevPeso) {
+        faenasGroup[f].maxSevPeso = SEV_PESO[sev];
+        faenasGroup[f].maxSev = sev;
+      }
     });
 
-    container.innerHTML = FAENAS_LIST.map(f => {
-      const d = faenasGroup[f] || { count: 0, critical: 0 };
-      return `<div class="card-area" onclick="seleccionarFaenaScreen2('${f.replace(/'/g, "\\'")}')">
+    const faenasArr = FAENAS_LIST.map(f => ({ name: f, ...faenasGroup[f] }));
+    faenasArr.sort((a, b) => b.maxSevPeso - a.maxSevPeso || b.critical - a.critical);
+
+    container.innerHTML = faenasArr.map(d => {
+      const animClass = (d.maxSev === 'Rojo' || d.maxSev === 'Naranja') ? `anim-${d.maxSev.toLowerCase()}` : '';
+      return `<div class="card-area ${animClass}" onclick="seleccionarFaenaScreen2('${d.name.replace(/'/g, "\\'")}')">
         <div class="label-muted">Faena Operativa CMP</div>
-        <div class="value-strong" style="font-size:0.95rem; margin:4px 0;">${f}</div>
+        <div class="value-strong" style="font-size:0.95rem; margin:4px 0;">${d.name}</div>
         <div style="display:flex; justify-content:space-between; margin-top:10px; padding-top:6px; border-top:1px solid var(--border-card);">
           <div><div class="label-muted">Activos</div><div class="value-strong">${d.count}</div></div>
-          <div><div class="label-muted">Alertas</div><div class="value-strong" style="color:${d.critical>0?'#ef4444':'#22c55e'}">${d.critical}</div></div>
+          <div><div class="label-muted">Condición</div><div class="value-strong" style="color:${SEV_COLOR_HEX[d.maxSev]}">${d.critical > 0 ? d.critical + ' Alerta' : 'Normal'}</div></div>
         </div>
       </div>`;
     }).join('');
@@ -439,34 +467,39 @@
     const container = document.getElementById('viewScreen2Container');
 
     if (!siteAreaSeleccionadaScreen2) {
-      // Mostrar por Áreas de la Faena
+      // Priorizar áreas con más rojos primero
       const areasMap = {};
       eqs.forEach(eq => {
         const ar = eq.area || 'Sin Área';
-        if (!areasMap[ar]) areasMap[ar] = { count: 0, critical: 0, maxSevPeso: 1, maxSev: 'Plomo' };
+        if (!areasMap[ar]) areasMap[ar] = { count: 0, criticalRojo: 0, criticalNaranja: 0, maxSevPeso: 1, maxSev: 'Plomo' };
         areasMap[ar].count++;
         const sev = calcMaxSev(eq.componentes);
-        if (sev === 'Rojo' || sev === 'Naranja') areasMap[ar].critical++;
+        if (sev === 'Rojo') areasMap[ar].criticalRojo++;
+        if (sev === 'Naranja') areasMap[ar].criticalNaranja++;
         if (SEV_PESO[sev] > areasMap[ar].maxSevPeso) {
           areasMap[ar].maxSevPeso = SEV_PESO[sev];
           areasMap[ar].maxSev = sev;
         }
       });
 
+      const areasArr = Object.keys(areasMap).map(ar => ({ name: ar, ...areasMap[ar] }));
+      areasArr.sort((a, b) => b.maxSevPeso - a.maxSevPeso || b.criticalRojo - a.criticalRojo || b.criticalNaranja - a.criticalNaranja);
+
       container.className = 'grid-container';
-      container.innerHTML = Object.keys(areasMap).sort().map(ar => {
-        const d = areasMap[ar];
-        return `<div class="card-area" onclick="seleccionarAreaScreen2('${ar.replace(/'/g, "\\'")}')">
+      container.innerHTML = areasArr.map(d => {
+        const animClass = (d.maxSev === 'Rojo' || d.maxSev === 'Naranja') ? `anim-${d.maxSev.toLowerCase()}` : '';
+        const critTotal = d.criticalRojo + d.criticalNaranja;
+        return `<div class="card-area ${animClass}" onclick="seleccionarAreaScreen2('${d.name.replace(/'/g, "\\'")}')">
           <div class="label-muted">Área Operacional</div>
-          <div class="value-strong" style="font-size:0.95rem; margin:4px 0;">${ar}</div>
+          <div class="value-strong" style="font-size:0.95rem; margin:4px 0;">${d.name}</div>
           <div style="display:flex; justify-content:space-between; margin-top:10px; padding-top:6px; border-top:1px solid var(--border-card);">
             <div><div class="label-muted">Activos</div><div class="value-strong">${d.count}</div></div>
-            <div><div class="label-muted">Condición</div><div class="value-strong" style="color:${SEV_COLOR_HEX[d.maxSev]}">${d.critical > 0 ? d.critical + ' Alerta' : 'Normal'}</div></div>
+            <div><div class="label-muted">Condición</div><div class="value-strong" style="color:${SEV_COLOR_HEX[d.maxSev]}">${critTotal > 0 ? critTotal + ' Alerta' : 'Normal'}</div></div>
           </div>
         </div>`;
       }).join('') || '<div style="color:var(--text-muted); grid-column:1/-1;">Sin áreas registradas en esta faena.</div>';
     } else {
-      // Mostrar equipos de la área seleccionada, ordenados con rojo/naranja primero (prioridad a lo rojo)
+      // Mostrar equipos de la área seleccionada, con prioridad a lo rojo
       container.className = 'grid-equipos';
       const eqsArea = eqs.filter(e => (e.area || 'Sin Área') === siteAreaSeleccionadaScreen2);
       eqsArea.sort((a, b) => SEV_PESO[calcMaxSev(b.componentes)] - SEV_PESO[calcMaxSev(a.componentes)]);
@@ -480,7 +513,8 @@
 
       container.innerHTML = headerBack + (eqsArea.map(eq => {
         const sev = calcMaxSev(eq.componentes);
-        return `<div class="card-equipo sev-${sev.toLowerCase()}" onclick="abrirDetalleActivoModal('${eq.id}')">
+        const anim = (sev === 'Rojo' || sev === 'Naranja') ? `anim-${sev.toLowerCase()}` : '';
+        return `<div class="card-equipo sev-${sev.toLowerCase()} ${anim}" onclick="abrirDetalleActivoModal('${eq.id}')">
           <div class="eq-type">${eq.area || 'Planta'}</div>
           <div class="eq-tag code-font">${eq.tag}</div>
           <div class="eq-type" style="color:${SEV_COLOR_HEX[sev]}">${sev.toUpperCase()}</div>
@@ -507,8 +541,12 @@
     document.getElementById('detSiteTag').innerText = `${eq.siteId} | TAG: ${eq.tag}`;
     document.getElementById('detTitle').innerText = `${eq.tipo} - ${eq.area}`;
     const list = document.getElementById('detComponentesList');
-    list.innerHTML = (eq.componentes || []).map(c => `
-      <div style="background:var(--input-bg); padding:10px; border-radius:6px; border:1px solid var(--border-card);">
+    
+    // Priorizar componentes rojos en la lista de detalles
+    const sortedComps = [...(eq.componentes || [])].sort((a,b) => SEV_PESO[b.severidad||'Plomo'] - SEV_PESO[a.severidad||'Plomo']);
+
+    list.innerHTML = sortedComps.map(c => `
+      <div style="background:var(--input-bg); padding:10px; border-radius:6px; border:1px solid var(--border-card); ${c.severidad==='Rojo'?'border-left:4px solid #ef4444;':''}">
         <div style="display:flex; justify-content:space-between;">
           <b>${c.nombre || 'Spot Principal'}</b>
           <span style="color:${SEV_COLOR_HEX[c.severidad]||'#fff'}; font-weight:bold;">${c.severidad}</span>
@@ -542,9 +580,10 @@
           const lat = parseFloat(eq.lat), lng = parseFloat(eq.lng);
           const sev = calcMaxSev(eq.componentes);
           const col = SEV_COLOR_HEX[sev] || '#6b7280';
+          const pulseClass = sev === 'Rojo' ? 'map-pin-pulse' : '';
           const icono = L.divIcon({
             className: 'custom-map-marker',
-            html: `<div style="background-color: ${col}; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.8);"></div>`,
+            html: `<div class="${pulseClass}" style="background-color: ${col}; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 12px ${col};"></div>`,
             iconSize: [22, 22], iconAnchor: [11, 11]
           });
           L.marker([lat, lng], {icon: icono}).bindPopup(`<b>${eq.tag}</b><br>Área: ${eq.area}<br><b style="color:${col};">${sev.toUpperCase()}</b>`).addTo(capaSiteMarkers);
@@ -558,11 +597,13 @@
   function renderScreen3Global() {
     const filter = document.getElementById('superAdminFilterSite')?.value || 'TODAS';
     const eqs = filter === 'TODAS' ? equiposDB : equiposDB.filter(e => normalizarSiteId(e.siteId) === filter);
+    eqs.sort((a, b) => SEV_PESO[calcMaxSev(b.componentes)] - SEV_PESO[calcMaxSev(a.componentes)]);
     const container = document.getElementById('viewScreen3Global');
 
     container.innerHTML = eqs.map(eq => {
       const sev = calcMaxSev(eq.componentes);
-      return `<div class="card-equipo sev-${sev.toLowerCase()}" style="cursor:default;">
+      const anim = (sev === 'Rojo' || sev === 'Naranja') ? `anim-${sev.toLowerCase()}` : '';
+      return `<div class="card-equipo sev-${sev.toLowerCase()} ${anim}" style="cursor:default;">
         <div class="label-muted">${eq.siteId}</div>
         <div class="eq-tag code-font">${eq.tag}</div>
         <div style="margin-top:6px; display:flex; gap:4px; justify-content:center;">
@@ -597,9 +638,10 @@
       if (!isNaN(lat) && !isNaN(lng) && lat !== 0) {
         const sev = calcMaxSev(eq.componentes);
         const col = SEV_COLOR_HEX[sev] || '#6b7280';
+        const pulseClass = sev === 'Rojo' ? 'map-pin-pulse' : '';
         const icono = L.divIcon({
           className: 'custom-map-marker',
-          html: `<div style="background-color: ${col}; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.8);"></div>`,
+          html: `<div class="${pulseClass}" style="background-color: ${col}; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 12px ${col};"></div>`,
           iconSize: [22, 22], iconAnchor: [11, 11]
         });
         L.marker([lat, lng], {icon: icono}).bindPopup(`<b>${eq.tag}</b><br>${eq.siteId}<br><b style="color:${col};">${sev.toUpperCase()}</b>`).addTo(capaGlobalMarkers);
