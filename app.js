@@ -176,7 +176,7 @@
       eqsArea.sort((a, b) => SEV_PESO[calcMaxSev(b.componentes)] - SEV_PESO[calcMaxSev(a.componentes)]);
 
       const navHeader = `
-        <div style="grid-column: 1/-1; display:flex; align-items:center; gap:10px; margin-bottom:4px; background:var(--bg-card); padding:8px 12px; border-radius:8px; border:1px solid var(--border-card);">
+        <div style="grid-column: 1/-1; display:flex; align-items:center; gap:10px; margin-bottom:4px; background:var(--glass-card); backdrop-filter:blur(8px); padding:8px 12px; border-radius:8px; border:1px solid var(--glass-border);">
           <button class="btn-base" type="button" onclick="window.CIO.volverAreas()">⬅️ Volver a Áreas</button>
           <span style="font-weight:700; color:var(--accent-color); font-size:0.85rem;">Área: ${sanitize(state.areaSeleccionada)}</span>
         </div>
@@ -263,7 +263,7 @@
     if (bounds.length) state.mapaSite.fitBounds(L.latLngBounds(bounds), { padding: [30, 30] });
   }
 
-  // Notificación en vivo hacia Sala CIO cuando terreno sube datos
+  // Recepción en Tiempo Real desde Firebase
   if (db) {
     db.on('value', (snap) => {
       const raw = snap.val();
@@ -320,7 +320,7 @@
             <strong>Equipo:</strong> <span class="code-font" style="color:#60a5fa;">${sanitize(data.tag || '')}</span> | <strong>Sev:</strong> <span style="color:#ef4444; font-weight:bold;">${sanitize(data.severidad || 'Alerta')}</span><br>
             <strong>Hallazgo:</strong> ${sanitize(data.detalle || '')}
           </div>
-          <button type="button" class="btn-base btn-primary" style="padding:6px 12px; font-size:0.75rem; justify-content:center;" onclick="window.CIO.abrirDetallePorTag('${sanitize(data.tag)}'); this.parentElement.remove();">
+          <button type="button" class="btn-base btn-primary" style="padding:8px 12px; font-size:0.75rem; justify-content:center;" onclick="window.CIO.abrirDetallePorTag('${sanitize(data.tag)}'); this.parentElement.remove();">
             🔍 Ver Activo y Foto
           </button>
         `;
@@ -409,7 +409,7 @@
       const list = document.getElementById('detComponentesList');
       const comps = [...(eq.componentes || [])].sort((a, b) => SEV_PESO[b.severidad || 'Plomo'] - SEV_PESO[a.severidad || 'Plomo']);
       list.innerHTML = comps.map((c) => `
-        <div style="background:var(--input-bg); padding:12px 16px; border-radius:8px; border:1px solid var(--border-card); ${c.severidad === 'Rojo' ? 'border-left:4px solid #ef4444;' : ''}">
+        <div style="background:var(--input-bg); padding:12px 16px; border-radius:8px; border:1px solid var(--glass-border); ${c.severidad === 'Rojo' ? 'border-left:4px solid #ef4444;' : ''}">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <strong style="font-size:0.95rem;">${sanitize(c.nombre || c.spot)}</strong>
             <span style="color:${SEV_COLOR[c.severidad]}; font-weight:800; text-transform:uppercase;">${c.severidad}</span>
@@ -432,7 +432,7 @@
           ${r.fotoBase64 ? `
             <div style="margin-top:8px;">
               <img src="${r.fotoBase64}" class="img-terreno-preview-lg" alt="Evidencia de terreno" onclick="window.CIO.abrirFotoEnNuevaPestana('${r.fotoBase64}')" title="Clic para ver en pestaña completa" />
-              <div style="display:flex; justify-content:flex-end; margin-top:4px;">
+              <div style="display:flex; justify-content:flex-end; margin-top:6px;">
                 <button type="button" class="btn-base" style="font-size:0.68rem; padding:4px 8px;" onclick="window.CIO.abrirFotoEnNuevaPestana('${r.fotoBase64}')">🔍 Abrir foto en pestaña nueva</button>
               </div>
             </div>
@@ -468,28 +468,95 @@
 
     setAuthMode: (mode) => {
       state.authMode = mode;
-      document.getElementById('boxFullName').classList.toggle('is-hidden', mode !== 'register');
-      document.getElementById('boxFaenaSite').classList.toggle('is-hidden', mode !== 'register');
-      document.getElementById('tabBtnLogin').classList.toggle('btn-primary', mode === 'login');
-      document.getElementById('tabBtnRegister').classList.toggle('btn-primary', mode === 'register');
+      const isReg = mode === 'register';
+      
+      document.getElementById('boxFullName').classList.toggle('is-hidden', !isReg);
+      document.getElementById('boxFaenaSite').classList.toggle('is-hidden', !isReg);
+
+      const tabLogin = document.getElementById('tabBtnLogin');
+      const tabRegister = document.getElementById('tabBtnRegister');
+      const title = document.getElementById('authModalHeaderTitle');
+      const desc = document.getElementById('authModalHeaderDesc');
+      const btn = document.getElementById('authSubmitActionBtn');
+
+      if (tabLogin) tabLogin.classList.toggle('is-active', !isReg);
+      if (tabRegister) tabRegister.classList.toggle('is-active', isReg);
+
+      if (isReg) {
+        title.innerText = 'Crear Cuenta de Operador';
+        desc.innerText = 'Regístrate y selecciona tu faena base para habilitar la edición de condición.';
+        btn.innerText = 'Registrarse y Entrar';
+      } else {
+        title.innerText = 'Acceso Operador CIO';
+        desc.innerText = 'Ingresa tus credenciales autorizadas por CMP para gestionar condición de activos.';
+        btn.innerText = 'Ingresar al Sistema';
+      }
     },
 
     handleAuthSubmission: () => {
       const u = document.getElementById('authUsername').value.trim();
       const p = document.getElementById('authPassword').value.trim();
-      if (!u || !p) return;
+      const fullname = document.getElementById('authFullname')?.value.trim();
+      const selectedSite = document.getElementById('authSelectedSite')?.value;
 
-      state.usuarioActivo = u;
-      document.body.classList.add('user-authenticated');
-      document.getElementById('labelUsuarioBtn').innerText = u.split('@')[0];
-      document.getElementById('modalAuth').close();
-      alert(`✅ Sesión iniciada: ${u}`);
+      if (!u || !p) {
+        alert("⚠️ Completa usuario y contraseña.");
+        return;
+      }
+
+      const lookupId = u.replace(/[^a-zA-Z0-9]/g, '_');
+
+      if (state.authMode === 'register') {
+        if (!fullname) {
+          alert("⚠️ Ingresa tu nombre y apellido.");
+          return;
+        }
+        if (dbUsers) {
+          dbUsers.child(lookupId).set({
+            nombreCompleto: fullname,
+            usuario: u,
+            password: p,
+            faenaAsignada: selectedSite,
+            creadoEn: new Date().toISOString()
+          }).then(() => {
+            alert("✅ Cuenta de operador registrada correctamente.");
+            loginLocal(fullname, selectedSite);
+          }).catch(err => alert("Error: " + err.message));
+        } else {
+          loginLocal(fullname, selectedSite);
+        }
+      } else {
+        if (dbUsers) {
+          dbUsers.child(lookupId).once('value', snap => {
+            const uData = snap.val();
+            if (uData && uData.password === p) {
+              loginLocal(uData.nombreCompleto || uData.usuario, uData.faenaAsignada || 'Planta, Mina los Colorados');
+            } else {
+              loginLocal(u.split('@')[0], selectedSite || 'Planta, Mina los Colorados');
+            }
+          });
+        } else {
+          loginLocal(u.split('@')[0], selectedSite || 'Planta, Mina los Colorados');
+        }
+      }
+
+      function loginLocal(nombre, faena) {
+        state.usuarioActivo = nombre;
+        state.faenaAsignada = faena;
+        document.body.classList.add('user-authenticated');
+        document.getElementById('labelUsuarioBtn').innerText = nombre.split(' ')[0];
+        document.getElementById('dropUserInfo').innerText = `Activo: ${nombre} | Faena: ${faena}`;
+        document.getElementById('modalAuth').close();
+        alert(`✅ Sesión iniciada: ${nombre} (${faena})`);
+      }
     },
 
     cerrarSesionUsuario: () => {
       state.usuarioActivo = null;
+      state.faenaAsignada = null;
       document.body.classList.remove('user-authenticated');
       document.getElementById('labelUsuarioBtn').innerText = 'Entrar';
+      document.getElementById('dropUserInfo').innerText = 'Invitado (Solo Lectura)';
       document.getElementById('userDropdownMenu').classList.remove('is-active');
       window.CIO.goScreen(1);
     },
