@@ -460,6 +460,7 @@
 
     handleUserBtnClick: () => {
       if (!state.usuarioActivo) {
+        window.CIO.setAuthMode('login');
         document.getElementById('modalAuth').showModal();
       } else {
         document.getElementById('userDropdownMenu').classList.toggle('is-active');
@@ -468,16 +469,18 @@
 
     setAuthMode: (mode) => {
       state.authMode = mode;
-      const isReg = mode === 'register';
+      const isReg = (mode === 'register');
       
-      document.getElementById('boxFullName').classList.toggle('is-hidden', !isReg);
-      document.getElementById('boxFaenaSite').classList.toggle('is-hidden', !isReg);
-
+      const boxName = document.getElementById('boxFullName');
+      const boxSite = document.getElementById('boxFaenaSite');
       const tabLogin = document.getElementById('tabBtnLogin');
       const tabRegister = document.getElementById('tabBtnRegister');
       const title = document.getElementById('authModalHeaderTitle');
       const desc = document.getElementById('authModalHeaderDesc');
       const btn = document.getElementById('authSubmitActionBtn');
+
+      if (boxName) boxName.classList.toggle('is-hidden', !isReg);
+      if (boxSite) boxSite.classList.toggle('is-hidden', !isReg);
 
       if (tabLogin) tabLogin.classList.toggle('is-active', !isReg);
       if (tabRegister) tabRegister.classList.toggle('is-active', isReg);
@@ -497,7 +500,7 @@
       const u = document.getElementById('authUsername').value.trim();
       const p = document.getElementById('authPassword').value.trim();
       const fullname = document.getElementById('authFullname')?.value.trim();
-      const selectedSite = document.getElementById('authSelectedSite')?.value;
+      const selectedSite = document.getElementById('authSelectedSite')?.value || 'Planta, Mina los Colorados';
 
       if (!u || !p) {
         alert("⚠️ Completa usuario y contraseña.");
@@ -508,7 +511,7 @@
 
       if (state.authMode === 'register') {
         if (!fullname) {
-          alert("⚠️ Ingresa tu nombre y apellido.");
+          alert("⚠️ Ingresa tu nombre y apellido para crear la cuenta.");
           return;
         }
         if (dbUsers) {
@@ -519,24 +522,29 @@
             faenaAsignada: selectedSite,
             creadoEn: new Date().toISOString()
           }).then(() => {
-            alert("✅ Cuenta de operador registrada correctamente.");
+            alert(`✅ Cuenta registrada exitosamente.\nFaena ligada: ${selectedSite}`);
             loginLocal(fullname, selectedSite);
           }).catch(err => alert("Error: " + err.message));
         } else {
           loginLocal(fullname, selectedSite);
         }
       } else {
+        // En modo login: se lee la faena asociada en la cuenta
         if (dbUsers) {
           dbUsers.child(lookupId).once('value', snap => {
             const uData = snap.val();
             if (uData && uData.password === p) {
-              loginLocal(uData.nombreCompleto || uData.usuario, uData.faenaAsignada || 'Planta, Mina los Colorados');
+              const nombreFinal = uData.nombreCompleto || uData.usuario || u.split('@')[0];
+              const faenaLigada = uData.faenaAsignada || 'Planta, Mina los Colorados';
+              loginLocal(nombreFinal, faenaLigada);
+            } else if (uData && uData.password !== p) {
+              alert("❌ Contraseña incorrecta. Por favor verifica tus credenciales.");
             } else {
-              loginLocal(u.split('@')[0], selectedSite || 'Planta, Mina los Colorados');
+              loginLocal(u.split('@')[0], 'Planta, Mina los Colorados');
             }
           });
         } else {
-          loginLocal(u.split('@')[0], selectedSite || 'Planta, Mina los Colorados');
+          loginLocal(u.split('@')[0], 'Planta, Mina los Colorados');
         }
       }
 
@@ -547,7 +555,7 @@
         document.getElementById('labelUsuarioBtn').innerText = nombre.split(' ')[0];
         document.getElementById('dropUserInfo').innerText = `Activo: ${nombre} | Faena: ${faena}`;
         document.getElementById('modalAuth').close();
-        alert(`✅ Sesión iniciada: ${nombre} (${faena})`);
+        alert(`✅ Bienvenido ${nombre}.\nFaena asignada vinculada: ${faena}.`);
       }
     },
 
