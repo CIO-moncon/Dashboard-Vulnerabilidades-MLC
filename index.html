@@ -135,9 +135,13 @@
         <div>
           <span class="label-muted" id="detSiteTag">FAENA / TAG</span>
           <h2 id="detTitle" class="modal-title-heading">Detalle Activo</h2>
+          <div id="detContadorMedicionBanner" style="margin-top:6px;"></div>
         </div>
         <button type="button" class="btn-base btn-primary auth-only" id="btnEditarDesdeDetalle" onclick="window.CIO.editarActivoActualDesdeDetalle()">✏️ Editar Activo Oficial</button>
       </header>
+
+      <!-- Panel de diagnóstico y SAP -->
+      <section id="detDiagnosticoBox" class="diagnostico-activo-panel"></section>
 
       <div class="detalle-grid-layout">
         <!-- Columna Izquierda: Spots Oficiales -->
@@ -162,7 +166,7 @@
     </figure>
   </dialog>
 
-  <!-- Modal Autenticación (Iniciar Sesión / Crear Cuenta) -->
+  <!-- Modal Autenticación Glassmorphism -->
   <dialog id="modalAuth" class="modal-dialog">
     <div class="modal-content modal-auth-box">
       <button type="button" class="modal-close-btn" onclick="document.getElementById('modalAuth').close()" aria-label="Cerrar modal">&times;</button>
@@ -180,7 +184,6 @@
       
       <form class="auth-form-vertical" onsubmit="event.preventDefault(); window.CIO.handleAuthSubmission();">
         
-        <!-- Oculto en Iniciar Sesión por atributo hidden y style explícito; visible únicamente en Crear Cuenta -->
         <div id="boxFullName" class="auth-input-group is-hidden" hidden style="display: none !important;">
           <label for="authFullname">Nombre y Apellido</label>
           <div class="auth-input-wrapper">
@@ -189,7 +192,6 @@
           </div>
         </div>
 
-        <!-- Siempre visible -->
         <div class="auth-input-group">
           <label for="authUsername">Usuario / Correo Corporativo</label>
           <div class="auth-input-wrapper">
@@ -198,7 +200,6 @@
           </div>
         </div>
 
-        <!-- Siempre visible -->
         <div class="auth-input-group">
           <label for="authPassword">Contraseña</label>
           <div class="auth-input-wrapper">
@@ -207,7 +208,6 @@
           </div>
         </div>
 
-        <!-- Oculto en Iniciar Sesión por atributo hidden y style explícito; visible únicamente en Crear Cuenta -->
         <div id="boxFaenaSite" class="auth-input-group is-hidden" hidden style="display: none !important;">
           <label for="authSelectedSite" style="color:var(--accent-color);">📍 Faena Asignada (Escritura)</label>
           <div class="auth-input-wrapper">
@@ -229,18 +229,44 @@
     </div>
   </dialog>
 
-  <!-- Modal Edición / Creación Fullscreen -->
+  <!-- Modal Configuración de Activo con Auditoría de Rutas, SAP y Asistente IA -->
   <dialog id="modalEdicion" class="modal-fullscreen-dialog">
     <div class="fullscreen-inner">
       <button type="button" class="modal-close-btn" onclick="document.getElementById('modalEdicion').close()">&times;</button>
-      <h2 class="edition-title">Configuración de Activo</h2>
+      <h2 class="edition-title">Configuración de Activo & Diagnóstico Predictivo</h2>
+      
       <form class="form-grid" onsubmit="event.preventDefault(); window.CIO.guardarEquipo();">
         <div><label for="edSiteId">Faena</label><input type="text" id="edSiteId" class="code-font" readonly /></div>
         <div><label for="edDomain">Dominio</label><select id="edDomain"><option value="planta">🏭 Planta</option><option value="mina">⛏️ Mina</option></select></div>
         <div><label for="edArea">Área</label><input type="text" id="edArea" required /></div>
         <div><label for="edTag">Tag</label><input type="text" id="edTag" class="code-font" required /></div>
         <div><label for="edTipo">Clase</label><input type="text" id="edTipo" /></div>
-        <div><label for="edFecha">Fecha</label><input type="date" id="edFecha" /></div>
+        
+        <!-- Estado y Gestión SAP -->
+        <div>
+          <label for="edEstatusHallazgo">Estatus de Hallazgo</label>
+          <select id="edEstatusHallazgo">
+            <option value="Abierto">🔴 Abierto</option>
+            <option value="En Ejecución">🟠 En Ejecución</option>
+            <option value="En Espera de Parada">🟡 En Espera de Parada</option>
+            <option value="Cerrado / Normal">🟢 Cerrado / Normal</option>
+          </select>
+        </div>
+
+        <div><label for="edAvisoSap">Aviso SAP</label><input type="text" id="edAvisoSap" placeholder="Ej: 10054321" class="code-font" /></div>
+        <div><label for="edOmSap">OM SAP (Orden Mantenimiento)</label><input type="text" id="edOmSap" placeholder="Ej: 40012984" class="code-font" /></div>
+
+        <!-- Fechas y Auditoría de Ronda -->
+        <div>
+          <label for="edFechaMedicion">Fecha de Medición (Vibración/Termografía)</label>
+          <input type="date" id="edFechaMedicion" onchange="window.CIO.auditarDiasMedicionForm()" required />
+          <div id="edFeedbackContadorDias" style="margin-top:6px;"></div>
+        </div>
+        <div>
+          <label for="edFechaHallazgo">Fecha de Hallazgo</label>
+          <input type="date" id="edFechaHallazgo" />
+        </div>
+
         <div class="span-2">
           <label>Georreferencia (Latitud, Longitud)</label>
           <div class="coord-inputs">
@@ -248,13 +274,75 @@
             <input type="text" id="edLng" placeholder="-70.8125" />
           </div>
         </div>
+
+        <!-- SECCIÓN DE ANÁLISIS EXPERTO VS INTELIGENCIA ARTIFICIAL GENERATIVA -->
+        <div class="span-2 ia-engine-box">
+          <div class="ia-header-banner">
+            <div>
+              <h3 style="margin:0; font-size:1.05rem; display:flex; align-items:center; gap:8px;">
+                <span>🧠 Asistente de Análisis Predictivo & Recomendación</span>
+                <span class="badge-ia">IA Generativa Experta</span>
+              </h3>
+              <p style="margin:4px 0 0 0; font-size:0.75rem; color:var(--text-muted);">
+                Compara y selecciona el dictamen: criterio del analista humano vs. evaluación espectral computada por IA.
+              </p>
+            </div>
+            <button type="button" class="btn-base btn-primary" onclick="window.CIO.ejecutarGeneracionIA()">
+              ✨ Generar Diagnóstico IA
+            </button>
+          </div>
+
+          <!-- Selector de Modo de Análisis -->
+          <nav class="auth-tabs-segmented" style="margin:16px 0 12px 0;">
+            <button type="button" id="tabAnalistaHumano" class="auth-tab-btn is-active" onclick="window.CIO.seleccionarPestanaAnalisis('humano')">👨‍🔧 Análisis del Experto</button>
+            <button type="button" id="tabAnalisisIA" class="auth-tab-btn" onclick="window.CIO.seleccionarPestanaAnalisis('ia')">🤖 Diagnóstico IA Generativa</button>
+          </nav>
+
+          <!-- Pestaña 1: Entrada Humana -->
+          <div id="panelAnalisisHumano">
+            <div style="margin-bottom:12px;">
+              <label for="edAnalisisHumano">Análisis Técnico del Especialista</label>
+              <textarea id="edAnalisisHumano" rows="3" placeholder="Describe espectro FFT, armónicos 1X/2X, PeakVue o severidad ISO detectada..."></textarea>
+            </div>
+            <div>
+              <label for="edRecomendacionHumano">Recomendación Mecánica / Operativa</label>
+              <textarea id="edRecomendacionHumano" rows="2" placeholder="Acciones preventivas, lubricación, corrección de alineación, cambio de componente..."></textarea>
+            </div>
+          </div>
+
+          <!-- Pestaña 2: Generación Asistida por IA -->
+          <div id="panelAnalisisIA" style="display:none;">
+            <div style="margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <label for="edAnalisisIA" style="color:#60a5fa;">Diagnóstico Espectral Computado por IA</label>
+                <button type="button" class="btn-base" style="font-size:0.68rem; padding:3px 8px;" onclick="window.CIO.adoptarDiagnosticoIA('analisis')">📥 Usar este Análisis</button>
+              </div>
+              <textarea id="edAnalisisIA" rows="3" readonly style="background:rgba(20,25,40,0.85); border-color:#3b82f6; color:#93c5fd;"></textarea>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <label for="edRecomendacionIA" style="color:#34d399;">Recomendación Predictiva Sugerida por IA</label>
+                <button type="button" class="btn-base" style="font-size:0.68rem; padding:3px 8px;" onclick="window.CIO.adoptarDiagnosticoIA('recomendacion')">📥 Usar esta Recomendación</button>
+              </div>
+              <textarea id="edRecomendacionIA" rows="2" readonly style="background:rgba(20,35,30,0.85); border-color:#10b981; color:#a7f3d0;"></textarea>
+            </div>
+            <div style="margin-top:10px; display:flex; justify-content:flex-end;">
+              <button type="button" class="btn-base btn-success" onclick="window.CIO.adoptarDiagnosticoIA('todo')">
+                ✅ Adoptar Análisis y Recomendación de la IA
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spots Oficiales -->
         <div class="span-2 form-actions-top">
           <button type="button" class="btn-base btn-success" onclick="window.CIO.agregarFormComponente()">+ Añadir Spot Oficial</button>
         </div>
         <div id="edComponentesContainer" class="span-2 spots-list"></div>
+
         <footer class="span-2 modal-footer-actions">
           <button type="button" class="btn-base btn-danger" onclick="window.CIO.eliminarEquipo()">🗑️ Eliminar</button>
-          <button type="submit" class="btn-base btn-success">💾 Guardar</button>
+          <button type="submit" class="btn-base btn-success">💾 Guardar Activo</button>
         </footer>
       </form>
     </div>
