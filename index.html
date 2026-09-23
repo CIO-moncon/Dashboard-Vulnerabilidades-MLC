@@ -5,14 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CIO - Centro Integrado de Operaciones | CMP</title>
   
-  <!-- Estilos externos y fuentes -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;700&display=swap" />
-  
-  <!-- TU HOJA DE ESTILOS SEPARADA -->
   <link rel="stylesheet" href="styles.css" />
 
-  <!-- Dependencias externas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -20,6 +16,7 @@
 </head>
 <body>
 
+  <!-- Cabecera Principal -->
   <header class="app-header">
     <div class="brand" onclick="window.CIO.goScreen(1)">
       <div class="brand-logo">
@@ -49,6 +46,7 @@
     </nav>
   </header>
 
+  <!-- Ticker Informativo -->
   <aside class="mining-ticker" aria-label="Indicadores de Faena">
     <span class="ticker-item">💵 <strong>USD/CLP:</strong> 945.72</span>
     <span class="ticker-divider"></span>
@@ -59,14 +57,17 @@
     <span class="ticker-item">☀️ <strong>Clima:</strong> 22°C (Vallenar)</span>
   </aside>
 
+  <!-- Contenedor Principal de Pantallas -->
   <main class="views-wrapper">
+    <!-- Pantalla 1: Vista Global de Faenas -->
     <section id="screen-1" class="screen-view active">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <h2 style="font-size:1rem; margin:0; text-transform:uppercase; color:var(--text-muted);">Visualización Global de Faenas y Áreas (Solo Lectura)</h2>
+      <div class="view-section-header">
+        <h2>Visualización Global de Faenas y Áreas (Solo Lectura)</h2>
       </div>
       <section id="viewScreen1Content" class="grid-container"></section>
     </section>
 
+    <!-- Pantalla 2: Vista de Faena y Áreas -->
     <section id="screen-2" class="screen-view">
       <header class="site-nav-bar">
         <div class="site-nav-left">
@@ -75,7 +76,7 @@
           </button>
           <div>
             <span class="label-muted" id="subBreadcrumbSite">Faena Operativa</span>
-            <h2 id="screen2SiteTitle" style="margin:2px 0 0 0; font-size:1.15rem;">Faena Seleccionada</h2>
+            <h2 id="screen2SiteTitle" class="site-title-heading">Faena Seleccionada</h2>
           </div>
         </div>
         
@@ -93,13 +94,14 @@
       <section id="viewScreen2Container" class="grid-container"></section>
     </section>
 
+    <!-- Pantalla 3: SuperAdmin Global -->
     <section id="screen-3" class="screen-view">
-      <header style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+      <header class="superadmin-bar">
         <div>
           <button type="button" class="btn-back-nav" onclick="window.CIO.goScreen(2)">⬅️ Salir SuperAdmin</button>
-          <h2 style="font-size:1.15rem; margin:6px 0 0 0; color:#ca8a04;">⚡ Consola Global SuperAdmin</h2>
+          <h2 class="superadmin-title">⚡ Consola Global SuperAdmin</h2>
         </div>
-        <nav style="display:flex; gap:8px; flex-wrap:wrap;">
+        <nav class="superadmin-actions">
           <button type="button" class="btn-base btn-success" onclick="window.CIO.abrirEdicionGlobalNuevo()">➕ Crear Activo Global</button>
           <button type="button" class="btn-base btn-primary" onclick="window.CIO.exportarReporteGerenciaAlta()">📊 Reporte Alta Gerencia</button>
           <button type="button" class="btn-base btn-warning" onclick="window.CIO.exportarReporteGerenciaPorFaena()">📑 Reporte por Faena</button>
@@ -107,7 +109,7 @@
         </nav>
       </header>
 
-      <div style="margin-bottom:12px;">
+      <div class="filter-box">
         <select id="superAdminFilterSite" class="filter-select" onchange="window.CIO.renderScreen3Global()">
           <option value="TODAS">Ver Todas las Faenas</option>
           <option value="Planta, Mina los Colorados">Planta, Mina los Colorados</option>
@@ -125,57 +127,68 @@
     </section>
   </main>
 
+  <!-- Modal Detalle Activo Gran Formato -->
   <dialog id="modalDetalleActivo" class="modal-dialog">
-    <div class="modal-content">
+    <div class="modal-content modal-lg">
       <button type="button" class="modal-close-btn" onclick="window.CIO.cerrarModalDetalle()">&times;</button>
       <header class="modal-header">
-        <span class="label-muted" id="detSiteTag">FAENA / TAG</span>
+        <div>
+          <span class="label-muted" id="detSiteTag">FAENA / TAG</span>
+          <h2 id="detTitle" class="modal-title-heading">Detalle Activo</h2>
+        </div>
         <button type="button" class="btn-base btn-primary auth-only" id="btnEditarDesdeDetalle" onclick="window.CIO.editarActivoActualDesdeDetalle()">✏️ Editar Activo Oficial</button>
       </header>
-      <h3 id="detTitle" style="margin:4px 0 12px 0;">Detalle Activo</h3>
-      <section>
-        <span class="label-muted">Monitoreo / Spots Oficiales (ISO / RMS)</span>
-        <div id="detComponentesList" class="spots-list" style="margin-top:8px;"></div>
-      </section>
-      <section class="section-field-log">
-        <span class="label-muted label-field">💬 Bitácora de Hallazgos de Terreno (No oficial)</span>
-        <div id="detTerrenoList" class="field-list"></div>
-      </section>
+
+      <div class="detalle-grid-layout">
+        <!-- Columna Izquierda: Spots Oficiales -->
+        <section>
+          <h3 class="label-muted section-heading">📊 Monitoreo / Spots Oficiales (ISO / RMS)</h3>
+          <div id="detComponentesList" class="spots-list"></div>
+        </section>
+
+        <!-- Columna Derecha: Bitácora de Terreno Ampliada -->
+        <section>
+          <h3 class="label-muted label-field section-heading">💬 Bitácora de Terreno & Evidencia Fotográfica</h3>
+          <div id="detTerrenoList" class="field-list"></div>
+        </section>
+      </div>
     </div>
   </dialog>
 
+  <!-- Modal Visor Foto Pantalla Completa -->
   <dialog id="modalVisorFoto" class="modal-dialog-lightbox" onclick="this.close()">
     <figure class="lightbox-content">
-      <img id="imgVisorFull" src="" alt="Zoom" />
+      <img id="imgVisorFull" src="" alt="Evidencia de terreno ampliada" />
     </figure>
   </dialog>
 
+  <!-- Modal Autenticación -->
   <dialog id="modalAuth" class="modal-dialog">
-    <div class="modal-content" style="max-width: 420px; padding: 28px;">
+    <div class="modal-content modal-auth-box">
       <button type="button" class="modal-close-btn" onclick="document.getElementById('modalAuth').close()">&times;</button>
-      <nav style="display:flex; background:var(--input-bg); border-radius:8px; padding:4px; margin-bottom:20px; border:1px solid var(--border-card);">
-        <button type="button" id="tabBtnLogin" class="btn-base btn-primary" style="flex:1; justify-content:center;" onclick="window.CIO.setAuthMode('login')">Iniciar Sesión</button>
-        <button type="button" id="tabBtnRegister" class="btn-base" style="flex:1; justify-content:center; background:transparent;" onclick="window.CIO.setAuthMode('register')">Crear Cuenta</button>
+      <nav class="auth-tabs">
+        <button type="button" id="tabBtnLogin" class="btn-base btn-primary tab-flex" onclick="window.CIO.setAuthMode('login')">Iniciar Sesión</button>
+        <button type="button" id="tabBtnRegister" class="btn-base tab-flex tab-transparent" onclick="window.CIO.setAuthMode('register')">Crear Cuenta</button>
       </nav>
-      <h3 id="authModalHeaderTitle" style="margin:0 0 4px 0;">Acceso Operador CIO</h3>
-      <p id="authModalHeaderDesc" style="margin:0 0 16px 0; font-size:0.72rem; color:var(--text-muted);">Ingresa tus credenciales autorizadas.</p>
+      <h3 id="authModalHeaderTitle" class="auth-title">Acceso Operador CIO</h3>
+      <p id="authModalHeaderDesc" class="auth-subtitle">Ingresa tus credenciales autorizadas.</p>
       
-      <form style="display:flex; flex-direction:column; gap:12px;" onsubmit="event.preventDefault(); window.CIO.handleAuthSubmission();">
-        <div id="boxFullName" class="is-hidden">
-          <label style="font-size:0.68rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Nombre y Apellido</label>
-          <input type="text" id="authFullname" placeholder="Ej: Francisco Leiva" style="width:100%; padding:10px; border-radius:6px; background:var(--input-bg); color:#fff; border:1px solid var(--border-card);" />
+      <form class="auth-form" onsubmit="event.preventDefault(); window.CIO.handleAuthSubmission();">
+        <div id="boxFullName" class="is-hidden form-group">
+          <label for="authFullname">Nombre y Apellido</label>
+          <input type="text" id="authFullname" placeholder="Ej: Francisco Leiva" />
         </div>
-        <div>
-          <label style="font-size:0.68rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Usuario / Correo</label>
-          <input type="text" id="authUsername" placeholder="ej: fleiva@cpf.cl" style="width:100%; padding:10px; border-radius:6px; background:var(--input-bg); color:#fff; border:1px solid var(--border-card);" required />
+        <div class="form-group">
+          <label for="authUsername">Usuario / Correo</label>
+          <input type="text" id="authUsername" placeholder="ej: fleiva@cpf.cl" required />
         </div>
-        <div>
-          <label style="font-size:0.68rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Contraseña</label>
-          <input type="password" id="authPassword" placeholder="••••••••" style="width:100%; padding:10px; border-radius:6px; background:var(--input-bg); color:#fff; border:1px solid var(--border-card);" required />
+        <div class="form-group">
+          <label for="authPassword">Contraseña</label>
+          <input type="password" id="authPassword" placeholder="••••••••" required />
         </div>
-        <div id="boxFaenaSite" class="is-hidden">
-          <label style="font-size:0.68rem; font-weight:700; color:var(--accent-color); display:block; margin-bottom:4px;">📍 Faena Asignada</label>
-          <select id="authSelectedSite" style="width:100%; padding:10px; border-radius:6px; background:var(--input-bg); color:#fff; border:1px solid var(--border-card);">
+        <div id="boxFaenaSite" class="is-hidden form-group">
+          <label for="authSelectedSite" class="label-accent">📍 Faena Asignada</label>
+          <select id="authSelectedSite">
             <option value="Planta, Mina los Colorados">Planta, Mina los Colorados</option>
             <option value="Mina, Mina los Colorados">Mina, Mina los Colorados</option>
             <option value="Planta de Pellets">Planta de Pellets</option>
@@ -183,22 +196,23 @@
             <option value="Mina, Mina el Romeral">Mina, Mina el Romeral</option>
           </select>
         </div>
-        <button type="submit" id="authSubmitActionBtn" class="btn-base btn-primary" style="padding:12px; justify-content:center; margin-top:8px;">Ingresar al Sistema</button>
+        <button type="submit" id="authSubmitActionBtn" class="btn-base btn-primary btn-submit">Ingresar al Sistema</button>
       </form>
     </div>
   </dialog>
 
+  <!-- Modal Edición / Creación Fullscreen -->
   <dialog id="modalEdicion" class="modal-fullscreen-dialog">
     <div class="fullscreen-inner">
       <button type="button" class="modal-close-btn" onclick="document.getElementById('modalEdicion').close()">&times;</button>
-      <h2 style="margin-top:0;">Configuración de Activo</h2>
+      <h2 class="edition-title">Configuración de Activo</h2>
       <form class="form-grid" onsubmit="event.preventDefault(); window.CIO.guardarEquipo();">
-        <div><label>Faena</label><input type="text" id="edSiteId" class="code-font" readonly /></div>
-        <div><label>Dominio</label><select id="edDomain"><option value="planta">🏭 Planta</option><option value="mina">⛏️ Mina</option></select></div>
-        <div><label>Área</label><input type="text" id="edArea" required /></div>
-        <div><label>Tag</label><input type="text" id="edTag" class="code-font" required /></div>
-        <div><label>Clase</label><input type="text" id="edTipo" /></div>
-        <div><label>Fecha</label><input type="date" id="edFecha" /></div>
+        <div><label for="edSiteId">Faena</label><input type="text" id="edSiteId" class="code-font" readonly /></div>
+        <div><label for="edDomain">Dominio</label><select id="edDomain"><option value="planta">🏭 Planta</option><option value="mina">⛏️ Mina</option></select></div>
+        <div><label for="edArea">Área</label><input type="text" id="edArea" required /></div>
+        <div><label for="edTag">Tag</label><input type="text" id="edTag" class="code-font" required /></div>
+        <div><label for="edTipo">Clase</label><input type="text" id="edTipo" /></div>
+        <div><label for="edFecha">Fecha</label><input type="date" id="edFecha" /></div>
         <div class="span-2">
           <label>Georreferencia (Latitud, Longitud)</label>
           <div class="coord-inputs">
@@ -206,7 +220,7 @@
             <input type="text" id="edLng" placeholder="-70.8125" />
           </div>
         </div>
-        <div class="span-2" style="margin-top:10px;">
+        <div class="span-2 form-actions-top">
           <button type="button" class="btn-base btn-success" onclick="window.CIO.agregarFormComponente()">+ Añadir Spot Oficial</button>
         </div>
         <div id="edComponentesContainer" class="span-2 spots-list"></div>
@@ -218,7 +232,6 @@
     </div>
   </dialog>
 
-  <!-- TU SCRIPT SEPARADO -->
   <script src="app.js"></script>
 </body>
 </html>
