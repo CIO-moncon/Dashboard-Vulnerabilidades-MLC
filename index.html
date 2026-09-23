@@ -162,7 +162,7 @@
     </figure>
   </dialog>
 
-  <!-- Modal Autenticación Glassmorphism -->
+  <!-- Modal Autenticación (Iniciar Sesión / Crear Cuenta) -->
   <dialog id="modalAuth" class="modal-dialog">
     <div class="modal-content modal-auth-box">
       <button type="button" class="modal-close-btn" onclick="document.getElementById('modalAuth').close()" aria-label="Cerrar modal">&times;</button>
@@ -180,8 +180,8 @@
       
       <form class="auth-form-vertical" onsubmit="event.preventDefault(); window.CIO.handleAuthSubmission();">
         
-        <!-- Oculto en Iniciar Sesión; visible solo en Crear Cuenta -->
-        <div id="boxFullName" class="auth-input-group is-hidden">
+        <!-- Oculto en Iniciar Sesión; visible únicamente en Crear Cuenta -->
+        <div id="boxFullName" class="auth-input-group" style="display: none;">
           <label for="authFullname">Nombre y Apellido</label>
           <div class="auth-input-wrapper">
             <span class="auth-input-icon">👤</span>
@@ -207,8 +207,8 @@
           </div>
         </div>
 
-        <!-- Oculto en Iniciar Sesión; visible solo en Crear Cuenta -->
-        <div id="boxFaenaSite" class="auth-input-group is-hidden">
+        <!-- Oculto en Iniciar Sesión; visible únicamente en Crear Cuenta -->
+        <div id="boxFaenaSite" class="auth-input-group" style="display: none;">
           <label for="authSelectedSite" style="color:var(--accent-color);">📍 Faena Asignada (Escritura)</label>
           <div class="auth-input-wrapper">
             <span class="auth-input-icon">🏭</span>
