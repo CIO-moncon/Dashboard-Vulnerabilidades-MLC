@@ -162,41 +162,65 @@
     </figure>
   </dialog>
 
-  <!-- Modal Autenticación -->
+  <!-- Modal Autenticación Glassmorphism -->
   <dialog id="modalAuth" class="modal-dialog">
     <div class="modal-content modal-auth-box">
-      <button type="button" class="modal-close-btn" onclick="document.getElementById('modalAuth').close()">&times;</button>
-      <nav class="auth-tabs">
-        <button type="button" id="tabBtnLogin" class="btn-base btn-primary tab-flex" onclick="window.CIO.setAuthMode('login')">Iniciar Sesión</button>
-        <button type="button" id="tabBtnRegister" class="btn-base tab-flex tab-transparent" onclick="window.CIO.setAuthMode('register')">Crear Cuenta</button>
-      </nav>
-      <h3 id="authModalHeaderTitle" class="auth-title">Acceso Operador CIO</h3>
-      <p id="authModalHeaderDesc" class="auth-subtitle">Ingresa tus credenciales autorizadas.</p>
+      <button type="button" class="modal-close-btn" onclick="document.getElementById('modalAuth').close()" aria-label="Cerrar modal">&times;</button>
       
-      <form class="auth-form" onsubmit="event.preventDefault(); window.CIO.handleAuthSubmission();">
-        <div id="boxFullName" class="is-hidden form-group">
+      <!-- Selector de pestaña tipo switch -->
+      <nav class="auth-tabs-segmented">
+        <button type="button" id="tabBtnLogin" class="auth-tab-btn is-active" onclick="window.CIO.setAuthMode('login')">Iniciar Sesión</button>
+        <button type="button" id="tabBtnRegister" class="auth-tab-btn" onclick="window.CIO.setAuthMode('register')">Crear Cuenta</button>
+      </nav>
+
+      <div class="auth-header">
+        <h3 id="authModalHeaderTitle">Acceso Operador CIO</h3>
+        <p id="authModalHeaderDesc">Ingresa tus credenciales autorizadas por CMP para gestionar condición de activos.</p>
+      </div>
+      
+      <form class="auth-form-vertical" onsubmit="event.preventDefault(); window.CIO.handleAuthSubmission();">
+        
+        <div id="boxFullName" class="auth-input-group is-hidden">
           <label for="authFullname">Nombre y Apellido</label>
-          <input type="text" id="authFullname" placeholder="Ej: Francisco Leiva" />
+          <div class="auth-input-wrapper">
+            <span class="auth-input-icon">👤</span>
+            <input type="text" id="authFullname" class="auth-input-field" placeholder="Ej: Francisco Leiva" autocomplete="name" />
+          </div>
         </div>
-        <div class="form-group">
-          <label for="authUsername">Usuario / Correo</label>
-          <input type="text" id="authUsername" placeholder="ej: fleiva@cpf.cl" required />
+
+        <div class="auth-input-group">
+          <label for="authUsername">Usuario / Correo Corporativo</label>
+          <div class="auth-input-wrapper">
+            <span class="auth-input-icon">✉️</span>
+            <input type="text" id="authUsername" class="auth-input-field" placeholder="ej: fleiva@cpf.cl" required autocomplete="username" />
+          </div>
         </div>
-        <div class="form-group">
+
+        <div class="auth-input-group">
           <label for="authPassword">Contraseña</label>
-          <input type="password" id="authPassword" placeholder="••••••••" required />
+          <div class="auth-input-wrapper">
+            <span class="auth-input-icon">🔒</span>
+            <input type="password" id="authPassword" class="auth-input-field" placeholder="••••••••" required autocomplete="current-password" />
+          </div>
         </div>
-        <div id="boxFaenaSite" class="is-hidden form-group">
-          <label for="authSelectedSite" class="label-accent">📍 Faena Asignada</label>
-          <select id="authSelectedSite">
-            <option value="Planta, Mina los Colorados">Planta, Mina los Colorados</option>
-            <option value="Mina, Mina los Colorados">Mina, Mina los Colorados</option>
-            <option value="Planta de Pellets">Planta de Pellets</option>
-            <option value="Planta, Mina el Romeral">Planta, Mina el Romeral</option>
-            <option value="Mina, Mina el Romeral">Mina, Mina el Romeral</option>
-          </select>
+
+        <div id="boxFaenaSite" class="auth-input-group is-hidden">
+          <label for="authSelectedSite" style="color:var(--accent-color);">📍 Faena Asignada (Escritura)</label>
+          <div class="auth-input-wrapper">
+            <span class="auth-input-icon">🏭</span>
+            <select id="authSelectedSite" class="auth-input-field">
+              <option value="Planta, Mina los Colorados">Planta, Mina los Colorados</option>
+              <option value="Mina, Mina los Colorados">Mina, Mina los Colorados</option>
+              <option value="Planta de Pellets">Planta de Pellets</option>
+              <option value="Planta, Mina el Romeral">Planta, Mina el Romeral</option>
+              <option value="Mina, Mina el Romeral">Mina, Mina el Romeral</option>
+            </select>
+          </div>
         </div>
-        <button type="submit" id="authSubmitActionBtn" class="btn-base btn-primary btn-submit">Ingresar al Sistema</button>
+
+        <button type="submit" id="authSubmitActionBtn" class="auth-submit-btn">
+          Ingresar al Sistema
+        </button>
       </form>
     </div>
   </dialog>
