@@ -22,7 +22,6 @@
   body { background-color: var(--bg-main); color: var(--text-main); font-family: 'Inter', sans-serif; padding: 20px; margin: 0; -webkit-font-smoothing: antialiased; transition: background 0.2s, color 0.2s; }
   .code-font { font-family: 'Roboto Mono', monospace; }
   
-  /* Animaciones Críticas Industriales */
   @keyframes pulseGlowRed {
     0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5), inset 3px 0 0 0 #ef4444; border-color: rgba(239, 68, 68, 0.8); }
     70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
@@ -41,7 +40,6 @@
   .header { border: 1px solid var(--border-card); padding: 14px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-panel); border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); flex-wrap: wrap; gap: 14px; }
   .header-brand { display: flex; align-items: center; gap: 20px; cursor: pointer; }
   
-  /* Logo CPF con fondo blanco y alto protagonismo */
   .logos-container { display: flex; align-items: center; background: #ffffff; padding: 10px 24px; border-radius: 10px; border: 2px solid #d4d4d8; box-shadow: 0 4px 14px rgba(0,0,0,0.35); }
   .logo-cpf { height: 48px; width: auto; object-fit: contain; transform: scale(1.2); display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2)); }
 
@@ -57,7 +55,6 @@
   .btn-warning { background: #ca8a04; color: white; border-color: #eab308; }
   .btn-danger { background: #dc2626; color: white; border-color: #ef4444; }
 
-  /* Botón de navegación principal de Faena más grande y visible */
   .btn-back-nav {
     background: #27272a; border: 1.5px solid #3f3f46; color: white;
     padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 0.85rem;
@@ -71,14 +68,10 @@
 
   .auth-only-element { display: none !important; }
   body.user-authenticated .auth-only-element { display: inline-flex !important; }
-  .admin-only-element { display: none !important; }
-  body.superadmin-active .admin-only-element { display: inline-flex !important; }
 
-  /* Ticker macroeconómico minería hierro */
   .mining-ticker { display: flex; align-items: center; gap: 14px; background: var(--input-bg); padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-card); font-size: 0.75rem; font-family: 'Roboto Mono', monospace; font-weight: 600; margin-bottom: 16px; flex-wrap: wrap; }
   .ticker-item { display: flex; align-items: center; gap: 6px; }
 
-  /* Vistas por Pantalla (Screen Views) */
   .screen-view { display: none; }
   .screen-view.active { display: block; }
 
@@ -105,7 +98,6 @@
   #view-site-map { width: 100%; height: 72vh; border-radius: 10px; border: 1px solid var(--border-card); display: none; margin-bottom: 16px; z-index: 10; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
   #view-map { width: 100%; height: 550px; border-radius: 8px; border: 1px solid var(--border-card); margin-bottom: 16px; z-index: 10; }
 
-  /* Modales Estándar y Edición Pantalla Completa */
   .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 2000; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; backdrop-filter: blur(4px); }
   .modal-content { background: var(--bg-panel); padding: 28px; border-radius: 12px; border: 1px solid var(--border-card); width: 100%; max-width: 420px; position: relative; box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
   .modal-fullscreen { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-main); z-index: 2500; overflow-y: auto; padding: 30px; box-sizing: border-box; }
@@ -119,7 +111,6 @@
 </head>
 <body>
 
-<!-- CABECERA GENERAL -->
 <div class="header">
   <div class="header-brand" onclick="goScreen(1)">
     <div class="logos-container">
@@ -142,7 +133,6 @@
   </div>
 </div>
 
-<!-- TICKER MACROECONÓMICO & CLIMA -->
 <div class="mining-ticker">
   <div class="ticker-item">💵 <b>USD/CLP:</b> <span id="tickerUsdClp">945.72</span></div>
   <div style="width:1px; height:14px; background:var(--border-card);"></div>
@@ -161,7 +151,7 @@
   <div id="viewScreen1Content" class="grid-container"></div>
 </div>
 
-<!-- PANTALLA 2 (MAPA FULL O CUADROS, NUNCA AMBOS) -->
+<!-- PANTALLA 2 -->
 <div id="screen-2" class="screen-view">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px; background:var(--bg-panel); padding:14px 18px; border-radius:10px; border:1px solid var(--border-card);">
     <div style="display:flex; align-items:center; gap:12px;">
@@ -173,14 +163,9 @@
     </div>
     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
       <span id="badgeFaenaAsignada" style="font-size:0.75rem; background:rgba(59,130,246,0.15); color:var(--accent-color); padding:6px 12px; border-radius:6px; font-weight:700;">Faena</span>
-      
-      <!-- Carga masiva de excel por faena (Habilitado portal usuario autenticado) -->
       <button class="btn-base btn-success auth-only-element" style="padding:9px 14px; font-size:0.78rem;" onclick="document.getElementById('excelSiteUpload').click()">📂 Carga Masiva Faena</button>
       <input type="file" id="excelSiteUpload" accept=".xlsx, .xls" style="display:none;" onchange="procesarCargaExcelFaena(event)">
-
-      <!-- Crear activo en faena asignada (Usuario autenticado) -->
       <button class="btn-base btn-success auth-only-element" style="padding:9px 14px; font-size:0.78rem;" onclick="abrirEdicionEquipoNuevoAuth()">➕ Crear Activo</button>
-
       <button class="btn-base btn-primary" style="padding:9px 16px; font-size:0.8rem;" onclick="toggleSiteMapTab()">🗺️ <span id="labelToggleSiteMap">Ver Mapa de Faena</span></button>
       <button class="btn-base btn-warning auth-only-element" style="padding:9px 16px; font-size:0.8rem;" onclick="solicitarPermisoSuperAdmin()">🛡️ SuperAdmin</button>
     </div>
@@ -270,7 +255,7 @@
   </div>
 </div>
 
-<!-- MODAL EDICIÓN ACTIVO GLOBAL/LOCAL -->
+<!-- MODAL EDICIÓN -->
 <div id="modalEdicion" class="modal-fullscreen">
   <div class="fullscreen-container">
     <div class="modal-close-btn" onclick="cerrarEdicion()">&times;</div>
@@ -401,6 +386,26 @@
     actualizarMapaGlobalSiActivo();
   });
 
+  // Listener para reportes de terreno en vivo hacia Sala CIO
+  firebase.database().ref('alertas_terreno').limitToLast(1).on('child_added', snap => {
+    const data = snap.val();
+    if (!data) return;
+    const toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed; bottom:25px; right:25px; background:#18181b; border:2px solid #ef4444; color:white; padding:18px; border-radius:10px; z-index:9999; box-shadow:0 12px 35px rgba(0,0,0,0.9); max-width:340px; animation: pulseGlowRed 1.5s infinite;';
+    toast.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <b style="color:#ef4444; font-size:0.85rem;">🚨 NUEVO REPORTE DE TERRENO</b>
+        <button onclick="this.parentElement.parentElement.remove()" style="background:transparent; border:none; color:white; font-size:1.1rem; cursor:pointer;">&times;</button>
+      </div>
+      <div style="font-size:0.75rem; line-height:1.4;">
+        <b>Faena:</b> ${data.faena} (${data.area})<br>
+        <b>Tag:</b> <span class="code-font" style="color:#3b82f6;">${data.tag}</span> | <b>Sev:</b> <span style="color:#ef4444;font-weight:bold;">${data.severidad}</span><br>
+        <b>Hallazgo:</b> ${data.detalle}
+      </div>
+    `;
+    document.body.appendChild(toast);
+  });
+
   function goScreen(num) {
     currentScreen = num;
     document.querySelectorAll('.screen-view').forEach(el => el.classList.remove('active'));
@@ -502,12 +507,12 @@
 
     if (siteMapVisible) {
       if(md) md.style.display = 'block';
-      if(container) container.style.display = 'none'; // Ocultar cuadros al ver mapa exclusivo
+      if(container) container.style.display = 'none';
       lbl.innerText = 'Ocultar Mapa';
       actualizarMapaSiteAutomatico(eqs, targetSite);
     } else {
       if(md) md.style.display = 'none';
-      if(container) container.style.display = ''; // Restaurar cuadros
+      if(container) container.style.display = '';
       lbl.innerText = 'Ver Mapa de Faena';
     }
     updateScreen2NavigationUI();
