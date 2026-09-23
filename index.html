@@ -361,6 +361,9 @@
   }
   inicializarSeedMasivoSiVacio();
 
+  // Asignar seed por defecto inmediato para evitar parpadeos en blanco
+  equiposDB = generarSeedMasivoColorados();
+
   db.on('value', snap => {
     const raw = snap.val();
     if (raw) {
@@ -379,11 +382,13 @@
           componentes: item.componentes || []
         };
       });
-    } else {
-      equiposDB = generarSeedMasivoColorados();
     }
     refreshCurrentScreen();
     actualizarMapaGlobalSiActivo();
+  }, () => {
+    // En caso de fallo de red/Firebase, usar seed local
+    equiposDB = generarSeedMasivoColorados();
+    refreshCurrentScreen();
   });
 
   // Listener para reportes de terreno en vivo hacia Sala CIO
@@ -455,6 +460,7 @@
 
   function renderScreen1Public() {
     const container = document.getElementById('viewScreen1Content');
+    if (!container) return;
     const faenasGroup = {};
     FAENAS_LIST.forEach(f => faenasGroup[f] = { count: 0, critical: 0, maxSevPeso: 1, maxSev: 'Plomo' });
     
@@ -523,7 +529,8 @@
     document.getElementById('screen2SiteTitle').innerText = targetSite;
     const eqs = equiposDB.filter(e => normalizarSiteId(e.siteId) === targetSite);
     const container = document.getElementById('viewScreen2Container');
-    if (container) container.style.display = siteMapVisible ? 'none' : '';
+    if (!container) return;
+    container.style.display = siteMapVisible ? 'none' : '';
 
     if (!siteAreaSeleccionadaScreen2) {
       const areasMap = {};
@@ -636,7 +643,7 @@
           const icono = L.divIcon({
             className: 'custom-map-marker',
             html: `<div class="${pulseClass}" style="background-color: ${col}; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 12px ${col};"></div>`,
-            iconSize: [22, 22], iconAnchor:
+            iconSize: [22, 22], iconAnchor: [11, 11]
           });
           L.marker([lat, lng], {icon: icono}).bindPopup(`<b>${eq.tag}</b><br>Área: ${eq.area}<br><b style="color:${col};">${sev.toUpperCase()}</b>`).addTo(capaSiteMarkers);
           validLatLngs.push([lat, lng]);
@@ -651,6 +658,7 @@
     const eqs = filter === 'TODAS' ? equiposDB : equiposDB.filter(e => normalizarSiteId(e.siteId) === filter);
     eqs.sort((a, b) => SEV_PESO[calcMaxSev(b.componentes)] - SEV_PESO[calcMaxSev(a.componentes)]);
     const container = document.getElementById('viewScreen3Global');
+    if (!container) return;
 
     container.innerHTML = eqs.map(eq => {
       const sev = calcMaxSev(eq.componentes);
@@ -694,7 +702,7 @@
         const icono = L.divIcon({
           className: 'custom-map-marker',
           html: `<div class="${pulseClass}" style="background-color: ${col}; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 12px ${col};"></div>`,
-          iconSize: [22, 22], iconAnchor:
+          iconSize: [22, 22], iconAnchor: [11, 11]
         });
         L.marker([lat, lng], {icon: icono}).bindPopup(`<b>${eq.tag}</b><br>${eq.siteId}<br><b style="color:${col};">${sev.toUpperCase()}</b>`).addTo(capaGlobalMarkers);
         valid.push([lat, lng]);
@@ -923,7 +931,9 @@
   }
 
   window.addEventListener('click', e => { if (!document.getElementById('userMenuWrapper')?.contains(e.target)) document.getElementById('userDropdownMenu').style.display = 'none'; });
-  setTimeout(() => renderScreen1Public(), 300);
+  
+  // Arranque inicial forzado
+  setTimeout(() => { refreshCurrentScreen(); }, 200);
 </script>
 </body>
 </html>
