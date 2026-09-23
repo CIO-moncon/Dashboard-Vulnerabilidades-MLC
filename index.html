@@ -167,7 +167,7 @@
   <div id="viewScreen1Content" class="grid-container"></div>
 </div>
 
-<!-- PANTALLA 2 (NAVEGACIÓN PASO A PASO, MAPA TOGGLE Y PRIORIDAD ROJA) -->
+<!-- PANTALLA 2 (NAVEGACIÓN PASO A PASO, MAPA TOGGLE Y PRIORIDAD ROJA + EDICIÓN USUARIO) -->
 <div id="screen-2" class="screen-view">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px; background:var(--bg-panel); padding:14px 18px; border-radius:10px; border:1px solid var(--border-card);">
     <div style="display:flex; align-items:center; gap:12px;">
@@ -179,6 +179,14 @@
     </div>
     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
       <span id="badgeFaenaAsignada" style="font-size:0.75rem; background:rgba(59,130,246,0.15); color:var(--accent-color); padding:6px 12px; border-radius:6px; font-weight:700;">Faena</span>
+      
+      <!-- Carga masiva de excel por faena (Habilitado portal usuario autenticado) -->
+      <button class="btn-base btn-success auth-only-element" style="padding:9px 14px; font-size:0.78rem;" onclick="document.getElementById('excelSiteUpload').click()">📂 Carga Masiva Faena</button>
+      <input type="file" id="excelSiteUpload" accept=".xlsx, .xls" style="display:none;" onchange="procesarCargaExcelFaena(event)">
+
+      <!-- Crear activo en faena asignada (Usuario autenticado) -->
+      <button class="btn-base btn-success auth-only-element" style="padding:9px 14px; font-size:0.78rem;" onclick="abrirEdicionEquipoNuevoAuth()">➕ Crear Activo</button>
+
       <button class="btn-base btn-primary" style="padding:9px 16px; font-size:0.8rem;" onclick="toggleSiteMapTab()">🗺️ <span id="labelToggleSiteMap">Ver Mapa de Faena</span></button>
       <button class="btn-base btn-warning auth-only-element" style="padding:9px 16px; font-size:0.8rem;" onclick="solicitarPermisoSuperAdmin()">🛡️ SuperAdmin</button>
     </div>
@@ -187,16 +195,17 @@
   <div id="viewScreen2Container"></div>
 </div>
 
-<!-- PANTALLA 3 -->
+<!-- PANTALLA 3 (SUPERADMIN: REPORTES GLOBALES Y POR FAENA + CATASTRO) -->
 <div id="screen-3" class="screen-view">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
     <div>
       <button class="btn-back-nav" onclick="goScreen(2)">⬅️ Salir SuperAdmin</button>
       <h2 style="font-size:1.15rem; margin:6px 0 0 0; color:#ca8a04;">⚡ Consola Global SuperAdmin (Todas las Faenas)</h2>
     </div>
-    <div style="display:flex; gap:8px;">
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
       <button class="btn-base btn-success" onclick="abrirEdicionGlobalNuevo()">➕ Crear Activo Global</button>
-      <button class="btn-base btn-primary" onclick="exportarReporteGerenciaAlta()">📊 Reporte Alta Gerencia</button>
+      <button class="btn-base btn-primary" onclick="exportarReporteGerenciaAlta()">📊 Reporte Alta Gerencia Global</button>
+      <button class="btn-base btn-warning" onclick="exportarReporteGerenciaPorFaena()">📑 Reporte por Faena</button>
       <button class="btn-base btn-primary" onclick="toggleMapModal()">🗺️ Mapa Global Georreferenciado</button>
     </div>
   </div>
@@ -214,11 +223,14 @@
   <div id="viewScreen3Global" class="grid-equipos"></div>
 </div>
 
-<!-- MODAL DETALLE DE EQUIPO/SPOT CON PRIORIDAD ROJA -->
+<!-- MODAL DETALLE DE EQUIPO/SPOT CON PRIORIDAD ROJA Y EDICIÓN RÁPIDA -->
 <div id="modalDetalleActivo" class="modal-overlay">
   <div class="modal-content" style="max-width:580px;">
     <div class="modal-close-btn" onclick="document.getElementById('modalDetalleActivo').style.display='none'">&times;</div>
-    <div class="label-muted" id="detSiteTag">FAENA / TAG</div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+      <div class="label-muted" id="detSiteTag">FAENA / TAG</div>
+      <button class="btn-base btn-primary auth-only-element" style="padding:4px 10px; font-size:0.7rem;" id="btnEditarDesdeDetalle" onclick="editarActivoActualDesdeDetalle()">✏️ Editar Activo / Añadir Spots</button>
+    </div>
     <h3 id="detTitle" style="margin:4px 0 12px 0;">Detalle Activo</h3>
     <div id="detComponentesList" style="display:flex; flex-direction:column; gap:10px;"></div>
   </div>
@@ -281,7 +293,7 @@
         <div style="display:flex; gap:10px;"><input type="text" id="edLat" placeholder="-28.2880"><input type="text" id="edLng" placeholder="-70.8125"></div>
       </div>
     </div>
-    <div style="margin-top: 20px;"><button class="btn-base btn-success" onclick="agregarFormComponente()">+ Añadir Spot</button></div>
+    <div style="margin-top: 20px;"><button class="btn-base btn-success" onclick="agregarFormComponente()">+ Añadir Spot / Falla</button></div>
     <div id="edComponentesContainer" style="display:flex; flex-direction:column; gap:16px; margin-top:14px;"></div>
     <div style="margin-top: 30px; display: flex; gap: 12px; justify-content: flex-end;">
       <button class="btn-base btn-danger" onclick="eliminarEquipo()">🗑️ Eliminar</button>
@@ -311,10 +323,12 @@
   let faenaSeleccionadaScreen2 = null;
   let siteAreaSeleccionadaScreen2 = null;
   let equipoSeleccionado = null;
+  let equipoIdActualModalDetalle = null;
   let mapaGlobalInstancia = null, capaGlobalMarkers = null;
   let mapaSiteInstancia = null, capaSiteMarkers = null;
   let siteMapVisible = false;
   let currentAuthMode = 'login';
+  let currentUsdClp = 945.72; const currentHierroUsdFe62 = 98.02;
 
   const FAENAS_LIST = [
     'Planta, Mina los Colorados',
@@ -565,6 +579,7 @@
   }
 
   function abrirDetalleActivoModal(eqId) {
+    equipoIdActualModalDetalle = eqId;
     const eq = equiposDB.find(e => e.id === eqId);
     if (!eq) return;
     document.getElementById('detSiteTag').innerText = `${eq.siteId} | TAG: ${eq.tag}`;
@@ -583,6 +598,12 @@
       </div>
     `).join('') || '<div style="color:var(--text-muted);">Sin spots detallados.</div>';
     document.getElementById('modalDetalleActivo').style.display = 'flex';
+  }
+
+  function editarActivoActualDesdeDetalle() {
+    if (!equipoIdActualModalDetalle) return;
+    document.getElementById('modalDetalleActivo').style.display = 'none';
+    abrirEdicionEquipoGlobal(equipoIdActualModalDetalle);
   }
 
   function actualizarMapaSiteAutomatico(eqs, targetSite) {
@@ -774,7 +795,7 @@
     document.getElementById('labelUsuarioBtn').innerText = u.split('@')[0];
     document.getElementById('dropUserInfo').innerText = `Activo: ${u} | Faena: ${site}`;
     document.getElementById('dropLogoutBtn').style.display = 'block';
-    alert(`✅ Bienvenido ${u}. Sesión iniciada con faena asignada: ${site}.`);
+    alert(`✅ Bienvenido ${u}. Edición habilitada en faena: ${site}.`);
   }
 
   function cerrarSesionUsuario() {
@@ -794,15 +815,23 @@
       isSuperAdmin = true;
       document.body.classList.add('superadmin-active');
       goScreen(3);
-      alert("⚡ SuperAdmin activado: Acceso global multifaena.");
+      alert("⚡ SuperAdmin activado: Acceso global multifaena y reportes.");
     } else if (pass !== null) {
       alert("❌ Clave SuperAdmin incorrecta.");
     }
   }
 
   function toggleTheme() { document.body.classList.toggle('light-mode'); }
+  
+  function abrirEdicionEquipoNuevoAuth() {
+    const targetSite = faenaSeleccionadaScreen2 || faenaAsignadaOperador || 'Planta, Mina los Colorados';
+    equipoSeleccionado = { id: 'EQ_' + Date.now(), siteId: targetSite, domain: 'planta', area: siteAreaSeleccionadaScreen2 || 'Área General', componentes: [] };
+    abrirEdicionEquipoGlobalObj();
+  }
+
   function abrirEdicionGlobalNuevo() {
-    equipoSeleccionado = { id: 'EQ_' + Date.now(), siteId: faenaSeleccionadaScreen2 || 'Planta, Mina los Colorados', domain: 'planta', componentes: [] };
+    const targetSite = faenaSeleccionadaScreen2 || 'Planta, Mina los Colorados';
+    equipoSeleccionado = { id: 'EQ_' + Date.now(), siteId: targetSite, domain: 'planta', componentes: [] };
     abrirEdicionEquipoGlobalObj();
   }
   function abrirEdicionEquipoGlobal(eqId) {
@@ -827,7 +856,7 @@
     div.style.cssText = "background:var(--bg-main); padding:14px; border:1px solid var(--border-card); border-radius:8px; position:relative;";
     div.className = 'comp-item';
     div.innerHTML = `<button class="btn-danger" style="position:absolute; top:10px; right:10px; padding:3px 6px; font-size:0.65rem;" onclick="this.parentElement.remove()">Eliminar</button>
-    <div class="form-grid"><div><label>Spot</label><input type="text" class="c-nom" value="${data.nombre||''}"></div><div><label>RMS</label><input type="text" class="c-rms" value="${data.rms||''}"></div><div><label>Sev</label><select class="c-sev"><option value="Rojo" ${data.severidad==='Rojo'?'selected':''}>Rojo</option><option value="Naranja" ${data.severidad==='Naranja'?'selected':''}>Naranja</option><option value="Verde" ${data.severidad==='Verde'?'selected':''}>Verde</option></select></div></div>`;
+    <div class="form-grid"><div><label>Spot / Falla</label><input type="text" class="c-nom" value="${data.nombre||''}"></div><div><label>RMS</label><input type="text" class="c-rms" value="${data.rms||''}"></div><div><label>Sev</label><select class="c-sev"><option value="Rojo" ${data.severidad==='Rojo'?'selected':''}>Rojo</option><option value="Naranja" ${data.severidad==='Naranja'?'selected':''}>Naranja</option><option value="Verde" ${data.severidad==='Verde'?'selected':''}>Verde</option></select></div></div>`;
     cont.appendChild(div);
   }
   function cerrarEdicion() { document.getElementById('modalEdicion').style.display = 'none'; }
@@ -844,7 +873,52 @@
   function eliminarEquipo() {
     if (confirm('¿Eliminar activo?')) db.child(equipoSeleccionado.id).remove().then(() => cerrarEdicion());
   }
-  function exportarReporteGerenciaAlta() { alert('Generando reporte ejecutivo alta gerencia multifaena...'); }
+
+  // Carga masiva por faena (usuario autenticado)
+  function procesarCargaExcelFaena(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const targetSite = faenaSeleccionadaScreen2 || faenaAsignadaOperador || 'Planta, Mina los Colorados';
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const data = new Uint8Array(evt.target.result);
+      const workbook = XLSX.read(data, {type: 'array'});
+      const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+      let count = 0;
+      json.forEach(row => {
+        if(row.Tag) {
+          const id = 'EQ_EXCEL_' + Date.now() + '_' + count;
+          db.child(id).set({
+            siteId: targetSite, domain: 'planta', area: row.Area || 'General', tag: row.Tag, tipo: row.Tipo || 'Activo',
+            lat: row.Lat || '', lng: row.Lng || '', componentes: [{nombre:'Spot Masivo', severidad:'Verde'}]
+          });
+          count++;
+        }
+      });
+      alert(`✅ Carga masiva exitosa: ${count} activos en ${targetSite}.`);
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = '';
+  }
+
+  function exportarReporteGerenciaAlta() {
+    const ts = new Date().toISOString();
+    let r=0, n=0, total=equiposDB.length;
+    equiposDB.forEach(eq => { const s = calcMaxSev(eq.componentes); if(s==='Rojo')r++; if(s==='Naranja')n++; });
+    const txt = `REPORTE EJECUTIVO GLOBAL SUPERADMIN - CIO CMP\nFecha: ${ts}\nTotal Activos: ${total} | Rojos: ${r} | Naranjos: ${n}\nUSD/CLP: ${currentUsdClp} | Fe62: ${currentHierroUsdFe62}`;
+    const blob = new Blob([txt], {type:'text/plain'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Reporte_Global_${ts.split('T')[0]}.txt`; a.click();
+  }
+
+  function exportarReporteGerenciaPorFaena() {
+    const targetSite = document.getElementById('superAdminFilterSite')?.value || 'Planta, Mina los Colorados';
+    const eqs = targetSite === 'TODAS' ? equiposDB : equiposDB.filter(e => normalizarSiteId(e.siteId) === targetSite);
+    const ts = new Date().toISOString();
+    let r=0, n=0;
+    eqs.forEach(eq => { const s = calcMaxSev(eq.componentes); if(s==='Rojo')r++; if(s==='Naranja')n++; });
+    const txt = `REPORTE POR FAENA [${targetSite}]\nFecha: ${ts}\nActivos Faena: ${eqs.length} | Rojos: ${r} | Naranjos: ${n}`;
+    const blob = new Blob([txt], {type:'text/plain'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Reporte_${targetSite.replace(/[^a-zA-Z0-9]/g,'_')}.txt`; a.click();
+  }
 
   window.addEventListener('click', e => { if (!document.getElementById('userMenuWrapper')?.contains(e.target)) document.getElementById('userDropdownMenu').style.display = 'none'; });
   setTimeout(() => renderScreen1Public(), 300);
