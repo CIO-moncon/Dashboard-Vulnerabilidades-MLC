@@ -61,8 +61,6 @@
     for (let i = 1; i <= 207; i++) {
       const area = areas[i % areas.length];
       const sevRand = i % 18 === 0 ? 'Rojo' : (i % 7 === 0 ? 'Naranja' : 'Verde');
-      
-      // Simular fechas: algunos al día y otros con más de 30 días para activar la alerta
       const diasAtras = (i % 5 === 0) ? 38 : (i % 2 === 0 ? 12 : 24);
       const fechaMed = new Date(now.getTime() - diasAtras * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       const fechaHal = new Date(now.getTime() - (diasAtras - 2) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -102,7 +100,6 @@
     return clean(t1) === clean(t2);
   }
 
-  // Auditoría del contador de días desde la última fecha de medición
   function calcularDiasDesdeMedicion(fechaStr) {
     if (!fechaStr) return { dias: null, vencido: true, texto: 'Sin fecha registrada' };
     const partes = fechaStr.split('-');
@@ -234,7 +231,6 @@
         const fieldCount = state.alertasTerreno.filter((a) => matchTags(a.tag, tagValue)).length;
         const badge = fieldCount > 0 ? `<span class="badge-field-floating">💬 Terreno (${fieldCount})</span>` : '';
 
-        // Comprobación de contador > 30 días
         const aud = calcularDiasDesdeMedicion(eq.fechaMedicion);
         const badgeVencido = aud.vencido ? `<span class="badge-vencido-floating" title="Medición vencida: ${aud.texto}">⏱️ >30d</span>` : '';
 
@@ -313,7 +309,7 @@
     if (bounds.length) state.mapaSite.fitBounds(L.latLngBounds(bounds), { padding: [30, 30] });
   }
 
-  // Sincronización en tiempo real desde Firebase
+  // Recepción en tiempo real desde Firebase
   if (db) {
     db.on('value', (snap) => {
       const raw = snap.val();
@@ -493,6 +489,104 @@
       `).join('') : '<div class="label-muted" style="padding:14px; font-style:italic;">No hay reportes de ronda para este activo.</div>';
     },
 
+    // Generador de Informe Técnico Oficial para Jefatura
+    exportarReporteTerrenoPDF: (id) => {
+      const eq = state.equipos.find((e) => e.id === id);
+      if (!eq) return;
+
+      const tagValue = eq.tag || eq.Tag || eq.id || 'S/T';
+      const myReports = state.alertasTerreno
+        .filter((a) => matchTags(a.tag, tagValue))
+        .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+
+      const aud = calcularDiasDesdeMedicion(eq.fechaMedicion);
+      const sevGlobal = calcMaxSev(eq.componentes);
+
+      const win = window.open('', '_blank');
+      win.document.write(`
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+          <meta charset="UTF-8">
+          <title>Informe Técnico - ${tagValue} - CPF Ingeniería</title>
+          <style>
+            body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 30px; color: #1f2937; margin: 0; background: #fff; }
+            .header-report { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; padding-bottom: 14px; margin-bottom: 20px; }
+            .header-report h1 { margin: 0; font-size: 1.4rem; color: #1e3a8a; text-transform: uppercase; }
+            .header-report p { margin: 2px 0 0 0; font-size: 0.8rem; color: #6b7280; font-weight: bold; }
+            .logo-header { height: 42px; }
+            .badge-sev { display: inline-block; padding: 4px 10px; border-radius: 4px; font-weight: bold; color: #fff; background: ${SEV_COLOR[sevGlobal] || '#4b5563'}; text-transform: uppercase; }
+            .data-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 14px; margin-bottom: 20px; font-size: 0.85rem; }
+            .data-item strong { display: block; font-size: 0.7rem; color: #4b5563; text-transform: uppercase; }
+            .section-title { font-size: 1rem; color: #1e3a8a; border-left: 4px solid #1e3a8a; padding-left: 8px; margin: 22px 0 10px 0; text-transform: uppercase; font-weight: bold; }
+            .box-text { background: #f3f4f6; border-radius: 6px; padding: 12px; font-size: 0.88rem; line-height: 1.5; margin-bottom: 15px; }
+            .report-card { border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; margin-bottom: 14px; page-break-inside: avoid; }
+            .report-card-header { display: flex; justify-content: space-between; font-size: 0.75rem; color: #6b7280; margin-bottom: 6px; }
+            .img-report { max-width: 320px; max-height: 240px; border-radius: 4px; border: 1px solid #d1d5db; margin-top: 8px; object-fit: cover; }
+            .print-btn-bar { margin-bottom: 20px; display: flex; gap: 10px; }
+            .btn-print { background: #1e3a8a; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+            @media print { .print-btn-bar { display: none; } body { padding: 10px; } }
+          </style>
+        </head>
+        <body>
+          <div class="print-btn-bar">
+            <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
+            <button class="btn-print" style="background:#4b5563;" onclick="window.close()">Cerrar</button>
+          </div>
+
+          <div class="header-report">
+            <div>
+              <h1>INFORME DE CONDICIÓN & HALLAZGOS DE TERRENO</h1>
+              <p>CPF INGENIERÍA LTDA | COMPAÑÍA MINERA DEL PACÍFICO</p>
+            </div>
+            <div>
+              <span class="badge-sev">CONDICIÓN: ${sevGlobal}</span>
+            </div>
+          </div>
+
+          <div class="data-grid">
+            <div class="data-item"><strong>Faena Operativa</strong>${sanitize(eq.siteId)}</div>
+            <div class="data-item"><strong>Área</strong>${sanitize(eq.area)}</div>
+            <div class="data-item"><strong>Tag Equipo</strong>${sanitize(tagValue)}</div>
+            <div class="data-item"><strong>Clase</strong>${sanitize(eq.tipo || 'Activo Crítico')}</div>
+            <div class="data-item"><strong>Estatus Hallazgo</strong>${sanitize(eq.estatusHallazgo || 'Abierto')}</div>
+            <div class="data-item"><strong>Aviso / OM SAP</strong>${sanitize(eq.avisoSap || 'S/N')} / ${sanitize(eq.omSap || 'S/N')}</div>
+            <div class="data-item"><strong>Última Medición</strong>${eq.fechaMedicion || 'S/F'} (${aud.texto})</div>
+            <div class="data-item"><strong>Fecha Emisión</strong>${new Date().toLocaleString()}</div>
+            <div class="data-item"><strong>Auditoría de Ruta</strong>${aud.vencido ? '⚠️ RUTA VENCIDA (>30 Días)' : '✅ RUTA DENTRO DE CICLO'}</div>
+          </div>
+
+          <div class="section-title">1. Diagnóstico Predictivo & Estado Dinámico</div>
+          <div class="box-text">
+            <strong>Análisis Técnico:</strong><br>
+            ${sanitize(eq.analisis || 'Sin análisis técnico registrado.')}
+          </div>
+          <div class="box-text" style="background:#ecfdf5; border:1px solid #a7f3d0;">
+            <strong style="color:#065f46;">Recomendación Operativa / Mantención:</strong><br>
+            ${sanitize(eq.recomendacion || 'Sin recomendación registrada.')}
+          </div>
+
+          <div class="section-title">2. Bitácora de Inspecciones y Hallazgos en Terreno (${myReports.length})</div>
+          ${myReports.length > 0 ? myReports.map((r, i) => `
+            <div class="report-card">
+              <div class="report-card-header">
+                <span><strong>Hallazgo #${myReports.length - i}</strong> | Fecha: ${r.timestamp ? new Date(r.timestamp).toLocaleString() : 'N/D'}</span>
+                <span style="font-weight:bold; color:${SEV_COLOR[r.severidad] || '#000'};">Severidad: ${r.severidad}</span>
+              </div>
+              <div style="font-size:0.9rem; margin-top:4px;">${sanitize(r.detalle)}</div>
+              ${r.fotoBase64 ? `<div><img src="${r.fotoBase64}" class="img-report" alt="Evidencia"></div>` : ''}
+            </div>
+          `).join('') : '<div style="font-size:0.85rem; color:#6b7280; font-style:italic;">No se registran eventos tácticos de terreno para este activo.</div>'}
+
+          <div style="margin-top:40px; font-size:0.75rem; color:#6b7280; text-align:center; border-top:1px solid #e5e7eb; padding-top:10px;">
+            Documento emitido por el Centro Integrado de Operaciones (CIO) - CPF Ingeniería Ltda.
+          </div>
+        </body>
+        </html>
+      `);
+      win.document.close();
+    },
+
     abrirDetalle: (id) => {
       state.equipoIdModal = id;
       const eq = state.equipos.find((e) => e.id === id);
@@ -502,7 +596,6 @@
       document.getElementById('detSiteTag').innerText = `${eq.siteId} | TAG: ${tagValue}`;
       document.getElementById('detTitle').innerText = `${eq.tipo || 'Activo'} - ${eq.area}`;
 
-      // Auditoría de días de medición en cabecera
       const aud = calcularDiasDesdeMedicion(eq.fechaMedicion);
       const contadorBox = document.getElementById('detContadorMedicionBanner');
       if (contadorBox) {
@@ -511,7 +604,7 @@
           : `<span class="banner-contador-alerta al-dia">✅ RUTA AL DÍA: Última medición ${aud.texto} (dentro de ciclo)</span>`;
       }
 
-      // Panel descriptivo con diagnóstico, aviso y OM SAP
+      // Panel con botón de exportar reporte técnico oficial
       const diagBox = document.getElementById('detDiagnosticoBox');
       if (diagBox) {
         diagBox.innerHTML = `
@@ -528,9 +621,10 @@
               <span class="label-muted">OM SAP</span>
               <div class="code-font" style="font-weight:700; color:#34d399; margin-top:2px;">${sanitize(eq.omSap || 'Sin OM')}</div>
             </div>
-            <div>
-              <span class="label-muted">Fecha Medición / Hallazgo</span>
-              <div style="font-size:0.85rem; font-weight:700; margin-top:2px;">${eq.fechaMedicion || 'S/F'} / ${eq.fechaHallazgo || 'S/F'}</div>
+            <div style="display:flex; align-items:center;">
+              <button type="button" class="btn-base btn-primary" onclick="window.CIO.exportarReporteTerrenoPDF('${eq.id}')">
+                📄 Exportar Informe Jefatura
+              </button>
             </div>
           </div>
           <div style="margin-top:6px;">
@@ -544,7 +638,6 @@
         `;
       }
 
-      // Spots oficiales
       const list = document.getElementById('detComponentesList');
       const comps = [...(eq.componentes || [])].sort((a, b) => SEV_PESO[b.severidad || 'Plomo'] - SEV_PESO[a.severidad || 'Plomo']);
       list.innerHTML = comps.map((c) => `
@@ -557,9 +650,7 @@
         </div>
       `).join('') || '<div class="label-muted" style="padding:14px;">Sin spots oficiales registrados.</div>';
 
-      // Bitácora de hallazgos
       window.CIO.renderBitacoraTerreno(eq);
-
       document.getElementById('modalDetalleActivo').showModal();
     },
 
@@ -724,7 +815,6 @@
       a.click();
     },
 
-    // --- ASISTENTE DE ANÁLISIS PREDICTIVO CON IA GENERATIVA ---
     seleccionarPestanaAnalisis: (tab) => {
       const pnlHumano = document.getElementById('panelAnalisisHumano');
       const pnlIA = document.getElementById('panelAnalisisIA');
@@ -749,7 +839,6 @@
       const clase = document.getElementById('edTipo').value || 'Equipo Mecánico';
       const area = document.getElementById('edArea').value || 'Planta';
       
-      // Recolectar severidades y RMS ingresados
       const spots = [];
       document.querySelectorAll('.comp-item').forEach(el => {
         spots.push({
@@ -781,8 +870,6 @@
 
       document.getElementById('edAnalisisIA').value = diagnosticoGenerado;
       document.getElementById('edRecomendacionIA').value = recomendacionGenerada;
-
-      // Cambiar automáticamente a la pestaña de IA para que el analista lo revise
       window.CIO.seleccionarPestanaAnalisis('ia');
     },
 
@@ -802,9 +889,8 @@
         document.getElementById('edRecomendacionHumano').value = iaRecom;
       }
 
-      // Regresar a la vista del experto para que edite o confirme
       window.CIO.seleccionarPestanaAnalisis('humano');
-      alert("✅ Diagnóstico de la IA transferido a tu panel de experto. Puedes complementarlo o guardarlo directamente.");
+      alert("✅ Diagnóstico de la IA transferido a tu panel de experto.");
     },
 
     auditarDiasMedicionForm: () => {
@@ -878,14 +964,12 @@
       document.getElementById('edLat').value = eq.lat || '';
       document.getElementById('edLng').value = eq.lng || '';
 
-      // Nuevos campos de gestión
       document.getElementById('edEstatusHallazgo').value = eq.estatusHallazgo || 'Abierto';
       document.getElementById('edAvisoSap').value = eq.avisoSap || '';
       document.getElementById('edOmSap').value = eq.omSap || '';
       document.getElementById('edFechaMedicion').value = eq.fechaMedicion || eq.fecha || '';
       document.getElementById('edFechaHallazgo').value = eq.fechaHallazgo || '';
 
-      // Diagnóstico del experto e IA
       document.getElementById('edAnalisisHumano').value = eq.analisis || '';
       document.getElementById('edRecomendacionHumano').value = eq.recomendacion || '';
       document.getElementById('edAnalisisIA').value = eq.analisisIA || '';
