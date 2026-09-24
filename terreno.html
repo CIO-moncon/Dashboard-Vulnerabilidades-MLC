@@ -345,13 +345,12 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script>
-    // Registro del Service Worker para funcionamiento como App PWA Offline
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').then((reg) => {
-          console.log('✅ ServiceWorker registrado con éxito en el scope:', reg.scope);
+          console.log('✅ ServiceWorker registrado:', reg.scope);
         }).catch((err) => {
-          console.warn('⚠️ Error al registrar ServiceWorker:', err);
+          console.warn('⚠️ Error ServiceWorker:', err);
         });
       });
     }
@@ -377,6 +376,7 @@
     let catalogoGlobal = [];
     let compressedPhotoBase64 = null;
     const QUEUE_KEY = 'cio_offline_alertas_queue';
+    const CACHE_CATASTRO_KEY = 'cio_cached_catastro';
 
     const FAENAS_VALIDAS = [
       'Planta, Mina los Colorados',
@@ -406,35 +406,37 @@
       };
     }
 
+    // CARGA INMEDIATA SÍNCRONA DE CACHÉ OFFLINE (Para arranque sin internet)
+    function cargarDeCacheLocalInmediato() {
+      const cached = localStorage.getItem(CACHE_CATASTRO_KEY);
+      if (cached) {
+        try {
+          const list = JSON.parse(cached);
+          if (Array.isArray(list) && list.length > 0) {
+            catalogoGlobal = list.map((item, idx) => mapearActivo(item, item.id || `cached_${idx}`));
+            cargarAreasPorFaena();
+          }
+        } catch(e) {
+          console.warn("Error leyendo caché local:", e);
+        }
+      }
+    }
+
+    // Ejecución inicial obligatoria desde caché
+    cargarDeCacheLocalInmediato();
+
+    // Sincronización en segundo plano con Firebase cuando haya red
     if (db) {
       db.on('value', snap => {
         const raw = snap.val();
         if (raw) {
           catalogoGlobal = Object.keys(raw).map(k => mapearActivo(raw[k], k));
-          localStorage.setItem('cio_cached_catastro', JSON.stringify(catalogoGlobal));
-        } else {
-          cargarDeCacheLocal();
+          localStorage.setItem(CACHE_CATASTRO_KEY, JSON.stringify(catalogoGlobal));
+          cargarAreasPorFaena();
         }
-        cargarAreasPorFaena();
-      }, () => {
-        cargarDeCacheLocal();
-        cargarAreasPorFaena();
+      }, (err) => {
+        console.warn("Sin conexión con Firebase, operando con caché local:", err);
       });
-    } else {
-      cargarDeCacheLocal();
-      cargarAreasPorFaena();
-    }
-
-    function cargarDeCacheLocal() {
-      const cached = localStorage.getItem('cio_cached_catastro');
-      if (cached) {
-        try {
-          const list = JSON.parse(cached);
-          catalogoGlobal = list.map((item, idx) => mapearActivo(item, item.id || `cached_${idx}`));
-        } catch(e) {
-          catalogoGlobal = [];
-        }
-      }
     }
 
     function cargarAreasPorFaena() {
@@ -444,10 +446,15 @@
       const filtered = catalogoGlobal.filter(e => e.siteId === faenaVal);
       const areasUnicas = [...new Set(filtered.map(e => e.area))].filter(Boolean).sort();
 
+      const currentArea = areaSelect.value;
       areaSelect.innerHTML = '<option value="">-- Selecciona el Área --</option>' + 
-        areasUnicas.map(a => `<option value="${a}">${a}</option>`).join('');
+        areasUnicas.map(a => `<option value="${a}" ${a === currentArea ? 'selected' : ''}>${a}</option>`).join('');
 
-      document.getElementById('fieldTagSelect').innerHTML = '<option value="">-- Selecciona el equipo --</option>';
+      if (!currentArea) {
+        document.getElementById('fieldTagSelect').innerHTML = '<option value="">-- Selecciona el equipo --</option>';
+      } else {
+        cargarEquiposPorArea();
+      }
     }
 
     function cargarEquiposPorArea() {
@@ -559,7 +566,7 @@
         if (queue.length > 0) {
           sincronizarColaOffline();
         } else {
-          mostrarToast("🔄 ¡Cola offline sincronizada exitosamente con la Sala CIO!");
+          mostrarToast("🔄 ¡Cola offline sincronizada con la Sala CIO!");
         }
       }).catch(() => {
         queue.unshift(item);
@@ -579,12 +586,12 @@
     }
 
     window.addEventListener('online', () => {
-      mostrarToast("📶 Conexión recuperada. Sincronizando reportes pendientes...");
+      mostrarToast("📶 Conexión recuperada. Sincronizando alertas pendientes...");
       sincronizarColaOffline();
     });
 
     window.addEventListener('offline', () => {
-      mostrarToast("📴 Modo sin conexión activo. Las alertas se guardarán en cola local.");
+      mostrarToast("📴 Modo sin conexión. Las alertas se guardarán en tu teléfono.");
       actualizarContadorOfflineBadge();
     });
 
@@ -620,7 +627,7 @@
           limpiarFormularioTerreno();
         }).catch(() => {
           guardarEnColaLocal(payload);
-          mostrarToast(`📴 Error de transmisión. Alerta guardada en cola local.`);
+          mostrarToast(`📴 Guardado en cola local offline.`);
           limpiarFormularioTerreno();
         });
       } else {
@@ -640,10 +647,8 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       actualizarContadorOfflineBadge();
-      setTimeout(() => {
-        cargarAreasPorFaena();
-        sincronizarColaOffline();
-      }, 300);
+      cargarDeCacheLocalInmediato();
+      sincronizarColaOffline();
     });
   </script>
 </body>
