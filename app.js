@@ -1,6 +1,7 @@
 (() => {
   'use strict';
 
+  // Configuración Firebase Realtime Database
   var firebaseConfig = {
     apiKey: "AIzaSyBd5MEZdMmgzBs1xCyeGYeKtQx5gJIeY3w",
     authDomain: "dashboard-vulnerabilidades-mlc.firebaseapp.com",
@@ -8,7 +9,10 @@
     projectId: "dashboard-vulnerabilidades-mlc"
   };
 
+  // Webhook de Google Apps Script conectado a Google Sheets
   var GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxxSrWh52i2QlHP5KG9mI9BOdlBFgwbtD7Sx0zgE0VOyK6bRWokkFJy3raUvC8_x0IOnQ/exec";
+
+  // Clave API de Google AI Studio (almacenada localmente en el navegador para máxima seguridad)
   var GEMINI_API_KEY = localStorage.getItem("GEMINI_API_KEY") || "";
 
   var db = null;
@@ -143,8 +147,9 @@
     };
   }
 
+  // PANTALLA 1: LISTADO DE FAENAS
   function renderScreen1() {
-    var container = document.getElementById('viewScreen1Content');
+    var container = document.getElementById('viewScreen1Content') || document.getElementById('screen1Container') || document.getElementById('gridFaenas');
     if (!container) return;
 
     var stats = {};
@@ -185,12 +190,13 @@
     });
   }
 
+  // PANTALLA 2: ÁREAS Y EQUIPOS
   function renderScreen2() {
     var target = state.faenaSeleccionada || state.faenaAsignada || FAENAS[0];
-    var titleEl = document.getElementById('screen2SiteTitle');
+    var titleEl = document.getElementById('screen2SiteTitle') || document.getElementById('siteTitleNivel2');
     if (titleEl) titleEl.innerText = target;
 
-    var container = document.getElementById('viewScreen2Container');
+    var container = document.getElementById('viewScreen2Container') || document.getElementById('screen2Container') || document.getElementById('gridEquiposContainer');
     if (!container) return;
     container.style.display = state.siteMapVisible ? 'none' : '';
 
@@ -219,11 +225,6 @@
       container.className = 'grid-container';
       container.innerHTML = '';
 
-      if (sortedAreas.length === 0) {
-        container.innerHTML = '<div class="label-muted" style="padding:20px;">Sin áreas registradas. Realiza una Carga Masiva.</div>';
-        return;
-      }
-
       sortedAreas.forEach(function(a) {
         var card = document.createElement('article');
         card.className = 'card-area ' + (a.maxSev === 'Rojo' || a.maxSev === 'Naranja' ? 'anim-' + a.maxSev.toLowerCase() : '');
@@ -245,7 +246,7 @@
       eqsArea.sort(function(a, b) { return SEV_PESO[calcMaxSev(b.componentes)] - SEV_PESO[calcMaxSev(a.componentes)]; });
 
       var navHeader = document.createElement('div');
-      navHeader.style.cssText = "grid-column: 1/-1; display:flex; align-items:center; gap:10px; margin-bottom:4px; background:var(--glass-card); backdrop-filter:blur(8px); padding:8px 12px; border-radius:8px; border:1px solid var(--glass-border);";
+      navHeader.style.cssText = "grid-column: 1/-1; display:flex; align-items:center; gap:10px; margin-bottom:4px; padding:8px 12px; border-radius:8px;";
       navHeader.innerHTML = '<button class="btn-base" type="button" onclick="window.CIO.volverAreas()">⬅️ Volver a Áreas</button>' +
         '<span style="font-weight:700; color:var(--accent-color); font-size:0.85rem;">Área: ' + sanitize(state.areaSeleccionada) + '</span>';
       container.appendChild(navHeader);
@@ -265,7 +266,7 @@
         var badgeSap = saps.countAvisos > 0 ? ('<div style="font-size:0.58rem; color:#60a5fa; font-weight:700; margin-top:2px;">AV: ' + saps.countAvisos + ' | OM: ' + saps.countOms + '</div>') : '';
 
         card.innerHTML = badgeTerreno +
-          (aud.vencido ? ('<span class="badge-vencido-floating" title="Medición vencida: ' + aud.texto + '">⏱️ >30d</span>') : '') +
+          (aud.vencido ? ('<span class="badge-vencido-floating">⏱️ >30d</span>') : '') +
           '<span class="eq-type">' + sanitize(eq.tipo || eq.area) + '</span>' +
           '<div class="eq-tag code-font">' + sanitize(tagValue) + '</div>' +
           '<span class="eq-type" style="color:' + SEV_COLOR[s] + '; font-weight:bold;">' + s.toUpperCase() + '</span>' +
@@ -275,6 +276,7 @@
     }
   }
 
+  // PANTALLA 3: NIVEL 3 CON VERIFICACIÓN SEGURA DE ELEMENTOS
   function renderScreen3() {
     if (!state.equipoIdNivel3) {
       window.CIO.goScreen(2);
@@ -288,15 +290,19 @@
     }
 
     var tagValue = eq.tag || eq.Tag || eq.id || 'S/T';
-    document.getElementById('n3Breadcrumb').innerText = eq.siteId + ' | ' + eq.area + ' | TAG: ' + tagValue;
-    document.getElementById('n3Title').innerText = (eq.tipo || 'Activo') + ' - ' + eq.area;
+    
+    var bCrumb = document.getElementById('n3Breadcrumb');
+    if (bCrumb) bCrumb.innerText = (eq.siteId || '') + ' | ' + (eq.area || '') + ' | TAG: ' + tagValue;
+    
+    var titleN3 = document.getElementById('n3Title');
+    if (titleN3) titleN3.innerText = (eq.tipo || 'Activo') + ' - ' + (eq.area || '');
 
     var aud = calcularDiasDesdeMedicion(eq.fechaMedicion);
     var bannerMed = document.getElementById('n3BannerMedicion');
     if (bannerMed) {
       bannerMed.innerHTML = aud.vencido
-        ? ('<span class="banner-contador-alerta vencido">⚠️ ALERTA RUTA: Medición realizada ' + aud.texto + ' (> 30 días sin inspeccionar)</span>')
-        : ('<span class="banner-contador-alerta al-dia">✅ RUTA AL DÍA: Última medición ' + aud.texto + ' (dentro de ciclo)</span>');
+        ? ('<span class="banner-contador-alerta vencido">⚠️ RUTA VENCIDA: ' + aud.texto + ' (>30 días)</span>')
+        : ('<span class="banner-contador-alerta al-dia">✅ RUTA AL DÍA: ' + aud.texto + '</span>');
     }
 
     var sevGlobal = calcMaxSev(eq.componentes);
@@ -304,62 +310,40 @@
 
     var diagBox = document.getElementById('n3DiagnosticoBox');
     if (diagBox) {
-      var paresHtml = '';
-      if (saps.pares.length > 0) {
-        paresHtml = saps.pares.map(function(p) {
-          return '<span style="background:var(--box-sap-bg); border:1px solid var(--box-sap-border); padding:3px 8px; border-radius:5px; margin-right:6px; margin-bottom:4px; display:inline-block; font-size:0.75rem;">' +
-            '<strong>' + sanitize(p.componente) + ':</strong> <span style="color:#2563eb;">AV ' + sanitize(p.aviso) + '</span> ➔ <span style="color:#059669;">OM ' + sanitize(p.om) + '</span>' +
-          '</span>';
-        }).join('');
-      } else {
-        paresHtml = '<span style="color:var(--text-muted); font-size:0.8rem; font-style:italic;">Sin Avisos / OM SAP asociadas</span>';
-      }
+      var paresHtml = saps.pares.length > 0 ? saps.pares.map(function(p) {
+        return '<span style="background:var(--box-sap-bg); border:1px solid var(--box-sap-border); padding:3px 8px; border-radius:5px; margin-right:6px; margin-bottom:4px; display:inline-block; font-size:0.75rem;">' +
+          '<strong>' + sanitize(p.componente) + ':</strong> AV ' + sanitize(p.aviso) + ' ➔ OM ' + sanitize(p.om) + '</span>';
+      }).join('') : '<span style="color:var(--text-muted); font-size:0.8rem; font-style:italic;">Sin Avisos / OM SAP asociadas</span>';
 
       diagBox.innerHTML = '<div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; align-items:center; border-bottom:1px solid var(--glass-border); padding-bottom:10px; margin-bottom:10px;">' +
-          '<div>' +
-            '<span class="label-muted">Condición Crítica Heredada</span>' +
-            '<div style="font-weight:900; font-size:1.15rem; color:' + SEV_COLOR[sevGlobal] + ';">' + sevGlobal.toUpperCase() + '</div>' +
-          '</div>' +
-          '<div><span class="label-muted">Estatus Hallazgo</span><div style="font-weight:700; margin-top:2px;">' + sanitize(eq.estatusHallazgo || 'Abierto') + '</div></div>' +
-          '<div><span class="label-muted">Última Medición</span><div style="font-weight:700; margin-top:2px;">' + (eq.fechaMedicion || 'S/F') + '</div></div>' +
+          '<div><span class="label-muted">Condición Crítica</span><div style="font-weight:900; font-size:1.15rem; color:' + SEV_COLOR[sevGlobal] + ';">' + sevGlobal.toUpperCase() + '</div></div>' +
+          '<div><span class="label-muted">Estatus</span><div style="font-weight:700;">' + sanitize(eq.estatusHallazgo || 'Abierto') + '</div></div>' +
+          '<div><span class="label-muted">Última Medición</span><div style="font-weight:700;">' + (eq.fechaMedicion || 'S/F') + '</div></div>' +
         '</div>' +
-        '<div>' +
-          '<span class="label-muted">Avisos & Órdenes OM SAP Vinculadas:</span>' +
-          '<div style="margin-top:6px;">' + paresHtml + '</div>' +
-        '</div>';
+        '<div><span class="label-muted">Órdenes SAP:</span><div style="margin-top:6px;">' + paresHtml + '</div></div>';
     }
 
-    var grid = document.getElementById('n3GridCards');
+    var grid = document.getElementById('n3GridCards') || document.getElementById('gridComponentesNivel3');
     if (!grid) return;
     grid.innerHTML = '';
 
-    var compsIndexed = (eq.componentes || []).map(function(c, originalIndex) {
-      return { comp: c, originalIndex: originalIndex };
-    });
-
-    compsIndexed.sort(function(a, b) {
-      return SEV_PESO[b.comp.severidad || 'Plomo'] - SEV_PESO[a.comp.severidad || 'Plomo'];
-    });
+    var compsIndexed = (eq.componentes || []).map(function(c, idx) { return { comp: c, originalIndex: idx }; });
+    compsIndexed.sort(function(a, b) { return SEV_PESO[b.comp.severidad || 'Plomo'] - SEV_PESO[a.comp.severidad || 'Plomo']; });
 
     compsIndexed.forEach(function(item) {
       var c = item.comp;
-      var realIndex = item.originalIndex;
       var s = c.severidad || 'Verde';
-
       var card = document.createElement('article');
       card.className = 'card-equipo sev-' + s.toLowerCase() + ' ' + (s === 'Rojo' || s === 'Naranja' ? 'anim-' + s.toLowerCase() : '');
-      card.onclick = function() { window.CIO.abrirDetalleComponenteModal(realIndex); };
+      card.onclick = function() { window.CIO.abrirDetalleComponenteModal(item.originalIndex); };
 
       var cantEspectros = (c.espectros && c.espectros.length > 0) ? c.espectros.length : 0;
       var badgeFotos = cantEspectros > 0 ? ('<span class="badge-field-floating">📈 ' + cantEspectros + ' Espectro(s)</span>') : '';
-      var sapsCount = (c.paresSap && c.paresSap.length > 0) ? c.paresSap.length : 0;
-      var badgeSap = sapsCount > 0 ? ('<div style="font-size:0.58rem; color:#2563eb; font-weight:700; margin-top:2px;">SAP: ' + sapsCount + ' Par(es)</div>') : '';
 
       card.innerHTML = badgeFotos +
         '<span class="eq-type" style="color:#2563eb; font-weight:bold;">' + sanitize(c.nombre || 'Componente') + '</span>' +
         '<div class="eq-tag code-font" style="font-size:0.88rem;">' + sanitize(c.punto || 'Punto General') + '</div>' +
-        '<span class="eq-type" style="color:' + SEV_COLOR[s] + '; font-weight:bold;">' + s.toUpperCase() + ' (' + (c.rms || '0.0') + ' mm/s)</span>' +
-        badgeSap;
+        '<span class="eq-type" style="color:' + SEV_COLOR[s] + '; font-weight:bold;">' + s.toUpperCase() + ' (' + (c.rms || '0.0') + ' mm/s)</span>';
 
       grid.appendChild(card);
     });
@@ -380,13 +364,14 @@
     grid.appendChild(cardTerreno);
   }
 
+  // PANTALLA 4: SUPERADMIN
   function renderScreen4() {
-    var filterEl = document.getElementById('superAdminFilterSite');
+    var filterEl = document.getElementById('superAdminFilterSite') || document.getElementById('filtroSuperAdminFaena');
     var filter = filterEl ? filterEl.value : 'TODAS';
     var eqs = filter === 'TODAS' ? state.equipos : state.equipos.filter(function(e) { return normalizarFaena(e.siteId) === filter; });
     eqs.sort(function(a, b) { return SEV_PESO[calcMaxSev(b.componentes)] - SEV_PESO[calcMaxSev(a.componentes)]; });
 
-    var container = document.getElementById('viewScreen4Global');
+    var container = document.getElementById('viewScreen4Global') || document.getElementById('gridSuperAdminGlobal') || document.getElementById('superAdminContent');
     if (!container) return;
 
     container.innerHTML = '';
@@ -405,72 +390,24 @@
     });
   }
 
-  function actualizarMapaSite(eqs) {
-    if (typeof L === 'undefined') return;
-    var mapBox = document.getElementById('view-site-map');
-    if (!mapBox) return;
-
-    try {
-      if (!state.mapaSite) {
-        state.mapaSite = L.map('view-site-map').setView([-28.2876, -70.8130], 13);
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(state.mapaSite);
-        state.capaSite = L.layerGroup().addTo(state.mapaSite);
-      } else {
-        state.mapaSite.invalidateSize();
-      }
-
-      state.capaSite.clearLayers();
-      var bounds = [];
-
-      eqs.forEach(function(eq) {
-        var lat = parseFloat(eq.lat);
-        var lng = parseFloat(eq.lng);
-        if (!isNaN(lat) && !isNaN(lng) && lat !== 0) {
-          var s = calcMaxSev(eq.componentes);
-          var col = SEV_COLOR[s] || '#6b7280';
-          var pulse = s === 'Rojo' ? 'map-pin-pulse' : '';
-          var tagValue = eq.tag || eq.Tag || eq.id || 'S/T';
-          var icon = L.divIcon({
-            className: 'custom-pin',
-            html: '<div class="' + pulse + '" style="background:' + col + '; width:20px; height:20px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 10px ' + col + ';"></div>',
-            iconSize: [20, 20],
-            iconAnchor: [10, 10]
-          });
-          L.marker([lat, lng], { icon: icon }).bindPopup('<strong>' + sanitize(tagValue) + '</strong><br>' + sanitize(eq.area) + '<br><span style="color:' + col + ';font-weight:bold;">' + s + '</span>').addTo(state.capaSite);
-          bounds.push([lat, lng]);
-        }
-      });
-
-      if (bounds.length) state.mapaSite.fitBounds(L.latLngBounds(bounds), { padding: [30, 30] });
-    } catch (e) {
-      console.warn("Error mapa:", e);
-    }
-  }
-
+  // Sincronización en tiempo real desde Firebase
   if (db) {
     db.on('value', function(snap) {
       var raw = snap.val();
       if (raw && Object.keys(raw).length > 0) {
         state.equipos = Object.keys(raw).map(function(k) {
           var item = raw[k] || {};
-          var detectedTag = item.tag || item.Tag || item.TAG || item.equipo || item.Equipo || item.nombre || k;
-          var detectedArea = item.area || item.Area || item.AREA || 'Sin Área';
-          var detectedSite = item.siteId || item.site || item.faena || item.Faena || 'Planta, Mina los Colorados';
-
           return {
             id: k,
-            siteId: normalizarFaena(detectedSite),
+            siteId: normalizarFaena(item.siteId || item.site || item.faena || 'Planta, Mina los Colorados'),
             domain: item.domain || 'planta',
-            area: detectedArea,
-            tag: detectedTag,
-            tipo: item.tipo || item.Tipo || item['Tipo equipo'] || 'Activo',
+            area: item.area || 'Sin Área',
+            tag: item.tag || item.Tag || item.TAG || item.equipo || k,
+            tipo: item.tipo || 'Activo',
             lat: item.lat || '',
             lng: item.lng || '',
-            componentes: item.componentes || [
-              { nombre: 'Motor M1', punto: 'Lado Libre (NDE)', severidad: 'Verde', rms: '2.0', paresSap: [], analisis: '', recomendacion: '', espectros: [] },
-              { nombre: 'Reductor G1', punto: 'Entrada Rápida', severidad: 'Verde', rms: '2.0', paresSap: [], analisis: '', recomendacion: '', espectros: [] }
-            ],
-            fechaMedicion: item.fechaMedicion || item.fecha || '',
+            componentes: item.componentes || [],
+            fechaMedicion: item.fechaMedicion || '',
             fechaHallazgo: item.fechaHallazgo || '',
             estatusHallazgo: item.estatusHallazgo || 'Abierto'
           };
@@ -506,22 +443,26 @@
   window.CIO = {
     goScreen: function(num) {
       state.currentScreen = num;
-      document.querySelectorAll('.screen-view').forEach(function(el) { el.classList.remove('active'); });
-      var sc = document.getElementById('screen-' + num);
-      if (sc) sc.classList.add('active');
-      var titles = { 1: 'Vista Pública (Global - DEV)', 2: 'Faena: ' + (state.faenaSeleccionada || 'Operativa (DEV)'), 3: 'Nivel 3: Tren Motriz & Puntos de Inspección', 4: 'Consola SuperAdmin (DEV)' };
-      var headerTitle = document.getElementById('headerScreenTitle');
+      document.querySelectorAll('.screen-view, [id^="screen-"], [id^="view-screen-"]').forEach(function(el) { 
+        el.classList.remove('active');
+        el.style.display = 'none';
+      });
+      
+      var sc = document.getElementById('screen-' + num) || document.getElementById('view-screen-' + num);
+      if (sc) {
+        sc.classList.add('active');
+        sc.style.display = 'block';
+      }
+
+      var headerTitle = document.getElementById('headerScreenTitle') || document.getElementById('headerTitlePrincipal');
+      var titles = { 1: 'Vista Pública (Global - DEV)', 2: 'Faena: ' + (state.faenaSeleccionada || 'Operativa'), 3: 'Nivel 3: Tren Motriz & Puntos de Inspección', 4: 'Consola SuperAdmin (DEV)' };
       if (headerTitle) headerTitle.innerText = titles[num] || 'CIO';
-      if (num !== 2) state.siteMapVisible = false;
       refresh();
     },
 
     seleccionarFaena: function(f) {
       state.faenaSeleccionada = f;
       state.areaSeleccionada = null;
-      state.siteMapVisible = false;
-      var b = document.getElementById('badgeFaenaAsignada');
-      if (b) b.innerText = f;
       window.CIO.goScreen(2);
     },
 
@@ -536,10 +477,6 @@
     },
 
     stepBackScreen2: function() {
-      if (state.siteMapVisible) {
-        window.CIO.toggleSiteMapTab();
-        return;
-      }
       if (state.areaSeleccionada) {
         window.CIO.volverAreas();
         return;
@@ -556,29 +493,77 @@
       window.CIO.goScreen(2);
     },
 
+    toggleTheme: function() {
+      document.body.classList.toggle('light-mode');
+    },
+
+    solicitarPermisoSuperAdmin: function() {
+      var p = prompt("🔑 Clave SuperAdmin (DEV):");
+      if (p === "Moncon2026") {
+        state.isSuperAdmin = true;
+        window.CIO.goScreen(4);
+      } else if (p !== null) {
+        alert("❌ Clave incorrecta.");
+      }
+    },
+
+    salirSuperAdmin: function() {
+      state.isSuperAdmin = false;
+      window.CIO.goScreen(1);
+    },
+
+    renderScreen4Global: function() {
+      renderScreen4();
+    },
+
+    exportarReporteGerenciaAlta: function() {
+      var txt = 'REPORTE GERENCIA GENERAL CIO - CMP\nTotal Activos: ' + state.equipos.length + '\nFecha: ' + new Date().toISOString();
+      var blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'Reporte_Gerencia_CIO_' + Date.now() + '.txt';
+      a.click();
+    },
+
+    exportarReporteGerenciaPorFaena: function() {
+      var filterEl = document.getElementById('superAdminFilterSite') || document.getElementById('filtroSuperAdminFaena');
+      var target = filterEl ? filterEl.value : (state.faenaSeleccionada || FAENAS[0]);
+      var count = state.equipos.filter(function(e) { return normalizarFaena(e.siteId) === target; }).length;
+      var txt = 'REPORTE FAENA [' + target + ']\nTotal Activos: ' + count + '\nFecha: ' + new Date().toISOString();
+      var blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'Reporte_' + target.replace(/[^a-zA-Z0-9]/g, '_') + '.txt';
+      a.click();
+    },
+
+    abrirEdicionGlobalNuevo: function() {
+      if (!state.usuarioActivo) {
+        alert("🔒 Inicia sesión para registrar nuevos activos.");
+        return;
+      }
+      window.CIO.abrirEdicionEquipoNuevoAuth();
+    },
+
+    toggleMapModal: function() {
+      window.CIO.toggleSiteMapTab();
+    },
+
     toggleSiteMapTab: function() {
       state.siteMapVisible = !state.siteMapVisible;
       var mapBox = document.getElementById('view-site-map');
-      var container = document.getElementById('viewScreen2Container');
+      var container = document.getElementById('viewScreen2Container') || document.getElementById('gridEquiposContainer');
       var lbl = document.getElementById('labelToggleSiteMap');
-      var target = state.faenaSeleccionada || FAENAS[0];
 
       if (state.siteMapVisible) {
         if (mapBox) mapBox.style.display = 'block';
         if (container) container.style.display = 'none';
         if (lbl) lbl.innerText = 'Ver Tarjetas';
-        setTimeout(function() {
-          actualizarMapaSite(state.equipos.filter(function(e) { return normalizarFaena(e.siteId) === target; }));
-        }, 150);
       } else {
         if (mapBox) mapBox.style.display = 'none';
         if (container) container.style.display = '';
         if (lbl) lbl.innerText = 'Ver Mapa de Faena';
       }
-    },
-
-    toggleTheme: function() {
-      document.body.classList.toggle('light-mode');
     },
 
     handleUserBtnClick: function() {
@@ -595,30 +580,10 @@
     setAuthMode: function(mode) {
       state.authMode = mode;
       var isReg = (mode === 'register');
-      
       var boxName = document.getElementById('boxFullName');
       var boxSite = document.getElementById('boxFaenaSite');
-      var tabLogin = document.getElementById('tabBtnLogin');
-      var tabRegister = document.getElementById('tabBtnRegister');
-      var title = document.getElementById('authModalHeaderTitle');
-      var desc = document.getElementById('authModalHeaderDesc');
-      var btn = document.getElementById('authSubmitActionBtn');
-
       if (boxName) boxName.style.setProperty('display', isReg ? 'flex' : 'none', 'important');
       if (boxSite) boxSite.style.setProperty('display', isReg ? 'flex' : 'none', 'important');
-
-      if (tabLogin) tabLogin.classList.toggle('is-active', !isReg);
-      if (tabRegister) tabRegister.classList.toggle('is-active', isReg);
-
-      if (isReg) {
-        if (title) title.innerText = 'Crear Cuenta de Operador (DEV)';
-        if (desc) desc.innerText = 'Regístrate y selecciona tu faena base para habilitar la edición de condición.';
-        if (btn) btn.innerText = 'Registrarse y Entrar';
-      } else {
-        if (title) title.innerText = 'Acceso Operador CIO (DEV)';
-        if (desc) desc.innerText = 'Ingresa tus credenciales autorizadas por CPF para gestionar condición de activos.';
-        if (btn) btn.innerText = 'Ingresar al Sistema';
-      }
     },
 
     handleAuthSubmission: function() {
@@ -652,9 +617,8 @@
             faenaAsignada: selectedSite,
             creadoEn: new Date().toISOString()
           }).then(function() {
-            alert('✅ Cuenta DEV registrada: ' + selectedSite);
             loginLocal(fullname, selectedSite);
-          }).catch(function(err) { alert("Error: " + err.message); });
+          });
         } else {
           loginLocal(fullname, selectedSite);
         }
@@ -663,11 +627,7 @@
           dbUsers.child(lookupId).once('value', function(snap) {
             var uData = snap.val();
             if (uData && uData.password === p) {
-              var nombreFinal = uData.nombreCompleto || uData.usuario || u.split('@')[0];
-              var faenaLigada = uData.faenaAsignada || 'Planta, Mina los Colorados';
-              loginLocal(nombreFinal, faenaLigada);
-            } else if (uData && uData.password !== p) {
-              alert("❌ Contraseña incorrecta.");
+              loginLocal(uData.nombreCompleto || uData.usuario, uData.faenaAsignada || 'Planta, Mina los Colorados');
             } else {
               loginLocal(u.split('@')[0], 'Planta, Mina los Colorados');
             }
@@ -684,14 +644,14 @@
         var lbl = document.getElementById('labelUsuarioBtn');
         if (lbl) lbl.innerText = nombre.split(' ')[0];
         var dropInfo = document.getElementById('dropUserInfo');
-        if (dropInfo) dropInfo.innerText = 'Activo (DEV): ' + nombre + ' | Faena: ' + faena;
+        if (dropInfo) dropInfo.innerText = 'Activo: ' + nombre + ' | Faena: ' + faena;
         var modal = document.getElementById('modalAuth');
         if (modal) modal.close();
-        alert('✅ Bienvenido ' + nombre + ' al Entorno DEV.');
+        alert('✅ Bienvenido ' + nombre);
       }
     },
 
-    cerrarSesionUsuario: () => {
+    cerrarSesionUsuario: function() {
       state.usuarioActivo = null;
       state.faenaAsignada = null;
       document.body.classList.remove('user-authenticated');
@@ -704,37 +664,7 @@
       window.CIO.goScreen(1);
     },
 
-    solicitarPermisoSuperAdmin: () => {
-      var p = prompt("🔑 Clave SuperAdmin (DEV):");
-      if (p === "Moncon2026") {
-        state.isSuperAdmin = true;
-        window.CIO.goScreen(4);
-      } else if (p !== null) {
-        alert("❌ Clave incorrecta.");
-      }
-    },
-
-    renderScreen4Global: () => {
-      renderScreen4();
-    },
-
-    auditarDiasMedicionForm: () => {
-      var medEl = document.getElementById('edFechaMedicion');
-      var val = medEl ? medEl.value : '';
-      var box = document.getElementById('edFeedbackContadorDias');
-      if (!box) return;
-
-      var aud = calcularDiasDesdeMedicion(val);
-      if (!val) {
-        box.innerHTML = '';
-        return;
-      }
-
-      box.innerHTML = aud.vencido
-        ? ('<span class="banner-contador-alerta vencido" style="font-size:0.7rem; padding:4px 8px;">⚠️ RUTA VENCIDA: ' + aud.dias + ' días sin medir</span>')
-        : ('<span class="banner-contador-alerta al-dia" style="font-size:0.7rem; padding:4px 8px;">✅ Medición vigente: ' + aud.texto + '</span>');
-    },
-
+    // Sincronización con Google Sheets Webhook
     sincronizarConGoogleSheets: function(payload) {
       if (!GOOGLE_SHEETS_WEBHOOK_URL || GOOGLE_SHEETS_WEBHOOK_URL.indexOf("http") !== 0) return;
 
@@ -745,7 +675,7 @@
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload)
       }).then(function() {
-        console.log("☁️ Sincronización transmitida a Google Sheets:", payload.tag, payload.componente);
+        console.log("☁️ Transmitido a Google Sheets:", payload.tag, payload.componente);
       }).catch(function(err) {
         console.warn("Aviso al sincronizar con Sheets:", err);
       });
@@ -760,61 +690,71 @@
       var s = c.severidad || 'Verde';
       var col = SEV_COLOR[s] || '#22c55e';
 
-      document.getElementById('detCompTagHeader').innerText = (eq.tag || 'EQUIPO') + ' | TREN MOTRIZ';
-      document.getElementById('detCompTitle').innerText = (c.nombre || 'Componente') + ' - ' + (c.punto || 'Punto');
+      var hTag = document.getElementById('detCompTagHeader');
+      if (hTag) hTag.innerText = (eq.tag || 'EQUIPO') + ' | TREN MOTRIZ';
+
+      var hTitle = document.getElementById('detCompTitle');
+      if (hTitle) hTitle.innerText = (c.nombre || 'Componente') + ' - ' + (c.punto || 'Punto');
       
       var badgeSev = document.getElementById('detCompBadgeSev');
-      badgeSev.innerText = s.toUpperCase() + ' (' + (c.rms || '0.0') + ' mm/s)';
-      badgeSev.style.color = col;
-      badgeSev.style.borderColor = col;
-      badgeSev.style.background = 'rgba(0,0,0,0.06)';
+      if (badgeSev) {
+        badgeSev.innerText = s.toUpperCase() + ' (' + (c.rms || '0.0') + ' mm/s)';
+        badgeSev.style.color = col;
+        badgeSev.style.borderColor = col;
+      }
 
       var sapBox = document.getElementById('detCompParesSapBox');
-      if (c.paresSap && c.paresSap.length > 0) {
-        sapBox.innerHTML = '<span class="label-muted" style="color:#1d4ed8; margin-bottom:4px; display:block;">Órdenes SAP Asignadas a este Punto:</span>' +
-          c.paresSap.map(function(p) {
-            return '<span style="display:inline-block; margin-right:14px; margin-top:4px;"><strong>Aviso:</strong> <span class="code-font" style="color:#1d4ed8;">' + sanitize(p.aviso || 'S/A') + '</span> ➔ <strong>OM:</strong> <span class="code-font" style="color:#059669;">' + sanitize(p.om || 'S/OM') + '</span></span>';
-          }).join('');
-      } else {
-        sapBox.innerHTML = '<span style="color:var(--text-muted); font-size:0.8rem; font-style:italic;">No hay Avisos / Órdenes SAP vinculadas a este punto específico.</span>';
+      if (sapBox) {
+        if (c.paresSap && c.paresSap.length > 0) {
+          sapBox.innerHTML = '<span class="label-muted" style="color:#1d4ed8; margin-bottom:4px; display:block;">Órdenes SAP Asignadas:</span>' +
+            c.paresSap.map(function(p) {
+              return '<span style="display:inline-block; margin-right:14px; margin-top:4px;"><strong>AV:</strong> ' + sanitize(p.aviso || 'S/A') + ' ➔ <strong>OM:</strong> ' + sanitize(p.om || 'S/OM') + '</span>';
+            }).join('');
+        } else {
+          sapBox.innerHTML = '<span style="color:var(--text-muted); font-size:0.8rem; font-style:italic;">Sin Avisos / Órdenes SAP vinculadas</span>';
+        }
       }
 
-      document.getElementById('detCompAnalisisTxt').innerText = limpiarPrefijosIA(c.analisis) || 'Sin análisis de vibraciones registrado.';
-      document.getElementById('detCompRecomTxt').innerText = limpiarPrefijosIA(c.recomendacion) || 'Mantener monitoreo de vibraciones rutinario.';
+      var txtAn = document.getElementById('detCompAnalisisTxt');
+      if (txtAn) txtAn.innerText = limpiarPrefijosIA(c.analisis) || 'Sin análisis de vibraciones registrado.';
+
+      var txtRec = document.getElementById('detCompRecomTxt');
+      if (txtRec) txtRec.innerText = limpiarPrefijosIA(c.recomendacion) || 'Mantener monitoreo rutinario.';
 
       var galeria = document.getElementById('detCompGaleriaFotos');
-      if (c.espectros && c.espectros.length > 0) {
-        galeria.innerHTML = c.espectros.map(function(src) {
-          return '<div class="item-espectro-preview">' +
-              '<img src="' + src + '" alt="Espectro FFT" onclick="window.CIO.abrirFotoEnNuevaPestana(\'' + src + '\')" title="Clic para ampliar" />' +
-            '</div>';
-        }).join('');
-      } else {
-        galeria.innerHTML = '<div style="grid-column: 1/-1; font-size:0.82rem; color:var(--text-muted); font-style:italic; padding:10px 0;">No se han adjuntado espectros FFT o fotos a este punto.</div>';
+      if (galeria) {
+        if (c.espectros && c.espectros.length > 0) {
+          galeria.innerHTML = c.espectros.map(function(src) {
+            return '<div class="item-espectro-preview"><img src="' + src + '" alt="Espectro FFT" onclick="window.CIO.abrirFotoEnNuevaPestana(\'' + src + '\')" style="max-height:80px; border-radius:4px; cursor:pointer;" /></div>';
+          }).join('');
+        } else {
+          galeria.innerHTML = '<div style="font-size:0.8rem; color:var(--text-muted); font-style:italic;">No hay espectros cargados.</div>';
+        }
       }
 
-      // Control estricto de visibilidad del botón de edición dentro del modal de detalle
       var btnEditDetalle = document.getElementById('btnEditarDesdeDetalle');
       if (btnEditDetalle) {
         btnEditDetalle.style.display = state.usuarioActivo ? 'inline-block' : 'none';
       }
 
-      document.getElementById('modalDetalleComponente').showModal();
+      var mDet = document.getElementById('modalDetalleComponente');
+      if (mDet) mDet.showModal();
     },
 
     editarComponenteDesdeDetalleModal: function() {
       if (!state.usuarioActivo) {
-        alert("🔒 Acción restringida: Debes iniciar sesión para editar este componente.");
+        alert("🔒 Debes iniciar sesión para editar.");
         return;
       }
       var idx = state.componenteIndexDetalle;
-      document.getElementById('modalDetalleComponente').close();
+      var mDet = document.getElementById('modalDetalleComponente');
+      if (mDet) mDet.close();
       window.CIO.abrirEditorComponenteIndividual(idx);
     },
 
     abrirEditorComponenteIndividual: function(idx) {
       if (!state.usuarioActivo) {
-        alert("🔒 Acción restringida: Solo usuarios autenticados pueden modificar componentes.");
+        alert("🔒 Acción restringida: Solo usuarios registrados pueden editar componentes.");
         return;
       }
 
@@ -828,34 +768,45 @@
 
       state.tempEspectrosEdicion = (c.espectros || []).slice();
 
-      document.getElementById('edCompIndex').value = idx;
-      document.getElementById('edCompModalTitle').innerText = 'Editar: ' + (c.nombre || 'Componente');
-      document.getElementById('indCompNombre').value = c.nombre || '';
-      document.getElementById('indCompPunto').value = c.punto || '';
-      document.getElementById('indCompRms').value = c.rms || '2.0';
-      document.getElementById('indCompSev').value = c.severidad || 'Verde';
-      document.getElementById('indCompAnalisis').value = limpiarPrefijosIA(c.analisis);
-      document.getElementById('indCompRecom').value = limpiarPrefijosIA(c.recomendacion);
-      document.getElementById('indSugAnalisis').value = '';
-      document.getElementById('indSugRecom').value = '';
+      var edIdx = document.getElementById('edCompIndex');
+      if (edIdx) edIdx.value = idx;
+      var edNom = document.getElementById('indCompNombre');
+      if (edNom) edNom.value = c.nombre || '';
+      var edPto = document.getElementById('indCompPunto');
+      if (edPto) edPto.value = c.punto || '';
+      var edRms = document.getElementById('indCompRms');
+      if (edRms) edRms.value = c.rms || '2.0';
+      var edSev = document.getElementById('indCompSev');
+      if (edSev) edSev.value = c.severidad || 'Verde';
+
+      var edAn = document.getElementById('indCompAnalisis');
+      if (edAn) edAn.value = limpiarPrefijosIA(c.analisis);
+      var edRec = document.getElementById('indCompRecom');
+      if (edRec) edRec.value = limpiarPrefijosIA(c.recomendacion);
+
+      var sugAn = document.getElementById('indSugAnalisis');
+      if (sugAn) sugAn.value = '';
+      var sugRec = document.getElementById('indSugRecom');
+      if (sugRec) sugRec.value = '';
 
       var paresBox = document.getElementById('indParesSapContainer');
-      paresBox.innerHTML = '';
-      if (c.paresSap && c.paresSap.length > 0) {
-        c.paresSap.forEach(function(p) {
-          window.CIO.insertarFilaParSapEnContenedor(paresBox, p.aviso, p.om);
-        });
-      } else {
-        window.CIO.insertarFilaParSapEnContenedor(paresBox, '', '');
+      if (paresBox) {
+        paresBox.innerHTML = '';
+        if (c.paresSap && c.paresSap.length > 0) {
+          c.paresSap.forEach(function(p) { window.CIO.insertarFilaParSapEnContenedor(paresBox, p.aviso, p.om); });
+        } else {
+          window.CIO.insertarFilaParSapEnContenedor(paresBox, '', '');
+        }
       }
 
       window.CIO.renderMiniaturasEspectrosEdicion();
-      document.getElementById('modalEditarComponenteIndividual').showModal();
+      var mEdit = document.getElementById('modalEditarComponenteIndividual');
+      if (mEdit) mEdit.showModal();
     },
 
     agregarNuevoComponenteDirecto: function() {
       if (!state.usuarioActivo) {
-        alert("🔒 Acción restringida: Debes iniciar sesión para agregar componentes.");
+        alert("🔒 Acción restringida: Debes iniciar sesión.");
         return;
       }
       var eq = state.equipos.find(function(e) { return e.id === state.equipoIdNivel3; });
@@ -879,20 +830,19 @@
 
     agregarFilaParSapIndividual: function() {
       var box = document.getElementById('indParesSapContainer');
-      window.CIO.insertarFilaParSapEnContenedor(box, '', '');
+      if (box) window.CIO.insertarFilaParSapEnContenedor(box, '', '');
     },
 
     insertarFilaParSapEnContenedor: function(container, avisoVal, omVal) {
       var row = document.createElement('div');
       row.style.cssText = "display:grid; grid-template-columns: 1fr 1fr auto; gap:10px; align-items:center; margin-bottom:6px;";
       row.className = 'fila-par-sap';
-      row.innerHTML = '<input type="text" class="p-aviso code-font" placeholder="Aviso SAP (Ej: 10054321)" value="' + sanitize(avisoVal || '') + '" style="font-size:0.82rem; padding:6px 10px;">' +
-        '<input type="text" class="p-om code-font" placeholder="OM SAP (Ej: 40012984)" value="' + sanitize(omVal || '') + '" style="font-size:0.82rem; padding:6px 10px;">' +
+      row.innerHTML = '<input type="text" class="p-aviso code-font" placeholder="Aviso SAP" value="' + sanitize(avisoVal || '') + '" style="font-size:0.82rem; padding:6px 10px;">' +
+        '<input type="text" class="p-om code-font" placeholder="OM SAP" value="' + sanitize(omVal || '') + '" style="font-size:0.82rem; padding:6px 10px;">' +
         '<button type="button" class="btn-base btn-danger" style="padding:4px 8px; font-size:0.65rem;" onclick="this.parentElement.remove()">&times;</button>';
       container.appendChild(row);
     },
 
-    // PROCESAMIENTO Y COMPRESIÓN DE ESPECTROS FFT
     procesarSubidaEspectros: function(event) {
       var files = Array.from(event.target.files);
       if (!files || files.length === 0) return;
@@ -906,7 +856,7 @@
         reader.onload = function(e) {
           var img = new Image();
           img.onload = function() {
-            var MAX_WIDTH = 900;
+            var MAX_WIDTH = 850;
             var width = img.width;
             var height = img.height;
             if (width > MAX_WIDTH) {
@@ -917,7 +867,7 @@
             canvas.height = height;
             ctx.drawImage(img, 0, 0, width, height);
 
-            var base64 = canvas.toDataURL('image/jpeg', 0.70);
+            var base64 = canvas.toDataURL('image/jpeg', 0.65);
             state.tempEspectrosEdicion.push(base64);
             procesados++;
 
@@ -938,14 +888,14 @@
       if (!cont) return;
 
       if (state.tempEspectrosEdicion.length === 0) {
-        cont.innerHTML = '<div style="grid-column: 1/-1; font-size:0.75rem; color:var(--text-muted); font-style:italic;">No hay espectros o fotos cargadas para este punto.</div>';
+        cont.innerHTML = '<div style="font-size:0.75rem; color:var(--text-muted); font-style:italic;">No hay espectros o fotos cargadas para este punto.</div>';
         return;
       }
 
       cont.innerHTML = state.tempEspectrosEdicion.map(function(src, i) {
         return '<div class="item-espectro-preview" style="position:relative; display:inline-block; margin-right:8px; margin-bottom:8px;">' +
             '<img src="' + src + '" alt="Espectro" style="width:90px; height:60px; object-fit:cover; border-radius:4px; border:1px solid #ccc; cursor:pointer;" onclick="window.CIO.abrirFotoEnNuevaPestana(\'' + src + '\')" />' +
-            '<button type="button" class="btn-borrar-espectro" style="position:absolute; top:-4px; right:-4px; background:#ef4444; color:#fff; border:none; border-radius:50%; width:18px; height:18px; cursor:pointer; font-size:11px; line-height:1;" onclick="window.CIO.eliminarFotoEspectroEdicion(' + i + ')">&times;</button>' +
+            '<button type="button" class="btn-borrar-espectro" style="position:absolute; top:-4px; right:-4px; background:#ef4444; color:#fff; border:none; border-radius:50%; width:18px; height:18px; cursor:pointer; font-size:11px;" onclick="window.CIO.eliminarFotoEspectroEdicion(' + i + ')">&times;</button>' +
           '</div>';
       }).join('');
     },
@@ -955,12 +905,12 @@
       window.CIO.renderMiniaturasEspectrosEdicion();
     },
 
-    // EVALUACIÓN TÉCNICA LIMPIA SIN PREFIJOS
+    // ASISTENTE DE IA GEMINI (DIAGNÓSTICO TÉCNICO DIRECTO SIN PREFIJOS)
     generarDictamenTecnicoIso: async function() {
-      var nom = document.getElementById('indCompNombre').value.trim() || 'Componente';
-      var punto = document.getElementById('indCompPunto').value.trim() || 'Punto de medición';
-      var rms = parseFloat(document.getElementById('indCompRms').value) || 0;
-      var textoAnalista = document.getElementById('indCompAnalisis').value.trim();
+      var nom = document.getElementById('indCompNombre')?.value.trim() || 'Componente';
+      var punto = document.getElementById('indCompPunto')?.value.trim() || 'Punto de medición';
+      var rms = parseFloat(document.getElementById('indCompRms')?.value) || 0;
+      var textoAnalista = document.getElementById('indCompAnalisis')?.value.trim();
       var txtSugDiag = document.getElementById('indSugAnalisis');
       var txtSugRecom = document.getElementById('indSugRecom');
 
@@ -979,8 +929,8 @@
           diag = 'Condición Admisible y Satisfactoria según ISO 20816-3 (Zona A/B) en ' + nom + ' (' + punto + ') con ' + rms.toFixed(1) + ' mm/s RMS. Operación continua sin restricciones.';
           recom = 'Mantener monitoreo mensual de rutina estándar (30 días).';
         }
-        txtSugDiag.value = limpiarPrefijosIA(diag);
-        txtSugRecom.value = limpiarPrefijosIA(recom);
+        if (txtSugDiag) txtSugDiag.value = limpiarPrefijosIA(diag);
+        if (txtSugRecom) txtSugRecom.value = limpiarPrefijosIA(recom);
       };
 
       if (!GEMINI_API_KEY) {
@@ -994,8 +944,8 @@
         }
       }
 
-      txtSugDiag.value = "⏳ Analizando espectro FFT y evaluando parámetros...";
-      txtSugRecom.value = "⏳ Generando plan de acción correctivo...";
+      if (txtSugDiag) txtSugDiag.value = "⏳ Evaluando parámetros mecánicos...";
+      if (txtSugRecom) txtSugRecom.value = "⏳ Generando plan de acción correctivo...";
 
       try {
         var promptText = "Actúa como un Ingeniero Analista Especialista en Monitoreo de Condición y Vibraciones Mecánicas categoría ISO 18436-2.\n" +
@@ -1003,12 +953,10 @@
           "Punto de Inspección: " + punto + "\n" +
           "Velocidad Global RMS: " + rms + " mm/s (Evaluar bajo norma ISO 20816-3).\n" +
           "Observación del Analista: " + (textoAnalista || "Sin comentarios previos") + "\n\n" +
-          "REGLA CRÍTICA DE REDACCIÓN:\n" +
-          "NO incluyas prefijos como '[IA]', '[IA Predictiva]', nombres de tags entre corchetes, ni introducciones robóticas.\n" +
-          "Comienza el texto DIRECTAMENTE con la redacción técnica como si lo redactara un ingeniero humano especialista.\n\n" +
-          "Tarea: Si se adjunta imagen, analiza patrones espectrales FFT (armónicos 1X, 2X, frecuencias de engrane GMF, bandas laterales o piso de ruido de rodamientos). Si no hay imagen, diagnostica con base al RMS y severidad cinemática.\n" +
-          "Responde EXCLUSIVAMENTE con un JSON válido en este formato exacto, sin bloques de código markdown ni texto adicional:\n" +
-          "{\"diagnostico\": \"diagnóstico técnico directo aquí\", \"recomendacion\": \"recomendaciones mecánicas 1), 2), 3) aquí\"}";
+          "REGLA CRÍTICA:\n" +
+          "NO incluyas etiquetas entre corchetes, prefijos como '[IA Predictiva]', ni introducciones como 'Aquí está el diagnóstico'. Redacta el dictamen técnico directamente como un humano especialista.\n\n" +
+          "Responde EXCLUSIVAMENTE con un JSON en este formato sin formato markdown adicional:\n" +
+          "{\"diagnostico\": \"diagnóstico técnico directo\", \"recomendacion\": \"recomendaciones mecánicas 1), 2), 3)\"}";
 
         var contentsParts = [{ text: promptText }];
 
@@ -1040,8 +988,8 @@
         var jsonText = data.candidates[0].content.parts[0].text;
         var resultado = JSON.parse(jsonText);
 
-        txtSugDiag.value = limpiarPrefijosIA(resultado.diagnostico);
-        txtSugRecom.value = limpiarPrefijosIA(resultado.recomendacion);
+        if (txtSugDiag) txtSugDiag.value = limpiarPrefijosIA(resultado.diagnostico);
+        if (txtSugRecom) txtSugRecom.value = limpiarPrefijosIA(resultado.recomendacion);
 
         var selSev = document.getElementById('indCompSev');
         if (selSev) {
@@ -1051,42 +999,32 @@
         }
 
       } catch (err) {
-        console.warn("Gemini falló o devolvió error, aplicando regla local:", err);
+        console.warn("Gemini falló, aplicando regla técnica local:", err);
         generarLocal();
       }
     },
 
     adoptarDiagnosticoSugerido: function() {
-      var sug = document.getElementById('indSugAnalisis').value;
-      if (!sug) {
-        alert("Primero genera la sugerencia técnica.");
-        return;
-      }
-      document.getElementById('indCompAnalisis').value = limpiarPrefijosIA(sug);
+      var sug = document.getElementById('indSugAnalisis')?.value;
+      if (!sug) return;
+      var el = document.getElementById('indCompAnalisis');
+      if (el) el.value = limpiarPrefijosIA(sug);
     },
 
     adoptarRecomendacionSugerida: function() {
-      var sug = document.getElementById('indSugRecom').value;
-      if (!sug) {
-        alert("Primero genera la sugerencia técnica.");
-        return;
-      }
-      document.getElementById('indCompRecom').value = limpiarPrefijosIA(sug);
+      var sug = document.getElementById('indSugRecom')?.value;
+      if (!sug) return;
+      var el = document.getElementById('indCompRecom');
+      if (el) el.value = limpiarPrefijosIA(sug);
     },
 
     adoptarTodoDiagnosticoRecomendacion: function() {
-      var sugDiag = document.getElementById('indSugAnalisis').value;
-      var sugRecom = document.getElementById('indSugRecom').value;
-      if (!sugDiag && !sugRecom) {
-        alert("Primero genera la sugerencia técnica.");
-        return;
-      }
-      document.getElementById('indCompAnalisis').value = limpiarPrefijosIA(sugDiag);
-      document.getElementById('indCompRecom').value = limpiarPrefijosIA(sugRecom);
+      window.CIO.adoptarDiagnosticoSugerido();
+      window.CIO.adoptarRecomendacionSugerida();
     },
 
     evaluarIsoRmsEnVivo: function() {
-      var val = parseFloat(document.getElementById('indCompRms').value);
+      var val = parseFloat(document.getElementById('indCompRms')?.value);
       if (isNaN(val)) return;
       var selSev = document.getElementById('indCompSev');
       if (!selSev) return;
@@ -1098,14 +1036,14 @@
 
     guardarComponenteIndividual: function() {
       if (!state.usuarioActivo) {
-        alert("🔒 Acción restringida: Inicia sesión para guardar cambios.");
+        alert("🔒 Inicia sesión para guardar cambios.");
         return;
       }
 
       var eq = state.equipos.find(function(e) { return e.id === state.equipoIdNivel3; });
       if (!eq) return;
 
-      var idx = parseInt(document.getElementById('edCompIndex').value, 10);
+      var idx = parseInt(document.getElementById('edCompIndex')?.value, 10);
       if (isNaN(idx) || idx < 0) return;
 
       var pares = [];
@@ -1115,12 +1053,12 @@
         if (av || om) pares.push({ aviso: av, om: om });
       });
 
-      var compNom = document.getElementById('indCompNombre').value.trim() || 'Componente';
-      var compPunto = document.getElementById('indCompPunto').value.trim() || 'Punto';
-      var compRms = document.getElementById('indCompRms').value.trim() || '2.0';
-      var compSev = document.getElementById('indCompSev').value;
-      var compDiag = limpiarPrefijosIA(document.getElementById('indCompAnalisis').value);
-      var compRecom = limpiarPrefijosIA(document.getElementById('indCompRecom').value);
+      var compNom = document.getElementById('indCompNombre')?.value.trim() || 'Componente';
+      var compPunto = document.getElementById('indCompPunto')?.value.trim() || 'Punto';
+      var compRms = document.getElementById('indCompRms')?.value.trim() || '2.0';
+      var compSev = document.getElementById('indCompSev')?.value || 'Verde';
+      var compDiag = limpiarPrefijosIA(document.getElementById('indCompAnalisis')?.value);
+      var compRecom = limpiarPrefijosIA(document.getElementById('indCompRecom')?.value);
 
       eq.componentes[idx] = {
         nombre: compNom,
@@ -1156,7 +1094,8 @@
         recomendacion: compRecom
       });
 
-      document.getElementById('modalEditarComponenteIndividual').close();
+      var mEdit = document.getElementById('modalEditarComponenteIndividual');
+      if (mEdit) mEdit.close();
       renderScreen3();
     },
 
@@ -1168,13 +1107,14 @@
       var eq = state.equipos.find(function(e) { return e.id === state.equipoIdNivel3; });
       if (!eq) return;
 
-      var idx = parseInt(document.getElementById('edCompIndex').value, 10);
+      var idx = parseInt(document.getElementById('edCompIndex')?.value, 10);
       if (confirm('¿Eliminar este componente y su punto asociado?')) {
         eq.componentes.splice(idx, 1);
         if (db) {
           db.child(eq.id).child('componentes').set(eq.componentes);
         }
-        document.getElementById('modalEditarComponenteIndividual').close();
+        var mEdit = document.getElementById('modalEditarComponenteIndividual');
+        if (mEdit) mEdit.close();
         renderScreen3();
       }
     },
@@ -1184,93 +1124,76 @@
       if (!eq) return;
 
       var tagValue = eq.tag || eq.Tag || eq.id || 'S/T';
-      document.getElementById('histTerrenoTitle').innerText = 'Historial de Terreno: ' + tagValue + ' (' + eq.siteId + ')';
+      var hTitle = document.getElementById('histTerrenoTitle');
+      if (hTitle) hTitle.innerText = 'Historial de Terreno: ' + tagValue;
 
       var cont = document.getElementById('histTerrenoListContainer');
       var myReports = state.alertasTerreno
         .filter(function(a) { return matchTags(a.tag, tagValue); })
         .sort(function(a, b) { return new Date(b.timestamp || 0) - new Date(a.timestamp || 0); });
 
-      if (myReports.length === 0) {
-        cont.innerHTML = '<div class="label-muted" style="padding:20px; font-style:italic;">No hay reportes de ronda para este activo.</div>';
-      } else {
-        cont.innerHTML = myReports.map(function(r, i) {
-          var fotoHtml = r.fotoBase64 ? ('<div style="margin-top:10px;"><img src="' + r.fotoBase64 + '" class="img-terreno-preview-lg" alt="Evidencia" onclick="window.CIO.abrirFotoEnNuevaPestana(\'' + r.fotoBase64 + '\')" /></div>') : '';
-          return '<article class="card-reporte-terreno-lg">' +
-              '<div style="display:flex; justify-content:space-between; color:var(--text-muted); font-size:0.75rem;">' +
-                '<span>🕒 <strong>Reporte #' + (myReports.length - i) + '</strong> | Fecha: ' + (r.timestamp ? new Date(r.timestamp).toLocaleString() : 'N/D') + '</span>' +
-                '<span style="color:' + (SEV_COLOR[r.severidad] || '#fff') + '; font-weight:bold; font-size:0.85rem;">' + (r.severidad || 'Seguimiento') + '</span>' +
-              '</div>' +
-              '<div style="font-size:0.92rem; color:inherit; line-height:1.4; margin-top:6px;">' + sanitize(r.detalle) + '</div>' +
-              fotoHtml +
-            '</article>';
-        }).join('');
+      if (cont) {
+        if (myReports.length === 0) {
+          cont.innerHTML = '<div style="padding:20px; font-style:italic;">No hay reportes de ronda para este activo.</div>';
+        } else {
+          cont.innerHTML = myReports.map(function(r) {
+            return '<div style="padding:10px; border-bottom:1px solid #ccc;">' +
+                '<strong>' + (r.timestamp ? new Date(r.timestamp).toLocaleString() : 'N/D') + '</strong> - ' + (r.severidad || 'Seguimiento') + '<br>' +
+                sanitize(r.detalle) +
+              '</div>';
+          }).join('');
+        }
       }
 
-      document.getElementById('modalHistoricoTerreno').showModal();
+      var mHist = document.getElementById('modalHistoricoTerreno');
+      if (mHist) mHist.showModal();
     },
 
     abrirFotoEnNuevaPestana: function(base64Data) {
       var win = window.open("");
-      win.document.write('<body style="margin:0; background:#0a0a0c; display:flex; justify-content:center; align-items:center; height:100vh;"><img src="' + base64Data + '" style="max-width:98%; max-height:98%; object-fit:contain; border-radius:6px; box-shadow:0 0 30px rgba(0,0,0,0.8);" /></body>');
+      win.document.write('<body style="margin:0; background:#0a0a0c; display:flex; justify-content:center; align-items:center; height:100vh;"><img src="' + base64Data + '" style="max-width:98%; max-height:98%; object-fit:contain;" /></body>');
     },
 
-    editarDatosGeneralesActivo: function() {
+    abrirEditorInformeModal: function() {
       if (!state.usuarioActivo) {
-        alert("🔒 Acción restringida: Inicia sesión para editar datos del activo.");
+        alert("🔒 Acceso Restringido: Como usuario invitado solo tienes permisos de visualización. Inicia sesión para emitir informes.");
         return;
       }
+
       var eq = state.equipos.find(function(e) { return e.id === state.equipoIdNivel3; });
       if (!eq) return;
 
-      state.equipoSeleccionado = eq;
-      var setVal = function(id, val) {
-        var el = document.getElementById(id);
-        if (el) el.value = val || '';
-      };
+      var tagValue = eq.tag || eq.Tag || eq.id || 'S/T';
+      var mTitle = document.getElementById('infModalTitle');
+      if (mTitle) mTitle.innerText = 'Emisión de Informe: ' + tagValue;
 
-      setVal('edSiteId', eq.siteId);
-      setVal('edDomain', eq.domain || 'planta');
-      setVal('edArea', eq.area || '');
-      setVal('edTag', eq.tag || eq.Tag || eq.id || '');
-      setVal('edTipo', eq.tipo || '');
-      setVal('edLat', eq.lat || '');
-      setVal('edLng', eq.lng || '');
-      setVal('edEstatusHallazgo', eq.estatusHallazgo || 'Abierto');
-      setVal('edFechaMedicion', eq.fechaMedicion || eq.fecha || '');
-      setVal('edFechaHallazgo', eq.fechaHallazgo || '');
+      var saps = consolidarSAPs(eq.componentes);
+      var inAv = document.getElementById('infAvisosSap');
+      if (inAv) inAv.value = saps.avisosStr !== 'Sin Avisos' ? saps.avisosStr : '';
+      var inOm = document.getElementById('infOmSap');
+      if (inOm) inOm.value = saps.omsStr !== 'Sin OM' ? saps.omsStr : '';
+      var inRes = document.getElementById('infResumenGeneral');
+      if (inRes) inRes.value = 'Se efectúa evaluación de condición dinámica al tren motriz del activo ' + tagValue + ' bajo norma ISO 20816-3. Condición global: ' + calcMaxSev(eq.componentes).toUpperCase() + '.';
 
-      window.CIO.auditarDiasMedicionForm();
-      document.getElementById('modalEdicion').showModal();
+      var cont = document.getElementById('infComponentesContainer');
+      if (cont) {
+        cont.innerHTML = (eq.componentes || []).map(function(c) {
+          return '<div style="margin-bottom:10px; padding:10px; border:1px solid #ccc; border-radius:6px;">' +
+              '<strong>' + sanitize(c.nombre) + ' - ' + sanitize(c.punto) + ' (' + c.severidad + ')</strong>' +
+              '<p style="font-size:0.85rem; margin-top:4px;">' + sanitize(limpiarPrefijosIA(c.analisis)) + '</p>' +
+            '</div>';
+        }).join('');
+      }
+
+      var mInf = document.getElementById('modalEditorInforme');
+      if (mInf) mInf.showModal();
     },
 
-    guardarDatosGeneralesActivo: function() {
-      if (!state.usuarioActivo || !state.equipoSeleccionado) return;
-      var getVal = function(id) { var el = document.getElementById(id); return el ? el.value : ''; };
-
-      var payload = {
-        siteId: getVal('edSiteId'),
-        domain: getVal('edDomain'),
-        area: getVal('edArea'),
-        tag: getVal('edTag'),
-        tipo: getVal('edTipo'),
-        lat: getVal('edLat'),
-        lng: getVal('edLng'),
-        fechaMedicion: getVal('edFechaMedicion'),
-        fechaHallazgo: getVal('edFechaHallazgo'),
-        estatusHallazgo: getVal('edEstatusHallazgo')
-      };
-
-      if (db) db.child(state.equipoSeleccionado.id).update(payload);
-      document.getElementById('modalEdicion').close();
-      renderScreen3();
+    emitirInformeFinalImpresion: function() {
+      window.print();
     },
 
     abrirEdicionEquipoNuevoAuth: function() {
-      if (!state.usuarioActivo) {
-        alert("🔒 Inicia sesión para registrar nuevos activos.");
-        return;
-      }
       var targetSite = state.faenaSeleccionada || state.faenaAsignada || FAENAS[0];
       var newId = 'EQ_' + Date.now();
       var nuevoEquipo = {
@@ -1281,8 +1204,7 @@
         tag: 'MH' + Math.floor(1000 + Math.random() * 9000),
         tipo: 'Activo Crítico',
         componentes: [
-          { nombre: 'Motor M1', punto: 'Lado Libre (NDE)', severidad: 'Verde', rms: '2.0', paresSap: [], analisis: 'Condición normal bajo norma ISO 20816-3.', recomendacion: 'Ruta mensual.', espectros: [] },
-          { nombre: 'Reductor G1', punto: 'Entrada Rápida', severidad: 'Verde', rms: '2.0', paresSap: [], analisis: 'Condición normal bajo norma ISO 20816-3.', recomendacion: 'Ruta mensual.', espectros: [] }
+          { nombre: 'Motor M1', punto: 'Lado Libre (NDE)', severidad: 'Verde', rms: '2.0', paresSap: [], analisis: 'Condición normal bajo norma ISO 20816-3.', recomendacion: 'Ruta mensual.', espectros: [] }
         ],
         fechaMedicion: new Date().toISOString().split('T')[0],
         fechaHallazgo: new Date().toISOString().split('T')[0],
@@ -1291,202 +1213,6 @@
 
       if (db) db.child(newId).set(nuevoEquipo);
       window.CIO.irANivel3Equipo(newId);
-    },
-
-    eliminarEquipo: function() {
-      if (!state.usuarioActivo) {
-        alert("🔒 Acción restringida: Inicia sesión para eliminar activos.");
-        return;
-      }
-      if (confirm('¿Eliminar activo en DEV?') && db && state.equipoSeleccionado) {
-        db.child(state.equipoSeleccionado.id).remove();
-        document.getElementById('modalEdicion').close();
-        window.CIO.goScreen(2);
-      }
-    },
-
-    // RESTRICCIÓN ESTRICTA DE GENERACIÓN DE INFORMES
-    abrirEditorInformeModal: function() {
-      if (!state.usuarioActivo) {
-        alert("🔒 Acceso Restringido: Como usuario invitado solo tienes permisos de visualización. Inicia sesión con tus credenciales autorizadas por CPF para emitir informes oficiales.");
-        return;
-      }
-
-      var eq = state.equipos.find(function(e) { return e.id === state.equipoIdNivel3; });
-      if (!eq) return;
-
-      var tagValue = eq.tag || eq.Tag || eq.id || 'S/T';
-      document.getElementById('infModalTitle').innerText = 'Emisión de Informe: ' + tagValue + ' (' + eq.siteId + ')';
-
-      var saps = consolidarSAPs(eq.componentes);
-      document.getElementById('infAvisosSap').value = saps.avisosStr !== 'Sin Avisos' ? saps.avisosStr : '';
-      document.getElementById('infOmSap').value = saps.omsStr !== 'Sin OM' ? saps.omsStr : '';
-      document.getElementById('infResumenGeneral').value = 'Se efectúa evaluación cinemática y dinámica al tren motriz del activo ' + tagValue + ' bajo norma ISO 20816-3. Condición global evaluada: ' + calcMaxSev(eq.componentes).toUpperCase() + '.';
-
-      var cont = document.getElementById('infComponentesContainer');
-      cont.innerHTML = '';
-
-      (eq.componentes || []).forEach(function(c) {
-        var card = document.createElement('div');
-        card.className = 'card-component-editor';
-        card.style.padding = '12px 16px';
-        card.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">' +
-            '<strong style="color:#2563eb;">' + sanitize(c.nombre || 'Componente') + ' - ' + sanitize(c.punto || 'Punto') + '</strong>' +
-            '<span style="font-weight:bold; color:' + (SEV_COLOR[c.severidad] || '#fff') + ';">' + (c.severidad || 'Verde') + ' (' + (c.rms || '0.0') + ' mm/s)</span>' +
-          '</div>' +
-          '<div style="margin-bottom:8px;">' +
-            '<label style="font-size:0.7rem; color:var(--text-muted);">Diagnóstico Técnico del Punto (Editable):</label>' +
-            '<textarea class="inf-c-analisis" rows="2">' + sanitize(limpiarPrefijosIA(c.analisis)) + '</textarea>' +
-          '</div>' +
-          '<div>' +
-            '<label style="font-size:0.7rem; color:var(--text-muted);">Recomendación Mecánica / Operativa (Editable):</label>' +
-            '<textarea class="inf-c-recom" rows="2">' + sanitize(limpiarPrefijosIA(c.recomendacion)) + '</textarea>' +
-          '</div>';
-        cont.appendChild(card);
-      });
-
-      document.getElementById('modalEditorInforme').showModal();
-    },
-
-    emitirInformeFinalImpresion: function() {
-      if (!state.usuarioActivo) {
-        alert("🔒 Acción restringida: Debes iniciar sesión para imprimir informes.");
-        return;
-      }
-
-      var eq = state.equipos.find(function(e) { return e.id === state.equipoIdNivel3; });
-      if (!eq) return;
-
-      var tagValue = eq.tag || eq.Tag || eq.id || 'S/T';
-      var avisosEditados = document.getElementById('infAvisosSap').value.trim() || 'Sin Avisos';
-      var omsEditadas = document.getElementById('infOmSap').value.trim() || 'Sin OM';
-      var conclusionGeneral = document.getElementById('infResumenGeneral').value.trim();
-
-      var aud = calcularDiasDesdeMedicion(eq.fechaMedicion);
-      var sevGlobal = calcMaxSev(eq.componentes);
-
-      var compCards = document.querySelectorAll('#infComponentesContainer .card-component-editor');
-      var compsHtml = '';
-
-      (eq.componentes || []).forEach(function(c, i) {
-        var card = compCards[i];
-        var analisisTxt = card ? card.querySelector('.inf-c-analisis').value : c.analisis;
-        var recomTxt = card ? card.querySelector('.inf-c-recom').value : c.recomendacion;
-        var col = SEV_COLOR[c.severidad] || '#4b5563';
-
-        var sapsHtml = '';
-        if (c.paresSap && c.paresSap.length > 0) {
-          sapsHtml = '<div style="font-size:0.8rem; color:#1e40af; margin-bottom:6px;">' +
-            c.paresSap.map(function(p) { return '<strong>Aviso:</strong> ' + sanitize(p.aviso || 'S/A') + ' ➔ <strong>OM:</strong> ' + sanitize(p.om || 'S/OM'); }).join(' | ') +
-          '</div>';
-        }
-
-        var espectrosImpresionHtml = '';
-        if (c.espectros && c.espectros.length > 0) {
-          espectrosImpresionHtml = '<div style="margin-top:10px;"><strong style="font-size:0.8rem; color:#4b5563;">Espectro(s) de Respaldo:</strong><div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:6px;">' +
-            c.espectros.map(function(src) {
-              return '<img src="' + src + '" style="max-width:280px; max-height:190px; border-radius:4px; border:1px solid #ccc; object-fit:contain;" alt="Espectro FFT">';
-            }).join('') +
-          '</div></div>';
-        }
-
-        compsHtml += '<div style="border:1px solid #e5e7eb; border-left:5px solid ' + col + '; border-radius:6px; padding:12px 14px; margin-bottom:14px; page-break-inside:avoid;">' +
-            '<div style="display:flex; justify-content:space-between; font-weight:bold; font-size:0.95rem; margin-bottom:6px;">' +
-              '<span>' + sanitize(c.nombre || 'Componente') + ' | ' + sanitize(c.punto || 'Punto') + '</span>' +
-              '<span style="color:' + col + ';">' + (c.severidad || 'Verde').toUpperCase() + ' (' + (c.rms || '0.0') + ' mm/s)</span>' +
-            '</div>' +
-            sapsHtml +
-            '<div style="font-size:0.88rem; color:#1f2937; margin-bottom:6px; line-height:1.4;"><strong>Diagnóstico Técnico:</strong><br>' + sanitize(limpiarPrefijosIA(analisisTxt) || 'Sin análisis registrado.') + '</div>' +
-            '<div style="font-size:0.88rem; color:#065f46; line-height:1.4;"><strong>Recomendación Mecánica:</strong><br>' + sanitize(limpiarPrefijosIA(recomTxt) || 'Mantener monitoreo.') + '</div>' +
-            espectrosImpresionHtml +
-          '</div>';
-      });
-
-      var myReports = state.alertasTerreno
-        .filter(function(a) { return matchTags(a.tag, tagValue); })
-        .sort(function(a, b) { return new Date(b.timestamp || 0) - new Date(a.timestamp || 0); });
-
-      var reportsHtml = '';
-      if (myReports.length > 0) {
-        myReports.forEach(function(r, i) {
-          var imgTag = r.fotoBase64 ? ('<div><img src="' + r.fotoBase64 + '" style="max-width:300px; max-height:200px; border-radius:4px; margin-top:8px; border:1px solid #ccc;" alt="Evidencia"></div>') : '';
-          reportsHtml += '<div style="border:1px solid #e5e7eb; border-radius:6px; padding:10px 14px; margin-bottom:10px; page-break-inside:avoid;">' +
-              '<div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#6b7280; margin-bottom:4px;">' +
-                '<span><strong>Reporte #' + (myReports.length - i) + '</strong> | ' + (r.timestamp ? new Date(r.timestamp).toLocaleString() : 'N/D') + '</span>' +
-                '<span style="font-weight:bold; color:' + (SEV_COLOR[r.severidad] || '#000') + ';">' + r.severidad + '</span>' +
-              '</div>' +
-              '<div style="font-size:0.9rem;">' + sanitize(r.detalle) + '</div>' +
-              imgTag +
-            '</div>';
-        });
-      } else {
-        reportsHtml = '<div style="font-size:0.85rem; color:#6b7280; font-style:italic;">No se registran eventos de terreno para este activo.</div>';
-      }
-
-      var win = window.open('', '_blank');
-      win.document.write(
-        '<!DOCTYPE html>' +
-        '<html lang="es">' +
-        '<head>' +
-          '<meta charset="UTF-8">' +
-          '<title>Informe Técnico Oficial - ' + tagValue + ' - CPF Ingeniería</title>' +
-          '<style>' +
-            'body { font-family: "Helvetica Neue", Arial, sans-serif; padding: 30px; color: #1f2937; margin: 0; background: #fff; line-height:1.4; }' +
-            '.header-report { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; padding-bottom: 14px; margin-bottom: 18px; }' +
-            '.header-report h1 { margin: 0; font-size: 1.35rem; color: #1e3a8a; text-transform: uppercase; }' +
-            '.header-report p { margin: 2px 0 0 0; font-size: 0.8rem; color: #6b7280; font-weight: bold; }' +
-            '.badge-sev { display: inline-block; padding: 4px 12px; border-radius: 4px; font-weight: bold; color: #fff; background: ' + (SEV_COLOR[sevGlobal] || '#4b5563') + '; text-transform: uppercase; }' +
-            '.data-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 14px; margin-bottom: 18px; font-size: 0.85rem; }' +
-            '.data-item strong { display: block; font-size: 0.7rem; color: #4b5563; text-transform: uppercase; margin-bottom:2px; }' +
-            '.section-title { font-size: 1rem; color: #1e3a8a; border-left: 4px solid #1e3a8a; padding-left: 8px; margin: 22px 0 10px 0; text-transform: uppercase; font-weight: bold; }' +
-            '.box-conclusion { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 12px 14px; font-size: 0.9rem; margin-bottom: 18px; }' +
-            '.print-btn-bar { margin-bottom: 20px; display: flex; gap: 10px; }' +
-            '.btn-print { background: #1e3a8a; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; font-weight: bold; cursor: pointer; }' +
-            '@media print { .print-btn-bar { display: none; } body { padding: 10px; } }' +
-          '</style>' +
-        '</head>' +
-        '<body>' +
-          '<div class="print-btn-bar">' +
-            '<button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>' +
-            '<button class="btn-print" style="background:#4b5563;" onclick="window.close()">Cerrar</button>' +
-          '</div>' +
-          '<div class="header-report">' +
-            '<div style="display: flex; align-items: center; gap: 16px;">' +
-              '<div style="background: #ffffff; padding: 6px 14px; border-radius: 8px; border: 1px solid #d1d5db; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">' +
-                '<img src="logo-cpf.png" alt="Logo CPF" style="height: 48px; width: auto; object-fit: contain; display: block;" onerror="this.style.display=\'none\'" />' +
-              '</div>' +
-              '<div>' +
-                '<h1>INFORME OFICIAL DE MONITOREO TREN MOTRIZ</h1>' +
-                '<p>CPF INGENIERÍA LTDA | COMPAÑÍA MINERA DEL PACÍFICO | CIO</p>' +
-              '</div>' +
-            '</div>' +
-            '<div><span class="badge-sev">CONDICIÓN: ' + sevGlobal + '</span></div>' +
-          '</div>' +
-          '<div class="data-grid">' +
-            '<div class="data-item"><strong>Faena Operativa</strong>' + sanitize(eq.siteId) + '</div>' +
-            '<div class="data-item"><strong>Área</strong>' + sanitize(eq.area) + '</div>' +
-            '<div class="data-item"><strong>Tag Equipo</strong>' + sanitize(tagValue) + '</div>' +
-            '<div class="data-item"><strong>Clase</strong>' + sanitize(eq.tipo || 'Activo Crítico') + '</div>' +
-            '<div class="data-item"><strong>Avisos SAP Totales</strong>' + sanitize(avisosEditados) + '</div>' +
-            '<div class="data-item"><strong>Órdenes OM SAP</strong>' + sanitize(omsEditadas) + '</div>' +
-            '<div class="data-item"><strong>Última Medición</strong>' + (eq.fechaMedicion || 'S/F') + ' (' + aud.texto + ')</div>' +
-            '<div class="data-item"><strong>Auditoría de Ruta</strong>' + (aud.vencido ? '⚠️ RUTA VENCIDA (>30 Días)' : '✅ RUTA AL DÍA') + '</div>' +
-            '<div class="data-item"><strong>Especialista Emisor</strong>' + sanitize(state.usuarioActivo || 'Supervisor Predictivo') + '</div>' +
-          '</div>' +
-          '<div class="section-title">1. Resumen Ejecutivo & Conclusiones Generales</div>' +
-          '<div class="box-conclusion">' + sanitize(conclusionGeneral) + '</div>' +
-          '<div class="section-title">2. Diagnóstico Técnico por Componente, Puntos & Espectros</div>' +
-          compsHtml +
-          '<div class="section-title">3. Bitácora de Inspecciones y Hallazgos en Terreno (' + myReports.length + ')</div>' +
-          reportsHtml +
-          '<footer style="margin-top:35px; border-top:1px solid #ccc; padding-top:10px; font-size:0.75rem; color:#6b7280; text-align:center;">' +
-            'Documento Técnico Emitido por el Centro Integrado de Operaciones (CIO) - CPF Ingeniería Ltda.' +
-          '</footer>' +
-        '</body>' +
-        '</html>'
-      );
-      win.document.close();
-      document.getElementById('modalEditorInforme').close();
     },
 
     procesarCargaExcelFaena: function(e) {
@@ -1518,32 +1244,17 @@
 
           rawRows.forEach(function(row) {
             var normalizedRow = {};
-            Object.keys(row).forEach(function(k) {
-              normalizedRow[k.trim().toUpperCase()] = row[k];
-            });
+            Object.keys(row).forEach(function(k) { normalizedRow[k.trim().toUpperCase()] = row[k]; });
 
             var rawTag = normalizedRow['EQUIPO'] || normalizedRow['TAG'] || normalizedRow['ACTIVO'] || normalizedRow['NOMBRE'];
             var rawArea = normalizedRow['AREA'] || normalizedRow['ÁREA'] || 'Área General';
             var rawTipo = normalizedRow['TIPO EQUIPO'] || normalizedRow['TIPO'] || normalizedRow['CLASE'] || 'Activo';
-            var rawFecha = normalizedRow['ULTIMA FECHA'] || normalizedRow['FECHA MEDICION'] || normalizedRow['FECHA'];
 
             if (rawTag && String(rawTag).trim() !== '') {
               var tagStr = String(rawTag).trim();
               var areaStr = String(rawArea).trim() || 'General';
               var tipoStr = String(rawTipo).trim() || 'Activo';
-
-              var fechaMedicionFinal = '';
-              if (rawFecha instanceof Date && !isNaN(rawFecha.getTime())) {
-                fechaMedicionFinal = rawFecha.toISOString().split('T')[0];
-              } else if (typeof rawFecha === 'string' && rawFecha.trim() !== '') {
-                var dateParsed = new Date(rawFecha);
-                if (!isNaN(dateParsed.getTime())) {
-                  fechaMedicionFinal = dateParsed.toISOString().split('T')[0];
-                }
-              }
-
-              var safeTagId = tagStr.replace(/[\/\.\#\$\[\]]/g, '_');
-              var recordId = 'EQ_' + safeTagId;
+              var recordId = 'EQ_' + tagStr.replace(/[\/\.\#\$\[\]]/g, '_');
 
               actualizaciones[recordId] = {
                 siteId: targetSite,
@@ -1553,35 +1264,23 @@
                 tipo: tipoStr,
                 lat: '',
                 lng: '',
-                fechaMedicion: fechaMedicionFinal,
+                fechaMedicion: new Date().toISOString().split('T')[0],
                 fechaHallazgo: '',
                 estatusHallazgo: 'Abierto',
                 componentes: [
-                  { nombre: 'Motor M1', punto: 'Lado Libre (NDE)', severidad: 'Verde', rms: '2.0', paresSap: [], analisis: 'Condición normal bajo norma ISO 20816-3.', recomendacion: 'Ruta mensual.', espectros: [] },
-                  { nombre: 'Reductor G1', punto: 'Entrada Rápida', severidad: 'Verde', rms: '2.0', paresSap: [], analisis: 'Condición normal bajo norma ISO 20816-3.', recomendacion: 'Ruta mensual.', espectros: [] }
+                  { nombre: 'Motor M1', punto: 'Lado Libre (NDE)', severidad: 'Verde', rms: '2.0', paresSap: [], analisis: 'Condición normal bajo norma ISO 20816-3.', recomendacion: 'Ruta mensual.', espectros: [] }
                 ]
               };
-
               cargados++;
             }
           });
 
-          if (cargados === 0) {
-            alert("⚠️ No se encontraron equipos válidos en las columnas.");
-            return;
-          }
-
-          db.update(actualizaciones)
-            .then(function() {
-              alert('✅ Carga masiva exitosa: ' + cargados + ' equipos importados en ' + targetSite + '.');
-            })
-            .catch(function(err) {
-              alert('❌ Error al guardar en Firebase: ' + err.message);
-            });
+          db.update(actualizaciones).then(function() {
+            alert('✅ Carga masiva exitosa: ' + cargados + ' equipos importados en ' + targetSite + '.');
+          });
 
         } catch (err) {
-          console.error("Error al procesar Excel:", err);
-          alert('❌ Error al leer el archivo Excel: ' + err.message);
+          alert('❌ Error al procesar Excel: ' + err.message);
         }
       };
 
@@ -1590,9 +1289,10 @@
     }
   };
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', refresh);
-  } else {
-    refresh();
-  }
+  // Enlaces a funciones directas desde atributos onclick del HTML existente
+  window.salirSuperAdmin = window.CIO.salirSuperAdmin;
+
+  document.addEventListener('DOMContentLoaded', function() {
+    window.CIO.goScreen(1);
+  });
 })();
