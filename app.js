@@ -9,7 +9,7 @@
     projectId: "dashboard-vulnerabilidades-mlc"
   };
 
-  // Webhook de Google Apps Script conectado a Google Sheets
+  // Webhook de Google Apps Script conectado a Google Sheets (Looker Studio)
   var GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxxSrWh52i2QlHP5KG9mI9BOdlBFgwbtD7Sx0zgE0VOyK6bRWokkFJy3raUvC8_x0IOnQ/exec";
 
   // Clave API de Google AI Studio (almacenada localmente en el navegador por seguridad)
@@ -632,6 +632,10 @@
         return;
       }
       window.CIO.abrirEdicionEquipoNuevoAuth();
+    },
+
+    toggleMapModal: function() {
+      window.CIO.toggleSiteMapTab();
     },
 
     toggleSiteMapTab: function() {
@@ -1350,7 +1354,7 @@
       var cont = document.getElementById('infComponentesContainer');
       if (cont) {
         cont.innerHTML = (eq.componentes || []).map(function(c) {
-          return '<div style="margin-bottom:10px; padding:10px; border:1px solid #ccc; border-radius:6px;">' +
+          return '<div style="margin-bottom:12px; padding:12px; border:1px solid var(--glass-border); border-radius:8px; background:var(--card-inner-bg);">' +
               '<strong>' + sanitize(c.nombre) + ' - ' + sanitize(c.punto) + ' (' + c.severidad + ')</strong>' +
               '<p style="font-size:0.85rem; margin-top:4px;">' + sanitize(limpiarPrefijosIA(c.analisis)) + '</p>' +
             '</div>';
@@ -1361,8 +1365,102 @@
       if (mInf) mInf.showModal();
     },
 
+    // FUNCIÓN DE IMPRESIÓN SIN BLOQUEOS NI CONGELAMIENTO EN CHROMIUM/BRAVE
     emitirInformeFinalImpresion: function() {
-      window.print();
+      var eq = state.equipos.find(function(e) { return e.id === state.equipoIdNivel3; });
+      if (!eq) return;
+
+      var tagValue = eq.tag || eq.Tag || eq.id || 'S/T';
+      var avisosEditados = document.getElementById('infAvisosSap')?.value.trim() || 'Sin Avisos';
+      var omsEditadas = document.getElementById('infOmSap')?.value.trim() || 'Sin OM';
+      var conclusionGeneral = document.getElementById('infResumenGeneral')?.value.trim() || '';
+
+      var aud = calcularDiasDesdeMedicion(eq.fechaMedicion);
+      var sevGlobal = calcMaxSev(eq.componentes);
+
+      // Cierre del modal para liberar el rasterizador de Chromium
+      var modalInf = document.getElementById('modalEditorInforme');
+      if (modalInf) modalInf.close();
+
+      var compsHtml = (eq.componentes || []).map(function(c) {
+        var col = SEV_COLOR[c.severidad] || '#4b5563';
+        var fotosHtml = (c.espectros && c.espectros.length > 0)
+          ? '<div style="margin-top:10px;"><strong style="font-size:0.75rem; color:#4b5563;">Espectro FFT / Cascada:</strong><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:4px;">' +
+            c.espectros.map(function(src) {
+              return '<img src="' + src + '" style="max-height:160px; max-width:240px; border-radius:4px; border:1px solid #ccc; object-fit:contain;" />';
+            }).join('') + '</div></div>'
+          : '';
+
+        return '<div style="border:1px solid #d1d5db; border-left:5px solid ' + col + '; border-radius:6px; padding:12px 16px; margin-bottom:12px; page-break-inside:avoid;">' +
+          '<div style="display:flex; justify-content:space-between; font-weight:bold; font-size:0.95rem; margin-bottom:6px;">' +
+            '<span>' + sanitize(c.nombre || 'Componente') + ' | ' + sanitize(c.punto || 'Punto') + '</span>' +
+            '<span style="color:' + col + ';">' + (c.severidad || 'Verde').toUpperCase() + ' (' + (c.rms || '0.0') + ' mm/s)</span>' +
+          '</div>' +
+          '<div style="font-size:0.86rem; color:#1f2937; margin-bottom:6px; line-height:1.4;"><strong>Diagnóstico:</strong><br>' + sanitize(limpiarPrefijosIA(c.analisis) || 'Sin análisis registrado.') + '</div>' +
+          '<div style="font-size:0.86rem; color:#065f46; line-height:1.4;"><strong>Recomendación:</strong><br>' + sanitize(limpiarPrefijosIA(c.recomendacion) || 'Mantener monitoreo.') + '</div>' +
+          fotosHtml +
+        '</div>';
+      }).join('');
+
+      var win = window.open('', '_blank');
+      if (!win) {
+        alert("⚠️ Por favor permite las ventanas emergentes (pop-ups) en tu navegador para ver el informe.");
+        return;
+      }
+
+      win.document.write(
+        '<!DOCTYPE html>' +
+        '<html lang="es">' +
+        '<head>' +
+          '<meta charset="UTF-8">' +
+          '<title>Informe Técnico - ' + tagValue + ' - CPF Ingeniería</title>' +
+          '<style>' +
+            '@page { size: A4 portrait; margin: 15mm; }' +
+            'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; padding: 20px; color: #111827; background: #fff; line-height: 1.4; margin: 0; }' +
+            '.header-report { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #0284c7; padding-bottom: 12px; margin-bottom: 16px; }' +
+            '.header-report h1 { margin: 0; font-size: 1.3rem; color: #0f172a; text-transform: uppercase; }' +
+            '.header-report p { margin: 2px 0 0 0; font-size: 0.78rem; color: #64748b; font-weight: bold; }' +
+            '.badge-sev { padding: 5px 12px; border-radius: 6px; font-weight: 800; color: #fff; background: ' + (SEV_COLOR[sevGlobal] || '#4b5563') + '; text-transform: uppercase; font-size: 0.85rem; }' +
+            '.data-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: 0.82rem; }' +
+            '.data-item strong { display: block; font-size: 0.68rem; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }' +
+            '.section-title { font-size: 0.95rem; color: #0284c7; border-left: 4px solid #0284c7; padding-left: 8px; margin: 18px 0 8px 0; text-transform: uppercase; font-weight: 800; }' +
+            '.box-conclusion { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; padding: 10px 14px; font-size: 0.88rem; margin-bottom: 14px; }' +
+            '.btn-bar { margin-bottom: 20px; display: flex; gap: 10px; }' +
+            '.btn-action { background: #0284c7; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }' +
+            '@media print { .btn-bar { display: none; } body { padding: 0; } }' +
+          '</style>' +
+        '</head>' +
+        '<body>' +
+          '<div class="btn-bar">' +
+            '<button class="btn-action" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>' +
+            '<button class="btn-action" style="background:#64748b;" onclick="window.close()">Cerrar</button>' +
+          '</div>' +
+          '<div class="header-report">' +
+            '<div>' +
+              '<h1>INFORME OFICIAL DE MONITOREO TREN MOTRIZ</h1>' +
+              '<p>CPF INGENIERÍA LTDA | COMPAÑÍA MINERA DEL PACÍFICO | CIO</p>' +
+            '</div>' +
+            '<div><span class="badge-sev">CONDICIÓN: ' + sevGlobal + '</span></div>' +
+          '</div>' +
+          '<div class="data-grid">' +
+            '<div class="data-item"><strong>Faena Operativa</strong>' + sanitize(eq.siteId) + '</div>' +
+            '<div class="data-item"><strong>Área</strong>' + sanitize(eq.area) + '</div>' +
+            '<div class="data-item"><strong>Tag Equipo</strong>' + sanitize(tagValue) + '</div>' +
+            '<div class="data-item"><strong>Avisos SAP</strong>' + sanitize(avisosEditados) + '</div>' +
+            '<div class="data-item"><strong>Órdenes OM</strong>' + sanitize(omsEditadas) + '</div>' +
+            '<div class="data-item"><strong>Última Medición</strong>' + (eq.fechaMedicion || 'S/F') + '</div>' +
+          '</div>' +
+          '<div class="section-title">1. Resumen Ejecutivo & Conclusiones</div>' +
+          '<div class="box-conclusion">' + sanitize(conclusionGeneral) + '</div>' +
+          '<div class="section-title">2. Diagnóstico Técnico por Puntos & Espectros</div>' +
+          compsHtml +
+          '<footer style="margin-top:30px; border-top:1px solid #e2e8f0; padding-top:8px; font-size:0.72rem; color:#94a3b8; text-align:center;">' +
+            'Documento Oficial CIO - Emitido por CPF Ingeniería Ltda.' +
+          '</footer>' +
+        '</body>' +
+        '</html>'
+      );
+      win.document.close();
     },
 
     abrirEdicionEquipoNuevoAuth: function() {
