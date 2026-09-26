@@ -12,7 +12,7 @@
   // Webhook de Google Apps Script conectado a Google Sheets
   var GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxxSrWh52i2QlHP5KG9mI9BOdlBFgwbtD7Sx0zgE0VOyK6bRWokkFJy3raUvC8_x0IOnQ/exec";
 
-  // Clave API de Google AI Studio (almacenada localmente en el navegador para máxima seguridad)
+  // Clave API de Google AI Studio (almacenada localmente en el navegador por seguridad)
   var GEMINI_API_KEY = localStorage.getItem("GEMINI_API_KEY") || "";
 
   var db = null;
@@ -147,9 +147,9 @@
     };
   }
 
-  // PANTALLA 1: FAENAS
+  // PANTALLA 1: LISTADO DE FAENAS
   function renderScreen1() {
-    var container = document.getElementById('viewScreen1Content') || document.getElementById('screen1Container') || document.getElementById('gridFaenas');
+    var container = document.getElementById('viewScreen1Content');
     if (!container) return;
 
     var stats = {};
@@ -178,11 +178,13 @@
       card.className = 'card-area ' + (d.maxSev === 'Rojo' || d.maxSev === 'Naranja' ? 'anim-' + d.maxSev.toLowerCase() : '');
       card.onclick = function() { window.CIO.seleccionarFaena(d.name); };
 
-      card.innerHTML = '<header>' +
+      card.innerHTML = 
+        '<div class="card-top-bar">' +
           '<span class="label-muted">Faena Operativa CMP</span>' +
-          '<h3 class="value-strong" style="margin:4px 0 8px 0;">' + sanitize(d.name) + '</h3>' +
-        '</header>' +
-        '<div style="display:flex; justify-content:space-between; border-top:1px solid var(--border-card); padding-top:8px;">' +
+          '<span class="badge-indicator" style="background:' + SEV_COLOR[d.maxSev] + '; color:#fff;">' + d.maxSev.toUpperCase() + '</span>' +
+        '</div>' +
+        '<h3 class="value-strong" style="margin:4px 0 10px 0;">' + sanitize(d.name) + '</h3>' +
+        '<div style="display:flex; justify-content:space-between; border-top:1px solid var(--glass-border); padding-top:8px;">' +
           '<div><span class="label-muted">Activos</span><div class="value-strong">' + d.count + '</div></div>' +
           '<div><span class="label-muted">Condición</span><div class="value-strong" style="color:' + SEV_COLOR[d.maxSev] + '">' + (d.critical > 0 ? (d.critical + ' Alertas') : 'Normal') + '</div></div>' +
         '</div>';
@@ -193,10 +195,10 @@
   // PANTALLA 2: ÁREAS Y EQUIPOS
   function renderScreen2() {
     var target = state.faenaSeleccionada || state.faenaAsignada || FAENAS[0];
-    var titleEl = document.getElementById('screen2SiteTitle') || document.getElementById('siteTitleNivel2');
+    var titleEl = document.getElementById('screen2SiteTitle');
     if (titleEl) titleEl.innerText = target;
 
-    var container = document.getElementById('viewScreen2Container') || document.getElementById('screen2Container') || document.getElementById('gridEquiposContainer');
+    var container = document.getElementById('viewScreen2Container');
     if (!container) return;
     container.style.display = state.siteMapVisible ? 'none' : '';
 
@@ -225,14 +227,23 @@
       container.className = 'grid-container';
       container.innerHTML = '';
 
+      if (sortedAreas.length === 0) {
+        container.innerHTML = '<div class="label-muted" style="padding:20px;">Sin áreas registradas. Realiza una carga masiva.</div>';
+        return;
+      }
+
       sortedAreas.forEach(function(a) {
         var card = document.createElement('article');
         card.className = 'card-area ' + (a.maxSev === 'Rojo' || a.maxSev === 'Naranja' ? 'anim-' + a.maxSev.toLowerCase() : '');
         card.onclick = function() { window.CIO.seleccionarArea(a.name); };
 
-        card.innerHTML = '<span class="label-muted">Área Operacional</span>' +
-          '<h3 class="value-strong" style="margin:4px 0 8px 0;">' + sanitize(a.name) + '</h3>' +
-          '<div style="display:flex; justify-content:space-between; border-top:1px solid var(--border-card); padding-top:8px;">' +
+        card.innerHTML = 
+          '<div class="card-top-bar">' +
+            '<span class="label-muted">Área Operacional</span>' +
+            '<span class="badge-indicator" style="background:' + SEV_COLOR[a.maxSev] + '; color:#fff;">' + a.maxSev.toUpperCase() + '</span>' +
+          '</div>' +
+          '<h3 class="value-strong" style="margin:4px 0 10px 0;">' + sanitize(a.name) + '</h3>' +
+          '<div style="display:flex; justify-content:space-between; border-top:1px solid var(--glass-border); padding-top:8px;">' +
             '<div><span class="label-muted">Activos</span><div class="value-strong">' + a.count + '</div></div>' +
             '<div><span class="label-muted">Condición</span><div class="value-strong" style="color:' + SEV_COLOR[a.maxSev] + '">' + (a.critical > 0 ? (a.critical + ' Alertas') : 'Normal') + '</div></div>' +
           '</div>';
@@ -246,7 +257,7 @@
       eqsArea.sort(function(a, b) { return SEV_PESO[calcMaxSev(b.componentes)] - SEV_PESO[calcMaxSev(a.componentes)]; });
 
       var navHeader = document.createElement('div');
-      navHeader.style.cssText = "grid-column: 1/-1; display:flex; align-items:center; gap:10px; margin-bottom:4px; padding:8px 12px; border-radius:8px;";
+      navHeader.style.cssText = "grid-column: 1/-1; display:flex; align-items:center; gap:10px; margin-bottom:4px; padding:8px 12px; border-radius:8px; background:var(--glass-card); border:1px solid var(--glass-border);";
       navHeader.innerHTML = '<button class="btn-base" type="button" onclick="window.CIO.volverAreas()">⬅️ Volver a Áreas</button>' +
         '<span style="font-weight:700; color:var(--accent-color); font-size:0.85rem;">Área: ' + sanitize(state.areaSeleccionada) + '</span>';
       container.appendChild(navHeader);
@@ -262,15 +273,26 @@
         card.className = 'card-equipo sev-' + s.toLowerCase() + ' ' + (s === 'Rojo' || s === 'Naranja' ? 'anim-' + s.toLowerCase() : '');
         card.onclick = function() { window.CIO.irANivel3Equipo(eq.id); };
 
-        var badgeTerreno = fieldReports.length > 0 ? ('<span class="badge-field-floating">💬 Ronda (' + fieldReports.length + ')</span>') : '';
-        var badgeSap = saps.countAvisos > 0 ? ('<div style="font-size:0.58rem; color:#60a5fa; font-weight:700; margin-top:2px;">AV: ' + saps.countAvisos + ' | OM: ' + saps.countOms + '</div>') : '';
+        var badgeTerreno = fieldReports.length > 0 ? ('<span class="badge-indicator badge-reportes">💬 ' + fieldReports.length + '</span>') : '';
+        var badgeRuta = aud.vencido 
+          ? ('<span class="badge-indicator badge-vencido">⏱️ >30d</span>') 
+          : ('<span class="badge-indicator badge-al-dia">✅ Al día</span>');
+        
+        var badgeSap = saps.countAvisos > 0 
+          ? ('<div style="font-size:0.68rem; color:#2563eb; font-weight:700;">AV: ' + saps.countAvisos + ' | OM: ' + saps.countOms + '</div>') 
+          : '';
 
-        card.innerHTML = badgeTerreno +
-          (aud.vencido ? ('<span class="badge-vencido-floating">⏱️ >30d</span>') : '') +
-          '<span class="eq-type">' + sanitize(eq.tipo || eq.area) + '</span>' +
+        card.innerHTML = 
+          '<div class="card-top-bar">' +
+            '<span class="eq-type">' + sanitize(eq.tipo || eq.area) + '</span>' +
+            '<div style="display:flex; gap:4px;">' + badgeTerreno + badgeRuta + '</div>' +
+          '</div>' +
           '<div class="eq-tag code-font">' + sanitize(tagValue) + '</div>' +
-          '<span class="eq-type" style="color:' + SEV_COLOR[s] + '; font-weight:bold;">' + s.toUpperCase() + '</span>' +
-          badgeSap;
+          '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">' +
+            '<span style="color:' + SEV_COLOR[s] + '; font-weight:800; font-size:0.8rem;">' + s.toUpperCase() + '</span>' +
+            badgeSap +
+          '</div>';
+
         container.appendChild(card);
       });
     }
@@ -315,7 +337,8 @@
           '<strong>' + sanitize(p.componente) + ':</strong> AV ' + sanitize(p.aviso) + ' ➔ OM ' + sanitize(p.om) + '</span>';
       }).join('') : '<span style="color:var(--text-muted); font-size:0.8rem; font-style:italic;">Sin Avisos / OM SAP asociadas</span>';
 
-      diagBox.innerHTML = '<div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; align-items:center; border-bottom:1px solid var(--glass-border); padding-bottom:10px; margin-bottom:10px;">' +
+      diagBox.innerHTML = 
+        '<div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; align-items:center; border-bottom:1px solid var(--glass-border); padding-bottom:10px; margin-bottom:10px;">' +
           '<div><span class="label-muted">Condición Crítica</span><div style="font-weight:900; font-size:1.15rem; color:' + SEV_COLOR[sevGlobal] + ';">' + sevGlobal.toUpperCase() + '</div></div>' +
           '<div><span class="label-muted">Estatus</span><div style="font-weight:700;">' + sanitize(eq.estatusHallazgo || 'Abierto') + '</div></div>' +
           '<div><span class="label-muted">Última Medición</span><div style="font-weight:700;">' + (eq.fechaMedicion || 'S/F') + '</div></div>' +
@@ -323,7 +346,7 @@
         '<div><span class="label-muted">Órdenes SAP:</span><div style="margin-top:6px;">' + paresHtml + '</div></div>';
     }
 
-    var grid = document.getElementById('n3GridCards') || document.getElementById('gridComponentesNivel3');
+    var grid = document.getElementById('n3GridCards');
     if (!grid) return;
     grid.innerHTML = '';
 
@@ -338,12 +361,17 @@
       card.onclick = function() { window.CIO.abrirDetalleComponenteModal(item.originalIndex); };
 
       var cantEspectros = (c.espectros && c.espectros.length > 0) ? c.espectros.length : 0;
-      var badgeFotos = cantEspectros > 0 ? ('<span class="badge-field-floating">📈 ' + cantEspectros + ' Espectro(s)</span>') : '';
+      var badgeFotos = cantEspectros > 0 ? ('<span class="badge-indicator badge-reportes">📈 ' + cantEspectros + ' FFT</span>') : '';
 
-      card.innerHTML = badgeFotos +
-        '<span class="eq-type" style="color:#2563eb; font-weight:bold;">' + sanitize(c.nombre || 'Componente') + '</span>' +
+      card.innerHTML = 
+        '<div class="card-top-bar">' +
+          '<span class="eq-type" style="color:#2563eb; font-weight:800;">' + sanitize(c.nombre || 'Componente') + '</span>' +
+          badgeFotos +
+        '</div>' +
         '<div class="eq-tag code-font" style="font-size:0.88rem;">' + sanitize(c.punto || 'Punto General') + '</div>' +
-        '<span class="eq-type" style="color:' + SEV_COLOR[s] + '; font-weight:bold;">' + s.toUpperCase() + ' (' + (c.rms || '0.0') + ' mm/s)</span>';
+        '<div style="margin-top:6px; font-weight:800; font-size:0.8rem; color:' + SEV_COLOR[s] + ';">' +
+          s.toUpperCase() + ' (' + (c.rms || '0.0') + ' mm/s)' +
+        '</div>';
 
       grid.appendChild(card);
     });
@@ -353,25 +381,29 @@
       .sort(function(a, b) { return new Date(b.timestamp || 0) - new Date(a.timestamp || 0); });
 
     var cardTerreno = document.createElement('article');
-    cardTerreno.className = 'card-equipo card-terreno-dashboard';
+    cardTerreno.className = 'card-equipo';
+    cardTerreno.style.borderColor = 'rgba(2, 132, 199, 0.4)';
     cardTerreno.onclick = function() { window.CIO.abrirModalHistoricoTerreno(); };
 
-    cardTerreno.innerHTML = '<span class="badge-field-floating" style="background:#0284c7; color:#ffffff;">' + myReports.length + ' Reportes</span>' +
-      '<span class="eq-type" style="color:#0284c7; font-weight:bold;">RONDA EN PLANTA</span>' +
+    cardTerreno.innerHTML = 
+      '<div class="card-top-bar">' +
+        '<span class="eq-type" style="color:#0284c7; font-weight:bold;">RONDA EN PLANTA</span>' +
+        '<span class="badge-indicator badge-reportes">' + myReports.length + ' Reportes</span>' +
+      '</div>' +
       '<div class="eq-tag code-font" style="font-size:0.88rem; color:#0284c7;">📸 Terreno</div>' +
-      '<span class="eq-type">Ver Historial Completo</span>';
+      '<div style="margin-top:6px; font-size:0.75rem; color:var(--text-muted);">Ver Historial Completo</div>';
 
     grid.appendChild(cardTerreno);
   }
 
   // PANTALLA 4: SUPERADMIN
   function renderScreen4() {
-    var filterEl = document.getElementById('superAdminFilterSite') || document.getElementById('filtroSuperAdminFaena');
+    var filterEl = document.getElementById('superAdminFilterSite');
     var filter = filterEl ? filterEl.value : 'TODAS';
     var eqs = filter === 'TODAS' ? state.equipos : state.equipos.filter(function(e) { return normalizarFaena(e.siteId) === filter; });
     eqs.sort(function(a, b) { return SEV_PESO[calcMaxSev(b.componentes)] - SEV_PESO[calcMaxSev(a.componentes)]; });
 
-    var container = document.getElementById('viewScreen4Global') || document.getElementById('gridSuperAdminGlobal') || document.getElementById('superAdminContent');
+    var container = document.getElementById('viewScreen4Global');
     if (!container) return;
 
     container.innerHTML = '';
@@ -381,13 +413,59 @@
 
       var card = document.createElement('article');
       card.className = 'card-equipo sev-' + s.toLowerCase() + ' ' + (s === 'Rojo' || s === 'Naranja' ? 'anim-' + s.toLowerCase() : '');
-      card.innerHTML = '<span class="label-muted">' + sanitize(eq.siteId) + '</span>' +
+      card.innerHTML = 
+        '<div class="card-top-bar">' +
+          '<span class="label-muted">' + sanitize(eq.siteId) + '</span>' +
+          '<span class="badge-indicator" style="background:' + SEV_COLOR[s] + '; color:#fff;">' + s.toUpperCase() + '</span>' +
+        '</div>' +
         '<div class="eq-tag code-font">' + sanitize(tagValue) + '</div>' +
         '<div style="margin-top:6px;">' +
           '<button class="btn-base btn-primary" type="button" style="padding:2px 8px; font-size:0.65rem;" onclick="window.CIO.irANivel3Equipo(\'' + eq.id + '\')">🔍 Ver Nivel 3</button>' +
         '</div>';
       container.appendChild(card);
     });
+  }
+
+  function actualizarMapaSite(eqs) {
+    if (typeof L === 'undefined') return;
+    var mapBox = document.getElementById('view-site-map');
+    if (!mapBox) return;
+
+    try {
+      if (!state.mapaSite) {
+        state.mapaSite = L.map('view-site-map').setView([-28.2876, -70.8130], 13);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(state.mapaSite);
+        state.capaSite = L.layerGroup().addTo(state.mapaSite);
+      } else {
+        state.mapaSite.invalidateSize();
+      }
+
+      state.capaSite.clearLayers();
+      var bounds = [];
+
+      eqs.forEach(function(eq) {
+        var lat = parseFloat(eq.lat);
+        var lng = parseFloat(eq.lng);
+        if (!isNaN(lat) && !isNaN(lng) && lat !== 0) {
+          var s = calcMaxSev(eq.componentes);
+          var col = SEV_COLOR[s] || '#6b7280';
+          var pulse = s === 'Rojo' ? 'map-pin-pulse' : '';
+          var tagValue = eq.tag || eq.Tag || eq.id || 'S/T';
+          var icon = L.divIcon({
+            className: 'custom-pin',
+            html: '<div class="' + pulse + '" style="background:' + col + '; width:20px; height:20px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 10px ' + col + ';"></div>',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+          });
+          L.marker([lat, lng], { icon: icon }).bindPopup('<strong>' + sanitize(tagValue) + '</strong><br>' + sanitize(eq.area) + '<br><span style="color:' + col + ';font-weight:bold;">' + s + '</span>').addTo(state.capaSite);
+          bounds.push([lat, lng]);
+        }
+      });
+
+      if (bounds.length) state.mapaSite.fitBounds(L.latLngBounds(bounds), { padding: [30, 30] });
+    } catch (e) {
+      console.warn("Error mapa:", e);
+    }
   }
 
   // Sincronización en tiempo real desde Firebase
@@ -482,6 +560,10 @@
     },
 
     stepBackScreen2: function() {
+      if (state.siteMapVisible) {
+        window.CIO.toggleSiteMapTab();
+        return;
+      }
       if (state.areaSeleccionada) {
         window.CIO.volverAreas();
         return;
@@ -500,6 +582,8 @@
 
     toggleTheme: function() {
       document.body.classList.toggle('light-mode');
+      var isLight = document.body.classList.contains('light-mode');
+      localStorage.setItem('CIO_THEME', isLight ? 'light' : 'dark');
     },
 
     solicitarPermisoSuperAdmin: function() {
@@ -531,7 +615,7 @@
     },
 
     exportarReporteGerenciaPorFaena: function() {
-      var filterEl = document.getElementById('superAdminFilterSite') || document.getElementById('filtroSuperAdminFaena');
+      var filterEl = document.getElementById('superAdminFilterSite');
       var target = filterEl ? filterEl.value : (state.faenaSeleccionada || FAENAS[0]);
       var count = state.equipos.filter(function(e) { return normalizarFaena(e.siteId) === target; }).length;
       var txt = 'REPORTE FAENA [' + target + ']\nTotal Activos: ' + count + '\nFecha: ' + new Date().toISOString();
@@ -550,20 +634,20 @@
       window.CIO.abrirEdicionEquipoNuevoAuth();
     },
 
-    toggleMapModal: function() {
-      window.CIO.toggleSiteMapTab();
-    },
-
     toggleSiteMapTab: function() {
       state.siteMapVisible = !state.siteMapVisible;
       var mapBox = document.getElementById('view-site-map');
       var container = document.getElementById('viewScreen2Container');
       var lbl = document.getElementById('labelToggleSiteMap');
+      var target = state.faenaSeleccionada || FAENAS[0];
 
       if (state.siteMapVisible) {
         if (mapBox) mapBox.style.display = 'block';
         if (container) container.style.display = 'none';
         if (lbl) lbl.innerText = 'Ver Tarjetas';
+        setTimeout(function() {
+          actualizarMapaSite(state.equipos.filter(function(e) { return normalizarFaena(e.siteId) === target; }));
+        }, 150);
       } else {
         if (mapBox) mapBox.style.display = 'none';
         if (container) container.style.display = '';
@@ -646,7 +730,7 @@
         state.usuarioActivo = nombre;
         state.faenaAsignada = faena;
         
-        // Habilitar visualización de botones administrativos y de edición
+        // Habilitar visualización de controles protegidos
         document.body.classList.add('user-authenticated');
 
         var lbl = document.getElementById('labelUsuarioBtn');
@@ -907,8 +991,8 @@
 
       cont.innerHTML = state.tempEspectrosEdicion.map(function(src, i) {
         return '<div class="item-espectro-preview" style="position:relative; display:inline-block; margin-right:8px; margin-bottom:8px;">' +
-            '<img src="' + src + '" alt="Espectro" style="width:90px; height:60px; object-fit:cover; border-radius:4px; border:1px solid #ccc; cursor:pointer;" onclick="window.CIO.abrirFotoEnNuevaPestana(\'' + src + '\')" />' +
-            '<button type="button" class="btn-borrar-espectro" style="position:absolute; top:-4px; right:-4px; background:#ef4444; color:#fff; border:none; border-radius:50%; width:18px; height:18px; cursor:pointer; font-size:11px;" onclick="window.CIO.eliminarFotoEspectroEdicion(' + i + ')">&times;</button>' +
+            '<img src="' + src + '" alt="Espectro" style="width:95px; height:65px; object-fit:cover; border-radius:6px; border:1px solid var(--glass-border); cursor:pointer;" onclick="window.CIO.abrirFotoEnNuevaPestana(\'' + src + '\')" />' +
+            '<button type="button" class="btn-borrar-espectro" style="position:absolute; top:-5px; right:-5px; background:#ef4444; color:#fff; border:none; border-radius:50%; width:18px; height:18px; cursor:pointer; font-size:11px;" onclick="window.CIO.eliminarFotoEspectroEdicion(' + i + ')">&times;</button>' +
           '</div>';
       }).join('');
     },
@@ -1377,10 +1461,12 @@
     }
   };
 
-  // Enlace directo para compatibilidad con botones inline
   window.salirSuperAdmin = window.CIO.salirSuperAdmin;
 
   document.addEventListener('DOMContentLoaded', function() {
+    if (localStorage.getItem('CIO_THEME') === 'light') {
+      document.body.classList.add('light-mode');
+    }
     window.CIO.goScreen(1);
   });
 })();
