@@ -147,7 +147,7 @@
     };
   }
 
-  // PANTALLA 1: LISTADO DE FAENAS
+  // PANTALLA 1: FAENAS
   function renderScreen1() {
     var container = document.getElementById('viewScreen1Content') || document.getElementById('screen1Container') || document.getElementById('gridFaenas');
     if (!container) return;
@@ -276,7 +276,7 @@
     }
   }
 
-  // PANTALLA 3: NIVEL 3 CON VERIFICACIÓN SEGURA DE ELEMENTOS
+  // PANTALLA 3: NIVEL 3 (DETALLE DE ACTIVO Y TREN MOTRIZ)
   function renderScreen3() {
     if (!state.equipoIdNivel3) {
       window.CIO.goScreen(2);
@@ -443,19 +443,24 @@
   window.CIO = {
     goScreen: function(num) {
       state.currentScreen = num;
-      document.querySelectorAll('.screen-view, [id^="screen-"], [id^="view-screen-"]').forEach(function(el) { 
+      document.querySelectorAll('.screen-view, [id^="screen-"]').forEach(function(el) { 
         el.classList.remove('active');
         el.style.display = 'none';
       });
       
-      var sc = document.getElementById('screen-' + num) || document.getElementById('view-screen-' + num);
+      var sc = document.getElementById('screen-' + num);
       if (sc) {
         sc.classList.add('active');
         sc.style.display = 'block';
       }
 
-      var headerTitle = document.getElementById('headerScreenTitle') || document.getElementById('headerTitlePrincipal');
-      var titles = { 1: 'Vista Pública (Global - DEV)', 2: 'Faena: ' + (state.faenaSeleccionada || 'Operativa'), 3: 'Nivel 3: Tren Motriz & Puntos de Inspección', 4: 'Consola SuperAdmin (DEV)' };
+      var headerTitle = document.getElementById('headerScreenTitle');
+      var titles = { 
+        1: 'Vista Pública (Global - DEV)', 
+        2: 'Faena: ' + (state.faenaSeleccionada || 'Operativa'), 
+        3: 'Nivel 3: Tren Motriz & Puntos de Inspección', 
+        4: 'Consola SuperAdmin (DEV)' 
+      };
       if (headerTitle) headerTitle.innerText = titles[num] || 'CIO';
       refresh();
     },
@@ -552,7 +557,7 @@
     toggleSiteMapTab: function() {
       state.siteMapVisible = !state.siteMapVisible;
       var mapBox = document.getElementById('view-site-map');
-      var container = document.getElementById('viewScreen2Container') || document.getElementById('gridEquiposContainer');
+      var container = document.getElementById('viewScreen2Container');
       var lbl = document.getElementById('labelToggleSiteMap');
 
       if (state.siteMapVisible) {
@@ -640,21 +645,29 @@
       function loginLocal(nombre, faena) {
         state.usuarioActivo = nombre;
         state.faenaAsignada = faena;
+        
+        // Habilitar visualización de botones administrativos y de edición
         document.body.classList.add('user-authenticated');
+
         var lbl = document.getElementById('labelUsuarioBtn');
         if (lbl) lbl.innerText = nombre.split(' ')[0];
         var dropInfo = document.getElementById('dropUserInfo');
-        if (dropInfo) dropInfo.innerText = 'Activo: ' + nombre + ' | Faena: ' + faena;
+        if (dropInfo) dropInfo.innerText = 'Operador: ' + nombre + ' | ' + faena;
         var modal = document.getElementById('modalAuth');
         if (modal) modal.close();
         alert('✅ Bienvenido ' + nombre);
+        refresh();
       }
     },
 
     cerrarSesionUsuario: function() {
       state.usuarioActivo = null;
       state.faenaAsignada = null;
+      state.isSuperAdmin = false;
+
+      // Ocultar de inmediato todos los controles restringidos
       document.body.classList.remove('user-authenticated');
+
       var lbl = document.getElementById('labelUsuarioBtn');
       if (lbl) lbl.innerText = 'Entrar';
       var dropInfo = document.getElementById('dropUserInfo');
@@ -664,7 +677,7 @@
       window.CIO.goScreen(1);
     },
 
-    // Sincronización con Google Sheets Webhook
+    // Sincronización continua con Webhook de Google Sheets
     sincronizarConGoogleSheets: function(payload) {
       if (!GOOGLE_SHEETS_WEBHOOK_URL || GOOGLE_SHEETS_WEBHOOK_URL.indexOf("http") !== 0) return;
 
@@ -888,7 +901,7 @@
       if (!cont) return;
 
       if (state.tempEspectrosEdicion.length === 0) {
-        cont.innerHTML = '<div style="font-size:0.75rem; color:var(--text-muted); font-style:italic;">No hay espectros o fotos cargadas para este punto.</div>';
+        cont.innerHTML = '<div style="font-size:0.75rem; color:var(--text-muted); font-style:italic;">No hay espectros cargados para este punto.</div>';
         return;
       }
 
@@ -905,7 +918,7 @@
       window.CIO.renderMiniaturasEspectrosEdicion();
     },
 
-    // ASISTENTE DE IA GEMINI (DIAGNÓSTICO TÉCNICO DIRECTO SIN PREFIJOS)
+    // ASISTENTE TÉCNICO MULTIMODAL GEMINI AI (PERICIAL DIRECTO)
     generarDictamenTecnicoIso: async function() {
       var nom = document.getElementById('indCompNombre')?.value.trim() || 'Componente';
       var punto = document.getElementById('indCompPunto')?.value.trim() || 'Punto de medición';
@@ -944,8 +957,8 @@
         }
       }
 
-      if (txtSugDiag) txtSugDiag.value = "⏳ Evaluando parámetros mecánicos...";
-      if (txtSugRecom) txtSugRecom.value = "⏳ Generando plan de acción correctivo...";
+      if (txtSugDiag) txtSugDiag.value = "⏳ Evaluando espectro y parámetros bajo ISO 20816-3...";
+      if (txtSugRecom) txtSugRecom.value = "⏳ Generando plan de acción pericial...";
 
       try {
         var promptText = "Actúa como un Ingeniero Analista Especialista en Monitoreo de Condición y Vibraciones Mecánicas categoría ISO 18436-2.\n" +
@@ -953,9 +966,9 @@
           "Punto de Inspección: " + punto + "\n" +
           "Velocidad Global RMS: " + rms + " mm/s (Evaluar bajo norma ISO 20816-3).\n" +
           "Observación del Analista: " + (textoAnalista || "Sin comentarios previos") + "\n\n" +
-          "REGLA CRÍTICA:\n" +
-          "NO incluyas etiquetas entre corchetes, prefijos como '[IA Predictiva]', ni introducciones como 'Aquí está el diagnóstico'. Redacta el dictamen técnico directamente como un humano especialista.\n\n" +
-          "Responde EXCLUSIVAMENTE con un JSON en este formato sin formato markdown adicional:\n" +
+          "REGLA CRÍTICA DE FORMATO:\n" +
+          "NO incluyas corchetes, prefijos como '[IA Predictiva]', ni introducciones como 'Aquí está el diagnóstico'. Comienza DIRECTAMENTE con la redacción técnica como un humano perito.\n\n" +
+          "Responde EXCLUSIVAMENTE con un JSON válido en este formato exacto, sin markdown:\n" +
           "{\"diagnostico\": \"diagnóstico técnico directo\", \"recomendacion\": \"recomendaciones mecánicas 1), 2), 3)\"}";
 
         var contentsParts = [{ text: promptText }];
@@ -999,7 +1012,7 @@
         }
 
       } catch (err) {
-        console.warn("Gemini falló, aplicando regla técnica local:", err);
+        console.warn("Gemini devolvió error, aplicando regla local:", err);
         generarLocal();
       }
     },
@@ -1154,6 +1167,81 @@
       win.document.write('<body style="margin:0; background:#0a0a0c; display:flex; justify-content:center; align-items:center; height:100vh;"><img src="' + base64Data + '" style="max-width:98%; max-height:98%; object-fit:contain;" /></body>');
     },
 
+    editarDatosGeneralesActivo: function() {
+      if (!state.usuarioActivo) {
+        alert("🔒 Acción restringida: Debes iniciar sesión.");
+        return;
+      }
+      var eq = state.equipos.find(function(e) { return e.id === state.equipoIdNivel3; });
+      if (!eq) return;
+
+      state.equipoSeleccionado = eq;
+      var setVal = function(id, val) { var el = document.getElementById(id); if (el) el.value = val || ''; };
+
+      setVal('edSiteId', eq.siteId);
+      setVal('edDomain', eq.domain || 'planta');
+      setVal('edArea', eq.area || '');
+      setVal('edTag', eq.tag || eq.Tag || eq.id || '');
+      setVal('edTipo', eq.tipo || '');
+      setVal('edEstatusHallazgo', eq.estatusHallazgo || 'Abierto');
+      setVal('edFechaMedicion', eq.fechaMedicion || '');
+      setVal('edFechaHallazgo', eq.fechaHallazgo || '');
+
+      var mEd = document.getElementById('modalEdicion');
+      if (mEd) mEd.showModal();
+    },
+
+    guardarDatosGeneralesActivo: function() {
+      if (!state.usuarioActivo || !state.equipoSeleccionado) return;
+      var getVal = function(id) { var el = document.getElementById(id); return el ? el.value : ''; };
+
+      var payload = {
+        siteId: getVal('edSiteId'),
+        domain: getVal('edDomain'),
+        area: getVal('edArea'),
+        tag: getVal('edTag'),
+        tipo: getVal('edTipo'),
+        fechaMedicion: getVal('edFechaMedicion'),
+        fechaHallazgo: getVal('edFechaHallazgo'),
+        estatusHallazgo: getVal('edEstatusHallazgo')
+      };
+
+      if (db) db.child(state.equipoSeleccionado.id).update(payload);
+      var mEd = document.getElementById('modalEdicion');
+      if (mEd) mEd.close();
+      renderScreen3();
+    },
+
+    eliminarEquipo: function() {
+      if (!state.usuarioActivo) {
+        alert("🔒 Inicia sesión para eliminar activos.");
+        return;
+      }
+      if (confirm('¿Eliminar activo?') && db && state.equipoSeleccionado) {
+        db.child(state.equipoSeleccionado.id).remove();
+        var mEd = document.getElementById('modalEdicion');
+        if (mEd) mEd.close();
+        window.CIO.goScreen(2);
+      }
+    },
+
+    auditarDiasMedicionForm: function() {
+      var medEl = document.getElementById('edFechaMedicion');
+      var val = medEl ? medEl.value : '';
+      var box = document.getElementById('edFeedbackContadorDias');
+      if (!box) return;
+
+      var aud = calcularDiasDesdeMedicion(val);
+      if (!val) {
+        box.innerHTML = '';
+        return;
+      }
+
+      box.innerHTML = aud.vencido
+        ? ('<span class="banner-contador-alerta vencido" style="font-size:0.7rem; padding:4px 8px;">⚠️ RUTA VENCIDA: ' + aud.dias + ' días sin medir</span>')
+        : ('<span class="banner-contador-alerta al-dia" style="font-size:0.7rem; padding:4px 8px;">✅ Medición vigente: ' + aud.texto + '</span>');
+    },
+
     abrirEditorInformeModal: function() {
       if (!state.usuarioActivo) {
         alert("🔒 Acceso Restringido: Como usuario invitado solo tienes permisos de visualización. Inicia sesión para emitir informes.");
@@ -1289,7 +1377,7 @@
     }
   };
 
-  // Enlaces a funciones directas desde atributos onclick del HTML existente
+  // Enlace directo para compatibilidad con botones inline
   window.salirSuperAdmin = window.CIO.salirSuperAdmin;
 
   document.addEventListener('DOMContentLoaded', function() {
