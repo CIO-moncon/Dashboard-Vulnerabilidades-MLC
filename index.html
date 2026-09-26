@@ -26,30 +26,34 @@
   <style>
     :root {
       --bg-gradient: radial-gradient(circle at 50% 0%, #151d30 0%, #090d16 100%);
-      --text-main: #f1f5f9;
+      --text-main: #f8fafc;
       --text-muted: #94a3b8;
-      --glass-card: rgba(30, 41, 59, 0.45);
-      --glass-border: rgba(255, 255, 255, 0.08);
-      --glass-highlight: rgba(255, 255, 255, 0.04);
+      --glass-card: rgba(30, 41, 59, 0.55);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --glass-highlight: rgba(255, 255, 255, 0.05);
       --accent-color: #38bdf8;
       --accent-glow: rgba(56, 189, 248, 0.15);
-      --border-card: rgba(255, 255, 255, 0.06);
-      --box-sap-bg: rgba(37, 99, 235, 0.1);
-      --box-sap-border: rgba(37, 99, 235, 0.25);
+      --input-bg: rgba(15, 23, 42, 0.6);
+      --modal-bg: rgba(15, 23, 42, 0.96);
+      --ticker-bg: rgba(15, 23, 42, 0.7);
+      --logo-box-bg: #ffffff;
+      --logo-box-border: rgba(255, 255, 255, 0.2);
     }
 
     body.light-mode {
-      --bg-gradient: radial-gradient(circle at 50% 0%, #f1f5f9 0%, #cbd5e1 100%);
+      --bg-gradient: radial-gradient(circle at 50% 0%, #f8fafc 0%, #e2e8f0 100%);
       --text-main: #0f172a;
-      --text-muted: #64748b;
-      --glass-card: rgba(255, 255, 255, 0.65);
+      --text-muted: #475569;
+      --glass-card: rgba(255, 255, 255, 0.85);
       --glass-border: rgba(0, 0, 0, 0.08);
-      --glass-highlight: rgba(255, 255, 255, 0.8);
+      --glass-highlight: rgba(0, 0, 0, 0.03);
       --accent-color: #0284c7;
       --accent-glow: rgba(2, 132, 199, 0.12);
-      --border-card: rgba(0, 0, 0, 0.06);
-      --box-sap-bg: rgba(37, 99, 235, 0.05);
-      --box-sap-border: rgba(37, 99, 235, 0.2);
+      --input-bg: rgba(255, 255, 255, 0.9);
+      --modal-bg: rgba(255, 255, 255, 0.98);
+      --ticker-bg: rgba(255, 255, 255, 0.75);
+      --logo-box-bg: #ffffff;
+      --logo-box-border: rgba(0, 0, 0, 0.1);
     }
 
     * {
@@ -63,9 +67,9 @@
       background: var(--bg-gradient);
       color: var(--text-main);
       min-height: 100vh;
-      overflow-x: hidden;
       display: flex;
       flex-direction: column;
+      transition: background 0.3s ease, color 0.3s ease;
     }
 
     .code-font {
@@ -93,10 +97,23 @@
       gap: 14px;
     }
 
-    .nav-brand img {
-      height: 38px;
+    /* ENCAPSULAMIENTO DEL LOGO CPF PARA MODO OSCURO Y CLARO */
+    .brand-logo-container {
+      background: var(--logo-box-bg);
+      border: 1px solid var(--logo-box-border);
+      padding: 4px 10px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .brand-logo-container img {
+      height: 34px;
       width: auto;
       object-fit: contain;
+      display: block;
     }
 
     .nav-brand-title {
@@ -119,31 +136,25 @@
       position: relative;
     }
 
-    /* BARRA DE INDICADORES DE MERCADO & CLIMA */
+    /* TICKER MERCADO Y CLIMA */
     .market-ticker-bar {
       display: flex;
       align-items: center;
       gap: 20px;
-      background: rgba(15, 23, 42, 0.6);
+      background: var(--ticker-bg);
       border-bottom: 1px solid var(--glass-border);
       padding: 6px 24px;
-      font-size: 0.75rem;
+      font-size: 0.76rem;
       color: var(--text-muted);
       overflow-x: auto;
       white-space: nowrap;
-    }
-
-    .ticker-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
     }
 
     .ticker-item strong {
       color: var(--text-main);
     }
 
-    /* REGLA MAESTRA DE SEGURIDAD: OCULTAR ELEMENTOS PRIVADOS SI NO ESTÁ AUTENTICADO */
+    /* SEGURIDAD: BOTONES PRIVADOS SOLO VISIBLES AUTENTICADOS */
     .auth-only {
       display: none !important;
     }
@@ -157,7 +168,7 @@
       background: var(--glass-highlight);
       color: var(--text-main);
       border: 1px solid var(--glass-border);
-      padding: 6px 12px;
+      padding: 7px 14px;
       border-radius: 8px;
       font-size: 0.78rem;
       font-weight: 600;
@@ -166,7 +177,6 @@
       align-items: center;
       gap: 6px;
       transition: all 0.2s ease;
-      backdrop-filter: blur(8px);
     }
 
     .btn-base:hover {
@@ -185,13 +195,13 @@
     /* MENÚ USUARIO */
     .user-dropdown {
       position: absolute;
-      top: 110%;
+      top: 115%;
       right: 0;
-      background: #0f172a;
+      background: var(--modal-bg);
       border: 1px solid var(--glass-border);
       border-radius: 8px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-      padding: 10px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      padding: 12px;
       min-width: 220px;
       display: none;
       flex-direction: column;
@@ -199,14 +209,12 @@
       z-index: 1000;
     }
 
-    .user-dropdown.is-active {
-      display: flex;
-    }
+    .user-dropdown.is-active { display: flex; }
 
     /* CONTENEDOR PRINCIPAL */
     main.cio-viewport {
       flex: 1;
-      padding: 18px 24px;
+      padding: 20px 24px;
       max-width: 1600px;
       width: 100%;
       margin: 0 auto;
@@ -219,15 +227,9 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
       flex-wrap: wrap;
       gap: 12px;
-    }
-
-    .view-title-group h2 {
-      font-size: 1.35rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
     }
 
     .label-muted {
@@ -246,17 +248,17 @@
     /* GRILLAS LIQUID GLASS */
     .grid-container {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
       gap: 16px;
     }
 
     .grid-equipos {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
       gap: 14px;
     }
 
-    /* TARJETAS GLASS */
+    /* TARJETAS CON DISEÑO Y POSICIONAMIENTO LIMPIO */
     .card-area, .card-equipo {
       background: var(--glass-card);
       backdrop-filter: blur(12px);
@@ -265,97 +267,63 @@
       border-radius: 12px;
       padding: 16px;
       cursor: pointer;
-      position: relative;
-      overflow: hidden;
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .card-area:hover, .card-equipo:hover {
-      transform: translateY(-3px);
-      border-color: rgba(255, 255, 255, 0.2);
-      box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.4);
-    }
-
-    .card-equipo {
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      min-height: 120px;
+      min-height: 125px;
+      position: relative;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
+    .card-area:hover, .card-equipo:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    /* CABECERA INTERNA DE TARJETA: BADGES SIN SUPERPOSICIONES */
+    .card-top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      gap: 6px;
+    }
+
+    .badge-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge-reportes { background: #0284c7; color: #ffffff; }
+    .badge-vencido { background: #ef4444; color: #ffffff; }
+    .badge-al-dia { background: #10b981; color: #ffffff; }
+
     .card-equipo .eq-type {
-      font-size: 0.7rem;
+      font-size: 0.72rem;
       color: var(--text-muted);
       text-transform: uppercase;
       font-weight: 700;
     }
 
     .card-equipo .eq-tag {
-      font-size: 1.05rem;
+      font-size: 1.1rem;
       font-weight: 800;
-      margin: 4px 0;
+      margin: 4px 0 6px 0;
       color: var(--text-main);
     }
 
-    /* SEVERIDADES Y BORDES */
     .sev-rojo { border-left: 5px solid #ef4444; }
     .sev-naranja { border-left: 5px solid #f97316; }
     .sev-amarillo { border-left: 5px solid #eab308; }
     .sev-verde { border-left: 5px solid #22c55e; }
     .sev-plomo { border-left: 5px solid #6b7280; }
-
-    /* ANIMACIONES */
-    @keyframes pulse-rojo {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-      50% { box-shadow: 0 0 15px 2px rgba(239, 68, 68, 0.6); }
-    }
-    .anim-rojo { animation: pulse-rojo 2.5s infinite; }
-
-    .badge-field-floating {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: rgba(3, 105, 161, 0.75);
-      color: #fff;
-      font-size: 0.62rem;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
-      backdrop-filter: blur(4px);
-    }
-
-    .badge-vencido-floating {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: rgba(220, 38, 38, 0.85);
-      color: #fff;
-      font-size: 0.62rem;
-      font-weight: 800;
-      padding: 2px 6px;
-      border-radius: 4px;
-      backdrop-filter: blur(4px);
-    }
-
-    .banner-contador-alerta {
-      display: inline-block;
-      padding: 5px 12px;
-      border-radius: 6px;
-      font-size: 0.78rem;
-      font-weight: 700;
-    }
-
-    .banner-contador-alerta.vencido {
-      background: rgba(220, 38, 38, 0.15);
-      border: 1px solid rgba(220, 38, 38, 0.3);
-      color: #f87171;
-    }
-
-    .banner-contador-alerta.al-dia {
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #34d399;
-    }
 
     .n3-diagnostic-box {
       background: var(--glass-card);
@@ -366,32 +334,41 @@
       margin-bottom: 20px;
     }
 
-    /* MODALES GLASS */
+    /* MODALES PROFESIONALES Y ERGONÓMICOS */
     dialog {
-      background: rgba(15, 23, 42, 0.95);
+      background: var(--modal-bg);
       border: 1px solid var(--glass-border);
       border-radius: 14px;
       color: var(--text-main);
       padding: 24px;
-      max-width: 850px;
-      width: 92%;
+      max-width: 900px;
+      width: 94%;
       margin: auto;
-      backdrop-filter: blur(25px);
-      -webkit-backdrop-filter: blur(25px);
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
     }
 
     dialog::backdrop {
-      background: rgba(0, 0, 0, 0.65);
+      background: rgba(0, 0, 0, 0.7);
       backdrop-filter: blur(6px);
     }
 
     dialog h3 {
-      font-size: 1.15rem;
+      font-size: 1.2rem;
       font-weight: 800;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       border-bottom: 1px solid var(--glass-border);
       padding-bottom: 8px;
+    }
+
+    /* LAYOUT DE 2 COLUMNAS PARA EL MODAL DE EDICIÓN */
+    .modal-grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    @media (max-width: 820px) {
+      .modal-grid-2col { grid-template-columns: 1fr; }
     }
 
     .form-group { margin-bottom: 14px; }
@@ -401,26 +378,84 @@
       color: var(--text-muted);
       text-transform: uppercase;
       font-weight: 700;
-      margin-bottom: 4px;
+      margin-bottom: 5px;
     }
 
     .form-group input, .form-group select, .form-group textarea {
       width: 100%;
-      background: rgba(0, 0, 0, 0.3);
+      background: var(--input-bg);
       border: 1px solid var(--glass-border);
-      color: #ffffff;
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 0.85rem;
+      color: var(--text-main);
+      padding: 9px 12px;
+      border-radius: 7px;
+      font-size: 0.86rem;
       outline: none;
+      transition: border-color 0.2s ease;
     }
 
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--accent-color);
+    }
+
+    /* ZONA DE CARGA DE ESPECTROS PROFESIONAL */
+    .drop-espectros-zone {
+      border: 2px dashed var(--glass-border);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+      background: var(--glass-highlight);
+      cursor: pointer;
+      margin-top: 6px;
+    }
+
+    .drop-espectros-zone:hover {
+      border-color: var(--accent-color);
+    }
+
+    .preview-espectros-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+      max-height: 140px;
+      overflow-y: auto;
+    }
+
+    .item-espectro-preview {
+      position: relative;
+      display: inline-block;
+    }
+
+    .item-espectro-preview img {
+      width: 95px;
+      height: 65px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--glass-border);
+      cursor: pointer;
+    }
+
+    .item-espectro-preview button {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    /* ASISTENTE IA PERICIAL */
     .box-ai-assistant {
-      background: linear-gradient(135deg, rgba(30, 58, 138, 0.2) 0%, rgba(15, 23, 42, 0.4) 100%);
-      border: 1px solid rgba(59, 130, 246, 0.3);
+      background: linear-gradient(135deg, rgba(2, 132, 199, 0.15) 0%, rgba(15, 23, 42, 0.3) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.3);
       border-radius: 10px;
       padding: 14px;
-      margin: 14px 0;
+      margin-top: 10px;
     }
 
     #view-site-map {
@@ -434,10 +469,12 @@
 </head>
 <body>
 
-  <!-- BARRA DE NAVEGACIÓN SUPERIOR -->
+  <!-- BARRA DE NAVEGACIÓN -->
   <header class="cio-navbar">
     <div class="nav-brand">
-      <img src="logo-cpf.png" alt="CPF Ingeniería" onerror="this.style.display='none'" />
+      <div class="brand-logo-container">
+        <img src="logo-cpf.png" alt="CPF Ingeniería" onerror="this.style.display='none'" />
+      </div>
       <div>
         <div class="nav-brand-title">CIO CONFIABILIDAD & PREDICTIVO</div>
         <div class="nav-brand-sub" id="headerScreenTitle">Vista Pública (Global - DEV)</div>
@@ -445,9 +482,7 @@
     </div>
 
     <div class="nav-actions">
-      <button class="btn-base" type="button" onclick="window.CIO.toggleTheme()">🌓 Tema</button>
-      
-      <!-- BOTÓN SUPERADMIN: SOLO VISIBLE SI YA ESTÁ AUTENTICADO -->
+      <button class="btn-base" type="button" onclick="window.CIO.toggleTheme()">🌓 Modo Tema</button>
       <button class="btn-base auth-only" type="button" onclick="window.CIO.solicitarPermisoSuperAdmin()">🔑 SuperAdmin</button>
       
       <button class="btn-base btn-primary" type="button" id="btnUsuarioMenu" onclick="window.CIO.handleUserBtnClick()">
@@ -462,7 +497,7 @@
     </div>
   </header>
 
-  <!-- BARRA DE INDICADORES DE MERCADO & CLIMA -->
+  <!-- BARRA DE MERCADO Y CLIMA -->
   <div class="market-ticker-bar">
     <div class="ticker-item">💵 USD/CLP: <strong>945.72</strong></div>
     <span>•</span>
@@ -473,13 +508,13 @@
     <div class="ticker-item">☀️ Clima: <strong>22°C (Vallenar)</strong></div>
   </div>
 
-  <!-- CONTENEDOR DE PANTALLAS -->
+  <!-- CONTENEDOR PRINCIPAL -->
   <main class="cio-viewport">
 
-    <!-- PANTALLA 1: LISTADO DE FAENAS -->
+    <!-- PANTALLA 1: FAENAS -->
     <section id="screen-1" class="screen-view active">
       <div class="view-header">
-        <div class="view-title-group">
+        <div>
           <span class="label-muted">Consolidado Corporativo CMP</span>
           <h2>Operaciones & Faenas Mineras</h2>
         </div>
@@ -501,7 +536,6 @@
             🗺️ <span id="labelToggleSiteMap">Ver Mapa de Faena</span>
           </button>
           
-          <!-- CARGA EXCEL: SOLO VISIBLE PARA USUARIOS AUTENTICADOS -->
           <label class="btn-base auth-only" style="cursor:pointer;" title="Importar base de equipos Excel">
             📥 Carga Excel
             <input type="file" accept=".xlsx, .xls" style="display:none;" onchange="window.CIO.procesarCargaExcelFaena(event)" />
@@ -513,7 +547,7 @@
       <div id="viewScreen2Container" class="grid-container"></div>
     </section>
 
-    <!-- PANTALLA 3: NIVEL 3 (DETALLE DE ACTIVO Y TREN MOTRIZ) -->
+    <!-- PANTALLA 3: NIVEL 3 (DETALLE ACTIVO Y TREN MOTRIZ) -->
     <section id="screen-3" class="screen-view">
       <div class="view-header">
         <div>
@@ -522,7 +556,6 @@
           <h2 id="n3Title" style="margin-top:4px;">Tren Motriz del Activo</h2>
         </div>
 
-        <!-- BOTONES DE ACCIÓN: SOLO VISIBLES PARA USUARIOS AUTENTICADOS -->
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <button class="btn-base auth-only" type="button" onclick="window.CIO.editarDatosGeneralesActivo()">⚙️ Editar Activo</button>
           <button class="btn-base btn-primary auth-only" type="button" onclick="window.CIO.abrirEditorInformeModal()">📄 Emitir Informe</button>
@@ -530,15 +563,15 @@
         </div>
       </div>
 
-      <div id="n3BannerMedicion" style="margin-bottom:12px;"></div>
+      <div id="n3BannerMedicion" style="margin-bottom:14px;"></div>
       <div class="n3-diagnostic-box" id="n3DiagnosticoBox"></div>
       <div class="grid-equipos" id="n3GridCards"></div>
     </section>
 
-    <!-- PANTALLA 4: CONSOLA SUPERADMIN -->
+    <!-- PANTALLA 4: SUPERADMIN -->
     <section id="screen-4" class="screen-view">
       <div class="view-header">
-        <div class="view-title-group">
+        <div>
           <button class="btn-base" type="button" onclick="window.CIO.salirSuperAdmin()">⬅️ Salir SuperAdmin</button>
           <span class="label-muted" style="margin-left:10px;">Gestión de Alta Confiabilidad</span>
           <h2>Consola Global SuperAdmin</h2>
@@ -552,9 +585,9 @@
             <option value="Planta, Mina el Romeral">Planta, Mina el Romeral</option>
             <option value="Mina, Mina el Romeral">Mina, Mina el Romeral</option>
           </select>
-          <button class="btn-base btn-success" type="button" onclick="window.CIO.abrirEdicionGlobalNuevo()">➕ Crear Activo Global</button>
+          <button class="btn-base btn-success" type="button" onclick="window.CIO.abrirEdicionGlobalNuevo()">➕ Crear Activo</button>
           <button class="btn-base btn-primary" type="button" onclick="window.CIO.exportarReporteGerenciaAlta()">📊 Reporte Alta Gerencia</button>
-          <button class="btn-base" type="button" onclick="window.CIO.exportarReporteGerenciaPorFaena()">📑 Reporte por Faena</button>
+          <button class="btn-base" type="button" onclick="window.CIO.exportarReporteGerenciaPorFaena()">📑 Reporte Faena</button>
         </div>
       </div>
       <div class="grid-equipos" id="viewScreen4Global"></div>
@@ -564,7 +597,7 @@
 
   <!-- ==================== MODALES ==================== -->
 
-  <!-- MODAL AUTENTICACIÓN -->
+  <!-- MODAL LOGIN/REGISTRO -->
   <dialog id="modalAuth">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
       <h3 id="authModalHeaderTitle" style="border:none; margin:0;">Acceso Operador CIO</h3>
@@ -611,7 +644,7 @@
     </div>
   </dialog>
 
-  <!-- MODAL DETALLE DE COMPONENTE (CONSULTA PÚBLICA) -->
+  <!-- MODAL CONSULTA DE COMPONENTE -->
   <dialog id="modalDetalleComponente">
     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
       <div>
@@ -621,7 +654,7 @@
       <button class="btn-base" type="button" onclick="document.getElementById('modalDetalleComponente').close()">&times;</button>
     </div>
 
-    <div style="margin:14px 0 10px 0; display:flex; align-items:center; gap:12px;">
+    <div style="margin:14px 0 10px 0;">
       <span class="banner-contador-alerta" id="detCompBadgeSev" style="border:1px solid;">VERDE</span>
     </div>
 
@@ -631,12 +664,12 @@
 
     <div class="form-group">
       <label>Diagnóstico Técnico Especialista</label>
-      <p id="detCompAnalisisTxt" style="font-size:0.88rem; line-height:1.4; background:rgba(0,0,0,0.25); padding:10px; border-radius:6px;"></p>
+      <p id="detCompAnalisisTxt" style="font-size:0.88rem; line-height:1.4; background:var(--input-bg); padding:10px; border-radius:6px;"></p>
     </div>
 
     <div class="form-group">
       <label>Recomendación Mecánica / Operativa</label>
-      <p id="detCompRecomTxt" style="font-size:0.88rem; line-height:1.4; background:rgba(0,0,0,0.25); padding:10px; border-radius:6px; color:#34d399;"></p>
+      <p id="detCompRecomTxt" style="font-size:0.88rem; line-height:1.4; background:var(--input-bg); padding:10px; border-radius:6px; color:#10b981;"></p>
     </div>
 
     <div class="form-group">
@@ -646,100 +679,108 @@
 
     <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
       <button class="btn-base" type="button" onclick="document.getElementById('modalDetalleComponente').close()">Cerrar</button>
-      <!-- BOTÓN EDITAR EN DETALLE: SOLO VISIBLE SI ESTÁ AUTENTICADO -->
       <button class="btn-base btn-primary auth-only" type="button" id="btnEditarDesdeDetalle" onclick="window.CIO.editarComponenteDesdeDetalleModal()">✏️ Editar este Componente</button>
     </div>
   </dialog>
 
-  <!-- MODAL EDICIÓN DE COMPONENTE -->
-  <dialog id="modalEditarComponenteIndividual">
+  <!-- MODAL EDICIÓN DE COMPONENTE REDISEÑADO (2 COLUMNAS ERGONÓMICAS) -->
+  <dialog id="modalEditarComponenteIndividual" style="max-width: 980px;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-      <h3 id="edCompModalTitle" style="border:none; margin:0;">Editar Componente</h3>
+      <h3 id="edCompModalTitle" style="border:none; margin:0;">Editar Punto de Medición</h3>
       <button class="btn-base" type="button" onclick="document.getElementById('modalEditarComponenteIndividual').close()">&times;</button>
     </div>
 
     <input type="hidden" id="edCompIndex" />
 
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-      <div class="form-group">
-        <label>Componente / Elemento</label>
-        <input type="text" id="indCompNombre" />
-      </div>
-      <div class="form-group">
-        <label>Punto de Inspección</label>
-        <input type="text" id="indCompPunto" />
-      </div>
-    </div>
-
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-      <div class="form-group">
-        <label>Velocidad Global RMS (mm/s)</label>
-        <input type="text" id="indCompRms" oninput="window.CIO.evaluarIsoRmsEnVivo()" />
-      </div>
-      <div class="form-group">
-        <label>Severidad Evaluada</label>
-        <select id="indCompSev">
-          <option value="Verde">Verde (Zona A/B - Admisible)</option>
-          <option value="Amarillo">Amarillo (Zona C - Advertencia)</option>
-          <option value="Naranja">Naranja (Alerta Elevada)</option>
-          <option value="Rojo">Rojo (Zona D - Crítico)</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-        <label style="margin:0;">Avisos & Órdenes OM SAP Asignadas:</label>
-        <button class="btn-base" type="button" style="padding:2px 8px; font-size:0.68rem;" onclick="window.CIO.agregarFilaParSapIndividual()">➕ Par SAP</button>
-      </div>
-      <div id="indParesSapContainer"></div>
-    </div>
-
-    <!-- SUBIDA DE ESPECTROS -->
-    <div class="form-group">
-      <label>📈 Cargar Espectro FFT / Cascada (Imagen o Captura):</label>
-      <input type="file" id="subirFotoEspectro" accept="image/*" multiple onchange="window.CIO.procesarSubidaEspectros(event)" />
-      <div id="previewEspectrosContainer" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;"></div>
-    </div>
-
-    <!-- ASISTENTE IA GEMINI -->
-    <div class="box-ai-assistant">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <span style="font-size:0.8rem; font-weight:800; color:#38bdf8;">🧠 Asistente Pericial Gemini AI</span>
-        <button class="btn-base btn-primary" type="button" style="font-size:0.72rem; padding:4px 10px;" onclick="window.CIO.generarDictamenTecnicoIso()">
-          ✨ Generar Dictamen Pericial
-        </button>
-      </div>
-
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:8px;">
-        <div>
-          <label style="font-size:0.68rem; color:var(--text-muted);">Sugerencia de Diagnóstico:</label>
-          <textarea id="indSugAnalisis" rows="3" readonly style="font-size:0.78rem;"></textarea>
-          <button class="btn-base" type="button" style="width:100%; margin-top:4px; font-size:0.68rem;" onclick="window.CIO.adoptarDiagnosticoSugerido()">⬇️ Adoptar Diagnóstico</button>
+    <div class="modal-grid-2col">
+      <!-- COLUMNA IZQUIERDA: PARÁMETROS, SAP Y DICTAMEN FINAL -->
+      <div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+          <div class="form-group">
+            <label>Componente</label>
+            <input type="text" id="indCompNombre" placeholder="Ej: Motor M1" />
+          </div>
+          <div class="form-group">
+            <label>Punto de Inspección</label>
+            <input type="text" id="indCompPunto" placeholder="Ej: Lado Libre (NDE)" />
+          </div>
         </div>
-        <div>
-          <label style="font-size:0.68rem; color:var(--text-muted);">Sugerencia de Recomendación:</label>
-          <textarea id="indSugRecom" rows="3" readonly style="font-size:0.78rem;"></textarea>
-          <button class="btn-base" type="button" style="width:100%; margin-top:4px; font-size:0.68rem;" onclick="window.CIO.adoptarRecomendacionSugerida()">⬇️ Adoptar Recomendación</button>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+          <div class="form-group">
+            <label>RMS Global (mm/s)</label>
+            <input type="text" id="indCompRms" oninput="window.CIO.evaluarIsoRmsEnVivo()" placeholder="Ej: 3.8" />
+          </div>
+          <div class="form-group">
+            <label>Severidad ISO</label>
+            <select id="indCompSev">
+              <option value="Verde">Verde (Zona A/B)</option>
+              <option value="Amarillo">Amarillo (Zona C)</option>
+              <option value="Naranja">Naranja (Alerta)</option>
+              <option value="Rojo">Rojo (Zona D - Crítico)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+            <label style="margin:0;">Órdenes SAP Asociadas:</label>
+            <button class="btn-base" type="button" style="padding:2px 8px; font-size:0.68rem;" onclick="window.CIO.agregarFilaParSapIndividual()">➕ Par SAP</button>
+          </div>
+          <div id="indParesSapContainer"></div>
+        </div>
+
+        <div class="form-group">
+          <label>Diagnóstico Técnico Final</label>
+          <textarea id="indCompAnalisis" rows="3" placeholder="Dictamen pericial sobre desbalanceo, rodamientos, solturas..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Recomendación Mecánica Final</label>
+          <textarea id="indCompRecom" rows="2" placeholder="Acciones preventivas / correctivas requeridas"></textarea>
         </div>
       </div>
-      <button class="btn-base btn-success" type="button" style="width:100%; margin-top:8px; font-size:0.72rem;" onclick="window.CIO.adoptarTodoDiagnosticoRecomendacion()">
-        ✅ Adoptar Todo (Diagnóstico y Recomendación)
-      </button>
+
+      <!-- COLUMNA DERECHA: ESPECTROS FFT Y ASISTENTE IA -->
+      <div>
+        <div class="form-group">
+          <label>📈 Espectro FFT / Cascada (Capturas o Fotos)</label>
+          <div class="drop-espectros-zone" onclick="document.getElementById('subirFotoEspectro').click()">
+            <span style="font-size:0.8rem; color:var(--text-muted);">📷 Clic para subir capturas de espectros</span>
+            <input type="file" id="subirFotoEspectro" accept="image/*" multiple style="display:none;" onchange="window.CIO.procesarSubidaEspectros(event)" />
+          </div>
+          <div class="preview-espectros-grid" id="previewEspectrosContainer"></div>
+        </div>
+
+        <!-- ASISTENTE IA GEMINI -->
+        <div class="box-ai-assistant">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:0.82rem; font-weight:800; color:#38bdf8;">🧠 Asistente Pericial Gemini AI</span>
+            <button class="btn-base btn-primary" type="button" style="font-size:0.72rem; padding:4px 10px;" onclick="window.CIO.generarDictamenTecnicoIso()">
+              ✨ Evaluar Espectro & RMS
+            </button>
+          </div>
+
+          <div class="form-group" style="margin-bottom:8px;">
+            <label style="font-size:0.68rem; color:var(--text-muted);">Sugerencia de Diagnóstico:</label>
+            <textarea id="indSugAnalisis" rows="2" readonly style="font-size:0.78rem;"></textarea>
+          </div>
+
+          <div class="form-group" style="margin-bottom:8px;">
+            <label style="font-size:0.68rem; color:var(--text-muted);">Sugerencia de Recomendación:</label>
+            <textarea id="indSugRecom" rows="2" readonly style="font-size:0.78rem;"></textarea>
+          </div>
+
+          <button class="btn-base btn-success" type="button" style="width:100%; justify-content:center; font-size:0.72rem;" onclick="window.CIO.adoptarTodoDiagnosticoRecomendacion()">
+            ✅ Adoptar Dictamen de la IA al Informe
+          </button>
+        </div>
+      </div>
     </div>
 
-    <div class="form-group">
-      <label>Diagnóstico Técnico Pericial</label>
-      <textarea id="indCompAnalisis" rows="3"></textarea>
-    </div>
-
-    <div class="form-group">
-      <label>Recomendación Mecánica / Operativa</label>
-      <textarea id="indCompRecom" rows="2"></textarea>
-    </div>
-
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
-      <button class="btn-base btn-danger" type="button" onclick="window.CIO.eliminarComponenteActual()">🗑️ Eliminar</button>
+    <!-- BOTONERA INFERIOR -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:18px; border-top:1px solid var(--glass-border); padding-top:12px;">
+      <button class="btn-base btn-danger" type="button" onclick="window.CIO.eliminarComponenteActual()">🗑️ Eliminar Punto</button>
       <div style="display:flex; gap:8px;">
         <button class="btn-base" type="button" onclick="document.getElementById('modalEditarComponenteIndividual').close()">Cancelar</button>
         <button class="btn-base btn-primary" type="button" onclick="window.CIO.guardarComponenteIndividual()">💾 Guardar Cambios</button>
@@ -747,7 +788,7 @@
     </div>
   </dialog>
 
-  <!-- MODAL EDICIÓN DATOS GENERALES ACTIVO -->
+  <!-- MODAL EDICIÓN ACTIVO GENERAL -->
   <dialog id="modalEdicion">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
       <h3 style="border:none; margin:0;">Editar Parámetros del Activo</h3>
@@ -820,7 +861,7 @@
     </div>
   </dialog>
 
-  <!-- MODAL INFORME -->
+  <!-- MODAL INFORME TÉCNICO -->
   <dialog id="modalEditorInforme">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
       <h3 id="infModalTitle" style="border:none; margin:0;">Emisión de Informe Técnico Oficial</h3>
@@ -854,7 +895,6 @@
     </div>
   </dialog>
 
-  <!-- Canvas oculto compresión -->
   <canvas id="resizeCanvas" style="display:none;"></canvas>
 
   <script src="app.js"></script>
