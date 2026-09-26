@@ -1,7 +1,6 @@
 (() => {
   'use strict';
 
-  // Configuración Firebase Realtime Database
   var firebaseConfig = {
     apiKey: "AIzaSyBd5MEZdMmgzBs1xCyeGYeKtQx5gJIeY3w",
     authDomain: "dashboard-vulnerabilidades-mlc.firebaseapp.com",
@@ -9,10 +8,7 @@
     projectId: "dashboard-vulnerabilidades-mlc"
   };
 
-  // Webhook de Google Apps Script conectado a Google Sheets
   var GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxxSrWh52i2QlHP5KG9mI9BOdlBFgwbtD7Sx0zgE0VOyK6bRWokkFJy3raUvC8_x0IOnQ/exec";
-
-  // Clave API de Google AI Studio (almacenada localmente en el navegador para máxima seguridad)
   var GEMINI_API_KEY = localStorage.getItem("GEMINI_API_KEY") || "";
 
   var db = null;
@@ -67,6 +63,14 @@
     });
   }
 
+  function limpiarPrefijosIA(texto) {
+    if (!texto) return '';
+    return texto
+      .replace(/^\[.*?\]:\s*/gi, '')
+      .replace(/^\[IA.*?\]\s*/gi, '')
+      .trim();
+  }
+
   function normalizarFaena(f) {
     return FAENAS.indexOf(f) !== -1 ? f : FAENAS[0];
   }
@@ -89,11 +93,9 @@
 
     var diffMs = hoy.getTime() - fechaMed.getTime();
     var dias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    var vencido = dias > 30;
-
     return {
       dias: dias,
-      vencido: vencido,
+      vencido: dias > 30,
       texto: dias >= 0 ? ('Hace ' + dias + ' día(s)') : ('En ' + Math.abs(dias) + ' día(s)')
     };
   }
@@ -141,69 +143,6 @@
     };
   }
 
-  function generarSeedLocal() {
-    var list = [];
-    var areas = ['AREA 61', 'AREA 55', 'AREA 54', 'AREA 52', 'AREA 50', 'SSEE'];
-    var now = new Date();
-
-    for (var i = 1; i <= 24; i++) {
-      var area = areas[i % areas.length];
-      var sevRand = i % 5 === 0 ? 'Rojo' : (i % 3 === 0 ? 'Naranja' : 'Verde');
-      var diasAtras = (i % 4 === 0) ? 35 : 12;
-      var fechaMed = new Date(now.getTime() - diasAtras * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-      list.push({
-        id: 'seed_eq_' + i,
-        siteId: 'Planta, Mina los Colorados',
-        domain: 'planta',
-        area: area,
-        tag: 'MH' + (2700 + i),
-        tipo: i % 2 === 0 ? 'Transportador' : 'Modulo',
-        lat: (-28.2876 + (Math.random() * 0.01 - 0.005)).toFixed(5),
-        lng: (-70.8130 + (Math.random() * 0.01 - 0.005)).toFixed(5),
-        fechaMedicion: fechaMed,
-        fechaHallazgo: fechaMed,
-        estatusHallazgo: sevRand === 'Rojo' ? 'Abierto' : 'Cerrado / Normal',
-        componentes: [
-          {
-            nombre: 'Motor M1',
-            punto: 'Lado Libre (NDE)',
-            rms: '4.0',
-            severidad: 'Rojo',
-            paresSap: [ { aviso: '123456', om: '123456' } ],
-            analisis: 'Evaluación técnica según ISO 20816-3: Nivel vibratorio en Zona D en Motor M1 - Lado Libre (4.0 mm/s). Soltura mecánica estructural u holgura en alojamiento de rodamiento.',
-            recomendacion: '1) Inspección termográfica en descansos y reapriete de pernos basales.',
-            espectros: []
-          },
-          {
-            nombre: 'Reductor G1',
-            punto: 'Entrada Rápida',
-            rms: '11.0',
-            severidad: 'Rojo',
-            paresSap: [ { aviso: '445566666', om: '4521444444' } ],
-            analisis: 'Evaluación técnica según ISO 20816-3: Nivel vibratorio crítico en Reductor G1 - Entrada Rápida (11.0 mm/s). Modulación en frecuencias de engrane compatible con desgaste de dentado.',
-            recomendacion: '1) Inspección boroscópica en piñón/corona y muestreo de aceite para ferrografía.',
-            espectros: []
-          },
-          {
-            nombre: 'Motor M2',
-            punto: 'Lado Acople (DE)',
-            rms: '1.0',
-            severidad: 'Verde',
-            paresSap: [],
-            analisis: 'Comportamiento dinámico de Motor M2 en Lado Acople satisfactorio bajo norma ISO 20816-3 (RMS: 1.0 mm/s, Zona A/B).',
-            recomendacion: 'Mantener frecuencia de medición mensual estándar (30 días).',
-            espectros: []
-          }
-        ]
-      });
-    }
-    return list;
-  }
-
-  state.equipos = generarSeedLocal();
-
-  // PANTALLA 1: FAENAS
   function renderScreen1() {
     var container = document.getElementById('viewScreen1Content');
     if (!container) return;
@@ -246,7 +185,6 @@
     });
   }
 
-  // PANTALLA 2: ÁREAS Y EQUIPOS
   function renderScreen2() {
     var target = state.faenaSeleccionada || state.faenaAsignada || FAENAS[0];
     var titleEl = document.getElementById('screen2SiteTitle');
@@ -272,8 +210,7 @@
         }
       });
 
-      var areaKeys = Object.keys(areas);
-      var sortedAreas = areaKeys.map(function(a) {
+      var sortedAreas = Object.keys(areas).map(function(a) {
         var obj = { name: a };
         for (var k in areas[a]) { obj[k] = areas[a][k]; }
         return obj;
@@ -338,7 +275,6 @@
     }
   }
 
-  // PANTALLA 3: NIVEL 3
   function renderScreen3() {
     if (!state.equipoIdNivel3) {
       window.CIO.goScreen(2);
@@ -444,7 +380,6 @@
     grid.appendChild(cardTerreno);
   }
 
-  // PANTALLA 4: SUPERADMIN
   function renderScreen4() {
     var filterEl = document.getElementById('superAdminFilterSite');
     var filter = filterEl ? filterEl.value : 'TODAS';
@@ -512,7 +447,6 @@
     }
   }
 
-  // Sincronización en tiempo real desde Firebase
   if (db) {
     db.on('value', function(snap) {
       var raw = snap.val();
@@ -784,27 +718,6 @@
       renderScreen4();
     },
 
-    exportarReporteGerenciaAlta: () => {
-      var txt = 'REPORTE ALTA GERENCIA CIO - CMP [DEV]\nTotal: ' + state.equipos.length + '\nFecha: ' + new Date().toISOString();
-      var blob = new Blob([txt], { type: 'text/plain' });
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'Reporte_DEV_' + Date.now() + '.txt';
-      a.click();
-    },
-
-    exportarReporteGerenciaPorFaena: () => {
-      var filterEl = document.getElementById('superAdminFilterSite');
-      var target = filterEl ? filterEl.value : FAENAS[0];
-      var count = state.equipos.filter(function(e) { return normalizarFaena(e.siteId) === target; }).length;
-      var txt = 'REPORTE FAENA [' + target + '] [DEV]\nTotal Activos: ' + count + '\nFecha: ' + new Date().toISOString();
-      var blob = new Blob([txt], { type: 'text/plain' });
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'Reporte_' + target.replace(/[^a-zA-Z0-9]/g, '_') + '_DEV.txt';
-      a.click();
-    },
-
     auditarDiasMedicionForm: () => {
       var medEl = document.getElementById('edFechaMedicion');
       var val = medEl ? medEl.value : '';
@@ -822,7 +735,6 @@
         : ('<span class="banner-contador-alerta al-dia" style="font-size:0.7rem; padding:4px 8px;">✅ Medición vigente: ' + aud.texto + '</span>');
     },
 
-    // Sincronización optimizada con Google Sheets
     sincronizarConGoogleSheets: function(payload) {
       if (!GOOGLE_SHEETS_WEBHOOK_URL || GOOGLE_SHEETS_WEBHOOK_URL.indexOf("http") !== 0) return;
 
@@ -867,8 +779,8 @@
         sapBox.innerHTML = '<span style="color:var(--text-muted); font-size:0.8rem; font-style:italic;">No hay Avisos / Órdenes SAP vinculadas a este punto específico.</span>';
       }
 
-      document.getElementById('detCompAnalisisTxt').innerText = c.analisis || 'Sin análisis de vibraciones registrado.';
-      document.getElementById('detCompRecomTxt').innerText = c.recomendacion || 'Mantener monitoreo de vibraciones rutinario.';
+      document.getElementById('detCompAnalisisTxt').innerText = limpiarPrefijosIA(c.analisis) || 'Sin análisis de vibraciones registrado.';
+      document.getElementById('detCompRecomTxt').innerText = limpiarPrefijosIA(c.recomendacion) || 'Mantener monitoreo de vibraciones rutinario.';
 
       var galeria = document.getElementById('detCompGaleriaFotos');
       if (c.espectros && c.espectros.length > 0) {
@@ -881,10 +793,20 @@
         galeria.innerHTML = '<div style="grid-column: 1/-1; font-size:0.82rem; color:var(--text-muted); font-style:italic; padding:10px 0;">No se han adjuntado espectros FFT o fotos a este punto.</div>';
       }
 
+      // Control estricto de visibilidad del botón de edición dentro del modal de detalle
+      var btnEditDetalle = document.getElementById('btnEditarDesdeDetalle');
+      if (btnEditDetalle) {
+        btnEditDetalle.style.display = state.usuarioActivo ? 'inline-block' : 'none';
+      }
+
       document.getElementById('modalDetalleComponente').showModal();
     },
 
     editarComponenteDesdeDetalleModal: function() {
+      if (!state.usuarioActivo) {
+        alert("🔒 Acción restringida: Debes iniciar sesión para editar este componente.");
+        return;
+      }
       var idx = state.componenteIndexDetalle;
       document.getElementById('modalDetalleComponente').close();
       window.CIO.abrirEditorComponenteIndividual(idx);
@@ -892,7 +814,7 @@
 
     abrirEditorComponenteIndividual: function(idx) {
       if (!state.usuarioActivo) {
-        alert("🔒 Acción restringida: Debes iniciar sesión para editar componentes.");
+        alert("🔒 Acción restringida: Solo usuarios autenticados pueden modificar componentes.");
         return;
       }
 
@@ -906,17 +828,14 @@
 
       state.tempEspectrosEdicion = (c.espectros || []).slice();
 
-      var cleanAnalisis = (c.analisis || '').replace(/\[IA\s*-\s*[^\]]+\]:\s*/gi, '').trim();
-      var cleanRecom = (c.recomendacion || '').replace(/\[IA\s*-\s*[^\]]+\]:\s*/gi, '').trim();
-
       document.getElementById('edCompIndex').value = idx;
       document.getElementById('edCompModalTitle').innerText = 'Editar: ' + (c.nombre || 'Componente');
       document.getElementById('indCompNombre').value = c.nombre || '';
       document.getElementById('indCompPunto').value = c.punto || '';
       document.getElementById('indCompRms').value = c.rms || '2.0';
       document.getElementById('indCompSev').value = c.severidad || 'Verde';
-      document.getElementById('indCompAnalisis').value = cleanAnalisis;
-      document.getElementById('indCompRecom').value = cleanRecom;
+      document.getElementById('indCompAnalisis').value = limpiarPrefijosIA(c.analisis);
+      document.getElementById('indCompRecom').value = limpiarPrefijosIA(c.recomendacion);
       document.getElementById('indSugAnalisis').value = '';
       document.getElementById('indSugRecom').value = '';
 
@@ -936,7 +855,7 @@
 
     agregarNuevoComponenteDirecto: function() {
       if (!state.usuarioActivo) {
-        alert("🔒 Acción restringida: Debes iniciar sesión.");
+        alert("🔒 Acción restringida: Debes iniciar sesión para agregar componentes.");
         return;
       }
       var eq = state.equipos.find(function(e) { return e.id === state.equipoIdNivel3; });
@@ -973,11 +892,12 @@
       container.appendChild(row);
     },
 
+    // PROCESAMIENTO Y COMPRESIÓN DE ESPECTROS FFT
     procesarSubidaEspectros: function(event) {
       var files = Array.from(event.target.files);
       if (!files || files.length === 0) return;
 
-      var canvas = document.getElementById('resizeCanvas');
+      var canvas = document.getElementById('resizeCanvas') || document.createElement('canvas');
       var ctx = canvas.getContext('2d');
       var procesados = 0;
 
@@ -986,7 +906,7 @@
         reader.onload = function(e) {
           var img = new Image();
           img.onload = function() {
-            var MAX_WIDTH = 750;
+            var MAX_WIDTH = 900;
             var width = img.width;
             var height = img.height;
             if (width > MAX_WIDTH) {
@@ -997,7 +917,7 @@
             canvas.height = height;
             ctx.drawImage(img, 0, 0, width, height);
 
-            var base64 = canvas.toDataURL('image/jpeg', 0.65);
+            var base64 = canvas.toDataURL('image/jpeg', 0.70);
             state.tempEspectrosEdicion.push(base64);
             procesados++;
 
@@ -1023,9 +943,9 @@
       }
 
       cont.innerHTML = state.tempEspectrosEdicion.map(function(src, i) {
-        return '<div class="item-espectro-preview">' +
-            '<img src="' + src + '" alt="Espectro" onclick="window.CIO.abrirFotoEnNuevaPestana(\'' + src + '\')" />' +
-            '<button type="button" class="btn-borrar-espectro" onclick="window.CIO.eliminarFotoEspectroEdicion(' + i + ')">&times;</button>' +
+        return '<div class="item-espectro-preview" style="position:relative; display:inline-block; margin-right:8px; margin-bottom:8px;">' +
+            '<img src="' + src + '" alt="Espectro" style="width:90px; height:60px; object-fit:cover; border-radius:4px; border:1px solid #ccc; cursor:pointer;" onclick="window.CIO.abrirFotoEnNuevaPestana(\'' + src + '\')" />' +
+            '<button type="button" class="btn-borrar-espectro" style="position:absolute; top:-4px; right:-4px; background:#ef4444; color:#fff; border:none; border-radius:50%; width:18px; height:18px; cursor:pointer; font-size:11px; line-height:1;" onclick="window.CIO.eliminarFotoEspectroEdicion(' + i + ')">&times;</button>' +
           '</div>';
       }).join('');
     },
@@ -1035,7 +955,7 @@
       window.CIO.renderMiniaturasEspectrosEdicion();
     },
 
-    // EVALUACIÓN TÉCNICA MULTIMODAL CON GOOGLE GEMINI (AI STUDIO) CON ALMACENAMIENTO SEGURO
+    // EVALUACIÓN TÉCNICA LIMPIA SIN PREFIJOS
     generarDictamenTecnicoIso: async function() {
       var nom = document.getElementById('indCompNombre').value.trim() || 'Componente';
       var punto = document.getElementById('indCompPunto').value.trim() || 'Punto de medición';
@@ -1059,13 +979,12 @@
           diag = 'Condición Admisible y Satisfactoria según ISO 20816-3 (Zona A/B) en ' + nom + ' (' + punto + ') con ' + rms.toFixed(1) + ' mm/s RMS. Operación continua sin restricciones.';
           recom = 'Mantener monitoreo mensual de rutina estándar (30 días).';
         }
-        txtSugDiag.value = diag;
-        txtSugRecom.value = recom;
+        txtSugDiag.value = limpiarPrefijosIA(diag);
+        txtSugRecom.value = limpiarPrefijosIA(recom);
       };
 
-      // Si no existe la clave en el navegador, se solicita una única vez al usuario de forma segura
       if (!GEMINI_API_KEY) {
-        var inputKey = prompt("🔑 Ingresa tu API Key de Gemini de Google AI Studio (se guardará de forma segura y privada en este navegador):");
+        var inputKey = prompt("🔑 Ingresa tu API Key de Gemini de Google AI Studio (se guardará de forma privada en tu navegador):");
         if (inputKey && inputKey.trim().length > 10) {
           GEMINI_API_KEY = inputKey.trim();
           localStorage.setItem("GEMINI_API_KEY", GEMINI_API_KEY);
@@ -1075,18 +994,21 @@
         }
       }
 
-      txtSugDiag.value = "⏳ Analizando espectro FFT y evaluando parámetros con Gemini AI...";
-      txtSugRecom.value = "⏳ Generando plan de acción correctivo pericial...";
+      txtSugDiag.value = "⏳ Analizando espectro FFT y evaluando parámetros...";
+      txtSugRecom.value = "⏳ Generando plan de acción correctivo...";
 
       try {
         var promptText = "Actúa como un Ingeniero Analista Especialista en Monitoreo de Condición y Vibraciones Mecánicas categoría ISO 18436-2.\n" +
           "Equipo/Componente: " + nom + "\n" +
           "Punto de Inspección: " + punto + "\n" +
-          "Velocidad Global RMS: " + rms + " mm/s (Evaluar bajo norma ISO 20816-3 soportes rígidos/flexibles).\n" +
+          "Velocidad Global RMS: " + rms + " mm/s (Evaluar bajo norma ISO 20816-3).\n" +
           "Observación del Analista: " + (textoAnalista || "Sin comentarios previos") + "\n\n" +
-          "Tarea: Si se adjunta una imagen, analiza minuciosamente los patrones espectrales de FFT (armónicos 1X, 2X, frecuencias de engrane GMF, bandas laterales o piso de ruido de rodamientos). Si no hay imagen, diagnostica con base al RMS y la severidad cinemática.\n" +
-          "Responde EXCLUSIVAMENTE con un JSON válido en este formato exacto, sin bloques de código ni texto adicional:\n" +
-          "{\"diagnostico\": \"diagnóstico técnico pericial aquí\", \"recomendacion\": \"recomendaciones mecánicas 1), 2), 3) aquí\"}";
+          "REGLA CRÍTICA DE REDACCIÓN:\n" +
+          "NO incluyas prefijos como '[IA]', '[IA Predictiva]', nombres de tags entre corchetes, ni introducciones robóticas.\n" +
+          "Comienza el texto DIRECTAMENTE con la redacción técnica como si lo redactara un ingeniero humano especialista.\n\n" +
+          "Tarea: Si se adjunta imagen, analiza patrones espectrales FFT (armónicos 1X, 2X, frecuencias de engrane GMF, bandas laterales o piso de ruido de rodamientos). Si no hay imagen, diagnostica con base al RMS y severidad cinemática.\n" +
+          "Responde EXCLUSIVAMENTE con un JSON válido en este formato exacto, sin bloques de código markdown ni texto adicional:\n" +
+          "{\"diagnostico\": \"diagnóstico técnico directo aquí\", \"recomendacion\": \"recomendaciones mecánicas 1), 2), 3) aquí\"}";
 
         var contentsParts = [{ text: promptText }];
 
@@ -1118,8 +1040,8 @@
         var jsonText = data.candidates[0].content.parts[0].text;
         var resultado = JSON.parse(jsonText);
 
-        txtSugDiag.value = resultado.diagnostico;
-        txtSugRecom.value = resultado.recomendacion;
+        txtSugDiag.value = limpiarPrefijosIA(resultado.diagnostico);
+        txtSugRecom.value = limpiarPrefijosIA(resultado.recomendacion);
 
         var selSev = document.getElementById('indCompSev');
         if (selSev) {
@@ -1137,19 +1059,30 @@
     adoptarDiagnosticoSugerido: function() {
       var sug = document.getElementById('indSugAnalisis').value;
       if (!sug) {
-        alert("Primero presiona 'Generar Sugerencia Técnica'.");
+        alert("Primero genera la sugerencia técnica.");
         return;
       }
-      document.getElementById('indCompAnalisis').value = sug;
+      document.getElementById('indCompAnalisis').value = limpiarPrefijosIA(sug);
     },
 
     adoptarRecomendacionSugerida: function() {
       var sug = document.getElementById('indSugRecom').value;
       if (!sug) {
-        alert("Primero presiona 'Generar Sugerencia Técnica'.");
+        alert("Primero genera la sugerencia técnica.");
         return;
       }
-      document.getElementById('indCompRecom').value = sug;
+      document.getElementById('indCompRecom').value = limpiarPrefijosIA(sug);
+    },
+
+    adoptarTodoDiagnosticoRecomendacion: function() {
+      var sugDiag = document.getElementById('indSugAnalisis').value;
+      var sugRecom = document.getElementById('indSugRecom').value;
+      if (!sugDiag && !sugRecom) {
+        alert("Primero genera la sugerencia técnica.");
+        return;
+      }
+      document.getElementById('indCompAnalisis').value = limpiarPrefijosIA(sugDiag);
+      document.getElementById('indCompRecom').value = limpiarPrefijosIA(sugRecom);
     },
 
     evaluarIsoRmsEnVivo: function() {
@@ -1158,16 +1091,17 @@
       var selSev = document.getElementById('indCompSev');
       if (!selSev) return;
 
-      if (val >= 4.5) {
-        selSev.value = 'Rojo';
-      } else if (val >= 2.8) {
-        selSev.value = 'Amarillo';
-      } else {
-        selSev.value = 'Verde';
-      }
+      if (val >= 4.5) selSev.value = 'Rojo';
+      else if (val >= 2.8) selSev.value = 'Amarillo';
+      else selSev.value = 'Verde';
     },
 
     guardarComponenteIndividual: function() {
+      if (!state.usuarioActivo) {
+        alert("🔒 Acción restringida: Inicia sesión para guardar cambios.");
+        return;
+      }
+
       var eq = state.equipos.find(function(e) { return e.id === state.equipoIdNivel3; });
       if (!eq) return;
 
@@ -1178,17 +1112,15 @@
       document.querySelectorAll('#indParesSapContainer .fila-par-sap').forEach(function(row) {
         var av = row.querySelector('.p-aviso')?.value.trim() || '';
         var om = row.querySelector('.p-om')?.value.trim() || '';
-        if (av || om) {
-          pares.push({ aviso: av, om: om });
-        }
+        if (av || om) pares.push({ aviso: av, om: om });
       });
 
       var compNom = document.getElementById('indCompNombre').value.trim() || 'Componente';
       var compPunto = document.getElementById('indCompPunto').value.trim() || 'Punto';
       var compRms = document.getElementById('indCompRms').value.trim() || '2.0';
       var compSev = document.getElementById('indCompSev').value;
-      var compDiag = document.getElementById('indCompAnalisis').value.trim();
-      var compRecom = document.getElementById('indCompRecom').value.trim();
+      var compDiag = limpiarPrefijosIA(document.getElementById('indCompAnalisis').value);
+      var compRecom = limpiarPrefijosIA(document.getElementById('indCompRecom').value);
 
       eq.componentes[idx] = {
         nombre: compNom,
@@ -1229,6 +1161,10 @@
     },
 
     eliminarComponenteActual: function() {
+      if (!state.usuarioActivo) {
+        alert("🔒 Acción restringida: Inicia sesión para eliminar componentes.");
+        return;
+      }
       var eq = state.equipos.find(function(e) { return e.id === state.equipoIdNivel3; });
       if (!eq) return;
 
@@ -1309,7 +1245,7 @@
     },
 
     guardarDatosGeneralesActivo: function() {
-      if (!state.equipoSeleccionado) return;
+      if (!state.usuarioActivo || !state.equipoSeleccionado) return;
       var getVal = function(id) { var el = document.getElementById(id); return el ? el.value : ''; };
 
       var payload = {
@@ -1331,6 +1267,10 @@
     },
 
     abrirEdicionEquipoNuevoAuth: function() {
+      if (!state.usuarioActivo) {
+        alert("🔒 Inicia sesión para registrar nuevos activos.");
+        return;
+      }
       var targetSite = state.faenaSeleccionada || state.faenaAsignada || FAENAS[0];
       var newId = 'EQ_' + Date.now();
       var nuevoEquipo = {
@@ -1354,6 +1294,10 @@
     },
 
     eliminarEquipo: function() {
+      if (!state.usuarioActivo) {
+        alert("🔒 Acción restringida: Inicia sesión para eliminar activos.");
+        return;
+      }
       if (confirm('¿Eliminar activo en DEV?') && db && state.equipoSeleccionado) {
         db.child(state.equipoSeleccionado.id).remove();
         document.getElementById('modalEdicion').close();
@@ -1361,9 +1305,10 @@
       }
     },
 
+    // RESTRICCIÓN ESTRICTA DE GENERACIÓN DE INFORMES
     abrirEditorInformeModal: function() {
       if (!state.usuarioActivo) {
-        alert("🔒 Acción restringida: Debes iniciar sesión con tu cuenta de usuario para emitir o editar informes ejecutivos.");
+        alert("🔒 Acceso Restringido: Como usuario invitado solo tienes permisos de visualización. Inicia sesión con tus credenciales autorizadas por CPF para emitir informes oficiales.");
         return;
       }
 
@@ -1371,12 +1316,12 @@
       if (!eq) return;
 
       var tagValue = eq.tag || eq.Tag || eq.id || 'S/T';
-      document.getElementById('infModalTitle').innerText = 'Edición de Informe: ' + tagValue + ' (' + eq.siteId + ')';
+      document.getElementById('infModalTitle').innerText = 'Emisión de Informe: ' + tagValue + ' (' + eq.siteId + ')';
 
       var saps = consolidarSAPs(eq.componentes);
       document.getElementById('infAvisosSap').value = saps.avisosStr !== 'Sin Avisos' ? saps.avisosStr : '';
       document.getElementById('infOmSap').value = saps.omsStr !== 'Sin OM' ? saps.omsStr : '';
-      document.getElementById('infResumenGeneral').value = 'Se realiza evaluación de condición dinámica al tren motriz del activo ' + tagValue + ' según estándar ISO 20816-3. Condición global evaluada: ' + calcMaxSev(eq.componentes).toUpperCase() + '.';
+      document.getElementById('infResumenGeneral').value = 'Se efectúa evaluación cinemática y dinámica al tren motriz del activo ' + tagValue + ' bajo norma ISO 20816-3. Condición global evaluada: ' + calcMaxSev(eq.componentes).toUpperCase() + '.';
 
       var cont = document.getElementById('infComponentesContainer');
       cont.innerHTML = '';
@@ -1391,11 +1336,11 @@
           '</div>' +
           '<div style="margin-bottom:8px;">' +
             '<label style="font-size:0.7rem; color:var(--text-muted);">Diagnóstico Técnico del Punto (Editable):</label>' +
-            '<textarea class="inf-c-analisis" rows="2">' + sanitize(c.analisis || '') + '</textarea>' +
+            '<textarea class="inf-c-analisis" rows="2">' + sanitize(limpiarPrefijosIA(c.analisis)) + '</textarea>' +
           '</div>' +
           '<div>' +
             '<label style="font-size:0.7rem; color:var(--text-muted);">Recomendación Mecánica / Operativa (Editable):</label>' +
-            '<textarea class="inf-c-recom" rows="2">' + sanitize(c.recomendacion || '') + '</textarea>' +
+            '<textarea class="inf-c-recom" rows="2">' + sanitize(limpiarPrefijosIA(c.recomendacion)) + '</textarea>' +
           '</div>';
         cont.appendChild(card);
       });
@@ -1404,6 +1349,11 @@
     },
 
     emitirInformeFinalImpresion: function() {
+      if (!state.usuarioActivo) {
+        alert("🔒 Acción restringida: Debes iniciar sesión para imprimir informes.");
+        return;
+      }
+
       var eq = state.equipos.find(function(e) { return e.id === state.equipoIdNivel3; });
       if (!eq) return;
 
@@ -1446,8 +1396,8 @@
               '<span style="color:' + col + ';">' + (c.severidad || 'Verde').toUpperCase() + ' (' + (c.rms || '0.0') + ' mm/s)</span>' +
             '</div>' +
             sapsHtml +
-            '<div style="font-size:0.88rem; color:#1f2937; margin-bottom:6px; line-height:1.4;"><strong>Diagnóstico Técnico:</strong><br>' + sanitize(analisisTxt || 'Sin análisis registrado.') + '</div>' +
-            '<div style="font-size:0.88rem; color:#065f46; line-height:1.4;"><strong>Recomendación Mecánica:</strong><br>' + sanitize(recomTxt || 'Mantener monitoreo.') + '</div>' +
+            '<div style="font-size:0.88rem; color:#1f2937; margin-bottom:6px; line-height:1.4;"><strong>Diagnóstico Técnico:</strong><br>' + sanitize(limpiarPrefijosIA(analisisTxt) || 'Sin análisis registrado.') + '</div>' +
+            '<div style="font-size:0.88rem; color:#065f46; line-height:1.4;"><strong>Recomendación Mecánica:</strong><br>' + sanitize(limpiarPrefijosIA(recomTxt) || 'Mantener monitoreo.') + '</div>' +
             espectrosImpresionHtml +
           '</div>';
       });
@@ -1540,6 +1490,10 @@
     },
 
     procesarCargaExcelFaena: function(e) {
+      if (!state.usuarioActivo) {
+        alert("🔒 Acción restringida: Inicia sesión para realizar cargas masivas.");
+        return;
+      }
       var file = e.target.files[0];
       if (!file || !db) return;
 
