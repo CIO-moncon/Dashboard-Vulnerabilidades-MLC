@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIO Predictivo - Compañía Minera del Pacífico</title>
+
+    <!-- Enlaces a la nueva arquitectura base (Core) -->
+    <link rel="stylesheet" href="../core/css/variables.css">
+    <link rel="stylesheet" href="../core/css/global.css">
+    
+    <!-- Enlace a los estilos específicos de esta pantalla (Escritorio) -->
+    <link rel="stylesheet" href="css/dashboard.css">
+
+    <!-- Dependencias Externas: Leaflet (Mapa GIS) e Iconos de Google -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
+</head>
+<body class="dark-mode">
+
+    <!-- BARRA SUPERIOR (Navbar SaaS) -->
+    <header class="glass-panel top-navbar">
+        <div class="navbar-left">
+            <img src="../assets/logo-cpf.png" alt="Logo CMP" class="logo">
+            <h1>CIO Predictivo</h1>
+        </div>
+
+        <!-- Control RBAC: Selector de Faena -->
+        <div class="navbar-center auth-only">
+            <select id="superAdminFilterSite" class="faena-selector glass-select">
+                <option value="TODAS">🔴 Todas las Operaciones (Superadmin)</option>
+                <option value="MLC" selected>Mina Los Colorados</option>
+                <option value="ROM">Mina El Romeral</option>
+                <option value="PEL">Planta de Pellets</option>
+            </select>
+        </div>
+
+        <div class="navbar-right">
+            <!-- Gadgets en tiempo real -->
+            <div class="gadget-bar">
+                <span id="widget-clima" title="Clima Local"><span class="material-symbols-outlined">partly_cloudy_day</span> --°C</span>
+                <span id="widget-cobre" title="Precio del Cobre"><span class="material-symbols-outlined">payments</span> $--</span>
+            </div>
+            <!-- Perfil y Tema -->
+            <div class="user-profile">
+                <span class="material-symbols-outlined">account_circle</span>
+                <span id="user-role-badge" class="badge badge-admin">Analista</span>
+            </div>
+            <button id="theme-toggle" class="icon-btn" title="Alternar Modo Claro/Oscuro">
+                <span class="material-symbols-outlined">light_mode</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- CONTENEDOR PRINCIPAL (Bento Grid) -->
+    <main class="dashboard-grid">
+
+        <!-- Panel Izquierdo: Alertas y Copiloto IA -->
+        <aside class="glass-panel panel-alertas">
+            <div class="panel-header">
+                <h2><span class="material-symbols-outlined">warning</span> Alertas Críticas</h2>
+            </div>
+            <div id="lista-alertas" class="lista-scroll">
+                <p class="text-muted">Esperando datos de la base de datos...</p>
+            </div>
+            <button id="btn-ia-copilot" class="btn-primary auth-only">
+                <span class="material-symbols-outlined">smart_toy</span> Evaluar con IA
+            </button>
+        </aside>
+
+        <!-- Panel Central: Mapa GIS -->
+        <section class="glass-panel panel-mapa">
+            <div class="panel-header">
+                <h2><span class="material-symbols-outlined">map</span> Visión Global de Activos</h2>
+            </div>
+            <!-- Contenedor donde Leaflet renderizará el mapa -->
+            <div id="mapa-gis" class="mapa-container"></div>
+        </section>
+
+        <!-- Panel Derecho: KPIs Industriales (ISO 20816-3) -->
+        <aside class="glass-panel panel-kpi">
+            <div class="panel-header">
+                <h2><span class="material-symbols-outlined">analytics</span> Estado ISO 20816-3</h2>
+            </div>
+            <div class="kpi-card status-ok">
+                <span class="kpi-title">Zona A (Normal)</span>
+                <span class="kpi-value" id="kpi-ok">0</span>
+            </div>
+            <div class="kpi-card status-alert">
+                <span class="kpi-title">Zona B (Observación)</span>
+                <span class="kpi-value" id="kpi-alert">0</span>
+            </div>
+            <div class="kpi-card status-warning">
+                <span class="kpi-title">Zona C (Alarma)</span>
+                <span class="kpi-value" id="kpi-warn">0</span>
+            </div>
+            <div class="kpi-card status-critical">
+                <span class="kpi-title">Zona D (Peligro)</span>
+                <span class="kpi-value" id="kpi-crit">0</span>
+            </div>
+        </aside>
+
+    </main>
+
+<!-- 1. Librerías Externas -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <!-- 2. Tus Scripts Modulares -->
+    <script src="../core/js/app.js"></script>
+    <script src="js/mapa.js"></script>
+
+</body>
+</html>

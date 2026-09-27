@@ -1,0 +1,29 @@
+:root {
+  /* Identidad Corporativa / Modo Oscuro por defecto */
+  --bg-dark: #0f1218;
+  --text-main: #f0f2f5;
+  --text-muted: #8b949e;
+  --primary-color: #0056b3;
+  --accent-color: #00a8ff;
+
+  /* Semántica de Mantenimiento Predictivo (ISO 20816-3) */
+  --status-ok: #23d160;       /* Zona A - Verde */
+  --status-alert: #ffb300;    /* Zona B - Amarillo */
+  --status-warning: #fd7e14;  /* Zona C - Naranja */
+  --status-critical: #ff3860; /* Zona D - Rojo */
+
+  /* Efecto Liquid Glass (Vidrio Esmerilado) */
+  --glass-bg: rgba(25, 30, 36, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* Variante Modo Claro (Para alternar de día en planta) */
+body.light-mode {
+  --bg-dark: #f0f2f5;
+  --text-main: #1a1d20;
+  --text-muted: #5c636a;
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+}

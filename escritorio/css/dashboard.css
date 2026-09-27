@@ -1,0 +1,124 @@
+/* --- LAYOUT BENTO GRID --- */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr 280px; /* Panel izquierdo, Mapa central, Panel derecho */
+  gap: 1.5rem;
+  padding: 1.5rem;
+  height: calc(100vh - 80px); /* Alto total menos la barra superior */
+}
+
+/* --- BARRA SUPERIOR (NAVBAR) --- */
+.top-navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  margin: 15px 1.5rem 0 1.5rem;
+  height: 60px;
+}
+
+.navbar-left { display: flex; align-items: center; gap: 15px; }
+
+/* Ajuste del Logo para que resalte en el fondo oscuro */
+.navbar-left img.logo { 
+  height: 38px; 
+  background-color: #ffffff; 
+  padding: 4px 8px; 
+  border-radius: 6px; 
+}
+
+.navbar-left h1 { font-size: 1.2rem; font-weight: 600; letter-spacing: 0.5px; }
+
+/* Selector de faenas transparente */
+.faena-selector {
+  background: transparent;
+  color: var(--text-main);
+  border: 1px solid var(--glass-border);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+}
+.faena-selector option { background: var(--bg-dark); }
+
+.navbar-right { display: flex; align-items: center; gap: 20px; }
+.gadget-bar { display: flex; gap: 15px; font-size: 0.9rem; color: var(--text-muted); }
+.gadget-bar span { display: flex; align-items: center; gap: 5px; }
+
+.badge-admin {
+  background-color: var(--primary-color);
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  color: var(--text-main);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.icon-btn:hover { opacity: 1; }
+
+/* --- PANELES (CARTAS DEL GRID) --- */
+.panel-header h2 {
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 15px;
+  padding: 15px 15px 0 15px;
+}
+
+.panel-alertas, .panel-kpi, .panel-mapa {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Espacio donde cargará el mapa */
+.mapa-container {
+  flex-grow: 1;
+  border-radius: 0 0 16px 16px;
+  background-color: rgba(0, 0, 0, 0.2); 
+  z-index: 1;
+}
+
+.lista-scroll {
+  padding: 0 15px 15px 15px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+/* Botón IA Copilot Especial */
+#btn-ia-copilot { 
+  margin: 15px; 
+  justify-content: center; 
+  background-color: #6366f1; /* Tono morado/tecnológico para la IA */
+}
+#btn-ia-copilot:hover { background-color: #4f46e5; }
+
+/* Tarjetas KPI de la derecha */
+.kpi-card {
+  margin: 0 15px 15px 15px;
+  padding: 15px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 4px solid;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 4 Niveles ISO 20816-3 */
+.status-ok { border-color: var(--status-ok); }
+.status-alert { border-color: var(--status-alert); }
+.status-warning { border-color: var(--status-warning); }
+.status-critical { border-color: var(--status-critical); }
+
+.kpi-value { font-size: 1.5rem; font-weight: bold; }
