@@ -1,7 +1,7 @@
 {
   "name": "Ronda OEM - CMP",
   "short_name": "Ronda OEM",
-  "start_url": "/Dashboard-Vulnerabilidades-MLC/terreno/app.html",
+  "start_url": "https://cio-moncon.github.io/Dashboard-Vulnerabilidades-MLC/terreno/app.html",
   "display": "standalone",
   "background_color": "#111827",
   "theme_color": "#ef4444",
