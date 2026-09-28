@@ -1,6 +1,20 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIO Predictivo - Compañía Minera del Pacífico</title>
+
+    <!-- Enlaces a la arquitectura base (Core) -->
+    <link rel="stylesheet" href="../core/css/variables.css">
+    <link rel="stylesheet" href="../core/css/global.css">
+    
+    <!-- Enlace a los estilos específicos de esta pantalla (Escritorio) -->
+    <link rel="stylesheet" href="css/dashboard.css">
+
+    <!-- Dependencias Externas: Leaflet (Mapa GIS) e Iconos de Google -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
 
     <style>
         /* Estilos para el nuevo panel de Alertas de Terreno (Escritorio) */
@@ -29,21 +43,6 @@
         }
         .btn-alerta-accion:hover { background: rgba(59, 130, 246, 0.3); }
     </style>
-
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CIO Predictivo - Compañía Minera del Pacífico</title>
-
-    <!-- Enlaces a la arquitectura base (Core) -->
-    <link rel="stylesheet" href="../core/css/variables.css">
-    <link rel="stylesheet" href="../core/css/global.css">
-    
-    <!-- Enlace a los estilos específicos de esta pantalla (Escritorio) -->
-    <link rel="stylesheet" href="css/dashboard.css">
-
-    <!-- Dependencias Externas: Leaflet (Mapa GIS) e Iconos de Google -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
 </head>
 <body class="dark-mode">
 
@@ -317,7 +316,7 @@
     <!-- CONTENEDOR PRINCIPAL (Bento Grid) -->
     <main class="dashboard-grid">
 
-        <!-- Panel Izquierdo: Alertas y Copiloto IA -->
+        <!-- Panel Izquierdo: Catastro de Equipos -->
         <aside class="glass-panel panel-alertas">
             <div class="panel-header">
                 <h2><span class="material-symbols-outlined">warning</span> Catastro de equipos críticos</h2>
@@ -339,7 +338,7 @@
             <div id="mapa-gis" class="mapa-container"></div>
         </section>
 
-       <!-- Panel Derecho: KPIs ISO y Alertas de Terreno -->
+        <!-- Panel Derecho: KPIs ISO y Alertas de Terreno -->
         <aside style="display: flex; flex-direction: column; gap: 15px;">
             
             <!-- KPIs Industriales (ISO 20816-3) - MÁS COMPACTO -->
@@ -386,10 +385,7 @@
     <!-- 1. Librerías Externas -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script> <!-- LIBRERÍA DE SEGURIDAD NUEVA -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <!-- 2. Tus Scripts Modulares -->
