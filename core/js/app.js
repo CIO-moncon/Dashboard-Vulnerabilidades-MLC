@@ -361,7 +361,6 @@ window.volverAreas = function() {
     renderizarCatastro(datosGlobalesActivos);
 };
 
-
 // ==========================================
 // MODAL DE COMPONENTES DEL EQUIPO
 // ==========================================
@@ -525,15 +524,12 @@ function renderizarAlertasTerreno() {
         // ==========================================
         let urlReal = '';
         
-        // 1. Buscamos la foto bajo CUALQUIER nombre posible que envíe la app móvil
         const dataEvidencia = al.evidencias || al.evidencia || al.foto || al.fotos || al.imagen || al.archivo || null;
 
         if (dataEvidencia) {
-            // 2. Si es un texto directo (Base64 puro)
             if (typeof dataEvidencia === 'string') {
                 urlReal = dataEvidencia;
             } 
-            // 3. Si viene dentro de un arreglo [ "data:image..." ]
             else if (Array.isArray(dataEvidencia) && dataEvidencia.length > 0) {
                 let primerElemento = dataEvidencia[0];
                 if (typeof primerElemento === 'string') urlReal = primerElemento;
@@ -541,7 +537,6 @@ function renderizarAlertasTerreno() {
                 else if (primerElemento.base64) urlReal = primerElemento.base64;
                 else urlReal = Object.values(primerElemento)[0] || '';
             } 
-            // 4. Si Firebase lo guardó como un objeto/lista dinámica { pushId: "data:image..." }
             else if (typeof dataEvidencia === 'object') {
                 const values = Object.values(dataEvidencia);
                 if (values.length > 0) {
@@ -551,17 +546,12 @@ function renderizarAlertasTerreno() {
             }
         }
 
-        // DETECTOR DE VIDEO
+        // DETECTOR DE VIDEO (Sin duplicar la declaración)
         let esVideo = false;
         if (urlReal && (urlReal.includes('data:video') || urlReal.toLowerCase().includes('.mp4') || urlReal.toLowerCase().includes('.mov') || urlReal.toLowerCase().includes('video%2F'))) {
             esVideo = true;
         }
         // ==========================================
-
-        let esVideo = false;
-        if (urlReal && (urlReal.includes('data:video') || urlReal.toLowerCase().includes('.mp4') || urlReal.toLowerCase().includes('.mov') || urlReal.toLowerCase().includes('video%2F'))) {
-            esVideo = true;
-        }
 
         html += `
             <div style="background: rgba(0,0,0,0.3); border-left: 4px solid ${colorSev}; padding: 15px; border-radius: 6px; position: relative;">
@@ -645,7 +635,6 @@ window.eliminarAlertaTerreno = function(idAlerta) {
         alertasRef.child(idAlerta).remove()
         .then(() => {
             alert("🗑️ Reporte de terreno descartado correctamente.");
-            // Recargamos el panel de terreno para que desaparezca la tarjeta
             verTerreno();
         })
         .catch(e => {
@@ -659,11 +648,10 @@ window.eliminarAlertaTerreno = function(idAlerta) {
 // ------------------------------------------
 window.borrarSoloFoto = function(idAlerta) {
     if(confirm("⚠️ ¿Estás seguro de borrar SOLO la fotografía?\n\nEl texto y severidad reportados por el técnico se mantendrán intactos.")) {
-        // Borramos el nodo 'evidencias' de ese reporte específico en Firebase
         alertasRef.child(idAlerta).child('evidencias').remove()
         .then(() => {
             alert("📷 Foto eliminada correctamente.");
-            verTerreno(); // Recargamos la vista
+            verTerreno();
         })
         .catch(e => alert("Error al borrar la foto: " + e.message));
     }
@@ -677,23 +665,20 @@ window.reemplazarFotoTerreno = async function(inputElement, idAlerta) {
     
     const file = inputElement.files[0];
     
-    // Mostramos un aviso para que el usuario espere
     const btnSubir = inputElement.previousElementSibling;
     const textoOriginal = btnSubir.innerHTML;
     btnSubir.innerHTML = '<span class="material-symbols-outlined" style="animation: spin 2s linear infinite; vertical-align: middle;">sync</span> Subiendo...';
     btnSubir.disabled = true;
 
     try {
-        // Usamos la misma función que convierte espectros a Base64 para Gemini
         const base64 = await convertirABase64(file);
         
-        // Guardamos la nueva imagen en Firebase (como un array, para no romper compatibilidad con la App)
         await alertasRef.child(idAlerta).update({
             evidencias: [base64]
         });
         
         alert("✅ Foto actualizada con éxito en la base de datos.");
-        verTerreno(); // Recargamos la vista para mostrar el botón azul de "Ver Foto"
+        verTerreno(); 
         
     } catch (error) {
         alert("Error al procesar la imagen: " + error.message);
@@ -902,7 +887,6 @@ function convertirABase64(file) {
 function renderizarPanelAlertasActivas(datosAlertas) {
     const panelAlertas = document.getElementById('panelAlertasTerreno');
     
-    // Si no existe el panel en el HTML, cancelamos
     if(!panelAlertas) return; 
 
     if (!datosAlertas) {
@@ -910,20 +894,16 @@ function renderizarPanelAlertasActivas(datosAlertas) {
         return;
     }
 
-    panelAlertas.innerHTML = ''; // Limpiar el panel antes de redibujar
+    panelAlertas.innerHTML = '';
     let hayAlertasActivas = false;
 
-    // Convertir a un arreglo y ordenar de la más nueva a la más antigua
     const listaAlertas = Object.keys(datosAlertas).map(key => {
         return { id: key, ...datosAlertas[key] };
     }).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-    // Dibujar cada alerta
     listaAlertas.forEach(alerta => {
-        // Filtramos las que ya fueron cerradas
         if (alerta.estado === 'cerrado') return;
         
-        // Filtro de Seguridad RBAC: Si el analista es de una faena específica, solo ve las alertas de esa faena
         const filtroEl = document.getElementById('filtroFaena');
         const filtroSeleccionado = filtroEl ? filtroEl.value : 'TODAS';
         if (filtroSeleccionado !== "TODAS" && alerta.faena && alerta.faena !== filtroSeleccionado) {
@@ -932,11 +912,9 @@ function renderizarPanelAlertasActivas(datosAlertas) {
 
         hayAlertasActivas = true;
 
-        // Formatear hora (Ej: 14:35)
         const fechaObj = new Date(alerta.timestamp);
         const horaStr = fechaObj.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
 
-      // Crear la tarjeta HTML (Minimalista)
         const cardHTML = `
             <div class="tarjeta-alerta-terreno sev-${alerta.severidad}" style="padding: 10px; cursor: pointer;" onclick="gestionarAlertaRapida('${alerta.id}', '${alerta.tag}')" title="Clic para ver detalle y fotos">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -970,14 +948,12 @@ function renderizarPanelAlertasActivas(datosAlertas) {
     }
 }
 
-// Función para abrir directamente el expediente desde una alerta
 window.gestionarAlertaRapida = function(idAlerta, tagEquipo) {
     if (!datosGlobalesActivos) {
         alert("El catastro aún está cargando, intenta en un segundo.");
         return;
     }
 
-    // 1. Buscamos el ID interno de Firebase usando el TAG que viene de la alerta
     let idActivoEncontrado = null;
     const keysActivos = Object.keys(datosGlobalesActivos);
     
@@ -989,13 +965,9 @@ window.gestionarAlertaRapida = function(idAlerta, tagEquipo) {
         }
     }
 
-    // 2. Si lo encuentra, abrimos el modal y saltamos a la pestaña de terreno
     if (idActivoEncontrado) {
-        abrirModalEvidencia(idActivoEncontrado); // Abre el modal gigante
-        verTerreno(); // Pasa automáticamente a la pestaña de "Reportes de Terreno"
-        
-        // (Opcional) Cambia el estado de la alerta a "En revisión" en Firebase
-        // db.ref('alertas_terreno/' + idAlerta).update({ estado: 'en_revision' });
+        abrirModalEvidencia(idActivoEncontrado); 
+        verTerreno(); 
     } else {
         alert(`❌ No se encontró el equipo "${tagEquipo}" en el catastro actual. Es posible que haya sido eliminado o renombrado.`);
     }
