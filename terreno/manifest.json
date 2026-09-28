@@ -1,25 +1,16 @@
 {
-  "name": "CIO Terreno CPF",
-  "short_name": "CIO Terreno",
-  "description": "Captura rápida y bitácora de terreno para mantenimiento predictivo CPF/CMP",
-  "start_url": "./terreno.html",
-  "scope": "./",
+  "name": "Ronda OEM - CMP",
+  "short_name": "Ronda OEM",
+  "start_url": "./index.html",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#090a0f",
-  "theme_color": "#090a0f",
+  "background_color": "#111827",
+  "theme_color": "#ef4444",
+  "description": "Aplicación de terreno para inspección de activos - Compañía Minera del Pacífico",
   "icons": [
     {
-      "src": "logo-cpf.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "logo-cpf.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/2806/2806216.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
   ]
 }
