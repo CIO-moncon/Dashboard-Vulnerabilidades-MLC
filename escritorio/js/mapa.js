@@ -17,10 +17,35 @@ document.addEventListener('DOMContentLoaded', () => {
     // Capa dedicada para los pines
     capaMarcadores = L.layerGroup().addTo(mapaGlobal);
 
+    // Primer intento de ajuste rápido
     setTimeout(() => { mapaGlobal.invalidateSize(); }, 200);
 });
 
-// Función global llamada desde app.js
+// ==========================================
+// FIX ABSOLUTO: RECALCULAR TAMAÑO DEL MAPA
+// ==========================================
+// 1. Cuando la página termina de cargar completamente (incluyendo CSS)
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        if (mapaGlobal) {
+            mapaGlobal.invalidateSize(); 
+        }
+    }, 500); // Medio segundo para asegurar que la grilla CSS se acomodó
+});
+
+// 2. Cuando el usuario cambia el tamaño de la ventana o rota el dispositivo
+window.addEventListener('resize', function() {
+    setTimeout(function() {
+        if (mapaGlobal) {
+            mapaGlobal.invalidateSize();
+        }
+    }, 200);
+});
+
+
+// ==========================================
+// RENDERIZADO DE PINES Y ALERTAS (Llamado desde app.js)
+// ==========================================
 window.actualizarPinesMapa = function(alertas) {
     if (!mapaGlobal || !capaMarcadores) return;
 
@@ -28,12 +53,12 @@ window.actualizarPinesMapa = function(alertas) {
     capaMarcadores.clearLayers();
 
     alertas.forEach(alerta => {
-        let colorHex = '#23d160'; 
+        let colorHex = '#23d160'; // Verde por defecto
         if (alerta.severidad === 'Rojo') colorHex = '#ff3860';
         if (alerta.severidad === 'Naranja') colorHex = '#fd7e14';
         if (alerta.severidad === 'Amarillo') colorHex = '#ffb300';
 
-// --- LÓGICA DE UBICACIÓN AFINADA ---
+        // --- LÓGICA DE UBICACIÓN AFINADA ---
         let baseLat, baseLng, spreadLat, spreadLng;
         const faenaInfo = (alerta.faena || '').toLowerCase();
 

@@ -76,17 +76,27 @@
 }
 
 .panel-alertas, .panel-kpi, .panel-mapa {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  /* Panel Central: Mapa GIS */
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Asegura que el contenedor estire hasta el fondo */
+    min-height: 70vh; /* Altura mínima garantizada */
+    padding: 0; /* Quitamos padding extra para que el mapa quede a ras */
+    overflow: hidden; /* Evita desbordes feos */
 }
 
-/* Espacio donde cargará el mapa */
+.panel-mapa .panel-header {
+    padding: 15px 20px;
+    background: var(--glass-surface);
+    border-bottom: 1px solid var(--glass-border);
+    z-index: 10; /* Para que quede sobre el mapa */
+}
+
 .mapa-container {
-  flex-grow: 1;
-  border-radius: 0 0 16px 16px;
-  background-color: rgba(0, 0, 0, 0.2); 
-  z-index: 1;
+    flex: 1; /* Esto hace que el mapa absorba todo el espacio restante */
+    width: 100%;
+    min-height: 100%;
+    background-color: #1a1a1a; /* Color de fondo por si demoran los satélites */
 }
 
 .lista-scroll {
