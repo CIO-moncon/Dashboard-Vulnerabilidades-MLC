@@ -909,3 +909,81 @@ window.gestionarAlertaRapida = function(idAlerta, tagEquipo) {
         alert(`❌ No se encontró el equipo "${tagEquipo}".`);
     }
 };
+
+// =========================================================================
+// WIDGET CLIMA EN TIEMPO REAL (VALLENAR)
+// =========================================================================
+
+// Ejecutar al cargar la página
+document.addEventListener('DOMContentLoaded', () => {
+    obtenerClimaVallenar();
+    // Actualizar clima cada 30 minutos
+    setInterval(obtenerClimaVallenar, 30 * 60 * 1000); 
+});
+
+window.toggleClima = function() {
+    const panel = document.getElementById('panel-clima-extendido');
+    panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+};
+
+// Diccionario de códigos meteorológicos WMO a Emojis
+function obtenerIconoClima(codigo) {
+    if (codigo === 0) return '☀️'; // Despejado
+    if (codigo === 1 || codigo === 2) return '🌤️'; // Parcial
+    if (codigo === 3) return '☁️'; // Nublado
+    if (codigo >= 45 && codigo <= 48) return '🌫️'; // Niebla/Camanchaca
+    if (codigo >= 51 && codigo <= 67) return '🌧️'; // Lluvia/Llovizna
+    if (codigo >= 71 && codigo <= 82) return '❄️'; // Nieve
+    if (codigo >= 95) return '⛈️'; // Tormenta
+    return '🌡️';
+}
+
+function obtenerNombreDia(fechaString) {
+    const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    // Ajuste para evitar desfase de huso horario
+    const fecha = new Date(fechaString + "T12:00:00Z");
+    return dias[fecha.getUTCDay()];
+}
+
+async function obtenerClimaVallenar() {
+    try {
+        // Coordenadas de Vallenar: Latitud -28.57, Longitud -70.76
+        const url = 'https://api.open-meteo.com/v1/forecast?latitude=-28.57&longitude=-70.76&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=America%2FSantiago';
+        
+        const respuesta = await fetch(url);
+        const datos = await respuesta.json();
+
+        // 1. Actualizar el Botón Principal (Clima Actual)
+        const tempActual = Math.round(datos.current_weather.temperature);
+        const iconActual = obtenerIconoClima(datos.current_weather.weathercode);
+        document.getElementById('btn-clima-live').innerHTML = `${iconActual} ${tempActual}°C Vallenar`;
+
+        // 2. Armar las tarjetas de los próximos 3 días
+        const panelDias = document.getElementById('pronostico-dias');
+        let htmlDias = '';
+
+        // Iterar sobre los días 1, 2 y 3 (el día 0 es hoy)
+        for(let i = 1; i <= 3; i++) {
+            const tempMax = Math.round(datos.daily.temperature_2m_max[i]);
+            const tempMin = Math.round(datos.daily.temperature_2m_min[i]);
+            const iconDia = obtenerIconoClima(datos.daily.weathercode[i]);
+            const nombreDia = obtenerNombreDia(datos.daily.time[i]);
+
+            htmlDias += `
+                <div class="pronostico-card">
+                    <span style="display: block; color: var(--text-muted); font-size: 0.75rem; font-weight: bold; margin-bottom: 5px;">${nombreDia.substring(0,3)}</span>
+                    <span style="display: block; font-size: 1.5rem; margin-bottom: 5px;">${iconDia}</span>
+                    <div style="font-size: 0.8rem;">
+                        <span style="color: #ef4444; font-weight: bold;">${tempMax}°</span> 
+                        <span style="color: #60a5fa;">${tempMin}°</span>
+                    </div>
+                </div>
+            `;
+        }
+        panelDias.innerHTML = htmlDias;
+
+    } catch (error) {
+        console.error("Error cargando clima:", error);
+        document.getElementById('btn-clima-live').innerHTML = '<span class="material-symbols-outlined">cloud_off</span> Clima Offline';
+    }
+}

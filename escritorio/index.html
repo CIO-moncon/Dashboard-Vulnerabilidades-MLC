@@ -57,8 +57,25 @@
         </div>
 
         <div class="navbar-right">
-            <button id="btn-abrir-login" class="icon-btn" onclick="document.getElementById('modal-auth').style.display='flex'">Soy Analista</button>
-            <div id="perfil-analista" class="user-profile" style="display: none;" onclick="cerrarSesion()">
+            <!-- Widget Clima Vallenar -->
+            <button class="btn-clima" onclick="toggleClima()" id="btn-clima-live">
+                <span class="material-symbols-outlined" style="animation: spin 2s linear infinite;">sync</span> Cargando...
+            </button>
+
+            <!-- Panel Flotante de Pronóstico 3 Días -->
+            <div id="panel-clima-extendido" class="panel-pronostico">
+                <h3 style="color: white; font-size: 1rem; margin: 0 0 5px 0;">📍 Vallenar, Chile</h3>
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin: 0;">Pronóstico Mina Los Colorados</p>
+                <div class="pronostico-grid" id="pronostico-dias">
+                    <!-- Se inyectan con JS -->
+                </div>
+            </div>
+            
+            <button id="btn-abrir-login" class="icon-btn" onclick="document.getElementById('modal-auth').style.display='flex'" style="border: 1px solid var(--accent-color); color: var(--accent-color); padding: 5px 15px; border-radius: 20px; font-size: 0.85rem; font-weight: bold;">
+                Soy Analista
+            </button>
+
+            <div id="perfil-analista" class="user-profile" style="display: none; cursor: pointer;" onclick="cerrarSesion()" title="Cerrar Sesión">
                 <span class="material-symbols-outlined" style="color: var(--status-ok);">account_circle</span>
                 <span class="badge badge-admin">CIO Activo</span>
             </div>

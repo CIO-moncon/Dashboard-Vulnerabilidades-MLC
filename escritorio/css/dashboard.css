@@ -115,3 +115,85 @@
 .kpi-card.status-critical { border-left-color: var(--status-critical); }
 .kpi-title { display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 5px; }
 .kpi-value { display: block; color: white; font-size: 1.5rem; font-weight: bold; }
+
+/* ==========================================
+   FIX: BARRA SUPERIOR Y LOGO
+   ========================================== */
+.top-navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    height: 65px; /* Congela la altura de la barra */
+    background: var(--glass-surface, #1a1c23);
+    border-bottom: 1px solid var(--glass-border, #333);
+}
+
+.navbar-left, .navbar-center, .navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* El domador del logo */
+.logo {
+    height: 40px !important; 
+    width: auto;
+    object-fit: contain;
+}
+
+.navbar-left h1 {
+    font-size: 1.2rem;
+    margin: 0;
+    color: white;
+}
+
+/* ==========================================
+   WIDGET DEL CLIMA
+   ========================================== */
+.btn-clima {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #60a5fa;
+    padding: 6px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.btn-clima:hover { background: rgba(59, 130, 246, 0.2); }
+
+.panel-pronostico {
+    position: absolute;
+    top: 70px;
+    right: 120px;
+    background: rgba(26, 28, 40, 0.95);
+    border: 1px solid var(--glass-border, #333);
+    border-radius: 12px;
+    padding: 15px;
+    z-index: 9999;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+    backdrop-filter: blur(10px);
+    width: 320px;
+    display: none; /* Oculto por defecto */
+}
+
+.pronostico-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.pronostico-card {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.05);
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+}
