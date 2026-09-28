@@ -483,12 +483,10 @@ function renderizarAlertasTerreno() {
     const contenedor = document.getElementById('historial-terreno-lista');
     
     // --- 1. CREACIÓN DEL PROYECTOR GLOBAL (FUERA DEL MODAL) ---
-    // Esto asegura que la foto gigante nunca jamás se corte.
     let visorGlobal = document.getElementById('visor-zoom-global');
     if (!visorGlobal) {
         visorGlobal = document.createElement('img');
         visorGlobal.id = 'visor-zoom-global';
-        // pointer-events: none evita que el ratón "choque" con la foto y parpadee
         visorGlobal.style.cssText = 'display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 85vw; max-height: 85vh; object-fit: contain; background: rgba(26,28,35,0.95); padding: 10px; border-radius: 8px; border: 2px solid #60a5fa; z-index: 9999999; box-shadow: 0 10px 50px rgba(0,0,0,0.9); pointer-events: none;';
         document.body.appendChild(visorGlobal);
     }
@@ -522,7 +520,6 @@ function renderizarAlertasTerreno() {
         if(al.severidad === 'Naranja') colorSev = '#f97316';
         if(al.severidad === 'Amarillo') colorSev = '#eab308';
 
-        // Extracción inteligente de URL
         let urlReal = '';
         if (al.evidencias) {
             if (Array.isArray(al.evidencias) && al.evidencias.length > 0) {
@@ -535,7 +532,6 @@ function renderizarAlertasTerreno() {
             }
         }
 
-        // DETECTOR DE VIDEO
         let esVideo = false;
         if (urlReal && (urlReal.includes('data:video') || urlReal.toLowerCase().includes('.mp4') || urlReal.toLowerCase().includes('.mov') || urlReal.toLowerCase().includes('video%2F'))) {
             esVideo = true;
@@ -544,9 +540,11 @@ function renderizarAlertasTerreno() {
         html += `
             <div style="background: rgba(0,0,0,0.3); border-left: 4px solid ${colorSev}; padding: 15px; border-radius: 6px; position: relative;">
                 
+                ${usuarioActual ? `
                 <button onclick="eliminarAlertaTerreno('${al.id_alerta}')" style="position: absolute; top: 10px; right: 10px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; transition: 0.2s;" onmouseover="this.style.color='var(--status-critical)'" onmouseout="this.style.color='var(--text-muted)'" title="Eliminar todo el reporte">
                     <span class="material-symbols-outlined" style="font-size: 1.2rem;">delete</span>
                 </button>
+                ` : ''}
 
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-right: 35px;">
                     <span style="color: var(--text-muted); font-size: 0.8rem;">📅 ${new Date(al.timestamp).toLocaleString('es-CL')} | Inspector</span>
@@ -561,7 +559,6 @@ function renderizarAlertasTerreno() {
 
         if (urlReal) {
             if (esVideo) {
-                // RENDERIZAR REPRODUCTOR DE VIDEO
                 html += `
                     <div style="width: 100%; margin-bottom: 10px;">
                         <video controls style="max-width: 100%; max-height: 250px; border-radius: 6px; border: 1px solid rgba(59, 130, 246, 0.3);">
@@ -569,12 +566,13 @@ function renderizarAlertasTerreno() {
                             Tu navegador no soporta el reproductor de video.
                         </video>
                     </div>
+                    ${usuarioActual ? `
                     <button onclick="borrarSoloFoto('${al.id_alerta}')" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 12px; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
                         <span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">videocam_off</span> Borrar Video
                     </button>
+                    ` : ''}
                 `;
             } else {
-                // RENDERIZAR BOTÓN FOTO CON CONEXIÓN AL PROYECTOR GLOBAL
                 html += `
                     <a href="${urlReal}" target="_blank" style="position: relative; display: inline-block; text-decoration: none;"
                        onmouseenter="document.getElementById('visor-zoom-global').src='${urlReal}'; document.getElementById('visor-zoom-global').style.display='block';"
@@ -586,9 +584,11 @@ function renderizarAlertasTerreno() {
                         </div>
                     </a>
                     
+                    ${usuarioActual ? `
                     <button onclick="borrarSoloFoto('${al.id_alerta}')" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 12px; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
                         <span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">image_not_supported</span>
                     </button>
+                    ` : ''}
                 `;
             }
         } else {
@@ -596,10 +596,12 @@ function renderizarAlertasTerreno() {
         }
 
         html += `
+                    ${usuarioActual ? `
                     <button onclick="document.getElementById('input-foto-${al.id_alerta}').click()" style="background: rgba(255, 255, 255, 0.1); color: white; border: 1px dashed rgba(255, 255, 255, 0.3); padding: 8px 12px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; margin-left: auto;">
                         <span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">upload</span> ${urlReal ? 'Reemplazar' : 'Agregar'}
                     </button>
                     <input type="file" id="input-foto-${al.id_alerta}" accept="image/*,video/*" style="display: none;" onchange="reemplazarFotoTerreno(this, '${al.id_alerta}')">
+                    ` : ''}
                 </div>
             </div>
         `;
