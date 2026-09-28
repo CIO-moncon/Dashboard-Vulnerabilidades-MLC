@@ -342,28 +342,44 @@
        <!-- Panel Derecho: KPIs ISO y Alertas de Terreno -->
         <aside style="display: flex; flex-direction: column; gap: 15px;">
             
-            <!-- KPIs Industriales (ISO 20816-3) -->
-            <div class="glass-panel panel-kpi" style="padding-bottom: 10px;">
-                <div class="panel-header">
-                    <h2><span class="material-symbols-outlined">analytics</span> Estado ISO 20816-3</h2>
+            <!-- KPIs Industriales (ISO 20816-3) - MÁS COMPACTO -->
+            <div class="glass-panel panel-kpi" style="padding-bottom: 5px;">
+                <div class="panel-header" style="margin-bottom: 5px;">
+                    <h2 style="font-size: 1rem;"><span class="material-symbols-outlined" style="font-size: 1.1rem; vertical-align: middle;">analytics</span> Estado ISO 20816-3</h2>
                 </div>
-                <div class="kpi-card status-ok">
-                    <span class="kpi-title">Zona A (Normal)</span>
-                    <span class="kpi-value" id="kpi-ok">0</span>
-                </div>
-                <div class="kpi-card status-alert">
-                    <span class="kpi-title">Zona B (Observación)</span>
-                    <span class="kpi-value" id="kpi-alert">0</span>
-                </div>
-                <div class="kpi-card status-warning">
-                    <span class="kpi-title">Zona C (Alarma)</span>
-                    <span class="kpi-value" id="kpi-warn">0</span>
-                </div>
-                <div class="kpi-card status-critical">
-                    <span class="kpi-title">Zona D (Peligro)</span>
-                    <span class="kpi-value" id="kpi-crit">0</span>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div class="kpi-card status-ok" style="margin-bottom: 0; padding: 5px 10px;">
+                        <span class="kpi-title" style="font-size: 0.7rem;">Zona A</span>
+                        <span class="kpi-value" id="kpi-ok" style="font-size: 1.2rem;">0</span>
+                    </div>
+                    <div class="kpi-card status-alert" style="margin-bottom: 0; padding: 5px 10px;">
+                        <span class="kpi-title" style="font-size: 0.7rem;">Zona B</span>
+                        <span class="kpi-value" id="kpi-alert" style="font-size: 1.2rem;">0</span>
+                    </div>
+                    <div class="kpi-card status-warning" style="margin-bottom: 0; padding: 5px 10px;">
+                        <span class="kpi-title" style="font-size: 0.7rem;">Zona C</span>
+                        <span class="kpi-value" id="kpi-warn" style="font-size: 1.2rem;">0</span>
+                    </div>
+                    <div class="kpi-card status-critical" style="margin-bottom: 0; padding: 5px 10px;">
+                        <span class="kpi-title" style="font-size: 0.7rem;">Zona D</span>
+                        <span class="kpi-value" id="kpi-crit" style="font-size: 1.2rem;">0</span>
+                    </div>
                 </div>
             </div>
+
+            <!-- Panel de Alertas en Tiempo Real (Terreno) - MÁS GRANDE -->
+            <div class="glass-panel" style="flex: 1; display: flex; flex-direction: column; min-height: 50vh;">
+                <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h2 style="color: #ef4444; font-size: 1.1rem; margin: 0;"><span class="material-symbols-outlined" style="vertical-align: middle;">notifications_active</span> Alertas en Terreno</h2>
+                    <span id="badge-terreno-sync" style="font-size: 0.65rem; color: #4ade80; border: 1px solid #22c55e; padding: 2px 6px; border-radius: 10px; font-weight: bold;">🟢 LIVE</span>
+                </div>
+                <!-- Aquí se inyectarán las tarjetas de los reportes -->
+                <div id="panelAlertasTerreno" class="lista-scroll" style="padding-right: 5px; display: flex; flex-direction: column; gap: 8px;">
+                    <p class="text-muted" style="text-align: center; font-size: 0.85rem; padding: 20px;">Esperando reportes...</p>
+                </div>
+            </div>
+
+        </aside>
 
             <!-- NUEVO: Panel de Alertas en Tiempo Real (Terreno) -->
             <div class="glass-panel" style="flex: 1; display: flex; flex-direction: column; max-height: 400px;">

@@ -908,29 +908,29 @@ function renderizarPanelAlertasActivas(datosAlertas) {
         const fechaObj = new Date(alerta.timestamp);
         const horaStr = fechaObj.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
 
-        // Crear la tarjeta HTML
+      // Crear la tarjeta HTML (Minimalista)
         const cardHTML = `
-            <div class="tarjeta-alerta-terreno sev-${alerta.severidad}">
-                <div class="alerta-t-header">
-                    <span class="alerta-t-tag">${alerta.tag}</span>
-                    <span class="alerta-t-hora">🕒 ${horaStr}</span>
-                </div>
-                
-                <div style="font-size: 0.75rem; color: #a1a1aa; margin-top: -3px; margin-bottom: 5px;">
-                    ${alerta.faena} - ${alerta.area}
-                </div>
-                
-                <div class="alerta-t-detalle">
-                    ${alerta.detalle}
+            <div class="tarjeta-alerta-terreno sev-${alerta.severidad}" style="padding: 10px; cursor: pointer;" onclick="gestionarAlertaRapida('${alerta.id}', '${alerta.tag}')" title="Clic para ver detalle y fotos">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 1.1rem; color: ${alerta.severidad === 'Rojo' ? '#ef4444' : alerta.severidad === 'Naranja' ? '#f97316' : '#eab308'}">
+                            ${alerta.severidad === 'Rojo' ? 'error' : 'warning'}
+                        </span>
+                        <span style="font-family: 'Roboto Mono', monospace; font-weight: bold; color: white; font-size: 1.05rem;">
+                            ${alerta.tag}
+                        </span>
+                    </div>
+
+                    <span style="font-size: 0.75rem; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">
+                        🕒 ${horaStr}
+                    </span>
+                    
                 </div>
                 
                 ${alerta.evidencias && alerta.evidencias.length > 0 ? 
-                  `<div style="font-size: 0.75rem; color: #60a5fa; margin-top: 5px;">📎 Contiene fotos/videos</div>` 
+                  `<div style="font-size: 0.65rem; color: #60a5fa; text-align: right; margin-top: 4px;">📎 Adjunto</div>` 
                   : ''}
-                
-                <button class="btn-alerta-accion" onclick="gestionarAlertaRapida('${alerta.id}', '${alerta.tag}')">
-                    <span class="material-symbols-outlined" style="font-size: 0.9rem; vertical-align: middle;">search</span> Revisar Expediente
-                </button>
             </div>
         `;
         
