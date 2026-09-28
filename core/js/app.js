@@ -165,8 +165,17 @@ document.addEventListener('DOMContentLoaded', () => {
         datosGlobalesActivos = snapshot.val();
         aplicarFiltroFaena();
     });
+    
+    // Escucha global de Alertas de Terreno
     alertasRef.on('value', (snapshot) => {
         datosGlobalesAlertas = snapshot.val();
+        // Dispara la función para dibujar las alertas en la columna derecha
+        renderizarPanelAlertasActivas(datosGlobalesAlertas);
+        
+        // Si el usuario tiene el modal de un equipo abierto en la pestaña de terreno, lo recargamos
+        if (document.getElementById('panel-terreno') && document.getElementById('panel-terreno').style.display === 'block') {
+            renderizarAlertasTerreno();
+        }
     });
 });
 
@@ -174,6 +183,8 @@ window.aplicarFiltroFaena = function() {
     vistaActualPanel = 'AREAS'; 
     areaSeleccionadaPanel = null;
     renderizarCatastro(datosGlobalesActivos);
+    // Forzamos actualización del panel derecho al cambiar el filtro
+    renderizarPanelAlertasActivas(datosGlobalesAlertas);
 };
 
 function renderizarCatastro(activosData) {
@@ -420,8 +431,6 @@ window.abrirModalEvidencia = function(idActivo) {
     renderizarListaComponentes();
     document.getElementById('modal-evidencia').style.display = 'flex';
 };
-
-// ... (Tu función window.agregarNuevoComponente queda igualita) ...
 
 window.seleccionarComponente = function(compID) {
     componenteSeleccionado = compID;
@@ -717,25 +726,6 @@ window.agregarNuevoComponente = function() {
     });
 };
 
-window.seleccionarComponente = function(compID) {
-    componenteSeleccionado = compID;
-    renderizarListaComponentes(); 
-    
-    const comp = activoSeleccionadoActual.componentes[compID];
-    
-    document.getElementById('panel-inspeccion').style.display = 'block';
-    document.getElementById('titulo-componente').innerText = `Inspección: ${comp.nombre}`;
-    
-    document.getElementById('check-equipo-nuevo').checked = comp.es_nuevo || false;
-    document.getElementById('fecha-medicion').value = comp.ultima_medicion || '';
-    document.getElementById('avisos-sap').value = comp.avisos_sap || '';
-    document.getElementById('om-sap').value = comp.om_sap || '';
-    document.getElementById('texto-analisis-componente').value = comp.analisis_ia || '';
-    document.getElementById('select-salud-componente').value = comp.estado || 'Verde';
-    
-    document.getElementById('input-espectro').value = '';
-};
-
 window.guardarDictamenComponente = function() {
     if (!componenteSeleccionado) return;
 
@@ -790,7 +780,6 @@ function recalcularSaludGlobal() {
         activosRef.child(activoSeleccionadoActual.id_activo).update({ severidad: peorEstado });
     }
 }
-
 
 // ==========================================
 // IA GEMINI: ANÁLISIS DE COMPONENTES Y ESPECTROS
@@ -878,3 +867,83 @@ function convertirABase64(file) {
         reader.onerror = error => reject(error);
     });
 }
+
+// =========================================================================
+// MÓDULO CIO: MONITOR DE ALERTAS DE TERRENO EN TIEMPO REAL (COLUMNA DERECHA)
+// =========================================================================
+function renderizarPanelAlertasActivas(datosAlertas) {
+    const panelAlertas = document.getElementById('panelAlertasTerreno');
+    
+    // Si no existe el panel en el HTML, cancelamos
+    if(!panelAlertas) return; 
+
+    if (!datosAlertas) {
+        panelAlertas.innerHTML = '<p class="text-muted" style="text-align: center; font-size: 0.85rem; padding: 20px;">No hay reportes activos en terreno.</p>';
+        return;
+    }
+
+    panelAlertas.innerHTML = ''; // Limpiar el panel antes de redibujar
+    let hayAlertasActivas = false;
+
+    // Convertir a un arreglo y ordenar de la más nueva a la más antigua
+    const listaAlertas = Object.keys(datosAlertas).map(key => {
+        return { id: key, ...datosAlertas[key] };
+    }).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    // Dibujar cada alerta
+    listaAlertas.forEach(alerta => {
+        // Filtramos las que ya fueron cerradas
+        if (alerta.estado === 'cerrado') return;
+        
+        // Filtro de Seguridad RBAC: Si el analista es de una faena específica, solo ve las alertas de esa faena
+        const filtroEl = document.getElementById('filtroFaena');
+        const filtroSeleccionado = filtroEl ? filtroEl.value : 'TODAS';
+        if (filtroSeleccionado !== "TODAS" && alerta.faena && alerta.faena !== filtroSeleccionado) {
+            return;
+        }
+
+        hayAlertasActivas = true;
+
+        // Formatear hora (Ej: 14:35)
+        const fechaObj = new Date(alerta.timestamp);
+        const horaStr = fechaObj.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+
+        // Crear la tarjeta HTML
+        const cardHTML = `
+            <div class="tarjeta-alerta-terreno sev-${alerta.severidad}">
+                <div class="alerta-t-header">
+                    <span class="alerta-t-tag">${alerta.tag}</span>
+                    <span class="alerta-t-hora">🕒 ${horaStr}</span>
+                </div>
+                
+                <div style="font-size: 0.75rem; color: #a1a1aa; margin-top: -3px; margin-bottom: 5px;">
+                    ${alerta.faena} - ${alerta.area}
+                </div>
+                
+                <div class="alerta-t-detalle">
+                    ${alerta.detalle}
+                </div>
+                
+                ${alerta.evidencias && alerta.evidencias.length > 0 ? 
+                  `<div style="font-size: 0.75rem; color: #60a5fa; margin-top: 5px;">📎 Contiene fotos/videos</div>` 
+                  : ''}
+                
+                <button class="btn-alerta-accion" onclick="gestionarAlertaRapida('${alerta.id}', '${alerta.tag}')">
+                    <span class="material-symbols-outlined" style="font-size: 0.9rem; vertical-align: middle;">search</span> Revisar Expediente
+                </button>
+            </div>
+        `;
+        
+        panelAlertas.innerHTML += cardHTML;
+    });
+
+    if(!hayAlertasActivas) {
+        panelAlertas.innerHTML = '<p class="text-muted" style="text-align: center; font-size: 0.85rem; padding: 20px;">Todas las alertas han sido gestionadas.</p>';
+    }
+}
+
+// Función para el botón de "Revisar Expediente"
+window.gestionarAlertaRapida = function(idAlerta, tagEquipo) {
+    alert(`Has hecho clic en el reporte de terreno del equipo: ${tagEquipo}.\n\nPara revisar las fotos y tomar acciones, busca este equipo en el panel de Catastro de la izquierda y entra a su Bitácora de Terreno.`);
+    // En la siguiente fase, haremos que este botón abra directamente el modal del equipo.
+};
