@@ -468,12 +468,9 @@ window.verTerreno = function() {
 function renderizarAlertasTerreno() {
     const contenedor = document.getElementById('historial-terreno-lista');
     
-    let visorGlobal = document.getElementById('visor-zoom-global');
-    if (!visorGlobal) {
-        visorGlobal = document.createElement('img');
-        visorGlobal.id = 'visor-zoom-global';
-        visorGlobal.style.cssText = 'display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 85vw; max-height: 85vh; object-fit: contain; background: rgba(26,28,35,0.95); padding: 10px; border-radius: 8px; border: 2px solid #60a5fa; z-index: 9999999; box-shadow: 0 10px 50px rgba(0,0,0,0.9); pointer-events: none;';
-        document.body.appendChild(visorGlobal);
+    // Inyectar el contenedor del Carrusel (Lightbox) si no existe
+    if (!document.getElementById('modal-lightbox')) {
+        inyectarLightboxHTML();
     }
 
     if (!datosGlobalesAlertas) {
@@ -505,7 +502,6 @@ function renderizarAlertasTerreno() {
         if(al.severidad === 'Naranja') colorSev = '#f97316';
         if(al.severidad === 'Amarillo') colorSev = '#eab308';
 
-        // Reemplazamos los saltos de línea (\n) por etiquetas <br> para que el HTML los respete
         let detalleFormateado = (al.detalle || '').replace(/\n/g, '<br>');
 
         html += `
@@ -529,29 +525,20 @@ function renderizarAlertasTerreno() {
                 <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap;">
         `;
 
-        // Procesamiento MULTIPLE de evidencias
         let dataEvidencias = al.evidencias || al.evidencia || [];
-        
-        // Normalizar a un arreglo, por si viene algo antiguo que no es un array
         if (!Array.isArray(dataEvidencias) && dataEvidencias) {
             dataEvidencias = [dataEvidencias];
         }
 
         if (dataEvidencias.length > 0) {
-            dataEvidencias.forEach((ev) => {
+            dataEvidencias.forEach((ev, index) => {
                 let urlReal = '';
                 let esVideo = false;
 
-                if (typeof ev === 'string') {
-                    urlReal = ev;
-                } else if (ev.data) {
-                    urlReal = ev.data;
-                    esVideo = ev.tipo === 'video';
-                } else if (ev.url || ev.base64) {
-                    urlReal = ev.url || ev.base64;
-                }
+                if (typeof ev === 'string') { urlReal = ev; } 
+                else if (ev.data) { urlReal = ev.data; esVideo = ev.tipo === 'video'; } 
+                else if (ev.url || ev.base64) { urlReal = ev.url || ev.base64; }
 
-                // Detección "ciega" de video por si falla el atributo 'tipo'
                 if (urlReal && (urlReal.includes('data:video') || urlReal.toLowerCase().includes('.mp4'))) {
                     esVideo = true;
                 }
@@ -559,29 +546,24 @@ function renderizarAlertasTerreno() {
                 if (urlReal) {
                     if (esVideo) {
                         html += `
-                            <div style="width: 100%; margin-bottom: 10px;">
-                                <video controls style="max-width: 100%; max-height: 250px; border-radius: 6px; border: 1px solid rgba(59, 130, 246, 0.3);">
-                                    <source src="${urlReal}">
-                                    Tu navegador no soporta video web.
-                                </video>
+                            <div onclick="abrirLightbox('${al.id_alerta}', ${index})" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Ver Video">
+                                <div style="display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.8); border: 1px solid rgba(239, 68, 68, 0.5); padding: 4px; border-radius: 6px; height: 60px; width: 80px;">
+                                    <span class="material-symbols-outlined" style="color: #f87171; font-size: 2rem;">play_circle</span>
+                                </div>
                             </div>
                         `;
                     } else {
                         html += `
-                            <a href="${urlReal}" target="_blank" style="position: relative; display: inline-block; text-decoration: none;"
-                               onmouseenter="document.getElementById('visor-zoom-global').src='${urlReal}'; document.getElementById('visor-zoom-global').style.display='block';"
-                               onmouseleave="document.getElementById('visor-zoom-global').style.display='none';">
-                                
+                            <div onclick="abrirLightbox('${al.id_alerta}', ${index})" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Ampliar Imagen">
                                 <div style="display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(59, 130, 246, 0.3); padding: 4px; border-radius: 6px; height: 60px; width: 60px; overflow: hidden;">
                                     <img src="${urlReal}" style="height: 100%; width: 100%; object-fit: cover; border-radius: 4px;">
                                 </div>
-                            </a>
+                            </div>
                         `;
                     }
                 }
             });
 
-            // Botón general de borrar fotos
             if (usuarioActual) {
                 html += `
                     <button onclick="borrarSoloFoto('${al.id_alerta}')" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 12px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; align-self: center; margin-left: auto;" title="Borrar toda la evidencia adjunta">
@@ -845,31 +827,31 @@ function renderizarPanelAlertasActivas(datosAlertas) {
 
         const fechaObj = new Date(alerta.timestamp);
         const horaStr = fechaObj.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-        const faenaCorta = alerta.faena ? alerta.faena.split(',')[0] : 'Desconocido';
+        const faenaCorta = alerta.faena ? alerta.faena.split(',')[0] : 'Des';
 
+        // VERSIÓN HORIZONTAL: Aprovecha todo el ancho de la columna
         const cardHTML = `
-            <div class="tarjeta-alerta-terreno sev-${alerta.severidad}" style="padding: 10px; cursor: pointer;" onclick="gestionarAlertaRapida('${alerta.id}', '${alerta.tag}')" title="Clic para ver detalle y fotos">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div style="display: flex; gap: 8px;">
-                        <span class="material-symbols-outlined" style="font-size: 1.1rem; color: ${alerta.severidad === 'Rojo' ? '#ef4444' : alerta.severidad === 'Naranja' ? '#f97316' : '#eab308'}">
-                            ${alerta.severidad === 'Rojo' ? 'error' : 'warning'}
-                        </span>
-                        <div>
-                            <span style="font-family: 'Roboto Mono', monospace; font-weight: bold; color: white; font-size: 1.05rem; display: block; line-height: 1;">
-                                ${alerta.tag}
-                            </span>
-                            <span style="font-size: 0.7rem; color: #a1a1aa; margin-top: 2px; display: block;">
-                                ${faenaCorta}
-                            </span>
-                        </div>
+            <div class="tarjeta-alerta-terreno sev-${alerta.severidad}" style="padding: 10px 12px; cursor: pointer; display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 10px;" onclick="gestionarAlertaRapida('${alerta.id}', '${alerta.tag}')" title="Clic para ver detalle">
+                
+                <!-- IZQUIERDA: Icono + TAG + Faena -->
+                <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 1.2rem; color: ${alerta.severidad === 'Rojo' ? '#ef4444' : alerta.severidad === 'Naranja' ? '#f97316' : '#eab308'}">
+                        ${alerta.severidad === 'Rojo' ? 'error' : 'warning'}
+                    </span>
+                    <div style="display: flex; flex-direction: column; overflow: hidden;">
+                        <span style="font-family: 'Roboto Mono', monospace; font-weight: bold; color: white; font-size: 1rem; line-height: 1.1; white-space: nowrap; text-overflow: ellipsis;">${alerta.tag}</span>
+                        <span style="font-size: 0.65rem; color: #a1a1aa; line-height: 1; margin-top: 3px; white-space: nowrap; text-overflow: ellipsis;">${faenaCorta}</span>
                     </div>
-                    <span style="font-size: 0.75rem; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; white-space: nowrap;">
-                        🕒 ${horaStr}
+                </div>
+
+                <!-- DERECHA: Adjunto + Hora -->
+                <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                    ${alerta.evidencias && alerta.evidencias.length > 0 ? `<span class="material-symbols-outlined" style="color: #60a5fa; font-size: 1.1rem;" title="Contiene fotos/videos">attach_file</span>` : ''}
+                    <span style="font-size: 0.75rem; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 3px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); white-space: nowrap;">
+                        ${horaStr}
                     </span>
                 </div>
-                ${alerta.evidencias && alerta.evidencias.length > 0 ? 
-                  `<div style="font-size: 0.65rem; color: #60a5fa; text-align: right; margin-top: 4px;">📎 Adjunto</div>` 
-                  : ''}
+                
             </div>
         `;
         
@@ -983,3 +965,95 @@ async function obtenerClimaVallenar() {
         document.getElementById('btn-clima-live').innerHTML = '<span class="material-symbols-outlined">cloud_off</span> Clima Offline';
     }
 }
+
+// =========================================================================
+// MÓDULO CIO: CARRUSEL MULTIMEDIA (LIGHTBOX)
+// =========================================================================
+
+let lightboxEvidencias = [];
+let lightboxIndex = 0;
+
+function inyectarLightboxHTML() {
+    const lbHtml = `
+    <div id="modal-lightbox" class="modal-overlay" style="display: none; z-index: 99999999;">
+        <div style="position: relative; width: 90%; max-width: 900px; height: 85vh; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            
+            <button onclick="cerrarLightbox()" style="position: absolute; top: -10px; right: 0; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; transition: 0.2s;" onmouseover="this.style.background='red'">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+            
+            <button onclick="cambiarMediaLightbox(-1)" id="btn-lb-prev" style="position: absolute; left: -50px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 15px; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s;" onmouseover="this.style.background='rgba(59, 130, 246, 0.5)'">
+                <span class="material-symbols-outlined">arrow_back_ios_new</span>
+            </button>
+            
+            <div id="lightbox-content" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(9, 11, 16, 0.9); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.8);">
+                <!-- Contenido Dinámico -->
+            </div>
+
+            <button onclick="cambiarMediaLightbox(1)" id="btn-lb-next" style="position: absolute; right: -50px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 15px; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s;" onmouseover="this.style.background='rgba(59, 130, 246, 0.5)'">
+                <span class="material-symbols-outlined">arrow_forward_ios</span>
+            </button>
+            
+            <div id="lightbox-counter" style="position: absolute; bottom: -40px; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px; color: white; font-family: 'Roboto Mono', monospace; font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.1);">1 / 3</div>
+        </div>
+    </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', lbHtml);
+}
+
+window.abrirLightbox = function(idAlerta, startIndex) {
+    const al = datosGlobalesAlertas[idAlerta];
+    if (!al) return;
+    
+    let dataEvidencias = al.evidencias || al.evidencia || [];
+    if (!Array.isArray(dataEvidencias)) dataEvidencias = [dataEvidencias];
+    
+    lightboxEvidencias = dataEvidencias.map(ev => {
+        let url = '';
+        let isVideo = false;
+        if (typeof ev === 'string') { url = ev; }
+        else if (ev.data) { url = ev.data; isVideo = ev.tipo === 'video'; }
+        else if (ev.url || ev.base64) { url = ev.url || ev.base64; }
+        
+        if (url && (url.includes('data:video') || url.toLowerCase().includes('.mp4'))) {
+            isVideo = true;
+        }
+        return { url, isVideo };
+    }).filter(e => e.url !== ''); // Limpiar vacíos
+    
+    if (lightboxEvidencias.length === 0) return;
+    
+    lightboxIndex = startIndex;
+    document.getElementById('modal-lightbox').style.display = 'flex';
+    actualizarVistaLightbox();
+};
+
+window.cerrarLightbox = function() {
+    document.getElementById('modal-lightbox').style.display = 'none';
+    document.getElementById('lightbox-content').innerHTML = ''; // Corta el video al cerrar
+};
+
+window.cambiarMediaLightbox = function(dir) {
+    lightboxIndex += dir;
+    if (lightboxIndex < 0) lightboxIndex = lightboxEvidencias.length - 1;
+    if (lightboxIndex >= lightboxEvidencias.length) lightboxIndex = 0;
+    actualizarVistaLightbox();
+};
+
+window.actualizarVistaLightbox = function() {
+    const ev = lightboxEvidencias[lightboxIndex];
+    const container = document.getElementById('lightbox-content');
+    
+    if (ev.isVideo) {
+        container.innerHTML = `<video controls autoplay style="max-width: 100%; max-height: 100%; border-radius: 8px;"><source src="${ev.url}"></video>`;
+    } else {
+        container.innerHTML = `<img src="${ev.url}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;">`;
+    }
+    
+    document.getElementById('lightbox-counter').innerText = `Evidencia ${lightboxIndex + 1} de ${lightboxEvidencias.length}`;
+    
+    // Ocultar flechas si solo hay 1 archivo
+    const displayArrows = lightboxEvidencias.length > 1 ? 'flex' : 'none';
+    document.getElementById('btn-lb-prev').style.display = displayArrows;
+    document.getElementById('btn-lb-next').style.display = displayArrows;
+};
