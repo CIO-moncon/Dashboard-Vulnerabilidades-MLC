@@ -1,6 +1,35 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+
+    <style>
+        /* Estilos para el nuevo panel de Alertas de Terreno (Escritorio) */
+        .tarjeta-alerta-terreno {
+            background: rgba(26, 28, 40, 0.8);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border-left-width: 4px;
+        }
+        .tarjeta-alerta-terreno.sev-Rojo { border-left-color: #ef4444; }
+        .tarjeta-alerta-terreno.sev-Naranja { border-left-color: #f97316; }
+        .tarjeta-alerta-terreno.sev-Amarillo { border-left-color: #eab308; }
+
+        .alerta-t-header { display: flex; justify-content: space-between; align-items: center; }
+        .alerta-t-tag { font-family: 'Roboto Mono', monospace; font-weight: bold; color: white; font-size: 0.95rem; }
+        .alerta-t-hora { font-size: 0.7rem; color: var(--text-muted); }
+        .alerta-t-detalle { font-size: 0.8rem; color: #d1d5db; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        
+        .btn-alerta-accion {
+            background: rgba(59, 130, 246, 0.1); color: #60a5fa; border: 1px solid #3b82f6;
+            padding: 6px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; text-align: center; font-weight: bold; width: 100%; margin-top: 5px;
+        }
+        .btn-alerta-accion:hover { background: rgba(59, 130, 246, 0.3); }
+    </style>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CIO Predictivo - Compañía Minera del Pacífico</title>
@@ -310,27 +339,44 @@
             <div id="mapa-gis" class="mapa-container"></div>
         </section>
 
-        <!-- Panel Derecho: KPIs Industriales (ISO 20816-3) -->
-        <aside class="glass-panel panel-kpi">
-            <div class="panel-header">
-                <h2><span class="material-symbols-outlined">analytics</span> Estado ISO 20816-3</h2>
+       <!-- Panel Derecho: KPIs ISO y Alertas de Terreno -->
+        <aside style="display: flex; flex-direction: column; gap: 15px;">
+            
+            <!-- KPIs Industriales (ISO 20816-3) -->
+            <div class="glass-panel panel-kpi" style="padding-bottom: 10px;">
+                <div class="panel-header">
+                    <h2><span class="material-symbols-outlined">analytics</span> Estado ISO 20816-3</h2>
+                </div>
+                <div class="kpi-card status-ok">
+                    <span class="kpi-title">Zona A (Normal)</span>
+                    <span class="kpi-value" id="kpi-ok">0</span>
+                </div>
+                <div class="kpi-card status-alert">
+                    <span class="kpi-title">Zona B (Observación)</span>
+                    <span class="kpi-value" id="kpi-alert">0</span>
+                </div>
+                <div class="kpi-card status-warning">
+                    <span class="kpi-title">Zona C (Alarma)</span>
+                    <span class="kpi-value" id="kpi-warn">0</span>
+                </div>
+                <div class="kpi-card status-critical">
+                    <span class="kpi-title">Zona D (Peligro)</span>
+                    <span class="kpi-value" id="kpi-crit">0</span>
+                </div>
             </div>
-            <div class="kpi-card status-ok">
-                <span class="kpi-title">Zona A (Normal)</span>
-                <span class="kpi-value" id="kpi-ok">0</span>
+
+            <!-- NUEVO: Panel de Alertas en Tiempo Real (Terreno) -->
+            <div class="glass-panel" style="flex: 1; display: flex; flex-direction: column; max-height: 400px;">
+                <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h2 style="color: #ef4444; font-size: 1.1rem; margin: 0;"><span class="material-symbols-outlined" style="vertical-align: middle;">notifications_active</span> Alertas en Terreno</h2>
+                    <span id="badge-terreno-sync" style="font-size: 0.65rem; color: #4ade80; border: 1px solid #22c55e; padding: 2px 6px; border-radius: 10px; font-weight: bold;">🟢 LIVE</span>
+                </div>
+                <!-- Aquí se inyectarán las tarjetas de los reportes -->
+                <div id="panelAlertasTerreno" class="lista-scroll" style="padding-right: 5px; display: flex; flex-direction: column; gap: 10px;">
+                    <p class="text-muted" style="text-align: center; font-size: 0.85rem; padding: 20px;">Esperando reportes...</p>
+                </div>
             </div>
-            <div class="kpi-card status-alert">
-                <span class="kpi-title">Zona B (Observación)</span>
-                <span class="kpi-value" id="kpi-alert">0</span>
-            </div>
-            <div class="kpi-card status-warning">
-                <span class="kpi-title">Zona C (Alarma)</span>
-                <span class="kpi-value" id="kpi-warn">0</span>
-            </div>
-            <div class="kpi-card status-critical">
-                <span class="kpi-title">Zona D (Peligro)</span>
-                <span class="kpi-value" id="kpi-crit">0</span>
-            </div>
+
         </aside>
 
     </main>
