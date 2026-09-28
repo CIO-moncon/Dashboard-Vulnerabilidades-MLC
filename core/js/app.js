@@ -904,10 +904,20 @@ function renderizarPanelAlertasActivas(datosAlertas) {
     listaAlertas.forEach(alerta => {
         if (alerta.estado === 'cerrado') return;
         
-        const filtroEl = document.getElementById('filtroFaena');
-        const filtroSeleccionado = filtroEl ? filtroEl.value : 'TODAS';
-        if (filtroSeleccionado !== "TODAS" && alerta.faena && alerta.faena !== filtroSeleccionado) {
-            return;
+        // --- FIX: FILTRO INTELIGENTE ---
+        // Solo ocultamos si el usuario Analista está filtrando, los Lectores ven todo
+        if (usuarioActual) {
+            const filtroEl = document.getElementById('filtroFaena');
+            const filtroSeleccionado = filtroEl ? filtroEl.value : 'TODAS';
+            
+            if (filtroSeleccionado !== "TODAS" && alerta.faena) {
+                const faenaAlerta = alerta.faena.toLowerCase();
+                const faenaFiltro = filtroSeleccionado.toLowerCase();
+                // Si ninguna frase contiene a la otra, la ocultamos
+                if (!faenaFiltro.includes(faenaAlerta) && !faenaAlerta.includes(faenaFiltro)) {
+                    return;
+                }
+            }
         }
 
         hayAlertasActivas = true;
