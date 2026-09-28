@@ -8,8 +8,8 @@
   "description": "Aplicación de terreno para inspección de activos - Compañía Minera del Pacífico",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2806/2806216.png",
-      "sizes": "512x512",
+      "src": "./logo-cpf.png",
+      "sizes": "611x408",
       "type": "image/png"
     }
   ]
