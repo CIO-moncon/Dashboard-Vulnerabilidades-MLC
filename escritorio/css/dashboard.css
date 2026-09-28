@@ -1,163 +1,117 @@
-/* --- LAYOUT BENTO GRID --- */
+/* ==========================================
+   DISEÑO GRID PRINCIPAL (BENTO LAYOUT)
+   ========================================== */
 .dashboard-grid {
-  display: grid;
-  grid-template-columns: 320px 1fr 280px; /* Panel izquierdo, Mapa central, Panel derecho */
-  gap: 1.5rem;
-  padding: 1.5rem;
-  height: calc(100vh - 80px); /* Alto total menos la barra superior */
+    display: grid;
+    grid-template-columns: 300px 1fr 350px; /* Izq: Catastro, Centro: Mapa, Der: KPIs/Alertas */
+    gap: 20px;
+    height: calc(100vh - 100px); /* Restamos la altura del navbar */
+    padding: 20px;
+    box-sizing: border-box;
 }
 
-/* --- BARRA SUPERIOR (NAVBAR) --- */
-.top-navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 20px;
-  margin: 15px 1.5rem 0 1.5rem;
-  height: 60px;
-}
-
-.navbar-left { display: flex; align-items: center; gap: 15px; }
-
-/* Ajuste del Logo para que resalte en el fondo oscuro */
-.navbar-left img.logo { 
-  height: 38px; 
-  background-color: #ffffff; 
-  padding: 4px 8px; 
-  border-radius: 6px; 
-}
-
-.navbar-left h1 { font-size: 1.2rem; font-weight: 600; letter-spacing: 0.5px; }
-
-/* Selector de faenas transparente */
-.faena-selector {
-  background: transparent;
-  color: var(--text-main);
-  border: 1px solid var(--glass-border);
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  outline: none;
-}
-.faena-selector option { background: var(--bg-dark); }
-
-.navbar-right { display: flex; align-items: center; gap: 20px; }
-.gadget-bar { display: flex; gap: 15px; font-size: 0.9rem; color: var(--text-muted); }
-.gadget-bar span { display: flex; align-items: center; gap: 5px; }
-
-.badge-admin {
-  background-color: var(--primary-color);
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: bold;
-}
-
-.icon-btn {
-  background: none;
-  border: none;
-  color: var(--text-main);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-.icon-btn:hover { opacity: 1; }
-
-/* --- PANELES (CARTAS DEL GRID) --- */
-.panel-header h2 {
-  font-size: 1.1rem;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 15px;
-  padding: 15px 15px 0 15px;
-}
-
-.panel-alertas, .panel-kpi, .panel-mapa {
-  /* Panel Central: Mapa GIS */
+/* Panel Izquierdo: Catastro */
+.panel-alertas {
     display: flex;
     flex-direction: column;
-    height: 100%; /* Asegura que el contenedor estire hasta el fondo */
-    min-height: 70vh; /* Altura mínima garantizada */
-    padding: 0; /* Quitamos padding extra para que el mapa quede a ras */
-    overflow: hidden; /* Evita desbordes feos */
+    overflow: hidden;
+}
+
+/* Panel Central: Mapa GIS */
+.panel-mapa {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 0;
+    overflow: hidden;
 }
 
 .panel-mapa .panel-header {
     padding: 15px 20px;
     background: var(--glass-surface);
     border-bottom: 1px solid var(--glass-border);
-    z-index: 10; /* Para que quede sobre el mapa */
+    z-index: 10;
 }
 
 .mapa-container {
-    flex: 1; /* Esto hace que el mapa absorba todo el espacio restante */
+    flex: 1;
     width: 100%;
     min-height: 100%;
-    background-color: #1a1a1a; /* Color de fondo por si demoran los satélites */
+    background-color: #1a1a1a;
+}
+
+/* ==========================================
+   PANEL DERECHO (KPIS Y ALERTAS)
+   ========================================== */
+.columna-derecha {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    height: 100%; /* Obliga a la columna a estirarse */
+    overflow: hidden; /* Evita que la página crezca hacia abajo */
+}
+
+/* KPIs ISO */
+.panel-kpi {
+    flex-shrink: 0; /* Impide que el mapa o las alertas aplasten los KPIs */
+}
+
+/* Caja de Alertas (El problemático) */
+.contenedor-alertas {
+    flex: 1; /* Obliga a que tome todo el espacio sobrante de la columna */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .lista-scroll {
-  padding: 0 15px 15px 15px;
-  overflow-y: auto;
-  flex-grow: 1;
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 5px;
 }
 
-/* Botón IA Copilot Especial */
-#btn-ia-copilot { 
-  margin: 15px; 
-  justify-content: center; 
-  background-color: #6366f1; /* Tono morado/tecnológico para la IA */
-}
-#btn-ia-copilot:hover { background-color: #4f46e5; }
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
 
-/* Tarjetas KPI de la derecha */
+/* ==========================================
+   ESTILOS DE TARJETAS (CATASTRO)
+   ========================================== */
+.alerta-item {
+    background: var(--glass-surface);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.alerta-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.alerta-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+/* Tarjetas KPI */
 .kpi-card {
-  margin: 0 15px 15px 15px;
-  padding: 15px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  border-left: 4px solid;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 10px;
+    border-left: 3px solid var(--glass-border);
+    margin-bottom: 10px;
 }
-
-/* 4 Niveles ISO 20816-3 */
-.status-ok { border-color: var(--status-ok); }
-.status-alert { border-color: var(--status-alert); }
-.status-warning { border-color: var(--status-warning); }
-.status-critical { border-color: var(--status-critical); }
-
-.kpi-value { font-size: 1.5rem; font-weight: bold; }
-
-/* --- MODAL DE EVIDENCIA MULTIMEDIA --- */
-.modal-overlay {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
-  display: flex; justify-content: center; align-items: center; z-index: 9999;
-}
-.modal-content {
-  width: 90%; max-width: 650px; max-height: 90vh;
-  display: flex; flex-direction: column;
-  background: var(--bg-dark); border: 1px solid var(--glass-border);
-  border-radius: 12px; overflow: hidden; box-shadow: var(--glass-shadow);
-}
-.modal-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
-  background: rgba(0,0,0,0.3);
-}
-.modal-body { padding: 20px; overflow-y: auto; }
-.modal-texto { margin-bottom: 20px; font-size: 0.95rem; color: var(--text-main); line-height: 1.5; }
-.modal-texto strong { color: white; }
-.modal-galeria { display: flex; flex-direction: column; gap: 15px; }
-.modal-media-item { 
-  width: 100%; border-radius: 8px; border: 1px solid var(--glass-border); 
-  background: #000; max-height: 400px; object-fit: contain;
-}
-/* Efecto hover (clic) en las alertas */
-.alerta-item { cursor: pointer; transition: transform 0.2s, background 0.2s; }
-.alerta-item:hover { transform: translateX(5px); background: rgba(255,255,255,0.08) !important; }
+.kpi-card.status-ok { border-left-color: var(--status-ok); }
+.kpi-card.status-warning { border-left-color: var(--status-warning); }
+.kpi-card.status-alert { border-left-color: var(--status-alert); }
+.kpi-card.status-critical { border-left-color: var(--status-critical); }
+.kpi-title { display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 5px; }
+.kpi-value { display: block; color: white; font-size: 1.5rem; font-weight: bold; }
