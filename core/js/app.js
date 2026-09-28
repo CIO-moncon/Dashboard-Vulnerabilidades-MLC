@@ -520,17 +520,43 @@ function renderizarAlertasTerreno() {
         if(al.severidad === 'Naranja') colorSev = '#f97316';
         if(al.severidad === 'Amarillo') colorSev = '#eab308';
 
+        // ==========================================
+        // EXTRACCIÓN A PRUEBA DE BALAS (FOTOS/VIDEOS)
+        // ==========================================
         let urlReal = '';
-        if (al.evidencias) {
-            if (Array.isArray(al.evidencias) && al.evidencias.length > 0) {
-                urlReal = typeof al.evidencias[0] === 'string' ? al.evidencias[0] : (al.evidencias[0].url || al.evidencias[0].link || '');
-            } else if (typeof al.evidencias === 'string') {
-                urlReal = al.evidencias;
-            } else if (typeof al.evidencias === 'object') {
-                const firstKey = Object.keys(al.evidencias)[0];
-                if (firstKey) urlReal = typeof al.evidencias[firstKey] === 'string' ? al.evidencias[firstKey] : (al.evidencias[firstKey].url || '');
+        
+        // 1. Buscamos la foto bajo CUALQUIER nombre posible que envíe la app móvil
+        const dataEvidencia = al.evidencias || al.evidencia || al.foto || al.fotos || al.imagen || al.archivo || null;
+
+        if (dataEvidencia) {
+            // 2. Si es un texto directo (Base64 puro)
+            if (typeof dataEvidencia === 'string') {
+                urlReal = dataEvidencia;
+            } 
+            // 3. Si viene dentro de un arreglo [ "data:image..." ]
+            else if (Array.isArray(dataEvidencia) && dataEvidencia.length > 0) {
+                let primerElemento = dataEvidencia[0];
+                if (typeof primerElemento === 'string') urlReal = primerElemento;
+                else if (primerElemento.url) urlReal = primerElemento.url;
+                else if (primerElemento.base64) urlReal = primerElemento.base64;
+                else urlReal = Object.values(primerElemento)[0] || '';
+            } 
+            // 4. Si Firebase lo guardó como un objeto/lista dinámica { pushId: "data:image..." }
+            else if (typeof dataEvidencia === 'object') {
+                const values = Object.values(dataEvidencia);
+                if (values.length > 0) {
+                    let primerValor = values[0];
+                    urlReal = typeof primerValor === 'string' ? primerValor : (primerValor.url || primerValor.base64 || '');
+                }
             }
         }
+
+        // DETECTOR DE VIDEO
+        let esVideo = false;
+        if (urlReal && (urlReal.includes('data:video') || urlReal.toLowerCase().includes('.mp4') || urlReal.toLowerCase().includes('.mov') || urlReal.toLowerCase().includes('video%2F'))) {
+            esVideo = true;
+        }
+        // ==========================================
 
         let esVideo = false;
         if (urlReal && (urlReal.includes('data:video') || urlReal.toLowerCase().includes('.mp4') || urlReal.toLowerCase().includes('.mov') || urlReal.toLowerCase().includes('video%2F'))) {
