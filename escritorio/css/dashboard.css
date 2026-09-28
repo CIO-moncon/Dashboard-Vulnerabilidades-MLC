@@ -219,3 +219,43 @@ body {
     border-radius: 8px;
     text-align: center;
 }
+
+/* ==========================================
+   MODALES (VENTANAS EMERGENTES Y OVERLAYS)
+   ========================================== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(9, 11, 16, 0.85); /* Fondo oscuro semitransparente */
+    backdrop-filter: blur(8px); /* Efecto de cristal esmerilado en el fondo */
+    z-index: 9999999; /* Nivel máximo, por encima del mapa, clima y navbar */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: var(--glass-surface, rgba(26, 28, 40, 0.98));
+    border: 1px solid var(--glass-border, rgba(255,255,255,0.1));
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8);
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+/* Scrollbar estilizado para dentro del modal */
+.modal-content::-webkit-scrollbar { width: 6px; }
+.modal-content::-webkit-scrollbar-track { background: transparent; }
+.modal-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+.modal-content::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
