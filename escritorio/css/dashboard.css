@@ -124,9 +124,13 @@
     justify-content: space-between;
     align-items: center;
     padding: 10px 20px;
-    height: 65px; /* Congela la altura de la barra */
+    height: 65px;
     background: var(--glass-surface, #1a1c23);
     border-bottom: 1px solid var(--glass-border, #333);
+    
+    /* --- EL FIX MÁGICO DE PROFUNDIDAD --- */
+    position: relative; /* Obligatorio para que funcione el z-index */
+    z-index: 99999;     /* Fuerza a la barra a estar por sobre el mapa de Leaflet */
 }
 
 .navbar-left, .navbar-center, .navbar-right {
