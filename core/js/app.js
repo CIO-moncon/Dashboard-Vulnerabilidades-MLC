@@ -942,8 +942,33 @@ function renderizarPanelAlertasActivas(datosAlertas) {
     }
 }
 
-// Función para el botón de "Revisar Expediente"
+// Función para abrir directamente el expediente desde una alerta
 window.gestionarAlertaRapida = function(idAlerta, tagEquipo) {
-    alert(`Has hecho clic en el reporte de terreno del equipo: ${tagEquipo}.\n\nPara revisar las fotos y tomar acciones, busca este equipo en el panel de Catastro de la izquierda y entra a su Bitácora de Terreno.`);
-    // En la siguiente fase, haremos que este botón abra directamente el modal del equipo.
+    if (!datosGlobalesActivos) {
+        alert("El catastro aún está cargando, intenta en un segundo.");
+        return;
+    }
+
+    // 1. Buscamos el ID interno de Firebase usando el TAG que viene de la alerta
+    let idActivoEncontrado = null;
+    const keysActivos = Object.keys(datosGlobalesActivos);
+    
+    for (let i = 0; i < keysActivos.length; i++) {
+        const activo = datosGlobalesActivos[keysActivos[i]];
+        if (activo.nombre && activo.nombre.toUpperCase() === tagEquipo.toUpperCase()) {
+            idActivoEncontrado = keysActivos[i];
+            break;
+        }
+    }
+
+    // 2. Si lo encuentra, abrimos el modal y saltamos a la pestaña de terreno
+    if (idActivoEncontrado) {
+        abrirModalEvidencia(idActivoEncontrado); // Abre el modal gigante
+        verTerreno(); // Pasa automáticamente a la pestaña de "Reportes de Terreno"
+        
+        // (Opcional) Cambia el estado de la alerta a "En revisión" en Firebase
+        // db.ref('alertas_terreno/' + idAlerta).update({ estado: 'en_revision' });
+    } else {
+        alert(`❌ No se encontró el equipo "${tagEquipo}" en el catastro actual. Es posible que haya sido eliminado o renombrado.`);
+    }
 };
