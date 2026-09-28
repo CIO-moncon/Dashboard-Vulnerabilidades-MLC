@@ -505,33 +505,8 @@ function renderizarAlertasTerreno() {
         if(al.severidad === 'Naranja') colorSev = '#f97316';
         if(al.severidad === 'Amarillo') colorSev = '#eab308';
 
-        let urlReal = '';
-        const dataEvidencia = al.evidencias || al.evidencia || al.foto || al.fotos || al.imagen || al.archivo || null;
-
-        if (dataEvidencia) {
-            if (typeof dataEvidencia === 'string') {
-                urlReal = dataEvidencia;
-            } 
-            else if (Array.isArray(dataEvidencia) && dataEvidencia.length > 0) {
-                let primerElemento = dataEvidencia[0];
-                if (typeof primerElemento === 'string') urlReal = primerElemento;
-                else if (primerElemento.url) urlReal = primerElemento.url;
-                else if (primerElemento.base64) urlReal = primerElemento.base64;
-                else urlReal = Object.values(primerElemento)[0] || '';
-            } 
-            else if (typeof dataEvidencia === 'object') {
-                const values = Object.values(dataEvidencia);
-                if (values.length > 0) {
-                    let primerValor = values[0];
-                    urlReal = typeof primerValor === 'string' ? primerValor : (primerValor.url || primerValor.base64 || '');
-                }
-            }
-        }
-
-        let esVideo = false;
-        if (urlReal && (urlReal.includes('data:video') || urlReal.toLowerCase().includes('.mp4') || urlReal.toLowerCase().includes('.mov') || urlReal.toLowerCase().includes('video%2F'))) {
-            esVideo = true;
-        }
+        // Reemplazamos los saltos de línea (\n) por etiquetas <br> para que el HTML los respete
+        let detalleFormateado = (al.detalle || '').replace(/\n/g, '<br>');
 
         html += `
             <div style="background: rgba(0,0,0,0.3); border-left: 4px solid ${colorSev}; padding: 15px; border-radius: 6px; position: relative;">
@@ -542,49 +517,76 @@ function renderizarAlertasTerreno() {
                 </button>
                 ` : ''}
 
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-right: 35px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; padding-right: 35px;">
                     <span style="color: var(--text-muted); font-size: 0.8rem;">📅 ${new Date(al.timestamp).toLocaleString('es-CL')} | Inspector</span>
                     <span style="background: rgba(255,255,255,0.1); color: ${colorSev}; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">
                         ${al.severidad.toUpperCase()}
                     </span>
                 </div>
-                <p style="color: white; font-size: 0.95rem; margin-bottom: 10px;">${al.detalle}</p>
                 
-                <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <p style="color: white; font-size: 0.95rem; margin-bottom: 15px; line-height: 1.5;">${detalleFormateado}</p>
+                
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap;">
         `;
 
-        if (urlReal) {
-            if (esVideo) {
+        // Procesamiento MULTIPLE de evidencias
+        let dataEvidencias = al.evidencias || al.evidencia || [];
+        
+        // Normalizar a un arreglo, por si viene algo antiguo que no es un array
+        if (!Array.isArray(dataEvidencias) && dataEvidencias) {
+            dataEvidencias = [dataEvidencias];
+        }
+
+        if (dataEvidencias.length > 0) {
+            dataEvidencias.forEach((ev) => {
+                let urlReal = '';
+                let esVideo = false;
+
+                if (typeof ev === 'string') {
+                    urlReal = ev;
+                } else if (ev.data) {
+                    urlReal = ev.data;
+                    esVideo = ev.tipo === 'video';
+                } else if (ev.url || ev.base64) {
+                    urlReal = ev.url || ev.base64;
+                }
+
+                // Detección "ciega" de video por si falla el atributo 'tipo'
+                if (urlReal && (urlReal.includes('data:video') || urlReal.toLowerCase().includes('.mp4'))) {
+                    esVideo = true;
+                }
+
+                if (urlReal) {
+                    if (esVideo) {
+                        html += `
+                            <div style="width: 100%; margin-bottom: 10px;">
+                                <video controls style="max-width: 100%; max-height: 250px; border-radius: 6px; border: 1px solid rgba(59, 130, 246, 0.3);">
+                                    <source src="${urlReal}">
+                                    Tu navegador no soporta video web.
+                                </video>
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <a href="${urlReal}" target="_blank" style="position: relative; display: inline-block; text-decoration: none;"
+                               onmouseenter="document.getElementById('visor-zoom-global').src='${urlReal}'; document.getElementById('visor-zoom-global').style.display='block';"
+                               onmouseleave="document.getElementById('visor-zoom-global').style.display='none';">
+                                
+                                <div style="display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(59, 130, 246, 0.3); padding: 4px; border-radius: 6px; height: 60px; width: 60px; overflow: hidden;">
+                                    <img src="${urlReal}" style="height: 100%; width: 100%; object-fit: cover; border-radius: 4px;">
+                                </div>
+                            </a>
+                        `;
+                    }
+                }
+            });
+
+            // Botón general de borrar fotos
+            if (usuarioActual) {
                 html += `
-                    <div style="width: 100%; margin-bottom: 10px;">
-                        <video controls style="max-width: 100%; max-height: 250px; border-radius: 6px; border: 1px solid rgba(59, 130, 246, 0.3);">
-                            <source src="${urlReal}">
-                            Tu navegador no soporta el reproductor de video.
-                        </video>
-                    </div>
-                    ${usuarioActual ? `
-                    <button onclick="borrarSoloFoto('${al.id_alerta}')" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 12px; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
-                        <span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">videocam_off</span> Borrar Video
+                    <button onclick="borrarSoloFoto('${al.id_alerta}')" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 12px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; align-self: center; margin-left: auto;" title="Borrar toda la evidencia adjunta">
+                        <span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">delete_sweep</span> Borrar Adjuntos
                     </button>
-                    ` : ''}
-                `;
-            } else {
-                html += `
-                    <a href="${urlReal}" target="_blank" style="position: relative; display: inline-block; text-decoration: none;"
-                       onmouseenter="document.getElementById('visor-zoom-global').src='${urlReal}'; document.getElementById('visor-zoom-global').style.display='block';"
-                       onmouseleave="document.getElementById('visor-zoom-global').style.display='none';">
-                        
-                        <div style="display: flex; align-items: center; gap: 8px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); padding: 4px 8px 4px 4px; border-radius: 6px;">
-                            <img src="${urlReal}" style="height: 35px; width: 35px; object-fit: cover; border-radius: 4px;">
-                            <span style="color: #60a5fa; font-size: 0.8rem; font-weight: bold;">Ver Foto</span>
-                        </div>
-                    </a>
-                    
-                    ${usuarioActual ? `
-                    <button onclick="borrarSoloFoto('${al.id_alerta}')" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 12px; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
-                        <span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">image_not_supported</span>
-                    </button>
-                    ` : ''}
                 `;
             }
         } else {
@@ -592,12 +594,6 @@ function renderizarAlertasTerreno() {
         }
 
         html += `
-                    ${usuarioActual ? `
-                    <button onclick="document.getElementById('input-foto-${al.id_alerta}').click()" style="background: rgba(255, 255, 255, 0.1); color: white; border: 1px dashed rgba(255, 255, 255, 0.3); padding: 8px 12px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; margin-left: auto;">
-                        <span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">upload</span> ${urlReal ? 'Reemplazar' : 'Agregar'}
-                    </button>
-                    <input type="file" id="input-foto-${al.id_alerta}" accept="image/*,video/*" style="display: none;" onchange="reemplazarFotoTerreno(this, '${al.id_alerta}')">
-                    ` : ''}
                 </div>
             </div>
         `;
