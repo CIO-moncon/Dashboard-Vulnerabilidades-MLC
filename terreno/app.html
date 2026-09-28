@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#ef4444">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>TERRENO / RONDA - CAPTURA RÁPIDA [CPF]</title>
   
-  <link rel="manifest" href="manifest.json">
+  <!-- MANIFEST PARA INSTALAR COMO APP (PWA) -->
+  <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#090a0f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   
   <style>
@@ -39,7 +39,7 @@
       border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;
     }
     .app-header h1 { font-size: 0.95rem; margin: 0; text-transform: uppercase; font-weight: 800; color: #ef4444; letter-spacing: 0.6px; }
-    .badge-field { font-size: 0.65rem; padding: 5px 10px; border-radius: 7px; font-weight: bold; border: 1px solid; backdrop-filter: blur(6px); }
+    .badge-field { font-size: 0.65rem; padding: 5px 10px; border-radius: 7px; font-weight: bold; border: 1px solid; backdrop-filter: blur(6px); transition: all 0.3s ease; }
     .card-field {
       background: var(--glass-card); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
       border: 1px solid var(--glass-border); box-shadow: 0 14px 35px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.08);
@@ -102,7 +102,8 @@
   <div class="app-container">
     <header class="app-header">
       <h1>📱 Terreno / Ronda OEM</h1>
-      <span class="badge-field" id="badgeOfflineCount" style="background:rgba(34,197,94,0.2); color:#4ade80; border-color:rgba(34,197,94,0.4);">🟢 ONLINE / SYNC OK</span>
+      <!-- INDICADOR DE CONEXIÓN DINÁMICO -->
+      <span class="badge-field" id="badgeOfflineCount" style="background:rgba(34,197,94,0.2); color:#4ade80; border-color:rgba(34,197,94,0.4);">🟢 ONLINE</span>
     </header>
 
     <main class="card-field">
@@ -135,7 +136,7 @@
         <input type="text" id="fieldTagCustom" class="code-font" placeholder="Ej: MH2709 (opcional si es libre)" style="margin-top:8px;">
       </div>
 
-      <!-- 4. HALLAZGOS RÁPIDOS (TU VERSIÓN ACTUALIZADA) -->
+      <!-- 4. HALLAZGOS RÁPIDOS -->
       <div>
         <label>4. Hallazgos Rápidos (Plantas y Minas)</label>
         <div class="chips-container" style="max-height: 140px; overflow-y: auto; padding-bottom: 5px;">
@@ -150,7 +151,7 @@
           <div class="chip" onclick="toggleChip(this, 'Holgura / Pernos sueltos o cortados')">🔩 Pernos sueltos</div>
           <div class="chip" onclick="toggleChip(this, 'Correas sueltas o dañadas')">⛓️ Correas dañadas</div>
           <div class="chip" onclick="toggleChip(this, 'Polín trabado / dañado')">🛑 Polín trabado</div>
-          <!-- Condición (Vib/Termo) -->
+          <!-- Condición -->
           <div class="chip" onclick="toggleChip(this, 'Vibración / Soltura estructural')">⚠️ Vibración alta</div>
           <div class="chip" onclick="toggleChip(this, 'Sospecha de desalineamiento')">📐 Desalineamiento</div>
           <div class="chip" onclick="toggleChip(this, 'Temperatura elevada (Termografía)')">🔥 Alta temperatura</div>
@@ -163,31 +164,23 @@
         <textarea id="fieldDetalle" rows="4" placeholder="Toca los botones arriba o escribe tus comentarios aquí..." oninput="registrarEscrituraManual(event)"></textarea>
       </div>
 
-      <!-- 6. EVIDENCIA MULTIMEDIA (INTERFAZ OPTIMIZADA PARA TERRENO) -->
+      <!-- 6. EVIDENCIA MULTIMEDIA -->
       <div>
         <label>6. Evidencia (Fotos y Videos Cortos)</label>
         
-        <!-- Botones grandes para uso con guantes -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-            
-            <!-- Botón de Cámara Directa -->
             <button type="button" onclick="document.getElementById('inputCamaraFoto').click()" style="background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; color: #60a5fa; padding: 15px 10px; border-radius: 10px; font-weight: bold; font-size: 0.9rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px;">
                 <span style="font-size: 1.5rem;">📸</span> Tomar Foto
             </button>
-            
-            <!-- Botón de Video Directo -->
             <button type="button" onclick="document.getElementById('inputCamaraVideo').click()" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #f87171; padding: 15px 10px; border-radius: 10px; font-weight: bold; font-size: 0.9rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px;">
                 <span style="font-size: 1.5rem;">🎥</span> Grabar Video
             </button>
-
         </div>
 
-        <!-- Botón secundario para la Galería (Más discreto) -->
         <button type="button" onclick="document.getElementById('inputGaleria').click()" style="width: 100%; background: transparent; border: 1px dashed var(--glass-border); color: var(--text-muted); padding: 10px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; margin-bottom: 10px;">
             📁 Cargar desde la Galería...
         </button>
 
-        <!-- Inputs ocultos que hacen el trabajo sucio -->
         <input type="file" id="inputCamaraFoto" accept="image/*" capture="environment" style="display: none;" onchange="handleMultiFileUpload(event)">
         <input type="file" id="inputCamaraVideo" accept="video/*" capture="environment" style="display: none;" onchange="handleMultiFileUpload(event)">
         <input type="file" id="inputGaleria" accept="image/*,video/*" multiple style="display: none;" onchange="handleMultiFileUpload(event)">
@@ -213,21 +206,38 @@
     </button>
   </div>
 
+  <!-- LIBRERÍAS DE FIREBASE -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  
   <script>
-    // --- 1. FIREBASE CONFIG ---
+    // ==========================================
+    // 1. INICIALIZACIÓN DE FIREBASE (¡Añade tus datos aquí!)
+    // ==========================================
     const firebaseConfig = {
-      apiKey: "AIzaSyBd5MEZdMmgzBs1xCyeGYeKtQx5gJIeY3w",
-      authDomain: "dashboard-vulnerabilidades-mlc.firebaseapp.com",
-      databaseURL: "https://dashboard-vulnerabilidades-mlc-default-rtdb.firebaseio.com",
-      projectId: "dashboard-vulnerabilidades-mlc"
-    };
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const db = firebase.database().ref('activos_criticos');
-    const dbAlertas = firebase.database().ref('alertas_terreno');
+  apiKey: "AIzaSyBd5MEZdMmgzBs1xCyeGYeKtQx5gJIeY3w",
+  authDomain: "dashboard-vulnerabilidades-mlc.firebaseapp.com",
+  databaseURL: "https://dashboard-vulnerabilidades-mlc-default-rtdb.firebaseio.com",
+  projectId: "dashboard-vulnerabilidades-mlc",
+  storageBucket: "dashboard-vulnerabilidades-mlc.firebasestorage.app",
+  messagingSenderId: "1043912631590",
+  appId: "1:1043912631590:web:14638fc1503882f1268de7",
+  measurementId: "G-MBLS9ZNJJL"
+};
 
-    // --- 2. VARIABLES GLOBALES ---
+    // Inicializar solo si no se ha iniciado antes
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+    
+    // NOTA: Ajusta estos nombres si en tu base de datos se llaman distinto
+    const activosRef = db.ref('activos'); 
+    const dbAlertas = db.ref('alertas_terreno');
+
+    // ==========================================
+    // 2. VARIABLES GLOBALES Y CONSTANTES
+    // ==========================================
     let catalogoGlobal = [];
     let arregloEvidencias = []; 
     let chipsSeleccionados = [];
@@ -235,7 +245,116 @@
     const QUEUE_KEY = 'cio_offline_alertas_queue';
     const CACHE_CATASTRO_KEY = 'cio_cached_catastro';
 
-    // --- 3. LÓGICA DE TEXTO INTELIGENTE (BOTONES Y TEXTAREA) ---
+
+    // ==========================================
+    // 3. MONITOR DE CONEXIÓN EN TIEMPO REAL
+    // ==========================================
+    const indicadorRed = document.getElementById('badgeOfflineCount');
+
+    function actualizarEstadoConexion(online) {
+      let queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+      let msjCola = queue.length > 0 ? ` | 📴 Cola: ${queue.length}` : '';
+
+      if (online) {
+        indicadorRed.innerHTML = '🟢 ONLINE' + msjCola;
+        indicadorRed.style.color = '#4ade80'; 
+        indicadorRed.style.borderColor = 'rgba(74,197,94,0.4)';
+        indicadorRed.style.background = 'rgba(34,197,94,0.2)';
+        sincronizarColaOffline(); // Intenta enviar los pendientes cuando vuelve el internet
+      } else {
+        indicadorRed.innerHTML = '🔴 OFFLINE' + msjCola;
+        indicadorRed.style.color = '#ef4444'; 
+        indicadorRed.style.borderColor = '#ef4444';
+        indicadorRed.style.background = 'rgba(239, 68, 68, 0.2)';
+      }
+    }
+
+    // Detectar Wifi/Datos del navegador
+    window.addEventListener('online', () => actualizarEstadoConexion(true));
+    window.addEventListener('offline', () => actualizarEstadoConexion(false));
+
+    // Detectar conexión real al servidor de Firebase
+    const connectedRef = firebase.database().ref(".info/connected");
+    connectedRef.on("value", (snap) => {
+      if (snap.val() === true) {
+        console.log("Conectado al servidor de Firebase.");
+        actualizarEstadoConexion(true);
+      } else {
+        console.log("Desconectado del servidor de Firebase.");
+        actualizarEstadoConexion(false);
+      }
+    });
+
+    // ==========================================
+    // 4. DESCARGA Y CACHÉ OFFLINE DEL CATASTRO UNIFICADO
+    // ==========================================
+    
+    // Carga INMEDIATA desde el teléfono (súper rápido, funciona sin internet)
+    function cargarDeCacheLocalInmediato() {
+      const cached = localStorage.getItem(CACHE_CATASTRO_KEY);
+      if (cached) {
+        try {
+          catalogoGlobal = JSON.parse(cached);
+          console.log("Catastro cargado desde memoria offline (Local Storage).");
+          cargarAreasPorFaena();
+        } catch(e) {}
+      }
+    }
+    
+    // Ejecutamos la carga offline apenas abre la app
+    cargarDeCacheLocalInmediato();
+
+    // Sincronización silenciosa: Cuando haya internet, baja datos nuevos y actualiza el teléfono
+    activosRef.on('value', snap => {
+      const raw = snap.val();
+      if (raw) {
+        catalogoGlobal = Object.keys(raw).map(k => {
+          const data = raw[k] || {};
+          return {
+            id: k,
+            tag: String(data.tag || data.Tag || data.TAG || data.equipo || data.Equipo || data.nombre || k || 'SIN-TAG').trim(),
+            tipo: String(data.tipo || data.Tipo || 'Activo').trim(),
+            area: String(data.area || data.Area || 'Área General').trim(),
+            siteId: String(data.siteId || data.site || data.faena || 'Planta, Mina los Colorados').trim()
+          };
+        });
+        
+        // Sobrescribir la memoria del celular con los datos más frescos
+        localStorage.setItem(CACHE_CATASTRO_KEY, JSON.stringify(catalogoGlobal));
+        console.log("Catastro actualizado desde Firebase y guardado en memoria.");
+        cargarAreasPorFaena(); 
+      }
+    });
+
+    // Lógica para llenar los desplegables de Faena, Área y Equipo
+    window.cargarAreasPorFaena = function() {
+      const faenaVal = document.getElementById('fieldFaena').value;
+      const areaSelect = document.getElementById('fieldArea');
+      const filtered = catalogoGlobal.filter(e => e.siteId === faenaVal);
+      const areasUnicas = [...new Set(filtered.map(e => e.area))].filter(Boolean).sort();
+      
+      areaSelect.innerHTML = '<option value="">-- Selecciona el Área --</option>' + areasUnicas.map(a => `<option value="${a}">${a}</option>`).join('');
+      document.getElementById('fieldTagSelect').innerHTML = '<option value="">-- Selecciona el equipo --</option>';
+    }
+
+    window.cargarEquiposPorArea = function() {
+      const faenaVal = document.getElementById('fieldFaena').value;
+      const areaVal = document.getElementById('fieldArea').value;
+      const tagSelect = document.getElementById('fieldTagSelect');
+      const filtered = catalogoGlobal.filter(e => e.siteId === faenaVal && e.area === areaVal);
+      
+      tagSelect.innerHTML = '<option value="">-- Selecciona el equipo --</option>' + filtered.map(e => `<option value="${e.tag}">${e.tag} (${e.tipo})</option>`).join('');
+    }
+
+    window.syncTagInputFromSelect = function() {
+      const val = document.getElementById('fieldTagSelect').value;
+      if (val) document.getElementById('fieldTagCustom').value = val;
+    }
+
+
+    // ==========================================
+    // 5. LÓGICA DE TEXTO INTELIGENTE (BOTONES Y TEXTAREA)
+    // ==========================================
     window.registrarEscrituraManual = function(e) {
       let contenido = e.target.value;
       let encabezado = generarEncabezadoChips();
@@ -268,8 +387,9 @@
       return "📌 HALLAZGOS AUTOMÁTICOS:\n" + chipsSeleccionados.map(c => "• " + c).join("\n") + "\n\n📝 NOTAS ADICIONALES:\n";
     }
 
-    // --- 4. LÓGICA MULTIMEDIA (FOTOS Y VIDEOS) ---
-   // --- LÓGICA MULTIMEDIA CON COMPRESIÓN AGRESIVA PARA TERRENO ---
+    // ==========================================
+    // 6. LÓGICA MULTIMEDIA (FOTOS Y VIDEOS)
+    // ==========================================
     async function handleMultiFileUpload(event) {
       const files = event.target.files;
       if (!files || files.length === 0) return;
@@ -278,12 +398,11 @@
         const file = files[i];
         const sizeMB = file.size / (1024 * 1024);
         
-        // Límite estricto: 4MB para videos (unos 3-4 segundos), 12MB para la foto original (que luego comprimiremos)
         const limiteMB = file.type.startsWith('video/') ? 4 : 12; 
 
         if (sizeMB > limiteMB) {
             if (file.type.startsWith('video/')) {
-                alert(`⚠️ El video pesa ${sizeMB.toFixed(1)}MB (Máx 4MB). Graba solo 3 segundos para registrar el ruido anómalo.`);
+                alert(`⚠️ El video pesa ${sizeMB.toFixed(1)}MB (Máx 4MB). Graba solo 3 segundos.`);
             } else {
                 alert(`⚠️ La foto es demasiado pesada (${sizeMB.toFixed(1)}MB).`);
             }
@@ -298,7 +417,6 @@
       }
       renderizarGaleria();
       
-      // Limpiamos los 3 inputs para evitar bloqueos al repetir tomas
       document.getElementById('inputCamaraFoto').value = ''; 
       document.getElementById('inputCamaraVideo').value = ''; 
       document.getElementById('inputGaleria').value = ''; 
@@ -313,7 +431,6 @@
             const canvas = document.getElementById('resizeCanvas');
             const ctx = canvas.getContext('2d');
             
-            // 1. REDUCCIÓN DE TAMAÑO: Máximo 500 pixeles de ancho
             const MAX_WIDTH = 500; 
             let width = img.width, height = img.height;
             
@@ -326,8 +443,6 @@
             canvas.height = height;
             ctx.drawImage(img, 0, 0, width, height);
             
-            // 2. COMPRESIÓN DE CALIDAD: JPEG al 40% (0.4)
-            // Esto transforma una foto pesada en una cadena Base64 ultraliviana
             const fotoComprimida = canvas.toDataURL('image/jpeg', 0.4);
             
             arregloEvidencias.push({ tipo: 'imagen', data: fotoComprimida });
@@ -370,66 +485,9 @@
       renderizarGaleria();
     };
 
-    // --- 5. LÓGICA DE FORMULARIO BASE ---
-    function normalizarFaena(s) { return s || 'Planta, Mina los Colorados'; }
-
-    function mapearActivo(item, key) {
-      const data = item || {};
-      const tag = data.tag || data.Tag || data.TAG || data.equipo || data.Equipo || key || 'SIN-TAG';
-      const tipo = data.tipo || data.Tipo || 'Activo';
-      const area = data.area || data.Area || 'Área General';
-      const siteId = normalizarFaena(data.siteId || data.site || data.faena);
-      return { id: key || data.id, tag: String(tag).trim(), tipo: String(tipo).trim(), area: String(area).trim(), siteId: siteId };
-    }
-
-    function cargarDeCacheLocalInmediato() {
-      const cached = localStorage.getItem(CACHE_CATASTRO_KEY);
-      if (cached) {
-        try {
-          const list = JSON.parse(cached);
-          if (Array.isArray(list) && list.length > 0) {
-            catalogoGlobal = list.map((item, idx) => mapearActivo(item, item.id || `cached_${idx}`));
-            cargarAreasPorFaena();
-          }
-        } catch(e) {}
-      }
-    }
-
-    cargarDeCacheLocalInmediato();
-
-    if (db) {
-      db.on('value', snap => {
-        const raw = snap.val();
-        if (raw) {
-          catalogoGlobal = Object.keys(raw).map(k => mapearActivo(raw[k], k));
-          localStorage.setItem(CACHE_CATASTRO_KEY, JSON.stringify(catalogoGlobal));
-          cargarAreasPorFaena();
-        }
-      });
-    }
-
-    window.cargarAreasPorFaena = function() {
-      const faenaVal = document.getElementById('fieldFaena').value;
-      const areaSelect = document.getElementById('fieldArea');
-      const filtered = catalogoGlobal.filter(e => e.siteId === faenaVal);
-      const areasUnicas = [...new Set(filtered.map(e => e.area))].filter(Boolean).sort();
-      areaSelect.innerHTML = '<option value="">-- Selecciona el Área --</option>' + areasUnicas.map(a => `<option value="${a}">${a}</option>`).join('');
-      document.getElementById('fieldTagSelect').innerHTML = '<option value="">-- Selecciona el equipo --</option>';
-    }
-
-    window.cargarEquiposPorArea = function() {
-      const faenaVal = document.getElementById('fieldFaena').value;
-      const areaVal = document.getElementById('fieldArea').value;
-      const tagSelect = document.getElementById('fieldTagSelect');
-      const filtered = catalogoGlobal.filter(e => e.siteId === faenaVal && e.area === areaVal);
-      tagSelect.innerHTML = '<option value="">-- Selecciona el equipo --</option>' + filtered.map(e => `<option value="${e.tag}">${e.tag} (${e.tipo})</option>`).join('');
-    }
-
-    window.syncTagInputFromSelect = function() {
-      const val = document.getElementById('fieldTagSelect').value;
-      if (val) document.getElementById('fieldTagCustom').value = val;
-    }
-
+    // ==========================================
+    // 7. LÓGICA DE FORMULARIO BASE Y ENVÍO
+    // ==========================================
     window.selectSev = function(sev) {
       document.getElementById('fieldSev').value = sev;
       ['Rojo', 'Naranja', 'Amarillo'].forEach(s => {
@@ -443,20 +501,15 @@
       setTimeout(() => { t.style.display = 'none'; }, 4000);
     }
 
-    // --- 6. LÓGICA OFFLINE Y ENVÍO ---
     function guardarEnColaLocal(payload) {
       let queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
       queue.push(payload);
       
       try {
-        // Intentamos guardar en la bóveda del teléfono
         localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
-        actualizarContadorOfflineBadge();
+        actualizarEstadoConexion(navigator.onLine); // Refresca el texto del botón
       } catch (e) {
-        // Si el teléfono dice "Memoria Llena" (QuotaExceededError)
-        alert("⚠️ ALERTA DE MEMORIA: Tienes demasiados reportes multimedia en espera. Acércate a una zona con señal para sincronizar y vaciar la cola antes de seguir tomando fotos/videos.");
-        
-        // Descartamos este último reporte para no corromper los que ya están guardados a salvo
+        alert("⚠️ ALERTA DE MEMORIA: Tienes demasiados reportes multimedia en espera. Sincroniza pronto.");
         queue.pop(); 
       }
     }
@@ -464,25 +517,17 @@
     function sincronizarColaOffline() {
       if (!navigator.onLine || !dbAlertas) return;
       let queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-      if (queue.length === 0) { actualizarContadorOfflineBadge(); return; }
+      if (queue.length === 0) return;
+
       const item = queue.shift();
       dbAlertas.push(item).then(() => {
         localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
-        actualizarContadorOfflineBadge();
+        actualizarEstadoConexion(true); // Refresca contador
         if (queue.length > 0) sincronizarColaOffline();
       }).catch(() => {
         queue.unshift(item);
         localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
       });
-    }
-
-    function actualizarContadorOfflineBadge() {
-      let queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-      const badge = document.getElementById('badgeOfflineCount');
-      if (badge) {
-        badge.innerText = queue.length > 0 ? `📴 Cola offline: ${queue.length}` : '🟢 ONLINE / SYNC OK';
-        badge.style.background = queue.length > 0 ? 'rgba(245,158,11,0.2)' : 'rgba(34,197,94,0.2)';
-      }
     }
 
     window.enviarReporteCampo = function() {
@@ -526,15 +571,8 @@
       arregloEvidencias = [];
       renderizarGaleria();
       
-      actualizarContadorOfflineBadge();
+      actualizarEstadoConexion(navigator.onLine);
     }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      actualizarContadorOfflineBadge();
-      sincronizarColaOffline();
-    });
-    window.addEventListener('online', sincronizarColaOffline);
-    window.addEventListener('offline', actualizarContadorOfflineBadge);
   </script>
 </body>
 </html>
