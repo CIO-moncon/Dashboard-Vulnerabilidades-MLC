@@ -305,8 +305,10 @@
     cargarDeCacheLocalInmediato();
 
     // Sincronización silenciosa: Cuando haya internet, baja datos nuevos y actualiza el teléfono
+    // Sincronización silenciosa con alertas de diagnóstico
     activosRef.on('value', snap => {
       const raw = snap.val();
+      
       if (raw) {
         catalogoGlobal = Object.keys(raw).map(k => {
           const data = raw[k] || {};
@@ -319,12 +321,44 @@
           };
         });
         
-        // Sobrescribir la memoria del celular con los datos más frescos
+        // Guardamos en memoria
         localStorage.setItem(CACHE_CATASTRO_KEY, JSON.stringify(catalogoGlobal));
-        console.log("Catastro actualizado desde Firebase y guardado en memoria.");
         cargarAreasPorFaena(); 
+        
+      } else {
+        // ERROR 1: NODO INCORRECTO O VACÍO
+        alert("⚠️ Firebase conectó, pero no encontró equipos. ¿Estás seguro de que en Firebase los equipos están guardados bajo el nombre 'activos'? Si se llama 'Catastro' o 'equipos', debes cambiar 'const activosRef = db.ref(\"activos\");' en tu código.");
       }
+    }, (error) => {
+      // ERROR 2: REGLAS DE SEGURIDAD
+      alert("❌ Firebase bloqueó la lectura por seguridad. Ve a Firebase > Realtime Database > Reglas, y asegúrate de que '.read' y '.write' estén en 'true'. \n\nDetalle: " + error.message);
     });
+
+    // Lógica para llenar los desplegables (¡Filtro relajado para pruebas!)
+    window.cargarAreasPorFaena = function() {
+      const areaSelect = document.getElementById('fieldArea');
+      
+      // EXTRAEMOS TODAS LAS ÁREAS SIN IMPORTAR LA FAENA (Para asegurar que aparezcan)
+      const areasUnicas = [...new Set(catalogoGlobal.map(e => e.area))].filter(Boolean).sort();
+      
+      areaSelect.innerHTML = '<option value="">-- Selecciona el Área --</option>' + areasUnicas.map(a => `<option value="${a}">${a}</option>`).join('');
+      document.getElementById('fieldTagSelect').innerHTML = '<option value="">-- Selecciona el equipo --</option>';
+    }
+
+    window.cargarEquiposPorArea = function() {
+      const areaVal = document.getElementById('fieldArea').value;
+      const tagSelect = document.getElementById('fieldTagSelect');
+      
+      // FILTRAMOS SOLO POR ÁREA (Ignoramos la faena por si el texto en Desktop era distinto)
+      const filtered = catalogoGlobal.filter(e => e.area === areaVal);
+      
+      tagSelect.innerHTML = '<option value="">-- Selecciona el equipo --</option>' + filtered.map(e => `<option value="${e.tag}">${e.tag} (${e.tipo})</option>`).join('');
+    }
+
+    window.syncTagInputFromSelect = function() {
+      const val = document.getElementById('fieldTagSelect').value;
+      if (val) document.getElementById('fieldTagCustom').value = val;
+    }
 
     // Lógica para llenar los desplegables de Faena, Área y Equipo
     window.cargarAreasPorFaena = function() {
