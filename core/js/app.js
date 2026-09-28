@@ -25,7 +25,7 @@ let datosGlobalesAlertas = null;
 let usuarioActual = null;
 let faenaUsuario = "TODAS"; 
 
-let vistaActualPanel = 'AREAS'; // Puede ser 'AREAS' o 'EQUIPOS'
+let vistaActualPanel = 'AREAS'; 
 let areaSeleccionadaPanel = null;
 
 let activoSeleccionadoActual = null;
@@ -166,13 +166,15 @@ document.addEventListener('DOMContentLoaded', () => {
         aplicarFiltroFaena();
     });
     
-    // Escucha global de Alertas de Terreno
     alertasRef.on('value', (snapshot) => {
         datosGlobalesAlertas = snapshot.val();
-        // Dispara la función para dibujar las alertas en la columna derecha
         renderizarPanelAlertasActivas(datosGlobalesAlertas);
         
-        // Si el usuario tiene el modal de un equipo abierto en la pestaña de terreno, lo recargamos
+        if (typeof actualizarPinesMapa === 'function' && datosGlobalesAlertas) {
+            const arrAlertas = Object.keys(datosGlobalesAlertas).map(k => ({ id: k, ...datosGlobalesAlertas[k] }));
+            actualizarPinesMapa(arrAlertas);
+        }
+
         if (document.getElementById('panel-terreno') && document.getElementById('panel-terreno').style.display === 'block') {
             renderizarAlertasTerreno();
         }
@@ -183,7 +185,6 @@ window.aplicarFiltroFaena = function() {
     vistaActualPanel = 'AREAS'; 
     areaSeleccionadaPanel = null;
     renderizarCatastro(datosGlobalesActivos);
-    // Forzamos actualización del panel derecho al cambiar el filtro
     renderizarPanelAlertasActivas(datosGlobalesAlertas);
 };
 
@@ -214,7 +215,6 @@ function renderizarCatastro(activosData) {
         return;
     }
 
-    // Calcular KPIs Globales
     activosFiltrados.forEach(activo => {
         const severidad = activo.severidad || 'Verde'; 
         if (severidad === 'Rojo') conteoRojo++;
@@ -229,7 +229,6 @@ function renderizarCatastro(activosData) {
 
     let htmlInyectado = '';
 
-    // -- NIVEL 1: ÁREAS --
     if (vistaActualPanel === 'AREAS') {
         const agrupacionAreas = {};
         activosFiltrados.forEach(activo => {
@@ -245,7 +244,6 @@ function renderizarCatastro(activosData) {
             
             agrupacionAreas[nombreArea].total++;
 
-            // Sumar si este equipo tiene reportes de terreno
             if (datosGlobalesAlertas) {
                 const reportesDelEquipo = Object.values(datosGlobalesAlertas).filter(al => al.tag && al.tag.toUpperCase() === (activo.nombre || '').toUpperCase()).length;
                 agrupacionAreas[nombreArea].alertasTerreno += reportesDelEquipo;
@@ -265,7 +263,6 @@ function renderizarCatastro(activosData) {
             else if (area.naranjas > 0) colorBorde = 'var(--status-warning)';
             else if (area.amarillos > 0) colorBorde = 'var(--status-alert)';
 
-            // Badge de terreno para el Área (Sumatoria)
             let badgeTerrenoArea = '';
             if (area.alertasTerreno > 0) {
                 badgeTerrenoArea = `<span style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; margin-left: 10px; display: inline-flex; align-items: center; gap: 4px;" title="Hay reportes de terreno en esta área">
@@ -293,7 +290,6 @@ function renderizarCatastro(activosData) {
             `;
         });
     } 
-    // -- NIVEL 2: EQUIPOS DENTRO DEL ÁREA --
     else if (vistaActualPanel === 'EQUIPOS') {
         htmlInyectado += `
             <button onclick="volverAreas()" style="width: 100%; padding: 10px; margin-bottom: 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;">
@@ -313,13 +309,11 @@ function renderizarCatastro(activosData) {
             if (severidad === 'Naranja') colorBorde = 'var(--status-warning)';
             if (severidad === 'Amarillo') colorBorde = 'var(--status-alert)';
 
-            // Contar si este equipo específico tiene alertas de terreno
             let cantidadTerreno = 0;
             if (datosGlobalesAlertas) {
                 cantidadTerreno = Object.values(datosGlobalesAlertas).filter(al => al.tag && al.tag.toUpperCase() === (activo.nombre || '').toUpperCase()).length;
             }
 
-            // Badge individual para el equipo
             let badgeTerrenoEquipo = '';
             if (cantidadTerreno > 0) {
                 badgeTerrenoEquipo = `<span style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); padding: 1px 6px; border-radius: 10px; font-size: 0.7rem; margin-left: 8px; display: inline-flex; align-items: center; gap: 3px;" title="${cantidadTerreno} reportes de inspectores">
@@ -370,7 +364,6 @@ window.abrirModalEvidencia = function(idActivo) {
     
     activoSeleccionadoActual = { id_activo: idActivo, ...activo };
 
-    // Configurar cabecera
     document.getElementById('asset-tag-title').innerText = activo.nombre || 'Desconocido';
     const severidadActivo = activo.severidad || 'Verde';
     
@@ -384,11 +377,9 @@ window.abrirModalEvidencia = function(idActivo) {
     badge.style.borderColor = colorGlobal;
     badge.style.background = `rgba(${colorGlobal === 'var(--status-critical)'?'239,68,68': colorGlobal === 'var(--status-warning)'?'249,115,22': colorGlobal === 'var(--status-alert)'?'234,179,8':'34,197,94'}, 0.1)`;
 
-    // 1. Ocultar el panel de inspección de componentes
     document.getElementById('panel-inspeccion').style.display = 'none';
     componenteSeleccionado = null;
 
-    // 2. Mostrar el panel de RESUMEN y calcular sus datos
     const panelResumen = document.getElementById('panel-resumen-equipo');
     if (panelResumen) {
         panelResumen.style.display = 'block';
@@ -413,7 +404,6 @@ window.abrirModalEvidencia = function(idActivo) {
         document.getElementById('resumen-rojos').innerText = rojos;
         document.getElementById('resumen-alertas').innerText = alertas;
 
-        // Redactar un diagnóstico dinámico según lo que cuente
         let textoEstado = "";
         if (totalComp === 0) {
             textoEstado = "⚠️ <strong>El equipo no tiene puntos de medición registrados.</strong><br>Haz clic en '+ Añadir Componente' en el menú lateral para comenzar a armar el árbol de esta máquina.";
@@ -437,7 +427,6 @@ window.seleccionarComponente = function(compID) {
     
     const comp = activoSeleccionadoActual.componentes[compID];
     
-   // OCULTAR EL RESUMEN, EL TERRENO Y MOSTRAR LA INSPECCIÓN
     const panelResumen = document.getElementById('panel-resumen-equipo');
     if (panelResumen) panelResumen.style.display = 'none';
     const panelTerreno = document.getElementById('panel-terreno');
@@ -445,7 +434,6 @@ window.seleccionarComponente = function(compID) {
     
     document.getElementById('panel-inspeccion').style.display = 'block';
     
-    // Cargar datos en los inputs...
     document.getElementById('titulo-componente').innerText = `Inspección: ${comp.nombre}`;
     document.getElementById('check-equipo-nuevo').checked = comp.es_nuevo || false;
     document.getElementById('fecha-medicion').value = comp.ultima_medicion || '';
@@ -460,13 +448,12 @@ window.cerrarModal = function() {
     document.getElementById('modal-evidencia').style.display = 'none';
 };
 
-// Navegación interna del Modal
 window.verResumen = function() {
     document.getElementById('panel-inspeccion').style.display = 'none';
     document.getElementById('panel-terreno').style.display = 'none';
     document.getElementById('panel-resumen-equipo').style.display = 'block';
     componenteSeleccionado = null;
-    renderizarListaComponentes(); // Quita la selección verde de los componentes
+    renderizarListaComponentes(); 
 };
 
 window.verTerreno = function() {
@@ -474,14 +461,13 @@ window.verTerreno = function() {
     document.getElementById('panel-resumen-equipo').style.display = 'none';
     document.getElementById('panel-terreno').style.display = 'block';
     componenteSeleccionado = null;
-    renderizarListaComponentes(); // Quita la selección verde
-    renderizarAlertasTerreno(); // Llama a Firebase
+    renderizarListaComponentes(); 
+    renderizarAlertasTerreno(); 
 };
 
 function renderizarAlertasTerreno() {
     const contenedor = document.getElementById('historial-terreno-lista');
     
-    // --- 1. CREACIÓN DEL PROYECTOR GLOBAL (FUERA DEL MODAL) ---
     let visorGlobal = document.getElementById('visor-zoom-global');
     if (!visorGlobal) {
         visorGlobal = document.createElement('img');
@@ -514,16 +500,12 @@ function renderizarAlertasTerreno() {
 
     let html = '';
     alertasDelEquipo.forEach(al => {
-        let colorSev = '#22c55e'; // Verde
+        let colorSev = '#22c55e'; 
         if(al.severidad === 'Rojo') colorSev = '#ef4444';
         if(al.severidad === 'Naranja') colorSev = '#f97316';
         if(al.severidad === 'Amarillo') colorSev = '#eab308';
 
-        // ==========================================
-        // EXTRACCIÓN A PRUEBA DE BALAS (FOTOS/VIDEOS)
-        // ==========================================
         let urlReal = '';
-        
         const dataEvidencia = al.evidencias || al.evidencia || al.foto || al.fotos || al.imagen || al.archivo || null;
 
         if (dataEvidencia) {
@@ -546,12 +528,10 @@ function renderizarAlertasTerreno() {
             }
         }
 
-        // DETECTOR DE VIDEO (Sin duplicar la declaración)
         let esVideo = false;
         if (urlReal && (urlReal.includes('data:video') || urlReal.toLowerCase().includes('.mp4') || urlReal.toLowerCase().includes('.mov') || urlReal.toLowerCase().includes('video%2F'))) {
             esVideo = true;
         }
-        // ==========================================
 
         html += `
             <div style="background: rgba(0,0,0,0.3); border-left: 4px solid ${colorSev}; padding: 15px; border-radius: 6px; position: relative;">
@@ -626,74 +606,51 @@ function renderizarAlertasTerreno() {
     contenedor.innerHTML = html;
 }
 
-// ------------------------------------------
-// FUNCIÓN PARA DESCARTAR REPORTES DE TERRENO
-// ------------------------------------------
 window.eliminarAlertaTerreno = function(idAlerta) {
-    if(confirm("⚠️ ¿Estás seguro de descartar este reporte de terreno?\n\nAl eliminarlo, se borrará del historial de este equipo. (Úsalo para limpiar falsas alarmas o reportes duplicados).")) {
-        
+    if(confirm("⚠️ ¿Estás seguro de descartar este reporte de terreno?")) {
         alertasRef.child(idAlerta).remove()
         .then(() => {
-            alert("🗑️ Reporte de terreno descartado correctamente.");
+            alert("🗑️ Reporte descartado.");
             verTerreno();
         })
-        .catch(e => {
-            alert("Error al intentar eliminar el reporte: " + e.message);
-        });
+        .catch(e => alert("Error: " + e.message));
     }
 };
 
-// ------------------------------------------
-// BORRAR SOLO LA FOTO DE TERRENO
-// ------------------------------------------
 window.borrarSoloFoto = function(idAlerta) {
-    if(confirm("⚠️ ¿Estás seguro de borrar SOLO la fotografía?\n\nEl texto y severidad reportados por el técnico se mantendrán intactos.")) {
+    if(confirm("⚠️ ¿Borrar SOLO la fotografía?")) {
         alertasRef.child(idAlerta).child('evidencias').remove()
         .then(() => {
-            alert("📷 Foto eliminada correctamente.");
+            alert("📷 Foto eliminada.");
             verTerreno();
         })
-        .catch(e => alert("Error al borrar la foto: " + e.message));
+        .catch(e => alert("Error: " + e.message));
     }
 };
 
-// ------------------------------------------
-// REEMPLAZAR O AGREGAR NUEVA FOTO
-// ------------------------------------------
 window.reemplazarFotoTerreno = async function(inputElement, idAlerta) {
     if (!inputElement.files || inputElement.files.length === 0) return;
-    
     const file = inputElement.files[0];
-    
     const btnSubir = inputElement.previousElementSibling;
     const textoOriginal = btnSubir.innerHTML;
-    btnSubir.innerHTML = '<span class="material-symbols-outlined" style="animation: spin 2s linear infinite; vertical-align: middle;">sync</span> Subiendo...';
+    btnSubir.innerHTML = 'Subiendo...';
     btnSubir.disabled = true;
 
     try {
         const base64 = await convertirABase64(file);
-        
-        await alertasRef.child(idAlerta).update({
-            evidencias: [base64]
-        });
-        
-        alert("✅ Foto actualizada con éxito en la base de datos.");
+        await alertasRef.child(idAlerta).update({ evidencias: [base64] });
+        alert("✅ Foto actualizada.");
         verTerreno(); 
-        
     } catch (error) {
-        alert("Error al procesar la imagen: " + error.message);
+        alert("Error: " + error.message);
         btnSubir.innerHTML = textoOriginal;
         btnSubir.disabled = false;
     }
 };
 
-// ==========================================
-// LÓGICA CRUD DE COMPONENTES (PUNTOS DE MEDICIÓN)
-// ==========================================
 function renderizarListaComponentes() {
     const lista = document.getElementById('lista-componentes');
     lista.innerHTML = '';
-    
     const componentes = activoSeleccionadoActual.componentes || {};
     const keysComponentes = Object.keys(componentes);
 
@@ -722,9 +679,8 @@ function renderizarListaComponentes() {
 }
 
 window.agregarNuevoComponente = function() {
-    const nombreNuevo = prompt("Escribe el nombre del nuevo componente/spot (Ej: P1 LI, M1 LLA):");
+    const nombreNuevo = prompt("Escribe el nombre del nuevo componente/spot:");
     if (!nombreNuevo || nombreNuevo.trim() === '') return;
-
     const compID = 'comp_' + new Date().getTime();
     
     activosRef.child(activoSeleccionadoActual.id_activo).child('componentes').child(compID).set({
@@ -755,7 +711,7 @@ window.guardarDictamenComponente = function() {
 
     activosRef.child(activoSeleccionadoActual.id_activo).child('componentes').child(componenteSeleccionado).update(datosComp)
     .then(() => {
-        alert("✅ Análisis del componente guardado exitosamente.");
+        alert("✅ Guardado exitosamente.");
         activoSeleccionadoActual.componentes[componenteSeleccionado] = { ...activoSeleccionadoActual.componentes[componenteSeleccionado], ...datosComp };
         recalcularSaludGlobal();
     });
@@ -765,17 +721,17 @@ window.eliminarComponente = function() {
     if (!componenteSeleccionado) return;
     const comp = activoSeleccionadoActual.componentes[componenteSeleccionado];
     
-    if(confirm(`⚠️ ATENCIÓN: ¿Estás seguro que deseas ELIMINAR el punto de medición "${comp.nombre}"?\n\nEsta acción borrará todos sus datos de la base de datos y no se puede deshacer.`)) {
+    if(confirm(`⚠️ ¿Eliminar "${comp.nombre}"?`)) {
         activosRef.child(activoSeleccionadoActual.id_activo).child('componentes').child(componenteSeleccionado).remove()
         .then(() => {
-            alert(`🗑️ El componente "${comp.nombre}" ha sido eliminado exitosamente.`);
+            alert("🗑️ Eliminado.");
             delete activoSeleccionadoActual.componentes[componenteSeleccionado];
             recalcularSaludGlobal();
             document.getElementById('panel-inspeccion').style.display = 'none';
             componenteSeleccionado = null;
             renderizarListaComponentes();
         })
-        .catch(e => alert("Error al intentar eliminar: " + e.message));
+        .catch(e => alert("Error: " + e.message));
     }
 };
 
@@ -794,23 +750,20 @@ function recalcularSaludGlobal() {
     }
 }
 
-// ==========================================
-// IA GEMINI: ANÁLISIS DE COMPONENTES Y ESPECTROS
-// ==========================================
 window.ejecutarAnalisisIA_Componente = async function() {
     if (!usuarioActual) {
-        alert("🔒 Debes iniciar sesión como Analista para usar la IA.");
+        alert("🔒 Inicia sesión para usar la IA.");
         return;
     }
     
     if (!componenteSeleccionado) {
-        alert("⚠️ Selecciona un componente primero en el panel izquierdo.");
+        alert("⚠️ Selecciona un componente.");
         return;
     }
 
     const btn = document.getElementById('btn-analizar-ia');
     const textoOriginal = btn.innerHTML;
-    btn.innerHTML = 'Analizando Componente... <span class="material-symbols-outlined" style="animation: spin 2s linear infinite; vertical-align: middle;">sync</span>';
+    btn.innerHTML = 'Analizando...';
     btn.disabled = true;
 
     const comp = activoSeleccionadoActual.componentes[componenteSeleccionado];
@@ -825,26 +778,7 @@ window.ejecutarAnalisisIA_Componente = async function() {
         base64Image = fullBase64.split(',')[1];
     }
 
-    const promptExperto = `
-    Actúa como Ingeniero Experto en Confiabilidad (Norma ISO 20816) de la Compañía Minera del Pacífico. 
-    Analiza la salud de este punto de medición específico:
-    - Equipo Principal: ${activoSeleccionadoActual.nombre} (${activoSeleccionadoActual.tipo_equipo})
-    - Componente / Spot: ${comp.nombre}
-    - Estado actual: ${comp.estado || 'Verde'}
-    - ¿Recién cambiado?: ${document.getElementById('check-equipo-nuevo').checked ? 'Sí' : 'No'}
-    
-    ${base64Image ? "Se adjunta el espectro de vibración o termograma." : "No se adjuntaron gráficas, básate en el contexto."}
-    
-    REGLA ESTRICTA: Redacta un diagnóstico técnico MUY BREVE Y DIRECTO, ideal para copiar y pegar en un Aviso SAP. 
-    NO uses introducciones, saludos ni despedidas.
-    Usa máximo 4 líneas separadas por guiones.
-    
-    Formato obligatorio:
-    - Hallazgo principal (qué se ve en el espectro o condición).
-    - Causa raíz probable.
-    - Acción recomendada para la OM.
-    - Severidad sugerida.
-    `;
+    const promptExperto = `Actúa como Ingeniero en Confiabilidad (ISO 20816). Analiza: Equipo ${activoSeleccionadoActual.nombre}, Componente ${comp.nombre}, Estado ${comp.estado || 'Verde'}. Da un diagnóstico breve ideal para SAP.`;
 
     try {
         let parts = [{ "text": promptExperto }];
@@ -860,12 +794,11 @@ window.ejecutarAnalisisIA_Componente = async function() {
         if (data.error) throw new Error(data.error.message);
 
         let textoRespuesta = data.candidates[0].content.parts[0].text;
-        textoRespuesta = textoRespuesta.replace(/\*\*/g, '').replace(/\*/g, '-'); 
-        
+        textoRespuesta = textoResproveniente = textoRespuesta.replace(/\*\*/g, '').replace(/\*/g, '-'); 
         document.getElementById('texto-analisis-componente').value = textoRespuesta;
         
     } catch (error) {
-        alert(`❌ Error al conectar con Gemini: ${error.message}`);
+        alert(`❌ Error: ${error.message}`);
     }
 
     btn.innerHTML = textoOriginal;
@@ -882,15 +815,14 @@ function convertirABase64(file) {
 }
 
 // =========================================================================
-// MÓDULO CIO: MONITOR DE ALERTAS DE TERRENO EN TIEMPO REAL (COLUMNA DERECHA)
+// MÓDULO CIO: MONITOR DE ALERTAS DE TERRENO (FILTRADO Y ELÁSTICO)
 // =========================================================================
 function renderizarPanelAlertasActivas(datosAlertas) {
     const panelAlertas = document.getElementById('panelAlertasTerreno');
-    
     if(!panelAlertas) return; 
 
     if (!datosAlertas) {
-        panelAlertas.innerHTML = '<p class="text-muted" style="text-align: center; font-size: 0.85rem; padding: 20px;">No hay reportes activos en terreno.</p>';
+        panelAlertas.innerHTML = '<p class="text-muted" style="text-align: center; font-size: 0.85rem; padding: 20px;">No hay reportes activos.</p>';
         return;
     }
 
@@ -901,49 +833,44 @@ function renderizarPanelAlertasActivas(datosAlertas) {
         return { id: key, ...datosAlertas[key] };
     }).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
+    const filtroEl = document.getElementById('filtroFaena');
+    const filtroSeleccionado = filtroEl ? filtroEl.value.toLowerCase() : 'todas';
+
     listaAlertas.forEach(alerta => {
         if (alerta.estado === 'cerrado') return;
         
-        // --- FIX: FILTRO INTELIGENTE ---
-        // Solo ocultamos si el usuario Analista está filtrando, los Lectores ven todo
-        if (usuarioActual) {
-            const filtroEl = document.getElementById('filtroFaena');
-            const filtroSeleccionado = filtroEl ? filtroEl.value : 'TODAS';
-            
-            if (filtroSeleccionado !== "TODAS" && alerta.faena) {
-                const faenaAlerta = alerta.faena.toLowerCase();
-                const faenaFiltro = filtroSeleccionado.toLowerCase();
-                // Si ninguna frase contiene a la otra, la ocultamos
-                if (!faenaFiltro.includes(faenaAlerta) && !faenaAlerta.includes(faenaFiltro)) {
-                    return;
-                }
-            }
+        if (filtroSeleccionado !== "todas" && alerta.faena) {
+            const faenaAlerta = alerta.faena.toLowerCase();
+            const pasaElFiltro = filtroSeleccionado.includes(faenaAlerta) || faenaAlerta.includes(filtroSeleccionado);
+            if (!pasaElFiltro) return; 
         }
 
         hayAlertasActivas = true;
 
         const fechaObj = new Date(alerta.timestamp);
         const horaStr = fechaObj.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+        const faenaCorta = alerta.faena ? alerta.faena.split(',')[0] : 'Desconocido';
 
         const cardHTML = `
             <div class="tarjeta-alerta-terreno sev-${alerta.severidad}" style="padding: 10px; cursor: pointer;" onclick="gestionarAlertaRapida('${alerta.id}', '${alerta.tag}')" title="Clic para ver detalle y fotos">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    
-                    <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="display: flex; gap: 8px;">
                         <span class="material-symbols-outlined" style="font-size: 1.1rem; color: ${alerta.severidad === 'Rojo' ? '#ef4444' : alerta.severidad === 'Naranja' ? '#f97316' : '#eab308'}">
                             ${alerta.severidad === 'Rojo' ? 'error' : 'warning'}
                         </span>
-                        <span style="font-family: 'Roboto Mono', monospace; font-weight: bold; color: white; font-size: 1.05rem;">
-                            ${alerta.tag}
-                        </span>
+                        <div>
+                            <span style="font-family: 'Roboto Mono', monospace; font-weight: bold; color: white; font-size: 1.05rem; display: block; line-height: 1;">
+                                ${alerta.tag}
+                            </span>
+                            <span style="font-size: 0.7rem; color: #a1a1aa; margin-top: 2px; display: block;">
+                                ${faenaCorta}
+                            </span>
+                        </div>
                     </div>
-
-                    <span style="font-size: 0.75rem; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">
+                    <span style="font-size: 0.75rem; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; white-space: nowrap;">
                         🕒 ${horaStr}
                     </span>
-                    
                 </div>
-                
                 ${alerta.evidencias && alerta.evidencias.length > 0 ? 
                   `<div style="font-size: 0.65rem; color: #60a5fa; text-align: right; margin-top: 4px;">📎 Adjunto</div>` 
                   : ''}
@@ -954,13 +881,13 @@ function renderizarPanelAlertasActivas(datosAlertas) {
     });
 
     if(!hayAlertasActivas) {
-        panelAlertas.innerHTML = '<p class="text-muted" style="text-align: center; font-size: 0.85rem; padding: 20px;">Todas las alertas han sido gestionadas.</p>';
+        panelAlertas.innerHTML = '<p class="text-muted" style="text-align: center; font-size: 0.85rem; padding: 20px;">Todas las alertas gestionadas.</p>';
     }
 }
 
 window.gestionarAlertaRapida = function(idAlerta, tagEquipo) {
     if (!datosGlobalesActivos) {
-        alert("El catastro aún está cargando, intenta en un segundo.");
+        alert("El catastro aún está cargando.");
         return;
     }
 
@@ -979,6 +906,6 @@ window.gestionarAlertaRapida = function(idAlerta, tagEquipo) {
         abrirModalEvidencia(idActivoEncontrado); 
         verTerreno(); 
     } else {
-        alert(`❌ No se encontró el equipo "${tagEquipo}" en el catastro actual. Es posible que haya sido eliminado o renombrado.`);
+        alert(`❌ No se encontró el equipo "${tagEquipo}".`);
     }
 };
