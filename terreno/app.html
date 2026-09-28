@@ -1,626 +1,152 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>TERRENO / RONDA - CAPTURA RÁPIDA [CPF]</title>
-  
-  <!-- MANIFEST PARA INSTALAR COMO APP (PWA) -->
-  <link rel="icon" href="./logo-cpf.png" type="image/png">
-  <link rel="apple-touch-icon" href="./logo-cpf.png">
-  <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#090a0f">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  
-  <style>
-    :root {
-      --bg-main: #090a0f;
-      --bg-radial: radial-gradient(circle at 50% 0%, #161824 0%, #090a0f 80%);
-      --text-main: #f3f4f6;
-      --text-muted: #a1a1aa;
-      --accent-color: #3b82f6;
-      --glass-surface: rgba(20, 22, 32, 0.78);
-      --glass-card: rgba(26, 28, 40, 0.62);
-      --glass-border: rgba(255, 255, 255, 0.1);
-      --glass-blur: blur(18px);
-      --input-bg: rgba(12, 14, 22, 0.85);
-    }
-    body {
-      background: var(--bg-radial); background-color: var(--bg-main); background-attachment: fixed;
-      color: var(--text-main); font-family: 'Inter', sans-serif; padding: 14px; margin: 0;
-      -webkit-tap-highlight-color: transparent; min-height: 100vh; box-sizing: border-box;
-    }
-    .app-container { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
-    .app-header {
-      background: var(--glass-surface); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-      border: 1px solid var(--glass-border); box-shadow: 0 10px 25px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.1);
-      border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;
-    }
-    .app-header h1 { font-size: 0.95rem; margin: 0; text-transform: uppercase; font-weight: 800; color: #ef4444; letter-spacing: 0.6px; }
-    .badge-field { font-size: 0.65rem; padding: 5px 10px; border-radius: 7px; font-weight: bold; border: 1px solid; backdrop-filter: blur(6px); transition: all 0.3s ease; }
-    .card-field {
-      background: var(--glass-card); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-      border: 1px solid var(--glass-border); box-shadow: 0 14px 35px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.08);
-      border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 15px;
-    }
-    label { font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; display: block; margin-bottom: 6px; }
-    input, select, textarea {
-      width: 100%; padding: 12px 14px; border-radius: 9px; border: 1px solid var(--glass-border);
-      background: var(--input-bg); color: var(--text-main); font-size: 0.92rem; font-family: 'Inter', sans-serif;
-      box-sizing: border-box; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    input:focus, select:focus, textarea:focus { border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); }
-    select { font-weight: 600; color: var(--text-main); }
-    .code-font { font-family: 'Roboto Mono', monospace; font-size: 0.98rem; font-weight: 700; text-transform: uppercase; }
-    .chips-container { display: flex; flex-wrap: wrap; gap: 8px; }
-    .chip {
-      background: rgba(18, 20, 30, 0.7); backdrop-filter: blur(6px); border: 1px solid var(--glass-border);
-      color: var(--text-muted); padding: 9px 13px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
-      cursor: pointer; transition: all 0.15s ease; user-select: none;
-    }
-    .chip.active { background: rgba(59, 130, 246, 0.35); border-color: #60a5fa; color: #ffffff; box-shadow: 0 0 12px rgba(59, 130, 246, 0.5); }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TERRENO / RONDA - CAPTURA RÁPIDA [CPF]</title>
     
-    /* ESTILOS GALERÍA MULTIMEDIA */
-    .media-gallery { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-    .media-thumb-container { position: relative; width: 80px; height: 80px; border-radius: 8px; border: 1px solid var(--glass-border); overflow: hidden; background: #000; }
-    .media-thumb-container img { width: 100%; height: 100%; object-fit: cover; }
-    .media-thumb-container .video-icon { 
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-      display: flex; align-items: center; justify-content: center; font-size: 1.5rem; background: rgba(0,0,0,0.6); 
-    }
-    .btn-remove-media {
-      position: absolute; top: 2px; right: 2px; background: red; color: white; border: none;
-      border-radius: 50%; width: 22px; height: 22px; font-weight: bold; cursor: pointer; z-index: 10;
-    }
-
-    .sev-selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .sev-btn {
-      padding: 12px 8px; border-radius: 9px; border: 1px solid var(--glass-border); background: rgba(18, 20, 30, 0.6);
-      color: var(--text-muted); font-weight: 700; font-size: 0.75rem; cursor: pointer; text-align: center; transition: all 0.2s;
-    }
-    .sev-btn.sel-rojo { background: rgba(239, 68, 68, 0.3); border-color: #ef4444; color: #ef4444; box-shadow: 0 0 16px rgba(239, 68, 68, 0.4); }
-    .sev-btn.sel-naranja { background: rgba(249, 115, 22, 0.3); border-color: #f97316; color: #f97316; box-shadow: 0 0 16px rgba(249, 115, 22, 0.35); }
-    .sev-btn.sel-amarillo { background: rgba(234, 179, 8, 0.3); border-color: #eab308; color: #eab308; box-shadow: 0 0 16px rgba(234, 179, 8, 0.3); }
+    <!-- MANIFEST PARA INSTALAR COMO APP (PWA) -->
+    <link rel="icon" href="./logo-cpf.png" type="image/png">
+    <link rel="apple-touch-icon" href="./logo-cpf.png">
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#090a0f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
-    .btn-transmitir {
-      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: 1px solid rgba(255, 255, 255, 0.2);
-      padding: 18px; border-radius: 14px; font-weight: 900; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.8px;
-      cursor: pointer; box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.3);
-      text-align: center; display: block; width: 100%; transition: transform 0.15s; margin-bottom: 20px;
-    }
-    .btn-transmitir:active { transform: scale(0.98); }
-    .toast-ok { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(22, 163, 74, 0.92); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 12px 24px; border-radius: 9px; font-weight: bold; font-size: 0.85rem; box-shadow: 0 12px 30px rgba(0,0,0,0.7); z-index: 9999; text-align: center; max-width: 90vw; }
-  </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- ENLACE AL NUEVO ARCHIVO CSS -->
+    <link rel="stylesheet" href="css/estilo.css">
 </head>
 <body>
 
-  <div class="toast-ok" id="toastConfirm">📡 ¡Alerta transmitida a Sala CIO!</div>
-  <canvas id="resizeCanvas" style="display:none;"></canvas>
+    <div class="toast-ok" id="toastConfirm">📡 ¡Alerta transmitida a Sala CIO!</div>
+    
+    <!-- Motor de compresión invisible -->
+    <canvas id="resizeCanvas" style="display:none;"></canvas>
 
-  <div class="app-container">
-    <header class="app-header">
-      <h1>📱 Terreno / Ronda OEM</h1>
-      <!-- INDICADOR DE CONEXIÓN DINÁMICO -->
-      <span class="badge-field" id="badgeOfflineCount" style="background:rgba(34,197,94,0.2); color:#4ade80; border-color:rgba(34,197,94,0.4);">🟢 ONLINE</span>
-    </header>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>📱 Terreno / Ronda OEM</h1>
+            <span class="badge-field" id="badgeOfflineCount" style="background:rgba(34,197,94,0.2); color:#4ade80; border-color:rgba(34,197,94,0.4);">🟢 ONLINE</span>
+        </header>
 
-    <main class="card-field">
-      <!-- 1. FAENA -->
-      <div>
-        <label for="fieldFaena">1. Faena</label>
-        <select id="fieldFaena" onchange="cargarAreasPorFaena()">
-          <option value="Planta, Mina los Colorados">MLC - Planta</option>
-          <option value="Mina, Mina los Colorados">MLC - Mina</option>
-          <option value="Planta de Pellets">Planta de Pellets</option>
-          <option value="Planta, Mina el Romeral">ROM - Planta</option>
-          <option value="Mina, Mina el Romeral">ROM - Mina</option>
-        </select>
-      </div>
+        <main class="card-field">
+            <!-- 1. FAENA -->
+            <div>
+                <label for="fieldFaena">1. Faena</label>
+                <select id="fieldFaena" onchange="cargarAreasPorFaena()">
+                    <option value="Planta, Mina los Colorados">MLC - Planta</option>
+                    <option value="Mina, Mina los Colorados">MLC - Mina</option>
+                    <option value="Planta de Pellets">Planta de Pellets</option>
+                    <option value="Planta, Mina el Romeral">ROM - Planta</option>
+                    <option value="Mina, Mina el Romeral">ROM - Mina</option>
+                </select>
+            </div>
 
-      <!-- 2. ÁREA -->
-      <div>
-        <label for="fieldArea">2. Área Operacional</label>
-        <select id="fieldArea" onchange="cargarEquiposPorArea()">
-          <option value="">-- Selecciona el Área --</option>
-        </select>
-      </div>
+            <!-- 2. ÁREA -->
+            <div>
+                <label for="fieldArea">2. Área Operacional</label>
+                <select id="fieldArea" onchange="cargarEquiposPorArea()">
+                    <option value="">-- Selecciona el Área --</option>
+                </select>
+            </div>
 
-      <!-- 3. EQUIPO -->
-      <div>
-        <label for="fieldTagSelect">3. Equipo / Tag del Catastro</label>
-        <select id="fieldTagSelect" class="code-font" onchange="syncTagInputFromSelect()">
-          <option value="">-- Selecciona el equipo --</option>
-        </select>
-        <input type="text" id="fieldTagCustom" class="code-font" placeholder="Ej: MH2709 (opcional si es libre)" style="margin-top:8px;">
-      </div>
+            <!-- 3. EQUIPO -->
+            <div>
+                <label for="fieldTagSelect">3. Equipo / Tag del Catastro</label>
+                <select id="fieldTagSelect" class="code-font" onchange="syncTagInputFromSelect()">
+                    <option value="">-- Selecciona el equipo --</option>
+                </select>
+                <input type="text" id="fieldTagCustom" class="code-font" placeholder="Ej: MH2709 (opcional si es libre)" style="margin-top:8px;">
+            </div>
 
-      <!-- 4. HALLAZGOS RÁPIDOS -->
-      <div>
-        <label>4. Hallazgos Rápidos (Plantas y Minas)</label>
-        <div class="chips-container" style="max-height: 140px; overflow-y: auto; padding-bottom: 5px;">
-          <!-- Lubricación y Fluidos -->
-          <div class="chip" onclick="toggleChip(this, 'Fuga de aceite / lubricante')">🛢️ Fuga aceite</div>
-          <div class="chip" onclick="toggleChip(this, 'Fuga de grasa')">💧 Fuga grasa</div>
-          <div class="chip" onclick="toggleChip(this, 'Falta de engrase')">⚙️ Falta engrase</div>
-          <!-- Mecánica -->
-          <div class="chip" onclick="toggleChip(this, 'Ruido anómalo en rodamiento')">🔊 Ruido rodamiento</div>
-          <div class="chip" onclick="toggleChip(this, 'Alto ruido en reductor')">📻 Ruido reductor</div>
-          <div class="chip" onclick="toggleChip(this, 'Alto ruido en motor')">📻 Ruido motor</div>
-          <div class="chip" onclick="toggleChip(this, 'Holgura / Pernos sueltos o cortados')">🔩 Pernos sueltos</div>
-          <div class="chip" onclick="toggleChip(this, 'Correas sueltas o dañadas')">⛓️ Correas dañadas</div>
-          <div class="chip" onclick="toggleChip(this, 'Polín trabado / dañado')">🛑 Polín trabado</div>
-          <!-- Condición -->
-          <div class="chip" onclick="toggleChip(this, 'Vibración / Soltura estructural')">⚠️ Vibración alta</div>
-          <div class="chip" onclick="toggleChip(this, 'Sospecha de desalineamiento')">📐 Desalineamiento</div>
-          <div class="chip" onclick="toggleChip(this, 'Temperatura elevada (Termografía)')">🔥 Alta temperatura</div>
-        </div>
-      </div>
+            <!-- 4. HALLAZGOS RÁPIDOS -->
+            <div>
+                <label>4. Hallazgos Rápidos (Plantas y Minas)</label>
+                <div class="chips-container" style="max-height: 140px; overflow-y: auto; padding-bottom: 5px;">
+                    <!-- Lubricación y Fluidos -->
+                    <div class="chip" onclick="toggleChip(this, 'Fuga de aceite / lubricante')">🛢️ Fuga aceite</div>
+                    <div class="chip" onclick="toggleChip(this, 'Fuga de grasa')">💧 Fuga grasa</div>
+                    <div class="chip" onclick="toggleChip(this, 'Falta de engrase')">⚙️ Falta engrase</div>
+                    <!-- Mecánica -->
+                    <div class="chip" onclick="toggleChip(this, 'Ruido anómalo en rodamiento')">🔊 Ruido rodamiento</div>
+                    <div class="chip" onclick="toggleChip(this, 'Alto ruido en reductor')">📻 Ruido reductor</div>
+                    <div class="chip" onclick="toggleChip(this, 'Alto ruido en motor')">📻 Ruido motor</div>
+                    <div class="chip" onclick="toggleChip(this, 'Holgura / Pernos sueltos o cortados')">🔩 Pernos sueltos</div>
+                    <div class="chip" onclick="toggleChip(this, 'Correas sueltas o dañadas')">⛓️ Correas dañadas</div>
+                    <div class="chip" onclick="toggleChip(this, 'Polín trabado / dañado')">🛑 Polín trabado</div>
+                    <!-- Condición -->
+                    <div class="chip" onclick="toggleChip(this, 'Vibración / Soltura estructural')">⚠️ Vibración alta</div>
+                    <div class="chip" onclick="toggleChip(this, 'Sospecha de desalineamiento')">📐 Desalineamiento</div>
+                    <div class="chip" onclick="toggleChip(this, 'Temperatura elevada (Termografía)')">🔥 Alta temperatura</div>
+                </div>
+            </div>
 
-      <!-- 5. NOTAS INTELIGENTES -->
-      <div>
-        <label for="fieldDetalle">5. Notas / Detalle del Hallazgo</label>
-        <textarea id="fieldDetalle" rows="4" placeholder="Toca los botones arriba o escribe tus comentarios aquí..." oninput="registrarEscrituraManual(event)"></textarea>
-      </div>
+            <!-- 5. NOTAS INTELIGENTES -->
+            <div>
+                <label for="fieldDetalle">5. Notas Adicionales del Técnico</label>
+                <textarea id="fieldDetalle" placeholder="Si necesitas explicar algo más, escríbelo aquí..."></textarea>
+            </div>
 
-      <!-- 6. EVIDENCIA MULTIMEDIA -->
-      <div>
-        <label>6. Evidencia (Fotos y Videos Cortos)</label>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-            <button type="button" onclick="document.getElementById('inputCamaraFoto').click()" style="background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; color: #60a5fa; padding: 15px 10px; border-radius: 10px; font-weight: bold; font-size: 0.9rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px;">
-                <span style="font-size: 1.5rem;">📸</span> Tomar Foto
-            </button>
-            <button type="button" onclick="document.getElementById('inputCamaraVideo').click()" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #f87171; padding: 15px 10px; border-radius: 10px; font-weight: bold; font-size: 0.9rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px;">
-                <span style="font-size: 1.5rem;">🎥</span> Grabar Video
-            </button>
-        </div>
+            <!-- 6. EVIDENCIA MULTIMEDIA -->
+            <div>
+                <label>6. Evidencia (Fotos y Videos Cortos)</label>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                    <button type="button" onclick="document.getElementById('inputCamaraFoto').click()" style="background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; color: #60a5fa; padding: 15px 10px; border-radius: 10px; font-weight: bold; font-size: 0.9rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                        <span style="font-size: 1.5rem;">📸</span> Tomar Foto
+                    </button>
+                    <button type="button" onclick="document.getElementById('inputCamaraVideo').click()" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #f87171; padding: 15px 10px; border-radius: 10px; font-weight: bold; font-size: 0.9rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                        <span style="font-size: 1.5rem;">🎥</span> Grabar Video
+                    </button>
+                </div>
 
-        <button type="button" onclick="document.getElementById('inputGaleria').click()" style="width: 100%; background: transparent; border: 1px dashed var(--glass-border); color: var(--text-muted); padding: 10px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; margin-bottom: 10px;">
-            📁 Cargar desde la Galería...
+                <button type="button" onclick="document.getElementById('inputGaleria').click()" style="width: 100%; background: transparent; border: 1px dashed var(--glass-border); color: var(--text-muted); padding: 10px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; margin-bottom: 10px;">
+                    📁 Cargar desde la Galería...
+                </button>
+
+                <!-- INPUTS MULTIPLES -->
+                <input type="file" id="inputCamaraFoto" accept="image/*" capture="environment" multiple style="display: none;" onchange="handleMultiFileUpload(event)">
+                <input type="file" id="inputCamaraVideo" accept="video/*" capture="camcorder" style="display: none;" onchange="handleMultiFileUpload(event)">
+                <input type="file" id="inputGaleria" accept="image/*,video/*" multiple style="display: none;" onchange="handleMultiFileUpload(event)">
+
+                <div class="media-gallery" id="mediaGallery"></div>
+                <p style="font-size: 0.65rem; color: #f59e0b; margin-top: 5px;">⚠️ Puedes sacar varias fotos seguidas. Videos recomendados: 5 seg (Máx 8MB).</p>
+            </div>
+
+            <!-- 7. SEVERIDAD -->
+            <div>
+                <label>7. Severidad Preliminar</label>
+                <div class="sev-selector">
+                    <div class="sev-btn sel-rojo" id="sev_Rojo" onclick="selectSev('Rojo')">🔴 Crítico</div>
+                    <div class="sev-btn" id="sev_Naranja" onclick="selectSev('Naranja')">🟠 Alerta</div>
+                    <div class="sev-btn" id="sev_Amarillo" onclick="selectSev('Amarillo')">🟡 Seguimiento</div>
+                </div>
+                <input type="hidden" id="fieldSev" value="Rojo">
+            </div>
+        </main>
+
+        <button type="button" class="btn-transmitir" id="btnTransmitir" onclick="enviarReporteCampo()">
+            📡 TRANSMITIR A SALA CIO
         </button>
+    </div>
 
-        <input type="file" id="inputCamaraFoto" accept="image/*" capture="environment" style="display: none;" onchange="handleMultiFileUpload(event)">
-        <input type="file" id="inputCamaraVideo" accept="video/*" capture="environment" style="display: none;" onchange="handleMultiFileUpload(event)">
-        <input type="file" id="inputGaleria" accept="image/*,video/*" multiple style="display: none;" onchange="handleMultiFileUpload(event)">
-
-        <div class="media-gallery" id="mediaGallery"></div>
-        <p style="font-size: 0.65rem; color: #f59e0b; margin-top: 5px;">⚠️ Videos máx. 5MB. Graba solo unos segundos de audio/anomalía.</p>
-      </div>
-
-      <!-- 7. SEVERIDAD -->
-      <div>
-        <label>7. Severidad Preliminar</label>
-        <div class="sev-selector">
-          <div class="sev-btn sel-rojo" id="sev_Rojo" onclick="selectSev('Rojo')">🔴 Crítico</div>
-          <div class="sev-btn" id="sev_Naranja" onclick="selectSev('Naranja')">🟠 Alerta</div>
-          <div class="sev-btn" id="sev_Amarillo" onclick="selectSev('Amarillo')">🟡 Seguimiento</div>
-        </div>
-        <input type="hidden" id="fieldSev" value="Rojo">
-      </div>
-    </main>
-
-    <button type="button" class="btn-transmitir" id="btnTransmitir" onclick="enviarReporteCampo()">
-      📡 TRANSMITIR A SALA CIO
-    </button>
-  </div>
-
-  <!-- LIBRERÍAS DE FIREBASE -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  
-  <script>
-    // ==========================================
-    // 1. INICIALIZACIÓN DE FIREBASE (¡Añade tus datos aquí!)
-    // ==========================================
-    const firebaseConfig = {
-  apiKey: "AIzaSyBd5MEZdMmgzBs1xCyeGYeKtQx5gJIeY3w",
-  authDomain: "dashboard-vulnerabilidades-mlc.firebaseapp.com",
-  databaseURL: "https://dashboard-vulnerabilidades-mlc-default-rtdb.firebaseio.com",
-  projectId: "dashboard-vulnerabilidades-mlc",
-  storageBucket: "dashboard-vulnerabilidades-mlc.firebasestorage.app",
-  messagingSenderId: "1043912631590",
-  appId: "1:1043912631590:web:14638fc1503882f1268de7",
-  measurementId: "G-MBLS9ZNJJL"
-};
-
-    // Inicializar solo si no se ha iniciado antes
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
-    const db = firebase.database();
+    <!-- LIBRERÍAS DE FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
-    // NOTA: Ajusta estos nombres si en tu base de datos se llaman distinto
-    const activosRef = db.ref('activos_criticos'); 
-    const dbAlertas = db.ref('alertas_terreno');
-
-    // ==========================================
-    // 2. VARIABLES GLOBALES Y CONSTANTES
-    // ==========================================
-    let catalogoGlobal = [];
-    let arregloEvidencias = []; 
-    let chipsSeleccionados = [];
-    let textoManualUsuario = "";
-    const QUEUE_KEY = 'cio_offline_alertas_queue';
-    const CACHE_CATASTRO_KEY = 'cio_cached_catastro';
-
-
-    // ==========================================
-    // 3. MONITOR DE CONEXIÓN EN TIEMPO REAL
-    // ==========================================
-    const indicadorRed = document.getElementById('badgeOfflineCount');
-
-    function actualizarEstadoConexion(online) {
-      let queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-      let msjCola = queue.length > 0 ? ` | 📴 Cola: ${queue.length}` : '';
-
-      if (online) {
-        indicadorRed.innerHTML = '🟢 ONLINE' + msjCola;
-        indicadorRed.style.color = '#4ade80'; 
-        indicadorRed.style.borderColor = 'rgba(74,197,94,0.4)';
-        indicadorRed.style.background = 'rgba(34,197,94,0.2)';
-        sincronizarColaOffline(); // Intenta enviar los pendientes cuando vuelve el internet
-      } else {
-        indicadorRed.innerHTML = '🔴 OFFLINE' + msjCola;
-        indicadorRed.style.color = '#ef4444'; 
-        indicadorRed.style.borderColor = '#ef4444';
-        indicadorRed.style.background = 'rgba(239, 68, 68, 0.2)';
-      }
-    }
-
-    // Detectar Wifi/Datos del navegador
-    window.addEventListener('online', () => actualizarEstadoConexion(true));
-    window.addEventListener('offline', () => actualizarEstadoConexion(false));
-
-    // Detectar conexión real al servidor de Firebase
-    const connectedRef = firebase.database().ref(".info/connected");
-    connectedRef.on("value", (snap) => {
-      if (snap.val() === true) {
-        console.log("Conectado al servidor de Firebase.");
-        actualizarEstadoConexion(true);
-      } else {
-        console.log("Desconectado del servidor de Firebase.");
-        actualizarEstadoConexion(false);
-      }
-    });
-
-    // ==========================================
-    // 4. DESCARGA Y CACHÉ OFFLINE DEL CATASTRO UNIFICADO
-    // ==========================================
-    
-    // Carga INMEDIATA desde el teléfono (súper rápido, funciona sin internet)
-    function cargarDeCacheLocalInmediato() {
-      const cached = localStorage.getItem(CACHE_CATASTRO_KEY);
-      if (cached) {
-        try {
-          catalogoGlobal = JSON.parse(cached);
-          console.log("Catastro cargado desde memoria offline (Local Storage).");
-          cargarAreasPorFaena();
-        } catch(e) {}
-      }
-    }
-    
-    // Ejecutamos la carga offline apenas abre la app
-    cargarDeCacheLocalInmediato();
-
-    // Sincronización silenciosa: Cuando haya internet, baja datos nuevos y actualiza el teléfono
-    // Sincronización silenciosa con alertas de diagnóstico
-    activosRef.on('value', snap => {
-      const raw = snap.val();
-      
-      if (raw) {
-        catalogoGlobal = Object.keys(raw).map(k => {
-          const data = raw[k] || {};
-          return {
-            id: k,
-            tag: String(data.tag || data.Tag || data.TAG || data.equipo || data.Equipo || data.nombre || k || 'SIN-TAG').trim(),
-            tipo: String(data.tipo || data.Tipo || 'Activo').trim(),
-            area: String(data.area || data.Area || 'Área General').trim(),
-            siteId: String(data.siteId || data.site || data.faena || 'Planta, Mina los Colorados').trim()
-          };
-        });
-        
-        // Guardamos en memoria
-        localStorage.setItem(CACHE_CATASTRO_KEY, JSON.stringify(catalogoGlobal));
-        cargarAreasPorFaena(); 
-        
-      } else {
-        // ERROR 1: NODO INCORRECTO O VACÍO
-        alert("⚠️ Firebase conectó, pero no encontró equipos. ¿Estás seguro de que en Firebase los equipos están guardados bajo el nombre 'activos'? Si se llama 'Catastro' o 'equipos', debes cambiar 'const activosRef = db.ref(\"activos\");' en tu código.");
-      }
-    }, (error) => {
-      // ERROR 2: REGLAS DE SEGURIDAD
-      alert("❌ Firebase bloqueó la lectura por seguridad. Ve a Firebase > Realtime Database > Reglas, y asegúrate de que '.read' y '.write' estén en 'true'. \n\nDetalle: " + error.message);
-    });
-
-    // Lógica para llenar los desplegables (¡Filtro relajado para pruebas!)
-    window.cargarAreasPorFaena = function() {
-      const areaSelect = document.getElementById('fieldArea');
-      
-      // EXTRAEMOS TODAS LAS ÁREAS SIN IMPORTAR LA FAENA (Para asegurar que aparezcan)
-      const areasUnicas = [...new Set(catalogoGlobal.map(e => e.area))].filter(Boolean).sort();
-      
-      areaSelect.innerHTML = '<option value="">-- Selecciona el Área --</option>' + areasUnicas.map(a => `<option value="${a}">${a}</option>`).join('');
-      document.getElementById('fieldTagSelect').innerHTML = '<option value="">-- Selecciona el equipo --</option>';
-    }
-
-    window.cargarEquiposPorArea = function() {
-      const areaVal = document.getElementById('fieldArea').value;
-      const tagSelect = document.getElementById('fieldTagSelect');
-      
-      // FILTRAMOS SOLO POR ÁREA (Ignoramos la faena por si el texto en Desktop era distinto)
-      const filtered = catalogoGlobal.filter(e => e.area === areaVal);
-      
-      tagSelect.innerHTML = '<option value="">-- Selecciona el equipo --</option>' + filtered.map(e => `<option value="${e.tag}">${e.tag} (${e.tipo})</option>`).join('');
-    }
-
-    window.syncTagInputFromSelect = function() {
-      const val = document.getElementById('fieldTagSelect').value;
-      if (val) document.getElementById('fieldTagCustom').value = val;
-    }
-
-    // Lógica para llenar los desplegables de Faena, Área y Equipo
-    window.cargarAreasPorFaena = function() {
-      const faenaVal = document.getElementById('fieldFaena').value;
-      const areaSelect = document.getElementById('fieldArea');
-      const filtered = catalogoGlobal.filter(e => e.siteId === faenaVal);
-      const areasUnicas = [...new Set(filtered.map(e => e.area))].filter(Boolean).sort();
-      
-      areaSelect.innerHTML = '<option value="">-- Selecciona el Área --</option>' + areasUnicas.map(a => `<option value="${a}">${a}</option>`).join('');
-      document.getElementById('fieldTagSelect').innerHTML = '<option value="">-- Selecciona el equipo --</option>';
-    }
-
-    window.cargarEquiposPorArea = function() {
-      const faenaVal = document.getElementById('fieldFaena').value;
-      const areaVal = document.getElementById('fieldArea').value;
-      const tagSelect = document.getElementById('fieldTagSelect');
-      const filtered = catalogoGlobal.filter(e => e.siteId === faenaVal && e.area === areaVal);
-      
-      tagSelect.innerHTML = '<option value="">-- Selecciona el equipo --</option>' + filtered.map(e => `<option value="${e.tag}">${e.tag} (${e.tipo})</option>`).join('');
-    }
-
-    window.syncTagInputFromSelect = function() {
-      const val = document.getElementById('fieldTagSelect').value;
-      if (val) document.getElementById('fieldTagCustom').value = val;
-    }
-
-
-    // ==========================================
-    // 5. LÓGICA DE TEXTO INTELIGENTE (BOTONES Y TEXTAREA)
-    // ==========================================
-    window.registrarEscrituraManual = function(e) {
-      let contenido = e.target.value;
-      let encabezado = generarEncabezadoChips();
-      
-      if (encabezado !== "" && contenido.startsWith(encabezado)) {
-        textoManualUsuario = contenido.substring(encabezado.length);
-      } else if (chipsSeleccionados.length === 0) {
-        textoManualUsuario = contenido;
-      } else {
-        textoManualUsuario = contenido;
-      }
-    };
-
-    window.toggleChip = function(chipEl, text) {
-      const area = document.getElementById('fieldDetalle');
-      registrarEscrituraManual({target: area});
-
-      if (chipEl.classList.contains('active')) {
-        chipEl.classList.remove('active');
-        chipsSeleccionados = chipsSeleccionados.filter(c => c !== text);
-      } else {
-        chipEl.classList.add('active');
-        chipsSeleccionados.push(text);
-      }
-      area.value = generarEncabezadoChips() + textoManualUsuario;
-    };
-
-    function generarEncabezadoChips() {
-      if (chipsSeleccionados.length === 0) return "";
-      return "📌 HALLAZGOS AUTOMÁTICOS:\n" + chipsSeleccionados.map(c => "• " + c).join("\n") + "\n\n📝 NOTAS ADICIONALES:\n";
-    }
-
-    // ==========================================
-    // 6. LÓGICA MULTIMEDIA (FOTOS Y VIDEOS)
-    // ==========================================
-    async function handleMultiFileUpload(event) {
-      const files = event.target.files;
-      if (!files || files.length === 0) return;
-
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const sizeMB = file.size / (1024 * 1024);
-        
-        const limiteMB = file.type.startsWith('video/') ? 4 : 12; 
-
-        if (sizeMB > limiteMB) {
-            if (file.type.startsWith('video/')) {
-                alert(`⚠️ El video pesa ${sizeMB.toFixed(1)}MB (Máx 4MB). Graba solo 3 segundos.`);
-            } else {
-                alert(`⚠️ La foto es demasiado pesada (${sizeMB.toFixed(1)}MB).`);
-            }
-            continue;
+    <!-- ENLACES A TUS ARCHIVOS JS -->
+    <script src="js/app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker OK.', reg))
+                    .catch(err => console.log('Fallo SW:', err));
+            });
         }
-
-        if (file.type.startsWith('image/')) {
-            await procesarImagen(file);
-        } else if (file.type.startsWith('video/')) {
-            await procesarVideo(file);
-        }
-      }
-      renderizarGaleria();
-      
-      document.getElementById('inputCamaraFoto').value = ''; 
-      document.getElementById('inputCamaraVideo').value = ''; 
-      document.getElementById('inputGaleria').value = ''; 
-    }
-
-    function procesarImagen(file) {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const img = new Image();
-          img.onload = function() {
-            const canvas = document.getElementById('resizeCanvas');
-            const ctx = canvas.getContext('2d');
-            
-            const MAX_WIDTH = 500; 
-            let width = img.width, height = img.height;
-            
-            if (width > MAX_WIDTH) {
-              height = Math.round((height * MAX_WIDTH) / width);
-              width = MAX_WIDTH;
-            }
-            
-            canvas.width = width;
-            canvas.height = height;
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            const fotoComprimida = canvas.toDataURL('image/jpeg', 0.4);
-            
-            arregloEvidencias.push({ tipo: 'imagen', data: fotoComprimida });
-            resolve();
-          };
-          img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-
-    function procesarVideo(file) {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          arregloEvidencias.push({ tipo: 'video', data: e.target.result });
-          resolve();
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-
-    function renderizarGaleria() {
-      const gallery = document.getElementById('mediaGallery');
-      gallery.innerHTML = '';
-      
-      arregloEvidencias.forEach((ev, index) => {
-        let contenido = ev.tipo === 'imagen' ? `<img src="${ev.data}">` : `<div class="video-icon">🎥</div>`;
-        gallery.innerHTML += `
-          <div class="media-thumb-container">
-            ${contenido}
-            <button class="btn-remove-media" onclick="eliminarEvidencia(${index})">X</button>
-          </div>
-        `;
-      });
-    }
-
-    window.eliminarEvidencia = function(index) {
-      arregloEvidencias.splice(index, 1);
-      renderizarGaleria();
-    };
-
-    // ==========================================
-    // 7. LÓGICA DE FORMULARIO BASE Y ENVÍO
-    // ==========================================
-    window.selectSev = function(sev) {
-      document.getElementById('fieldSev').value = sev;
-      ['Rojo', 'Naranja', 'Amarillo'].forEach(s => {
-        document.getElementById('sev_' + s).className = 'sev-btn' + (s === sev ? ` sel-${sev.toLowerCase()}` : '');
-      });
-    }
-
-    function mostrarToast(msg) {
-      const t = document.getElementById('toastConfirm');
-      t.innerText = msg; t.style.display = 'block';
-      setTimeout(() => { t.style.display = 'none'; }, 4000);
-    }
-
-    function guardarEnColaLocal(payload) {
-      let queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-      queue.push(payload);
-      
-      try {
-        localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
-        actualizarEstadoConexion(navigator.onLine); // Refresca el texto del botón
-      } catch (e) {
-        alert("⚠️ ALERTA DE MEMORIA: Tienes demasiados reportes multimedia en espera. Sincroniza pronto.");
-        queue.pop(); 
-      }
-    }
-
-    function sincronizarColaOffline() {
-      if (!navigator.onLine || !dbAlertas) return;
-      let queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-      if (queue.length === 0) return;
-
-      const item = queue.shift();
-      dbAlertas.push(item).then(() => {
-        localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
-        actualizarEstadoConexion(true); // Refresca contador
-        if (queue.length > 0) sincronizarColaOffline();
-      }).catch(() => {
-        queue.unshift(item);
-        localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
-      });
-    }
-
-    window.enviarReporteCampo = function() {
-      const faena = document.getElementById('fieldFaena').value;
-      const area = document.getElementById('fieldArea').value || 'Área General';
-      const tagFinal = (document.getElementById('fieldTagCustom').value || document.getElementById('fieldTagSelect').value || '').trim().toUpperCase();
-      const detalle = document.getElementById('fieldDetalle').value.trim();
-      const sev = document.getElementById('fieldSev').value;
-
-      if (!tagFinal) { alert("⚠️ Selecciona o escribe el Tag del equipo."); return; }
-
-      const payload = {
-        faena: faena,
-        area: area,
-        tag: tagFinal,
-        severidad: sev,
-        detalle: detalle || 'Reporte rápido sin detalles.',
-        evidencias: arregloEvidencias,
-        timestamp: new Date().toISOString(),
-        estado: 'nuevo'
-      };
-
-      if (navigator.onLine && dbAlertas) {
-        dbAlertas.push(payload).then(() => {
-          mostrarToast(`📡 Alerta transmitida para ${tagFinal}`);
-          limpiarFormularioTerreno();
-        }).catch(() => {
-          guardarEnColaLocal(payload); mostrarToast(`📴 Guardado offline.`); limpiarFormularioTerreno();
-        });
-      } else {
-        guardarEnColaLocal(payload); mostrarToast(`📴 Sin red: Guardado offline.`); limpiarFormularioTerreno();
-      }
-    }
-
-    function limpiarFormularioTerreno() {
-      document.getElementById('fieldDetalle').value = '';
-      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-      
-      chipsSeleccionados = [];
-      textoManualUsuario = "";
-      arregloEvidencias = [];
-      renderizarGaleria();
-      
-      actualizarEstadoConexion(navigator.onLine);
-    }
-  </script>
-
-<script>
-  // REGISTRO DEL SERVICE WORKER (REQUISITO PARA INSTALAR PWA)
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('Service Worker registrado exitosamente.', reg))
-        .catch(err => console.log('Fallo al registrar el Service Worker:', err));
-    });
-  }
-</script>
-
+    </script>
 </body>
 </html>
