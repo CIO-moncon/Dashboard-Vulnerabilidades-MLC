@@ -9,7 +9,7 @@
   "icons": [
     {
       "src": "./logo-cpf.png",
-      "sizes": "611x408",
+      "sizes": "512x512",
       "type": "image/png"
     }
   ]
