@@ -204,6 +204,10 @@ function renderizarCatastro(activosData) {
     
     const filtroEl = document.getElementById('filtroFaena');
     const filtroSeleccionado = filtroEl ? filtroEl.value : 'TODAS';
+
+    // NUEVO: Leer el contenido del buscador
+    const inputBuscar = document.getElementById('input-buscar-catastro');
+    const textoBusqueda = inputBuscar ? inputBuscar.value.toLowerCase().trim() : '';
     
     let conteoVerde = 0, conteoAmarillo = 0, conteoNaranja = 0, conteoRojo = 0;
 
@@ -221,7 +225,9 @@ function renderizarCatastro(activosData) {
 
     if (activosFiltrados.length === 0) {
         contenedor.innerHTML = `<p class="text-muted" style="text-align:center; padding-top: 20px;">Sin equipos registrados.</p>`;
-        document.getElementById('kpi-ok').innerText = 0; document.getElementById('kpi-alert').innerText = 0; document.getElementById('kpi-warn').innerText = 0; document.getElementById('kpi-crit').innerText = 0;
+        if(document.getElementById('kpi-ok')) {
+            document.getElementById('kpi-ok').innerText = 0; document.getElementById('kpi-alert').innerText = 0; document.getElementById('kpi-warn').innerText = 0; document.getElementById('kpi-crit').innerText = 0;
+        }
         return;
     }
 
@@ -232,13 +238,82 @@ function renderizarCatastro(activosData) {
         else if (severidad === 'Amarillo') conteoAmarillo++;
         else conteoVerde++;
     });
-    document.getElementById('kpi-ok').innerText = conteoVerde;
-    document.getElementById('kpi-alert').innerText = conteoAmarillo;
-    document.getElementById('kpi-warn').innerText = conteoNaranja;
-    document.getElementById('kpi-crit').innerText = conteoRojo;
+
+    if(document.getElementById('kpi-ok')) {
+        document.getElementById('kpi-ok').innerText = conteoVerde;
+        document.getElementById('kpi-alert').innerText = conteoAmarillo;
+        document.getElementById('kpi-warn').innerText = conteoNaranja;
+        document.getElementById('kpi-crit').innerText = conteoRojo;
+    }
 
     let htmlInyectado = '';
 
+    // ==========================================
+    // MODO BÚSQUEDA GLOBAL
+    // ==========================================
+    if (textoBusqueda !== '') {
+        let equiposEncontrados = activosFiltrados.filter(a => {
+            const nombreEq = (a.nombre || a.tag || '').toLowerCase();
+            return nombreEq.includes(textoBusqueda);
+        });
+
+        htmlInyectado += `
+            <button onclick="limpiarBusquedaCatastro()" style="width: 100%; padding: 10px; margin-bottom: 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;">
+                <span class="material-symbols-outlined">close</span> Limpiar búsqueda
+            </button>
+            <h3 style="color: var(--accent-color); font-size: 0.9rem; margin-bottom: 15px; text-align: center;">🔍 Encontrados: ${equiposEncontrados.length}</h3>
+        `;
+
+        if (equiposEncontrados.length === 0) {
+            htmlInyectado += `<p class="text-muted" style="text-align:center;">No se encontraron equipos.</p>`;
+        } else {
+            const ordenSalud = { 'Rojo': 1, 'Naranja': 2, 'Amarillo': 3, 'Verde': 4 };
+            equiposEncontrados.sort((a, b) => (ordenSalud[a.severidad] || 5) - (ordenSalud[b.severidad] || 5));
+
+            equiposEncontrados.forEach(activo => {
+                const severidad = activo.severidad || 'Verde'; 
+                let colorBorde = 'var(--status-ok)'; 
+                if (severidad === 'Rojo') colorBorde = 'var(--status-critical)';
+                if (severidad === 'Naranja') colorBorde = 'var(--status-warning)';
+                if (severidad === 'Amarillo') colorBorde = 'var(--status-alert)';
+
+                let cantidadTerreno = 0;
+                if (datosGlobalesAlertas) {
+                    cantidadTerreno = Object.values(datosGlobalesAlertas).filter(al => al.tag && al.tag.toUpperCase() === (activo.nombre || '').toUpperCase()).length;
+                }
+
+                let badgeTerrenoEquipo = '';
+                if (cantidadTerreno > 0) {
+                    badgeTerrenoEquipo = `<span style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); padding: 1px 6px; border-radius: 10px; font-size: 0.7rem; margin-left: 8px; display: inline-flex; align-items: center; gap: 3px;" title="${cantidadTerreno} reportes de inspectores">
+                        <span class="material-symbols-outlined" style="font-size: 0.8rem;">engineering</span> ${cantidadTerreno}
+                    </span>`;
+                }
+
+                htmlInyectado += `
+                    <div class="alerta-item" onclick="abrirModalEvidencia('${activo.id_activo}')" style="border-left: 4px solid ${colorBorde}; background: rgba(0,0,0,0.3); padding: 12px; margin-bottom: 12px; border-radius: 8px; cursor: pointer;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <strong style="color: white; font-size: 1.05rem; display: flex; align-items: center;">
+                                ${activo.nombre || 'SIN TAG'}
+                                ${badgeTerrenoEquipo}
+                            </strong>
+                            <span style="font-size: 0.75rem; color: ${colorBorde}; font-weight: bold; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">
+                                ${severidad.toUpperCase()}
+                            </span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-main);">
+                            <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">account_tree</span> ${activo.area || 'Planta'}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        contenedor.innerHTML = htmlInyectado;
+        return; // Terminamos aquí si hay búsqueda
+    }
+
+    // ==========================================
+    // VISTA NORMAL (ÁREAS O EQUIPOS)
+    // ==========================================
     if (vistaActualPanel === 'AREAS') {
         const agrupacionAreas = {};
         activosFiltrados.forEach(activo => {
@@ -280,11 +355,8 @@ function renderizarCatastro(activosData) {
                 </span>`;
             }
 
-           // CÓDIGO ACTUALIZADO: Tarjetas de Áreas más compactas y sin el "Total de equipos"
             htmlInyectado += `
                 <div class="alerta-item" onclick="entrarArea('${area.nombre}')" style="border-left: 4px solid ${colorBorde}; background: rgba(255,255,255,0.03); padding: 10px 12px; margin-bottom: 8px; border-radius: 6px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; justify-content: center; min-height: 60px;">
-                    
-                    <!-- Fila Superior: Icono, Nombre del Área y Badge de Terreno -->
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                         <strong style="color: white; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
                             <span class="material-symbols-outlined" style="font-size: 1.1rem; color: #a1a1aa;">account_tree</span> 
@@ -292,15 +364,10 @@ function renderizarCatastro(activosData) {
                         </strong>
                         ${badgeTerrenoArea}
                     </div>
-
-                    <!-- Fila Inferior: Indicadores de Salud (Puntos de colores) -->
                     <div style="display: flex; gap: 12px; font-size: 0.75rem; align-items: center;">
                         ${area.rojos > 0 ? `<div style="display: flex; align-items: center; gap: 4px;"><div style="width: 8px; height: 8px; border-radius: 50%; background: var(--status-critical); box-shadow: 0 0 5px var(--status-critical);"></div> <span style="color: var(--status-critical); font-weight: bold;">${area.rojos}</span></div>` : ''}
-                        
                         ${area.naranjas > 0 ? `<div style="display: flex; align-items: center; gap: 4px;"><div style="width: 8px; height: 8px; border-radius: 50%; background: var(--status-warning); box-shadow: 0 0 5px var(--status-warning);"></div> <span style="color: var(--status-warning); font-weight: bold;">${area.naranjas}</span></div>` : ''}
-                        
                         ${area.amarillos > 0 ? `<div style="display: flex; align-items: center; gap: 4px;"><div style="width: 8px; height: 8px; border-radius: 50%; background: var(--status-alert); box-shadow: 0 0 5px var(--status-alert);"></div> <span style="color: var(--status-alert); font-weight: bold;">${area.amarillos}</span></div>` : ''}
-                        
                         ${(area.rojos === 0 && area.naranjas === 0 && area.amarillos === 0) ? `<div style="display: flex; align-items: center; gap: 4px;"><div style="width: 8px; height: 8px; border-radius: 50%; background: var(--status-ok); box-shadow: 0 0 5px var(--status-ok);"></div> <span style="color: var(--status-ok); font-weight: bold;">100% Normal</span></div>` : ''}
                     </div>
                 </div>
@@ -693,9 +760,11 @@ window.agregarNuevoComponente = function() {
 window.guardarDictamenComponente = function() {
     if (!componenteSeleccionado) return;
 
+    const fechaIngresada = document.getElementById('fecha-medicion').value;
+
     const datosComp = {
         es_nuevo: document.getElementById('check-equipo-nuevo').checked,
-        ultima_medicion: document.getElementById('fecha-medicion').value,
+        ultima_medicion: fechaIngresada,
         avisos_sap: document.getElementById('avisos-sap').value,
         om_sap: document.getElementById('om-sap').value,
         analisis_ia: document.getElementById('texto-analisis-componente').value,
@@ -704,8 +773,18 @@ window.guardarDictamenComponente = function() {
         fecha_edicion: new Date().toISOString()
     };
 
+    // 1. Actualizar el componente específico
     activosRef.child(activoSeleccionadoActual.id_activo).child('componentes').child(componenteSeleccionado).update(datosComp)
     .then(() => {
+        // 2. SINCRONIZACIÓN CBM: Si se ingresó una fecha, actualizar el reloj global del equipo
+        if (fechaIngresada) {
+            // Asegurarnos de que la fecha ingresada (ej. "2026-09-29") se convierta al formato ISO correcto
+            const fechaIso = new Date(fechaIngresada + 'T12:00:00Z').toISOString();
+            activosRef.child(activoSeleccionadoActual.id_activo).update({ 
+                ultima_medicion: fechaIso 
+            });
+        }
+
         alert("✅ Guardado exitosamente.");
         activoSeleccionadoActual.componentes[componenteSeleccionado] = { ...activoSeleccionadoActual.componentes[componenteSeleccionado], ...datosComp };
         recalcularSaludGlobal();
@@ -1076,7 +1155,7 @@ window.actualizarVistaLightbox = function() {
 };
 
 // =========================================================================
-// MÓDULO CIO: PLANIFICADOR INTELIGENTE DE RUTAS CBM
+// MÓDULO CIO (FASE 2): PLANIFICADOR INTELIGENTE DE RUTAS CBM
 // =========================================================================
 
 window.abrirPlanificadorCBM = function() {
@@ -1094,19 +1173,22 @@ window.renderizarTablaCBM = function() {
     tbody.innerHTML = '';
     
     if (!datosGlobalesActivos) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 20px;">Cargando catastro de Firebase...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 20px; color: var(--text-muted);">Cargando catastro de activos...</td></tr>';
         return;
     }
 
     const hoy = new Date();
     let procesados = [];
 
+    // 1. Calcular tiempos de cada activo
     Object.keys(datosGlobalesActivos).forEach(key => {
         let eq = datosGlobalesActivos[key];
         
+        // Si el equipo es nuevo o nunca se le ha asignado fecha, iniciamos su reloj hoy
         if (!eq.ultima_medicion) {
             eq.ultima_medicion = hoy.toISOString();
             eq.frecuencia_dias = 30;
+            // Actualizamos silenciosamente la base de datos
             activosRef.child(key).update({ ultima_medicion: eq.ultima_medicion, frecuencia_dias: 30 });
         }
 
@@ -1114,47 +1196,121 @@ window.renderizarTablaCBM = function() {
         const dias = Math.ceil(Math.abs(hoy - fUltima) / (1000 * 60 * 60 * 24)) - 1;
         const limite = eq.frecuencia_dias || 30;
         
+        // Semáforo: Rojo (Vencido), Amarillo (80% del ciclo), Verde (OK)
         let estado = dias >= limite ? '🔴' : (dias >= limite * 0.8 ? '🟡' : '🟢');
-        let bg = dias >= limite ? 'background: rgba(239, 68, 68, 0.05);' : '';
+        let bg = dias >= limite ? 'background: rgba(239, 68, 68, 0.08);' : '';
         
         procesados.push({ id_activo: key, ...eq, dias, limite, estado, bg });
     });
 
+    // 2. Ordenamiento Crítico: Los más atrasados van primero
     procesados.sort((a, b) => (b.dias / b.limite) - (a.dias / a.limite));
 
+    // 3. Dibujar en la tabla
     procesados.forEach(eq => {
         if (filtro === 'vencidos' && eq.estado !== '🔴') return;
-        if (filtro === 'seguimiento' && eq.limite === 30) return; 
+        if (filtro === 'seguimiento' && eq.limite === 30) return; // Muestra solo ciclos especiales (7 o 15 días)
 
         const fFormato = new Date(eq.ultima_medicion).toLocaleDateString('es-CL');
         
         tbody.innerHTML += `
-            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); ${eq.bg}">
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); ${eq.bg} transition: 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='${eq.bg ? 'rgba(239, 68, 68, 0.08)' : 'transparent'}'">
                 <td style="padding: 15px 20px; font-size: 1.5rem; text-align: center;">${eq.estado}</td>
-                <td style="padding: 15px 20px; font-weight: bold; color: white;">${eq.nombre || eq.tag || eq.Tag || 'N/A'}</td>
-                <td style="padding: 15px 20px; color: #a1a1aa;">${eq.area || 'Planta'}</td>
-                <td style="padding: 15px 20px; font-family: monospace; font-size: 1rem;">${fFormato}</td>
-                <td style="padding: 15px 20px;"><span style="background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 12px; font-size: 0.8rem;">${eq.limite} días</span></td>
-                <td style="padding: 15px 20px; font-weight: bold; font-size: 1.1rem; color: ${eq.estado === '🔴' ? '#ef4444' : 'white'};">${eq.dias} días</td>
+                <td style="padding: 15px 20px;">
+                    <strong style="color: white; font-size: 1rem;">${eq.nombre || eq.tag || eq.Tag || 'SIN TAG'}</strong>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 3px;">${eq.tipo_equipo || 'Activo General'}</div>
+                </td>
+                <td style="padding: 15px 20px; color: var(--text-muted);">${eq.area || 'Planta'}</td>
+                <td style="padding: 15px 20px; font-family: 'Roboto Mono', monospace; font-size: 0.9rem;">${fFormato}</td>
+                <td style="padding: 15px 20px;">
+                    <span style="background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.1);">${eq.limite} días</span>
+                </td>
+                <td style="padding: 15px 20px; font-weight: bold; font-size: 1.1rem; color: ${eq.estado === '🔴' ? '#ef4444' : 'var(--status-ok)'};">
+                    ${eq.dias} días
+                </td>
                 <td style="padding: 15px 20px; text-align: center; display: flex; gap: 10px; justify-content: center;">
-                    <button onclick="registrarMedicionCBM('${eq.id_activo}')" style="background: #22c55e; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold;">✅ Medido</button>
-                    <button onclick="cambiarCicloCBM('${eq.id_activo}', '${eq.nombre || eq.tag}')" style="background: #f59e0b; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold;">⏱️ Ciclo</button>
+                    <button onclick="registrarMedicionCBM('${eq.id_activo}')" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; gap: 4px; transition: 0.2s;" onmouseover="this.style.background='rgba(34, 197, 94, 0.3)'" onmouseout="this.style.background='rgba(34, 197, 94, 0.15)'">
+                        <span class="material-symbols-outlined" style="font-size: 1rem;">check_circle</span> Medido
+                    </button>
+                    <button onclick="cambiarCicloCBM('${eq.id_activo}', '${eq.nombre || eq.tag}')" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; gap: 4px; transition: 0.2s;" onmouseover="this.style.background='rgba(245, 158, 11, 0.3)'" onmouseout="this.style.background='rgba(245, 158, 11, 0.15)'">
+                        <span class="material-symbols-outlined" style="font-size: 1rem;">timer</span> Ciclo
+                    </button>
                 </td>
             </tr>
         `;
     });
 };
 
+// Acciones del Analista
 window.registrarMedicionCBM = function(id) {
-    if(confirm("¿Confirmas que el equipo fue medido? El contador volverá a cero.")) {
-        activosRef.child(id).update({ ultima_medicion: new Date().toISOString() })
-        .then(() => { alert("Ruta registrada."); renderizarTablaCBM(); });
+    if(confirm("¿Confirmas que el equipo fue medido (Vibraciones/Termografía)? El contador volverá a CERO.")) {
+        const fechaHoyIso = new Date().toISOString();
+        const fechaHoyInput = fechaHoyIso.split('T')[0]; // Formato YYYY-MM-DD para el input de SAP
+
+        // 1. Actualizar la fecha global del equipo para la tabla CBM
+        let actualizaciones = {
+            ultima_medicion: fechaHoyIso
+        };
+
+        // 2. SINCRONIZACIÓN SAP: Buscar si el equipo tiene componentes y actualizar sus fechas
+        const activo = datosGlobalesActivos[id];
+        if (activo && activo.componentes) {
+            Object.keys(activo.componentes).forEach(compId => {
+                actualizaciones[`componentes/${compId}/ultima_medicion`] = fechaHoyInput;
+            });
+        }
+
+        // Ejecutar todas las actualizaciones de una sola vez
+        activosRef.child(id).update(actualizaciones)
+        .then(() => { 
+            alert("Ruta CBM registrada exitosamente y componentes sincronizados."); 
+            renderizarTablaCBM(); 
+        });
     }
 };
 
 window.cambiarCicloCBM = function(id, tag) {
-    let n = parseInt(prompt(`Nuevo ciclo en DÍAS para ${tag}\nEjemplo: 30, 15, 7`));
+    let n = parseInt(prompt(`Analista CIO, ingresa el nuevo ciclo de seguimiento (DÍAS) para el equipo: ${tag}\n\nRecomendaciones:\n- 30 (Normal / Mensual)\n- 15 (Alarma / Quincenal)\n- 7 (Crítico / Semanal)`));
     if (n && n > 0) {
         activosRef.child(id).update({ frecuencia_dias: n }).then(() => renderizarTablaCBM());
     }
+};
+
+// =========================================================================
+// MÓDULO CIO: BUSCADORES EN TIEMPO REAL (BARRAS LATERALES)
+// =========================================================================
+
+// Filtro para Columna Izquierda (Catastro)
+window.filtrarCatastro = function() {
+    // Llamamos a renderizarCatastro para que él mismo maneje la lógica de búsqueda global
+    if (datosGlobalesActivos) {
+        renderizarCatastro(datosGlobalesActivos);
+    }
+};
+
+window.limpiarBusquedaCatastro = function() {
+    const input = document.getElementById('input-buscar-catastro');
+    if (input) input.value = '';
+    vistaActualPanel = 'AREAS';
+    areaSeleccionadaPanel = null;
+    renderizarCatastro(datosGlobalesActivos);
+};
+
+// Filtro para Columna Derecha (Alertas de Terreno)
+window.filtrarAlertas = function() {
+    const input = document.getElementById('input-buscar-alertas');
+    if(!input) return;
+    
+    const texto = input.value.toLowerCase();
+    const items = document.querySelectorAll('#panelAlertasTerreno .tarjeta-alerta-terreno');
+    
+    items.forEach(item => {
+        const contenidoTarjeta = item.innerText.toLowerCase();
+        
+        if (contenidoTarjeta.includes(texto)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
 };
