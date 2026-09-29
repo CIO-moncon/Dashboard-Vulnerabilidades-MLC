@@ -443,6 +443,9 @@ window.volverAreas = function() {
 // MODAL DE COMPONENTES DEL EQUIPO
 // ==========================================
 window.abrirModalEvidencia = function(idActivo) {
+    // --- 1. SABER SI ES ANALISTA O LECTOR ---
+    const estaLogueado = (typeof faenaUsuario !== 'undefined' && faenaUsuario !== null && faenaUsuario !== "");
+    
     const activo = datosGlobalesActivos[idActivo];
     if (!activo) return;
     
@@ -503,6 +506,24 @@ window.abrirModalEvidencia = function(idActivo) {
 
     renderizarListaComponentes();
     document.getElementById('modal-evidencia').style.display = 'flex';
+
+    // === REVISIÓN FINAL DE SEGURIDAD VISUAL ===
+    setTimeout(() => {
+        const usuarioReal = firebase.auth().currentUser;
+        const btnOculto = document.getElementById('btn-add-spot-oculto');
+        
+        if (btnOculto) {
+            if (usuarioReal) {
+                btnOculto.style.display = 'block'; 
+            } else {
+                btnOculto.style.display = 'none';  
+            }
+        }
+        
+        document.querySelectorAll('.auth-only').forEach(btn => {
+            btn.style.display = usuarioReal ? 'flex' : 'none';
+        });
+    }, 100);
 };
 
 window.seleccionarComponente = function(compID) {
@@ -552,7 +573,6 @@ window.verTerreno = function() {
 function renderizarAlertasTerreno() {
     const contenedor = document.getElementById('historial-terreno-lista');
     
-    // Inyectar el contenedor del Carrusel (Lightbox) si no existe
     if (!document.getElementById('modal-lightbox')) {
         inyectarLightboxHTML();
     }
@@ -718,33 +738,44 @@ function renderizarListaComponentes() {
 
     if (keysComponentes.length === 0) {
         lista.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; text-align: center; margin-top: 10px;">Sin componentes creados.</p>';
-        return;
+        return; 
     }
 
     keysComponentes.forEach(key => {
         const comp = componentes[key];
         const sev = comp.estado || 'Verde';
         let iconColor = 'var(--status-ok)';
+        
         if (sev === 'Rojo') iconColor = 'var(--status-critical)';
         if (sev === 'Naranja') iconColor = 'var(--status-warning)';
         if (sev === 'Amarillo') iconColor = 'var(--status-alert)';
 
         const esActivo = (componenteSeleccionado === key);
-        
+
         lista.innerHTML += `
-            <button onclick="seleccionarComponente('${key}')" style="width: 100%; text-align: left; padding: 12px; background: ${esActivo ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.2)'}; border: 1px solid ${esActivo ? 'var(--text-main)' : 'rgba(255,255,255,0.05)'}; color: white; border-radius: 6px; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center;">
+            <button onclick="seleccionarComponente('${key}')" style="width: 100%; text-align: left; padding: 12px; background: ${esActivo ? 'rgba(255,255,255,0.1)' : 'transparent'}; border: none; border-bottom: 1px solid rgba(255,255,255,0.05); color: white; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='${esActivo ? 'rgba(255,255,255,0.1)' : 'transparent'}'">
                 <span>${comp.nombre}</span>
-                <span style="color: ${iconColor}; font-size: 0.8rem;">●</span>
+                <span style="color: ${iconColor}; font-size: 1rem;">●</span>
             </button>
         `;
     });
 }
 
+// ====================================================================
+// FUNCIÓN REPARADA CON LA LLAVE DE CIERRE CORRECTA
+// ====================================================================
 window.agregarNuevoComponente = function() {
+    const usuarioReal = firebase.auth().currentUser;
+    if (!usuarioReal) {
+        alert("🔒 Acceso denegado. La sesión de Firebase no está activa. Inicia sesión para crear componentes.");
+        return;
+    }
+
     const nombreNuevo = prompt("Escribe el nombre del nuevo componente/spot:");
     if (!nombreNuevo || nombreNuevo.trim() === '') return;
-    const compID = 'comp_' + new Date().getTime();
     
+    const compID = 'comp_' + new Date().getTime();
+
     activosRef.child(activoSeleccionadoActual.id_activo).child('componentes').child(compID).set({
         nombre: nombreNuevo.trim(),
         estado: 'Verde',
@@ -755,12 +786,14 @@ window.agregarNuevoComponente = function() {
         activoSeleccionadoActual.componentes[compID] = { nombre: nombreNuevo.trim(), estado: 'Verde' };
         renderizarListaComponentes();
     });
-};
+}; // <--- ¡AQUÍ ESTÁ LA LLAVE QUE FALTABA!
+
 
 window.guardarDictamenComponente = function() {
     if (!componenteSeleccionado) return;
 
     const fechaIngresada = document.getElementById('fecha-medicion').value;
+    const tipoInspeccion = document.getElementById('tipo-inspeccion') ? document.getElementById('tipo-inspeccion').value : 'Seguimiento Específico';
 
     const datosComp = {
         es_nuevo: document.getElementById('check-equipo-nuevo').checked,
@@ -773,19 +806,21 @@ window.guardarDictamenComponente = function() {
         fecha_edicion: new Date().toISOString()
     };
 
-    // 1. Actualizar el componente específico
     activosRef.child(activoSeleccionadoActual.id_activo).child('componentes').child(componenteSeleccionado).update(datosComp)
     .then(() => {
-        // 2. SINCRONIZACIÓN CBM: Si se ingresó una fecha, actualizar el reloj global del equipo
-        if (fechaIngresada) {
-            // Asegurarnos de que la fecha ingresada (ej. "2026-09-29") se convierta al formato ISO correcto
+        if (fechaIngresada && tipoInspeccion.includes("Ruta")) {
             const fechaIso = new Date(fechaIngresada + 'T12:00:00Z').toISOString();
-            activosRef.child(activoSeleccionadoActual.id_activo).update({ 
-                ultima_medicion: fechaIso 
-            });
+            activosRef.child(activoSeleccionadoActual.id_activo).update({ ultima_medicion: fechaIso });
         }
 
-        alert("✅ Guardado exitosamente.");
+        const registroHistorico = {
+            ...datosComp,
+            tipo_evento: tipoInspeccion,
+            timestamp_registro: new Date().toISOString()
+        };
+        activosRef.child(activoSeleccionadoActual.id_activo).child('componentes').child(componenteSeleccionado).child('historial').push(registroHistorico);
+
+        alert(`✅ Diagnóstico guardado.\nTipo: ${tipoInspeccion}`);
         activoSeleccionadoActual.componentes[componenteSeleccionado] = { ...activoSeleccionadoActual.componentes[componenteSeleccionado], ...datosComp };
         recalcularSaludGlobal();
     });
@@ -868,7 +903,7 @@ window.ejecutarAnalisisIA_Componente = async function() {
         if (data.error) throw new Error(data.error.message);
 
         let textoRespuesta = data.candidates[0].content.parts[0].text;
-        textoRespuesta = textoResproveniente = textoRespuesta.replace(/\*\*/g, '').replace(/\*/g, '-'); 
+        textoRespuesta = textoRespuesta.replace(/\*\*/g, '').replace(/\*/g, '-'); 
         document.getElementById('texto-analisis-componente').value = textoRespuesta;
         
     } catch (error) {
@@ -925,11 +960,9 @@ function renderizarPanelAlertasActivas(datosAlertas) {
         const horaStr = fechaObj.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
         const faenaCorta = alerta.faena ? alerta.faena.split(',')[0] : 'Des';
 
-        // VERSIÓN HORIZONTAL: Aprovecha todo el ancho de la columna
         const cardHTML = `
             <div class="tarjeta-alerta-terreno sev-${alerta.severidad}" style="padding: 10px 12px; cursor: pointer; display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 10px;" onclick="gestionarAlertaRapida('${alerta.id}', '${alerta.tag}')" title="Clic para ver detalle">
                 
-                <!-- IZQUIERDA: Icono + TAG + Faena -->
                 <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
                     <span class="material-symbols-outlined" style="font-size: 1.2rem; color: ${alerta.severidad === 'Rojo' ? '#ef4444' : alerta.severidad === 'Naranja' ? '#f97316' : '#eab308'}">
                         ${alerta.severidad === 'Rojo' ? 'error' : 'warning'}
@@ -940,7 +973,6 @@ function renderizarPanelAlertasActivas(datosAlertas) {
                     </div>
                 </div>
 
-                <!-- DERECHA: Adjunto + Hora -->
                 <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
                     ${alerta.evidencias && alerta.evidencias.length > 0 ? `<span class="material-symbols-outlined" style="color: #60a5fa; font-size: 1.1rem;" title="Contiene fotos/videos">attach_file</span>` : ''}
                     <span style="font-size: 0.75rem; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 3px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); white-space: nowrap;">
@@ -988,10 +1020,8 @@ window.gestionarAlertaRapida = function(idAlerta, tagEquipo) {
 // WIDGET CLIMA EN TIEMPO REAL (VALLENAR)
 // =========================================================================
 
-// Ejecutar al cargar la página
 document.addEventListener('DOMContentLoaded', () => {
     obtenerClimaVallenar();
-    // Actualizar clima cada 30 minutos
     setInterval(obtenerClimaVallenar, 30 * 60 * 1000); 
 });
 
@@ -1000,43 +1030,37 @@ window.toggleClima = function() {
     panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
 };
 
-// Diccionario de códigos meteorológicos WMO a Emojis
 function obtenerIconoClima(codigo) {
-    if (codigo === 0) return '☀️'; // Despejado
-    if (codigo === 1 || codigo === 2) return '🌤️'; // Parcial
-    if (codigo === 3) return '☁️'; // Nublado
-    if (codigo >= 45 && codigo <= 48) return '🌫️'; // Niebla/Camanchaca
-    if (codigo >= 51 && codigo <= 67) return '🌧️'; // Lluvia/Llovizna
-    if (codigo >= 71 && codigo <= 82) return '❄️'; // Nieve
-    if (codigo >= 95) return '⛈️'; // Tormenta
+    if (codigo === 0) return '☀️'; 
+    if (codigo === 1 || codigo === 2) return '🌤️'; 
+    if (codigo === 3) return '☁️'; 
+    if (codigo >= 45 && codigo <= 48) return '🌫️'; 
+    if (codigo >= 51 && codigo <= 67) return '🌧️'; 
+    if (codigo >= 71 && codigo <= 82) return '❄️'; 
+    if (codigo >= 95) return '⛈️'; 
     return '🌡️';
 }
 
 function obtenerNombreDia(fechaString) {
     const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-    // Ajuste para evitar desfase de huso horario
     const fecha = new Date(fechaString + "T12:00:00Z");
     return dias[fecha.getUTCDay()];
 }
 
 async function obtenerClimaVallenar() {
     try {
-        // Coordenadas de Vallenar: Latitud -28.57, Longitud -70.76
         const url = 'https://api.open-meteo.com/v1/forecast?latitude=-28.57&longitude=-70.76&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=America%2FSantiago';
         
         const respuesta = await fetch(url);
         const datos = await respuesta.json();
 
-        // 1. Actualizar el Botón Principal (Clima Actual)
         const tempActual = Math.round(datos.current_weather.temperature);
         const iconActual = obtenerIconoClima(datos.current_weather.weathercode);
         document.getElementById('btn-clima-live').innerHTML = `${iconActual} ${tempActual}°C Vallenar`;
 
-        // 2. Armar las tarjetas de los próximos 3 días
         const panelDias = document.getElementById('pronostico-dias');
         let htmlDias = '';
 
-        // Iterar sobre los días 1, 2 y 3 (el día 0 es hoy)
         for(let i = 1; i <= 3; i++) {
             const tempMax = Math.round(datos.daily.temperature_2m_max[i]);
             const tempMin = Math.round(datos.daily.temperature_2m_min[i]);
@@ -1083,7 +1107,6 @@ function inyectarLightboxHTML() {
             </button>
             
             <div id="lightbox-content" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(9, 11, 16, 0.9); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.8);">
-                <!-- Contenido Dinámico -->
             </div>
 
             <button onclick="cambiarMediaLightbox(1)" id="btn-lb-next" style="position: absolute; right: -50px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 15px; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s;" onmouseover="this.style.background='rgba(59, 130, 246, 0.5)'">
@@ -1115,7 +1138,7 @@ window.abrirLightbox = function(idAlerta, startIndex) {
             isVideo = true;
         }
         return { url, isVideo };
-    }).filter(e => e.url !== ''); // Limpiar vacíos
+    }).filter(e => e.url !== ''); 
     
     if (lightboxEvidencias.length === 0) return;
     
@@ -1126,7 +1149,7 @@ window.abrirLightbox = function(idAlerta, startIndex) {
 
 window.cerrarLightbox = function() {
     document.getElementById('modal-lightbox').style.display = 'none';
-    document.getElementById('lightbox-content').innerHTML = ''; // Corta el video al cerrar
+    document.getElementById('lightbox-content').innerHTML = ''; 
 };
 
 window.cambiarMediaLightbox = function(dir) {
@@ -1148,7 +1171,6 @@ window.actualizarVistaLightbox = function() {
     
     document.getElementById('lightbox-counter').innerText = `Evidencia ${lightboxIndex + 1} de ${lightboxEvidencias.length}`;
     
-    // Ocultar flechas si solo hay 1 archivo
     const displayArrows = lightboxEvidencias.length > 1 ? 'flex' : 'none';
     document.getElementById('btn-lb-prev').style.display = displayArrows;
     document.getElementById('btn-lb-next').style.display = displayArrows;
@@ -1169,7 +1191,11 @@ window.cerrarPlanificadorCBM = function() {
 
 window.renderizarTablaCBM = function() {
     const tbody = document.getElementById('tablaRutasCBM');
-    const filtro = document.getElementById('filtroCBM').value;
+    const filtro = document.getElementById('filtroCBM') ? document.getElementById('filtroCBM').value : 'todos';
+    
+    const inputBuscar = document.getElementById('input-buscar-rutas');
+    const textoBusqueda = inputBuscar ? inputBuscar.value.toLowerCase().trim() : '';
+
     tbody.innerHTML = '';
     
     if (!datosGlobalesActivos) {
@@ -1180,15 +1206,12 @@ window.renderizarTablaCBM = function() {
     const hoy = new Date();
     let procesados = [];
 
-    // 1. Calcular tiempos de cada activo
     Object.keys(datosGlobalesActivos).forEach(key => {
         let eq = datosGlobalesActivos[key];
         
-        // Si el equipo es nuevo o nunca se le ha asignado fecha, iniciamos su reloj hoy
         if (!eq.ultima_medicion) {
             eq.ultima_medicion = hoy.toISOString();
             eq.frecuencia_dias = 30;
-            // Actualizamos silenciosamente la base de datos
             activosRef.child(key).update({ ultima_medicion: eq.ultima_medicion, frecuencia_dias: 30 });
         }
 
@@ -1196,22 +1219,48 @@ window.renderizarTablaCBM = function() {
         const dias = Math.ceil(Math.abs(hoy - fUltima) / (1000 * 60 * 60 * 24)) - 1;
         const limite = eq.frecuencia_dias || 30;
         
-        // Semáforo: Rojo (Vencido), Amarillo (80% del ciclo), Verde (OK)
         let estado = dias >= limite ? '🔴' : (dias >= limite * 0.8 ? '🟡' : '🟢');
         let bg = dias >= limite ? 'background: rgba(239, 68, 68, 0.08);' : '';
         
         procesados.push({ id_activo: key, ...eq, dias, limite, estado, bg });
     });
 
-    // 2. Ordenamiento Crítico: Los más atrasados van primero
     procesados.sort((a, b) => (b.dias / b.limite) - (a.dias / a.limite));
 
-    // 3. Dibujar en la tabla
+    if (textoBusqueda !== '') {
+        procesados = procesados.filter(eq => {
+            const nombreEq = (eq.nombre || eq.tag || eq.Tag || '').toLowerCase();
+            return nombreEq.includes(textoBusqueda);
+        });
+    }
+
+    if (procesados.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 20px; color: var(--text-muted);">No se encontraron equipos para "${textoBusqueda}".</td></tr>`;
+        return;
+    }
+
     procesados.forEach(eq => {
         if (filtro === 'vencidos' && eq.estado !== '🔴') return;
-        if (filtro === 'seguimiento' && eq.limite === 30) return; // Muestra solo ciclos especiales (7 o 15 días)
+        if (filtro === 'seguimiento' && eq.limite === 30) return; 
 
         const fFormato = new Date(eq.ultima_medicion).toLocaleDateString('es-CL');
+        
+        let avisosComponentes = "";
+        if (eq.componentes) {
+            const fechaRutaGlobal = new Date(eq.ultima_medicion);
+            Object.values(eq.componentes).forEach(comp => {
+                if (comp.ultima_medicion) {
+                    const fechaComp = new Date(comp.ultima_medicion + 'T12:00:00Z');
+                    if (fechaComp > fechaRutaGlobal) {
+                        const diasComp = Math.ceil(Math.abs(hoy - fechaComp) / (1000 * 60 * 60 * 24)) - 1;
+                        avisosComponentes += `<div style="font-size: 0.75rem; color: #fbbf24; margin-top: 4px; display: flex; align-items: center; gap: 4px;" title="Medido de forma aislada">
+                            <span class="material-symbols-outlined" style="font-size: 0.9rem;">warning</span> 
+                            ${comp.nombre} medido hace ${diasComp} días
+                        </div>`;
+                    }
+                }
+            });
+        }
         
         tbody.innerHTML += `
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); ${eq.bg} transition: 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='${eq.bg ? 'rgba(239, 68, 68, 0.08)' : 'transparent'}'">
@@ -1221,7 +1270,10 @@ window.renderizarTablaCBM = function() {
                     <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 3px;">${eq.tipo_equipo || 'Activo General'}</div>
                 </td>
                 <td style="padding: 15px 20px; color: var(--text-muted);">${eq.area || 'Planta'}</td>
-                <td style="padding: 15px 20px; font-family: 'Roboto Mono', monospace; font-size: 0.9rem;">${fFormato}</td>
+                <td style="padding: 15px 20px;">
+                    <div style="font-family: 'Roboto Mono', monospace; font-size: 0.9rem;">${fFormato}</div>
+                    ${avisosComponentes}
+                </td>
                 <td style="padding: 15px 20px;">
                     <span style="background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.1);">${eq.limite} días</span>
                 </td>
@@ -1241,18 +1293,13 @@ window.renderizarTablaCBM = function() {
     });
 };
 
-// Acciones del Analista
 window.registrarMedicionCBM = function(id) {
-    if(confirm("¿Confirmas que el equipo fue medido (Vibraciones/Termografía)? El contador volverá a CERO.")) {
+    if(confirm("¿Confirmas que se ejecutó la ruta CBM de todo el conjunto? Esto actualizará la fecha del equipo y de TODOS sus componentes.")) {
         const fechaHoyIso = new Date().toISOString();
-        const fechaHoyInput = fechaHoyIso.split('T')[0]; // Formato YYYY-MM-DD para el input de SAP
+        const fechaHoyInput = fechaHoyIso.split('T')[0]; 
 
-        // 1. Actualizar la fecha global del equipo para la tabla CBM
-        let actualizaciones = {
-            ultima_medicion: fechaHoyIso
-        };
+        let actualizaciones = { ultima_medicion: fechaHoyIso };
 
-        // 2. SINCRONIZACIÓN SAP: Buscar si el equipo tiene componentes y actualizar sus fechas
         const activo = datosGlobalesActivos[id];
         if (activo && activo.componentes) {
             Object.keys(activo.componentes).forEach(compId => {
@@ -1260,10 +1307,9 @@ window.registrarMedicionCBM = function(id) {
             });
         }
 
-        // Ejecutar todas las actualizaciones de una sola vez
         activosRef.child(id).update(actualizaciones)
         .then(() => { 
-            alert("Ruta CBM registrada exitosamente y componentes sincronizados."); 
+            alert("Ruta registrada. Fechas sincronizadas en cascada."); 
             renderizarTablaCBM(); 
         });
     }
@@ -1280,9 +1326,7 @@ window.cambiarCicloCBM = function(id, tag) {
 // MÓDULO CIO: BUSCADORES EN TIEMPO REAL (BARRAS LATERALES)
 // =========================================================================
 
-// Filtro para Columna Izquierda (Catastro)
 window.filtrarCatastro = function() {
-    // Llamamos a renderizarCatastro para que él mismo maneje la lógica de búsqueda global
     if (datosGlobalesActivos) {
         renderizarCatastro(datosGlobalesActivos);
     }
@@ -1296,17 +1340,16 @@ window.limpiarBusquedaCatastro = function() {
     renderizarCatastro(datosGlobalesActivos);
 };
 
-// Filtro para Columna Derecha (Alertas de Terreno)
 window.filtrarAlertas = function() {
     const input = document.getElementById('input-buscar-alertas');
     if(!input) return;
-    
+
     const texto = input.value.toLowerCase();
     const items = document.querySelectorAll('#panelAlertasTerreno .tarjeta-alerta-terreno');
-    
+
     items.forEach(item => {
         const contenidoTarjeta = item.innerText.toLowerCase();
-        
+
         if (contenidoTarjeta.includes(texto)) {
             item.style.display = 'flex';
         } else {
