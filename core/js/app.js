@@ -69,21 +69,31 @@ auth.onAuthStateChanged((user) => {
         
         usuariosRef.child(user.uid).once('value').then(snapshot => {
             const datosUsuario = snapshot.val();
-            if (datosUsuario && datosUsuario.faena) {
-                faenaUsuario = datosUsuario.faena;
-                const badgePerfil = document.querySelector('#perfil-analista .badge');
-                if(badgePerfil) badgePerfil.innerText = `Analista: ${faenaUsuario}`;
-                
-                const selector = document.getElementById('filtroFaena');
-                if(selector) {
-                    for(let i=0; i<selector.options.length; i++) {
-                        if(selector.options[i].value.includes(faenaUsuario)) {
-                            selector.selectedIndex = i;
-                            break;
-                        }
+            if (datosUsuario) {
+                // 1. Mostrar el nombre de pila del usuario registrado
+                if (datosUsuario.nombre) {
+                    const nombreNav = document.getElementById('nombre-usuario-nav');
+                    if (nombreNav) {
+                        // Extrae solo el primer nombre para no ocupar tanto espacio
+                        const primerNombre = datosUsuario.nombre.split(' ')[0];
+                        nombreNav.innerText = `Hola, ${primerNombre}`;
                     }
                 }
-                aplicarFiltroFaena();
+
+                // 2. Configurar el filtro de Faena automático
+                if (datosUsuario.faena) {
+                    faenaUsuario = datosUsuario.faena;
+                    const selector = document.getElementById('filtroFaena');
+                    if(selector) {
+                        for(let i=0; i<selector.options.length; i++) {
+                            if(selector.options[i].value.includes(faenaUsuario)) {
+                                selector.selectedIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                    aplicarFiltroFaena();
+                }
             }
         });
         reiniciarTemporizador(); 
@@ -270,21 +280,28 @@ function renderizarCatastro(activosData) {
                 </span>`;
             }
 
+           // CÓDIGO ACTUALIZADO: Tarjetas de Áreas más compactas y sin el "Total de equipos"
             htmlInyectado += `
-                <div class="alerta-item" onclick="entrarArea('${area.nombre}')" style="border-left: 4px solid ${colorBorde}; background: rgba(255,255,255,0.03); padding: 15px; margin-bottom: 12px; border-radius: 8px; cursor: pointer; transition: 0.2s;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <strong style="color: white; font-size: 1.1rem; display: flex; align-items: center;">
-                            <span class="material-symbols-outlined" style="font-size: 1.2rem; margin-right: 5px;">account_tree</span> 
+                <div class="alerta-item" onclick="entrarArea('${area.nombre}')" style="border-left: 4px solid ${colorBorde}; background: rgba(255,255,255,0.03); padding: 10px 12px; margin-bottom: 8px; border-radius: 6px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; justify-content: center; min-height: 60px;">
+                    
+                    <!-- Fila Superior: Icono, Nombre del Área y Badge de Terreno -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <strong style="color: white; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                            <span class="material-symbols-outlined" style="font-size: 1.1rem; color: #a1a1aa;">account_tree</span> 
                             ${area.nombre} 
-                            ${badgeTerrenoArea}
                         </strong>
-                        <span style="font-size: 0.8rem; color: var(--text-muted); background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px;">${area.total} equipos</span>
+                        ${badgeTerrenoArea}
                     </div>
-                    <div style="display: flex; gap: 10px; font-size: 0.85rem; margin-top: 10px;">
-                        ${area.rojos > 0 ? `<span style="color: var(--status-critical); font-weight: bold;">🔴 ${area.rojos}</span>` : ''}
-                        ${area.naranjas > 0 ? `<span style="color: var(--status-warning); font-weight: bold;">🟠 ${area.naranjas}</span>` : ''}
-                        ${area.amarillos > 0 ? `<span style="color: var(--status-alert); font-weight: bold;">🟡 ${area.amarillos}</span>` : ''}
-                        ${(area.rojos === 0 && area.naranjas === 0 && area.amarillos === 0) ? `<span style="color: var(--status-ok); font-weight: bold;">🟢 100% Normal</span>` : ''}
+
+                    <!-- Fila Inferior: Indicadores de Salud (Puntos de colores) -->
+                    <div style="display: flex; gap: 12px; font-size: 0.75rem; align-items: center;">
+                        ${area.rojos > 0 ? `<div style="display: flex; align-items: center; gap: 4px;"><div style="width: 8px; height: 8px; border-radius: 50%; background: var(--status-critical); box-shadow: 0 0 5px var(--status-critical);"></div> <span style="color: var(--status-critical); font-weight: bold;">${area.rojos}</span></div>` : ''}
+                        
+                        ${area.naranjas > 0 ? `<div style="display: flex; align-items: center; gap: 4px;"><div style="width: 8px; height: 8px; border-radius: 50%; background: var(--status-warning); box-shadow: 0 0 5px var(--status-warning);"></div> <span style="color: var(--status-warning); font-weight: bold;">${area.naranjas}</span></div>` : ''}
+                        
+                        ${area.amarillos > 0 ? `<div style="display: flex; align-items: center; gap: 4px;"><div style="width: 8px; height: 8px; border-radius: 50%; background: var(--status-alert); box-shadow: 0 0 5px var(--status-alert);"></div> <span style="color: var(--status-alert); font-weight: bold;">${area.amarillos}</span></div>` : ''}
+                        
+                        ${(area.rojos === 0 && area.naranjas === 0 && area.amarillos === 0) ? `<div style="display: flex; align-items: center; gap: 4px;"><div style="width: 8px; height: 8px; border-radius: 50%; background: var(--status-ok); box-shadow: 0 0 5px var(--status-ok);"></div> <span style="color: var(--status-ok); font-weight: bold;">100% Normal</span></div>` : ''}
                     </div>
                 </div>
             `;
@@ -1056,4 +1073,88 @@ window.actualizarVistaLightbox = function() {
     const displayArrows = lightboxEvidencias.length > 1 ? 'flex' : 'none';
     document.getElementById('btn-lb-prev').style.display = displayArrows;
     document.getElementById('btn-lb-next').style.display = displayArrows;
+};
+
+// =========================================================================
+// MÓDULO CIO: PLANIFICADOR INTELIGENTE DE RUTAS CBM
+// =========================================================================
+
+window.abrirPlanificadorCBM = function() {
+    document.getElementById('modalPlanificadorCBM').style.display = 'flex';
+    if(datosGlobalesActivos) renderizarTablaCBM();
+};
+
+window.cerrarPlanificadorCBM = function() {
+    document.getElementById('modalPlanificadorCBM').style.display = 'none';
+};
+
+window.renderizarTablaCBM = function() {
+    const tbody = document.getElementById('tablaRutasCBM');
+    const filtro = document.getElementById('filtroCBM').value;
+    tbody.innerHTML = '';
+    
+    if (!datosGlobalesActivos) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 20px;">Cargando catastro de Firebase...</td></tr>';
+        return;
+    }
+
+    const hoy = new Date();
+    let procesados = [];
+
+    Object.keys(datosGlobalesActivos).forEach(key => {
+        let eq = datosGlobalesActivos[key];
+        
+        if (!eq.ultima_medicion) {
+            eq.ultima_medicion = hoy.toISOString();
+            eq.frecuencia_dias = 30;
+            activosRef.child(key).update({ ultima_medicion: eq.ultima_medicion, frecuencia_dias: 30 });
+        }
+
+        const fUltima = new Date(eq.ultima_medicion);
+        const dias = Math.ceil(Math.abs(hoy - fUltima) / (1000 * 60 * 60 * 24)) - 1;
+        const limite = eq.frecuencia_dias || 30;
+        
+        let estado = dias >= limite ? '🔴' : (dias >= limite * 0.8 ? '🟡' : '🟢');
+        let bg = dias >= limite ? 'background: rgba(239, 68, 68, 0.05);' : '';
+        
+        procesados.push({ id_activo: key, ...eq, dias, limite, estado, bg });
+    });
+
+    procesados.sort((a, b) => (b.dias / b.limite) - (a.dias / a.limite));
+
+    procesados.forEach(eq => {
+        if (filtro === 'vencidos' && eq.estado !== '🔴') return;
+        if (filtro === 'seguimiento' && eq.limite === 30) return; 
+
+        const fFormato = new Date(eq.ultima_medicion).toLocaleDateString('es-CL');
+        
+        tbody.innerHTML += `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); ${eq.bg}">
+                <td style="padding: 15px 20px; font-size: 1.5rem; text-align: center;">${eq.estado}</td>
+                <td style="padding: 15px 20px; font-weight: bold; color: white;">${eq.nombre || eq.tag || eq.Tag || 'N/A'}</td>
+                <td style="padding: 15px 20px; color: #a1a1aa;">${eq.area || 'Planta'}</td>
+                <td style="padding: 15px 20px; font-family: monospace; font-size: 1rem;">${fFormato}</td>
+                <td style="padding: 15px 20px;"><span style="background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 12px; font-size: 0.8rem;">${eq.limite} días</span></td>
+                <td style="padding: 15px 20px; font-weight: bold; font-size: 1.1rem; color: ${eq.estado === '🔴' ? '#ef4444' : 'white'};">${eq.dias} días</td>
+                <td style="padding: 15px 20px; text-align: center; display: flex; gap: 10px; justify-content: center;">
+                    <button onclick="registrarMedicionCBM('${eq.id_activo}')" style="background: #22c55e; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold;">✅ Medido</button>
+                    <button onclick="cambiarCicloCBM('${eq.id_activo}', '${eq.nombre || eq.tag}')" style="background: #f59e0b; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold;">⏱️ Ciclo</button>
+                </td>
+            </tr>
+        `;
+    });
+};
+
+window.registrarMedicionCBM = function(id) {
+    if(confirm("¿Confirmas que el equipo fue medido? El contador volverá a cero.")) {
+        activosRef.child(id).update({ ultima_medicion: new Date().toISOString() })
+        .then(() => { alert("Ruta registrada."); renderizarTablaCBM(); });
+    }
+};
+
+window.cambiarCicloCBM = function(id, tag) {
+    let n = parseInt(prompt(`Nuevo ciclo en DÍAS para ${tag}\nEjemplo: 30, 15, 7`));
+    if (n && n > 0) {
+        activosRef.child(id).update({ frecuencia_dias: n }).then(() => renderizarTablaCBM());
+    }
 };
