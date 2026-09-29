@@ -81,6 +81,7 @@ window.actualizarPinesMapa = function(activos) {
 
     // Limpiamos los pines antiguos antes de dibujar
     capaMarcadores.clearLayers();
+    window.marcadoresLeaflet = {}; // Diccionario para guardar los pines reales
 
     // Iteramos sobre los activos (equipos)
     Object.keys(activos).forEach(key => {
@@ -114,6 +115,7 @@ window.actualizarPinesMapa = function(activos) {
 
         // 4. Agregar el marcador al mapa
         const marker = L.marker([lat, lng], { icon: iconoPersonalizado }).addTo(capaMarcadores);
+        window.marcadoresLeaflet[key] = marker; // Guardamos el pin usando su ID
 
         // 5. Popup informativo (opcional, al pasar el mouse por encima)
         marker.bindPopup(`
@@ -135,4 +137,79 @@ window.actualizarPinesMapa = function(activos) {
     setTimeout(() => {
         filtrarMapa(filtroActualMapa);
     }, 100);
+};
+
+// ==========================================
+// MÓDULO TERRENO: BUSCADOR GEOGRÁFICO
+// ==========================================
+window.ejecutarBusquedaMapa = function(event) {
+    // Solo ejecutamos la búsqueda cuando presionan "Enter"
+    if (event.key === 'Enter') {
+        const inputTexto = event.target.value.toLowerCase().trim();
+        if (!inputTexto || !datosGlobalesActivos) return;
+
+        let equipoEncontrado = null;
+        let idEncontrado = null;
+
+        // Buscamos coincidencia en el nombre o TAG
+        Object.keys(datosGlobalesActivos).forEach(key => {
+            const eq = datosGlobalesActivos[key];
+            const nombreEq = (eq.nombre || eq.tag || '').toLowerCase();
+            if (nombreEq.includes(inputTexto)) {
+                equipoEncontrado = eq;
+                idEncontrado = key;
+            }
+        });
+
+        if (equipoEncontrado) {
+            if (equipoEncontrado.latitud && equipoEncontrado.longitud) {
+                // Leaflet hace un vuelo cinemático a la ubicación
+                mapaGlobal.flyTo([equipoEncontrado.latitud, equipoEncontrado.longitud], 18, {
+                    animate: true,
+                    duration: 1.5
+                });
+                
+                // Abrimos el popup del equipo automáticamente después de volar
+                setTimeout(() => {
+                    if (window.marcadoresLeaflet && window.marcadoresLeaflet[idEncontrado]) {
+                        window.marcadoresLeaflet[idEncontrado].openPopup();
+                    }
+                }, 1500);
+            } else {
+                alert(`El equipo "${equipoEncontrado.nombre}" existe, pero aún no ha sido georreferenciado en el mapa.`);
+            }
+        } else {
+            alert(`No se encontró ningún equipo con el TAG "${inputTexto}".`);
+        }
+    }
+};
+
+// ==========================================
+// MÓDULO TERRENO: RASTREO GPS DEL TÉCNICO
+// ==========================================
+window.ubicarTecnicoGPS = function() {
+    if (!mapaGlobal) return;
+    
+    // Le pedimos al navegador del celular la ubicación exacta
+    mapaGlobal.locate({setView: true, maxZoom: 17});
+    
+    // Si encuentra la ubicación, dibujamos un punto azul parpadeante
+    mapaGlobal.on('locationfound', function(e) {
+        // Borramos el marcador GPS anterior si existe
+        if (window.marcadorGPS) mapaGlobal.removeLayer(window.marcadorGPS);
+        
+        const iconoGPS = L.divIcon({
+            className: 'gps-pin',
+            html: `<div style="background-color: #3b82f6; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 15px #3b82f6; animation: pulse 1.5s infinite;"></div>`,
+            iconSize: [14, 14]
+        });
+        
+        window.marcadorGPS = L.marker(e.latlng, {icon: iconoGPS}).addTo(mapaGlobal)
+            .bindPopup("<strong style='color:#3b82f6;'>Tú estás aquí</strong>").openPopup();
+    });
+    
+    // Si hay error (falta de permisos en el celular)
+    mapaGlobal.on('locationerror', function(e) {
+        alert("No pudimos acceder a tu GPS. Por favor, asegúrate de darle permisos de ubicación al navegador en tu celular.");
+    });
 };
