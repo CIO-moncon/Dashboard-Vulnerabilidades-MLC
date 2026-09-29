@@ -64,13 +64,21 @@
                     <hr style="border-color: rgba(255,255,255,0.1); margin-bottom: 15px;">
                     <h3 style="color: var(--text-main); margin-bottom: 15px; font-size: 1rem;"><span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">account_tree</span> Puntos de Medición</h3>
                     <div id="lista-componentes" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                    
                     <button id="btn-add-spot-oculto" onclick="agregarNuevoComponente()" style="display: none; width: 100%; margin-top: 15px; background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.3); color: white; padding: 10px; font-size: 0.8rem; border-radius: 6px; cursor: pointer;">
-    + Añadir Componente
-</button>
+                        + Añadir Componente
+                    </button>
                 </div>
 
                 <div id="panel-resumen-equipo" style="display: block;">
-                    <h3 style="color: var(--accent-color); font-size: 1.2rem; margin-bottom: 20px;">Resumen de Condición Global</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-color); font-size: 1.2rem; margin: 0;">Resumen de Condición Global</h3>
+                        <!-- BOTÓN PARA GEORREFERENCIAR EL EQUIPO EN EL MAPA -->
+                        <button onclick="iniciarEdicionGeorreferencia()" class="auth-only" style="display: none; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(59, 130, 246, 0.3)'" onmouseout="this.style.background='rgba(59, 130, 246, 0.15)'">
+                            <span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">location_on</span> Mover Pin en Mapa
+                        </button>
+                    </div>
+
                     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
                         <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--glass-border); text-align: center;">
                             <h4 style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 5px;">Total Puntos</h4>
@@ -85,6 +93,7 @@
                             <p id="resumen-alertas" style="font-size: 1.8rem; font-weight: bold; color: var(--status-warning);">0</p>
                         </div>
                     </div>
+                    
                     <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-color);">
                         <h4 style="color: white; font-size: 1rem; margin-bottom: 10px;">Diagnóstico de la Máquina</h4>
                         <p id="resumen-texto-estado" style="color: var(--text-main); font-size: 0.95rem; line-height: 1.5;">Cargando estado...</p>
@@ -108,7 +117,6 @@
                         <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
                             <h4 style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 10px;">Gestión e Historial</h4>
                             <div style="display: flex; flex-direction: column; gap: 10px;">
-                                <!-- NUEVO: Selector de Tipo de Inspección -->
                                 <div>
                                     <label style="font-size: 0.75rem; color: #60a5fa; font-weight: bold;">Motivo de Inspección</label>
                                     <select id="tipo-inspeccion" style="width: 100%; background: rgba(59, 130, 246, 0.1); color: white; border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 4px; padding: 5px; outline: none;">
@@ -148,11 +156,10 @@
                                 <option value="Rojo">🔴 Crítico (Rojo)</option>
                             </select>
                         </div>
-                        <!-- Envolvemos los botones de acción en este DIV protegido -->
-<div class="auth-only" style="display: none; flex: 2; gap: 10px;">
-    <button onclick="guardarDictamenComponente()" class="btn-primary" style="width: 100%; background: var(--status-ok); padding: 10px; font-weight: bold; border-radius: 8px;">Guardar Diagnóstico</button>
-    <button onclick="eliminarComponente()" class="btn-primary" style="background: var(--status-critical); padding: 10px; border-radius: 8px;"><span class="material-symbols-outlined" style="vertical-align: middle;">delete_forever</span></button>
-</div>
+                        <div class="auth-only" style="display: none; flex: 2; gap: 10px;">
+                            <button onclick="guardarDictamenComponente()" class="btn-primary" style="width: 100%; background: var(--status-ok); padding: 10px; font-weight: bold; border-radius: 8px;">Guardar Diagnóstico</button>
+                            <button onclick="eliminarComponente()" class="btn-primary" style="background: var(--status-critical); padding: 10px; border-radius: 8px;"><span class="material-symbols-outlined" style="vertical-align: middle;">delete_forever</span></button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -223,32 +230,25 @@
         </div>
 
         <div class="navbar-right">
-            <!-- Widget Clima Vallenar -->
             <button class="btn-clima" onclick="toggleClima()" id="btn-clima-live">
                 <span class="material-symbols-outlined" style="animation: spin 2s linear infinite;">sync</span> Cargando...
             </button>
 
-            <!-- Panel Flotante de Pronóstico 3 Días -->
             <div id="panel-clima-extendido" class="panel-pronostico">
                 <h3 style="color: white; font-size: 1rem; margin: 0 0 5px 0;">📍 Vallenar, Chile</h3>
                 <p style="color: var(--text-muted); font-size: 0.8rem; margin: 0;">Pronóstico Mina Los Colorados</p>
                 <div class="pronostico-grid" id="pronostico-dias"></div>
             </div>
             
-            <!-- NUEVO BOTÓN DE LOGIN PROFESIONAL -->
             <button id="btn-abrir-login" class="icon-btn" onclick="document.getElementById('modal-auth').style.display='flex'" style="border: 1px solid var(--accent-color); background: rgba(59, 130, 246, 0.15); color: #60a5fa; padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; display: flex; align-items: center; gap: 6px; cursor: pointer;">
                 <span class="material-symbols-outlined" style="font-size: 1rem;">login</span> Iniciar Sesión
             </button>
 
-            <!-- Perfil Analista y Botón de Salir -->
             <div id="perfil-analista" class="user-profile" style="display: none; align-items: center; gap: 12px;">
-                <!-- Etiqueta con el Nombre del Usuario -->
                 <div style="display: flex; align-items: center; gap: 6px; background: rgba(59, 130, 246, 0.15); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(59, 130, 246, 0.3);">
                     <span class="material-symbols-outlined" style="color: #60a5fa; font-size: 1.1rem;">account_circle</span>
                     <span id="nombre-usuario-nav" style="color: #60a5fa; font-size: 0.85rem; font-weight: bold;">Cargando...</span>
                 </div>
-                
-                <!-- Botón de Cerrar Sesión -->
                 <button onclick="cerrarSesion()" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.25)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.1)'" title="Cerrar Sesión Segura">
                     <span class="material-symbols-outlined" style="font-size: 1.1rem;">logout</span> Salir
                 </button>
@@ -263,12 +263,9 @@
 
         <!-- Columna Izquierda: Catastro -->
         <aside class="glass-panel panel-alertas" style="display: flex; flex-direction: column; height: 100%; overflow: hidden;">
-            
             <div class="panel-header">
                 <h2><span class="material-symbols-outlined">warning</span> Catastro de equipos críticos</h2>
             </div>
-
-            <!-- Buscador Catastro -->
             <div style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);">
                 <div style="position: relative; width: 100%;">
                     <span class="material-symbols-outlined" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.1rem;">search</span>
@@ -276,18 +273,15 @@
                 </div>
             </div>
             
-            <!-- Lista de equipos con scroll interno -->
             <div id="lista-alertas" class="lista-scroll" style="flex: 1; overflow-y: auto;">
                 <p class="text-muted" style="text-align:center; padding-top: 20px;">Esperando datos de la base de datos...</p>
             </div>
 
-            <!-- PIE DE PÁGINA: Botón Planificador (Fijo abajo) -->
             <div class="auth-only" style="display: none; padding: 15px; border-top: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2);">
                 <button onclick="abrirPlanificadorCBM()" style="width: 100%; background: #3b82f6; color: white; border: 1px solid rgba(255,255,255,0.2); padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);" onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
                     <span class="material-symbols-outlined" style="font-size: 1.1rem;">calendar_month</span> Programar Rutas CBM
                 </button>
             </div>
-
         </aside>
 
         <!-- Columna Central: Mapa -->
@@ -295,7 +289,6 @@
             <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <h2 style="margin: 0;"><span class="material-symbols-outlined">map</span> Visión Global</h2>
                 
-                <!-- Botones de Filtro del Mapa -->
                 <div style="display: flex; gap: 5px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 8px; border: 1px solid var(--glass-border);">
                     <button onclick="filtrarMapa('TODOS')" style="background: rgba(255,255,255,0.1); color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold;">Ver Todos</button>
                     <button onclick="filtrarMapa('Verde')" style="background: rgba(34,197,94,0.1); color: var(--status-ok); border: 1px solid rgba(34,197,94,0.3); padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold;">🟢 N</button>
@@ -304,12 +297,22 @@
                     <button onclick="filtrarMapa('Rojo')" style="background: rgba(239,68,68,0.1); color: var(--status-critical); border: 1px solid rgba(239,68,68,0.3); padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold;">🔴 C</button>
                 </div>
             </div>
+            
             <div id="mapa-gis" class="mapa-container"></div>
+            
+            <!-- Panel Flotante de Edición de Mapa -->
+            <div id="panel-edicion-mapa" style="display: none; position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 9999; background: rgba(9, 11, 16, 0.9); border: 2px solid #3b82f6; padding: 15px 25px; border-radius: 12px; flex-direction: column; align-items: center; gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.8);">
+                <span style="color: white; font-weight: bold; font-size: 1.1rem;">📍 Modo Georreferencia</span>
+                <span style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 5px;">Arrastra el pin rojo al lugar exacto del equipo.</span>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btn-guardar-coords" onclick="guardarCoordenadasMapa()" style="background: #22c55e; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#16a34a'" onmouseout="this.style.background='#22c55e'">Guardar Ubicación</button>
+                    <button onclick="cancelarEdicionMapa()" style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">Cancelar</button>
+                </div>
+            </div>
         </section>
 
         <!-- Columna Derecha: KPIs y Alertas -->
         <aside class="columna-derecha">
-            
             <div class="glass-panel panel-kpi">
                 <div class="panel-header" style="margin-bottom: 5px;">
                     <h2 style="font-size: 1rem;"><span class="material-symbols-outlined" style="font-size: 1.1rem; vertical-align: middle;">analytics</span> Estado ISO 20816-3</h2>
@@ -335,20 +338,16 @@
                     <h2 style="color: #ef4444; font-size: 1.1rem; margin: 0;"><span class="material-symbols-outlined" style="vertical-align: middle;">notifications_active</span> Alertas en Terreno</h2>
                     <span style="font-size: 0.65rem; color: #4ade80; border: 1px solid #22c55e; padding: 2px 6px; border-radius: 10px;">🟢 LIVE</span>
                 </div>
-
-                <!-- Buscador Alertas -->
                 <div style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.1);">
                     <div style="position: relative; width: 100%;">
                         <span class="material-symbols-outlined" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.1rem;">search</span>
                         <input type="search" id="input-buscar-alertas" onkeyup="filtrarAlertas()" placeholder="Buscar reporte o TAG..." style="width: 100%; padding: 6px 10px 6px 35px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 6px; color: white; box-sizing: border-box; outline: none; font-size: 0.85rem;">
                     </div>
                 </div>
-
                 <div id="panelAlertasTerreno" class="lista-scroll" style="display: flex; flex-direction: column; gap: 8px;">
                     <p class="text-muted" style="text-align: center;">Esperando reportes...</p>
                 </div>
             </div>
-
         </aside>
 
     </main>
@@ -365,7 +364,6 @@
     <!-- FASE 2: MODAL Y BOTÓN PLANIFICADOR CBM (SALA CIO)       -->
     <!-- ======================================================= -->
     
-    <!-- Ventana Modal Oculta -->
     <div id="modalPlanificadorCBM" class="modal-overlay" style="display: none; z-index: 99999;">
         <div class="modal-content glass-panel" style="width: 95%; max-width: 1300px; height: 90vh; padding: 0; display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
             
@@ -375,7 +373,6 @@
                 </h2>
                 
                 <div style="display: flex; gap: 15px; align-items: center;">
-                    <!-- NUEVO: Buscador de Rutas -->
                     <div style="position: relative;">
                         <span class="material-symbols-outlined" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.1rem;">search</span>
                         <input type="search" id="input-buscar-rutas" onkeyup="renderizarTablaCBM()" placeholder="Buscar equipo..." style="padding: 8px 10px 8px 35px; background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); border-radius: 6px; color: white; outline: none; font-size: 0.9rem; transition: 0.2s;">

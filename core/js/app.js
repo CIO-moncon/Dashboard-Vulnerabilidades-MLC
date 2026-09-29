@@ -1357,3 +1357,135 @@ window.filtrarAlertas = function() {
         }
     });
 };
+
+// =========================================================================
+// MÓDULO CIO: EDICIÓN INTERACTIVA DE MAPA (LEAFLET)
+// =========================================================================
+
+let marcadorEdicion = null; // Variable para guardar el pin temporal
+
+// NUEVA FUNCIÓN: Teletransporta el pin a donde el usuario hace clic
+window.manejarClickMapa = function(e) {
+    if (marcadorEdicion) {
+        marcadorEdicion.setLatLng(e.latlng); // Mueve el pin a las coordenadas del clic
+    }
+};
+
+window.iniciarEdicionGeorreferencia = function() {
+    const usuarioReal = firebase.auth().currentUser;
+    if (!usuarioReal) {
+        alert("🔒 Acceso denegado.");
+        return;
+    }
+
+    if (!activoSeleccionadoActual) {
+        alert("⚠️ Error: No hay equipo seleccionado.");
+        return;
+    }
+
+    // 1. Ocultar el modal para ver el mapa
+    document.getElementById('modal-evidencia').style.display = 'none';
+
+    // 2. Mostrar el panel de Guardar/Cancelar y cambiar su texto
+    const panel = document.getElementById('panel-edicion-mapa');
+    if(panel) {
+        panel.style.display = 'flex';
+        // Ajustamos el texto dinámicamente para que diga "haz clic"
+        const subtitulo = panel.querySelector('span:nth-child(2)');
+        if (subtitulo) subtitulo.innerText = "Haz clic en cualquier punto del mapa para ubicar el equipo.";
+    }
+
+    // 3. Coordenadas iniciales (Usa las del equipo o las del centro de MLC)
+    let lat = activoSeleccionadoActual.latitud ? parseFloat(activoSeleccionadoActual.latitud) : -28.298;
+    let lng = activoSeleccionadoActual.longitud ? parseFloat(activoSeleccionadoActual.longitud) : -70.785; 
+
+    // 4. Capturar el mapa de Leaflet
+    const mapaReferencia = window.mapa; 
+    if (!mapaReferencia) {
+        alert("❌ Error: El mapa no está cargado correctamente.");
+        return;
+    }
+
+    // 5. Crear el Pin (Aún se puede arrastrar por si acaso)
+    if (marcadorEdicion) {
+        mapaReferencia.removeLayer(marcadorEdicion);
+    }
+    
+    marcadorEdicion = L.marker([lat, lng], {
+        draggable: true,
+        title: "Haz clic en el mapa para ubicarme"
+    }).addTo(mapaReferencia);
+
+    mapaReferencia.setView([lat, lng], 17); // Zoom de cerca
+
+    // 6. ¡LA MAGIA!: Escuchar los clics del mouse en el mapa
+    mapaReferencia.on('click', window.manejarClickMapa);
+    
+    // Cambiamos el cursor a una mirilla para mejor experiencia de usuario
+    document.getElementById('mapa-gis').style.cursor = 'crosshair'; 
+};
+
+window.guardarCoordenadasMapa = function() {
+    if (!marcadorEdicion || !activoSeleccionadoActual) return;
+
+    const posicion = marcadorEdicion.getLatLng();
+    const btnGuardar = document.getElementById('btn-guardar-coords');
+    btnGuardar.innerHTML = "Guardando...";
+
+    activosRef.child(activoSeleccionadoActual.id_activo).update({
+        latitud: posicion.lat,
+        longitud: posicion.lng
+    }).then(() => {
+        alert("✅ Coordenadas guardadas con éxito.");
+        
+        // Actualizar en memoria local
+        if (datosGlobalesActivos[activoSeleccionadoActual.id_activo]) {
+            datosGlobalesActivos[activoSeleccionadoActual.id_activo].latitud = posicion.lat;
+            datosGlobalesActivos[activoSeleccionadoActual.id_activo].longitud = posicion.lng;
+        }
+        
+        window.limpiarModoEdicionMapa();
+        
+        // Volver a abrir el modal
+        window.abrirModalEvidencia(activoSeleccionadoActual.id_activo);
+        
+        // Refrescar los pines del mapa automáticamente
+        if (typeof window.actualizarPinesMapa === 'function') {
+            window.actualizarPinesMapa(datosGlobalesActivos);
+        }
+
+    }).catch(e => {
+        alert("Error: " + e.message);
+        btnGuardar.innerHTML = "Guardar Ubicación";
+    });
+};
+
+window.cancelarEdicionMapa = function() {
+    window.limpiarModoEdicionMapa();
+    // Volver al expediente del equipo
+    if (activoSeleccionadoActual && activoSeleccionadoActual.id_activo) {
+        window.abrirModalEvidencia(activoSeleccionadoActual.id_activo);
+    }
+};
+
+window.limpiarModoEdicionMapa = function() {
+    const mapaReferencia = window.mapa;
+    
+    if (mapaReferencia) {
+        // MUY IMPORTANTE: Apagamos la escucha de clics para que el mapa vuelva a la normalidad
+        mapaReferencia.off('click', window.manejarClickMapa);
+        // Restauramos el cursor estándar
+        document.getElementById('mapa-gis').style.cursor = ''; 
+    }
+
+    if (marcadorEdicion && mapaReferencia) {
+        mapaReferencia.removeLayer(marcadorEdicion);
+    }
+    marcadorEdicion = null;
+    
+    const panel = document.getElementById('panel-edicion-mapa');
+    if(panel) panel.style.display = 'none';
+    
+    const btnGuardar = document.getElementById('btn-guardar-coords');
+    if(btnGuardar) btnGuardar.innerHTML = "Guardar Ubicación";
+};
