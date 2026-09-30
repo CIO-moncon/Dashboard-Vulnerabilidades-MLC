@@ -172,7 +172,26 @@ window.cerrarSesion = function() {
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     activosRef.on('value', (snapshot) => {
-        datosGlobalesActivos = snapshot.val();
+        const rawActivos = snapshot.val();
+        
+        // --- PARCHE DE TOLERANCIA GPS PARA ESCRITORIO ---
+        if (rawActivos) {
+            Object.keys(rawActivos).forEach(key => {
+                let eq = rawActivos[key];
+                // Intentamos capturar la latitud y longitud sin importar cómo se llamen en Firebase
+                const rawLat = eq.latitud ?? eq.Latitud ?? eq.lat ?? eq.Lat ?? eq.latitude;
+                const rawLng = eq.longitud ?? eq.Longitud ?? eq.lng ?? eq.Lng ?? eq.lon ?? eq.longitude;
+                
+                // Normalizamos forzosamente a variables que Leaflet entienda
+                if (rawLat !== undefined && rawLng !== undefined) {
+                    eq.latitud = parseFloat(rawLat);
+                    eq.longitud = parseFloat(rawLng);
+                }
+            });
+        }
+        // -------------------------------------------------
+
+        datosGlobalesActivos = rawActivos;
         aplicarFiltroFaena();
     });
     
@@ -180,9 +199,9 @@ document.addEventListener('DOMContentLoaded', () => {
         datosGlobalesAlertas = snapshot.val();
         renderizarPanelAlertasActivas(datosGlobalesAlertas);
         
-        if (typeof actualizarPinesMapa === 'function' && datosGlobalesAlertas) {
-            const arrAlertas = Object.keys(datosGlobalesAlertas).map(k => ({ id: k, ...datosGlobalesAlertas[k] }));
-            actualizarPinesMapa(arrAlertas);
+        // Pasamos el catastro global al mapa, porque ahí están las coordenadas
+        if (typeof actualizarPinesMapa === 'function' && datosGlobalesActivos) {
+            actualizarPinesMapa(datosGlobalesActivos);
         }
 
         if (document.getElementById('panel-terreno') && document.getElementById('panel-terreno').style.display === 'block') {
@@ -958,7 +977,14 @@ function renderizarPanelAlertasActivas(datosAlertas) {
 
         const fechaObj = new Date(alerta.timestamp);
         const horaStr = fechaObj.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-        const faenaCorta = alerta.faena ? alerta.faena.split(',')[0] : 'Des';
+        
+        // Búsqueda inteligente de la faena cruzando con el catálogo
+        let faenaCompleta = alerta.faena;
+        if (!faenaCompleta && datosGlobalesActivos) {
+            const eqAsociado = Object.values(datosGlobalesActivos).find(e => (e.tag || e.nombre || '').toUpperCase() === (alerta.tag || '').toUpperCase());
+            if (eqAsociado) faenaCompleta = eqAsociado.siteId || eqAsociado.faena;
+        }
+        const faenaCorta = faenaCompleta ? faenaCompleta.split(',')[0] : 'Ubicación Desconocida';
 
         const cardHTML = `
             <div class="tarjeta-alerta-terreno sev-${alerta.severidad}" style="padding: 10px 12px; cursor: pointer; display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 10px;" onclick="gestionarAlertaRapida('${alerta.id}', '${alerta.tag}')" title="Clic para ver detalle">

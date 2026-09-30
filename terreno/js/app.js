@@ -450,8 +450,9 @@ window.inicializarMapaPWA = function() {
         mapaPWA = L.map('mapa-gps-pwa').setView([-28.298, -70.785], 14);
         
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            maxZoom: 19
-        }).addTo(mapaPWA);
+    maxZoom: 20,          // Cuánto puede acercarse el usuario con el mouse/dedos
+    maxNativeZoom: 17     // El límite de fotos reales. ¡Pasado esto, Leaflet estira la imagen!
+}).addTo(mapaPWA);    // (O .addTo(mapaPWA) en el caso del celular)
 
         setTimeout(() => { 
             mapaPWA.invalidateSize(); 

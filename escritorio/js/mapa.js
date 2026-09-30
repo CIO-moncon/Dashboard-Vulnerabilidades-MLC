@@ -19,9 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Capa de vista satelital
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri',
-        maxZoom: 19
-    }).addTo(mapaGlobal);
+    maxZoom: 20,          // Cuánto puede acercarse el usuario con el mouse/dedos
+    maxNativeZoom: 17     // El límite de fotos reales. ¡Pasado esto, Leaflet estira la imagen!
+}).addTo(window.mapa);    // (O .addTo(mapaPWA) en el caso del celular)
 
     // Capa dedicada para los pines
     capaMarcadores = L.layerGroup().addTo(mapaGlobal);
