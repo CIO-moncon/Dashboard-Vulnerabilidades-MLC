@@ -526,7 +526,7 @@ window.abrirModalEvidencia = function(idActivo) {
     renderizarListaComponentes();
     document.getElementById('modal-evidencia').style.display = 'flex';
 
-    // === REVISIÓN FINAL DE SEGURIDAD VISUAL ===
+// === REVISIÓN FINAL DE SEGURIDAD VISUAL ===
     setTimeout(() => {
         const usuarioReal = firebase.auth().currentUser;
         const btnOculto = document.getElementById('btn-add-spot-oculto');
@@ -543,7 +543,11 @@ window.abrirModalEvidencia = function(idActivo) {
             btn.style.display = usuarioReal ? 'flex' : 'none';
         });
     }, 100);
+
+    // 👇 AQUÍ VA LA LÍNEA NUEVA PARA LA BITÁCORA 👇
+    setTimeout(() => { window.renderizarTimelineGlobal(); }, 200);
 };
+// <-- AQUÍ TERMINA LA FUNCIÓN
 
 window.seleccionarComponente = function(compID) {
     componenteSeleccionado = compID;
@@ -578,6 +582,9 @@ window.verResumen = function() {
     document.getElementById('panel-resumen-equipo').style.display = 'block';
     componenteSeleccionado = null;
     renderizarListaComponentes(); 
+    
+    // Llamamos a la bitácora global
+    window.renderizarTimelineGlobal();
 };
 
 window.verTerreno = function() {
@@ -589,7 +596,7 @@ window.verTerreno = function() {
     renderizarAlertasTerreno(); 
 };
 
-function renderizarAlertasTerreno() {
+window.renderizarAlertasTerreno = function() {
     const contenedor = document.getElementById('historial-terreno-lista');
     
     if (!document.getElementById('modal-lightbox')) {
@@ -597,7 +604,7 @@ function renderizarAlertasTerreno() {
     }
 
     if (!datosGlobalesAlertas) {
-        contenedor.innerHTML = '<p style="color: var(--text-muted); font-style: italic;">No hay conexión con la base de datos de terreno.</p>';
+        contenedor.innerHTML = '<p style="color: var(--text-muted); font-style: italic; padding: 20px;">No hay conexión con la base de datos de terreno.</p>';
         return;
     }
 
@@ -611,47 +618,59 @@ function renderizarAlertasTerreno() {
         }
     });
 
+    // Ordenar de más reciente a más antiguo
     alertasDelEquipo.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); 
 
     if (alertasDelEquipo.length === 0) {
-        contenedor.innerHTML = '<p style="color: var(--text-muted); font-style: italic;">No hay reportes de terreno enviados para este equipo.</p>';
+        contenedor.innerHTML = '<div style="text-align: center; padding: 40px 20px; background: rgba(0,0,0,0.2); border-radius: 12px; margin-top: 20px;"><span class="material-symbols-outlined" style="font-size: 3rem; color: #3f3f46;">history_toggle_off</span><p style="color: var(--text-muted); margin-top: 10px;">No hay historial de inspecciones de terreno para este equipo.</p></div>';
         return;
     }
 
-    let html = '';
+    // Iniciamos el contenedor de la Línea de Tiempo
+    let html = '<div class="timeline-container">';
+    
     alertasDelEquipo.forEach(al => {
-        let colorSev = '#22c55e'; 
-        if(al.severidad === 'Rojo') colorSev = '#ef4444';
-        if(al.severidad === 'Naranja') colorSev = '#f97316';
-        if(al.severidad === 'Amarillo') colorSev = '#eab308';
+        // Colores según severidad
+        let colorSev = '#22c55e'; // Verde
+        let bgBadge = 'rgba(34, 197, 94, 0.15)';
+        if(al.severidad === 'Rojo') { colorSev = '#ef4444'; bgBadge = 'rgba(239, 68, 68, 0.15)'; }
+        if(al.severidad === 'Naranja') { colorSev = '#f97316'; bgBadge = 'rgba(249, 115, 22, 0.15)'; }
+        if(al.severidad === 'Amarillo') { colorSev = '#eab308'; bgBadge = 'rgba(234, 179, 8, 0.15)'; }
 
         let detalleFormateado = (al.detalle || '').replace(/\n/g, '<br>');
+        
+        // Formateo elegante de fecha
+        const fechaObj = new Date(al.timestamp);
+        const fechaElegante = fechaObj.toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' }) + ' a las ' + fechaObj.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
 
         html += `
-            <div style="background: rgba(0,0,0,0.3); border-left: 4px solid ${colorSev}; padding: 15px; border-radius: 6px; position: relative;">
-                
-                ${usuarioActual ? `
-                <button onclick="eliminarAlertaTerreno('${al.id_alerta}')" style="position: absolute; top: 10px; right: 10px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; transition: 0.2s;" onmouseover="this.style.color='var(--status-critical)'" onmouseout="this.style.color='var(--text-muted)'" title="Eliminar todo el reporte">
-                    <span class="material-symbols-outlined" style="font-size: 1.2rem;">delete</span>
-                </button>
-                ` : ''}
+            <div class="timeline-item">
+                <div class="timeline-dot" style="background-color: ${colorSev}; box-shadow: 0 0 10px ${colorSev};"></div>
+                <div class="timeline-content">
+                    
+                    ${usuarioActual ? `
+                    <button onclick="eliminarAlertaTerreno('${al.id_alerta}')" style="position: absolute; top: 12px; right: 12px; background: transparent; border: none; color: #52525b; cursor: pointer; transition: 0.2s;" onmouseover="this.style.color='var(--status-critical)'" onmouseout="this.style.color='#52525b'" title="Eliminar todo el reporte">
+                        <span class="material-symbols-outlined" style="font-size: 1.2rem;">delete</span>
+                    </button>
+                    ` : ''}
 
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; padding-right: 35px;">
-                    <span style="color: var(--text-muted); font-size: 0.8rem;">📅 ${new Date(al.timestamp).toLocaleString('es-CL')} | Inspector</span>
-                    <span style="background: rgba(255,255,255,0.1); color: ${colorSev}; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">
-                        ${al.severidad.toUpperCase()}
-                    </span>
-                </div>
-                
-                <p style="color: white; font-size: 0.95rem; margin-bottom: 15px; line-height: 1.5;">${detalleFormateado}</p>
-                
-                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-right: 30px;">
+                        <span style="color: #94a3b8; font-size: 0.85rem; font-family: 'Roboto Mono', monospace;">
+                            <span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: text-bottom; margin-right: 4px;">calendar_month</span>${fechaElegante}
+                        </span>
+                        <span style="background: ${bgBadge}; color: ${colorSev}; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; border: 1px solid ${colorSev};">
+                            ${al.severidad.toUpperCase()}
+                        </span>
+                    </div>
+                    
+                    <p style="color: #e2e8f0; font-size: 0.95rem; line-height: 1.6; margin-bottom: 15px; font-weight: 300;">${detalleFormateado}</p>
+                    
+                    <div style="display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; margin-top: 10px;">
         `;
 
+        // INYECCIÓN DE GALERÍA (FOTOS Y VIDEOS)
         let dataEvidencias = al.evidencias || al.evidencia || [];
-        if (!Array.isArray(dataEvidencias) && dataEvidencias) {
-            dataEvidencias = [dataEvidencias];
-        }
+        if (!Array.isArray(dataEvidencias) && dataEvidencias) dataEvidencias = [dataEvidencias];
 
         if (dataEvidencias.length > 0) {
             dataEvidencias.forEach((ev, index) => {
@@ -662,24 +681,22 @@ function renderizarAlertasTerreno() {
                 else if (ev.data) { urlReal = ev.data; esVideo = ev.tipo === 'video'; } 
                 else if (ev.url || ev.base64) { urlReal = ev.url || ev.base64; }
 
-                if (urlReal && (urlReal.includes('data:video') || urlReal.toLowerCase().includes('.mp4'))) {
-                    esVideo = true;
-                }
+                if (urlReal && (urlReal.includes('data:video') || urlReal.toLowerCase().includes('.mp4'))) esVideo = true;
 
                 if (urlReal) {
                     if (esVideo) {
                         html += `
-                            <div onclick="abrirLightbox('${al.id_alerta}', ${index})" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Ver Video">
-                                <div style="display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.8); border: 1px solid rgba(239, 68, 68, 0.5); padding: 4px; border-radius: 6px; height: 60px; width: 80px;">
-                                    <span class="material-symbols-outlined" style="color: #f87171; font-size: 2rem;">play_circle</span>
+                            <div onclick="abrirLightbox('${al.id_alerta}', ${index})" style="cursor: pointer; transition: transform 0.2s; position: relative;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Reproducir Video">
+                                <div style="display: flex; align-items: center; justify-content: center; background: #18181b; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; height: 70px; width: 100px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                                    <span class="material-symbols-outlined" style="color: #ef4444; font-size: 2.5rem;">play_circle</span>
                                 </div>
                             </div>
                         `;
                     } else {
                         html += `
                             <div onclick="abrirLightbox('${al.id_alerta}', ${index})" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Ampliar Imagen">
-                                <div style="display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(59, 130, 246, 0.3); padding: 4px; border-radius: 6px; height: 60px; width: 60px; overflow: hidden;">
-                                    <img src="${urlReal}" style="height: 100%; width: 100%; object-fit: cover; border-radius: 4px;">
+                                <div style="display: flex; align-items: center; justify-content: center; background: #18181b; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; height: 70px; width: 70px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                                    <img src="${urlReal}" style="height: 100%; width: 100%; object-fit: cover;">
                                 </div>
                             </div>
                         `;
@@ -689,21 +706,21 @@ function renderizarAlertasTerreno() {
 
             if (usuarioActual) {
                 html += `
-                    <button onclick="borrarSoloFoto('${al.id_alerta}')" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 12px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; align-self: center; margin-left: auto;" title="Borrar toda la evidencia adjunta">
-                        <span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">delete_sweep</span> Borrar Adjuntos
+                    <button onclick="borrarSoloFoto('${al.id_alerta}')" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px dashed rgba(239, 68, 68, 0.3); padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; align-self: center; margin-left: auto; transition: 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.2)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.1)'" title="Borrar adjuntos de este reporte">
+                        <span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">delete_sweep</span> Quitar Adjuntos
                     </button>
                 `;
             }
-        } else {
-            html += `<span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">Sin evidencia adjunta</span>`;
         }
-
+        
         html += `
-                </div>
-            </div>
+                    </div> <!-- Cierre contenedor galería -->
+                </div> <!-- Cierre timeline-content -->
+            </div> <!-- Cierre timeline-item -->
         `;
     });
     
+    html += '</div>'; // Cierre timeline-container
     contenedor.innerHTML = html;
 }
 
@@ -1514,4 +1531,166 @@ window.limpiarModoEdicionMapa = function() {
     
     const btnGuardar = document.getElementById('btn-guardar-coords');
     if(btnGuardar) btnGuardar.innerHTML = "Guardar Ubicación";
+};
+
+// =========================================================================
+// MÓDULO CIO: TIMELINE GLOBAL MAESTRO (TERRENO + ANALISTA)
+// =========================================================================
+window.renderizarTimelineGlobal = function() {
+    let panelResumen = document.getElementById('panel-resumen-equipo');
+    if (!panelResumen) return;
+
+    // 1. Buscamos o creamos el contenedor de la bitácora dentro del resumen
+    let contenedorTL = document.getElementById('historial-global-lista');
+    if (!contenedorTL) {
+        contenedorTL = document.createElement('div');
+        contenedorTL.id = 'historial-global-lista';
+        contenedorTL.style.marginTop = '30px';
+        contenedorTL.style.borderTop = '1px solid rgba(255,255,255,0.1)';
+        contenedorTL.style.paddingTop = '20px';
+        panelResumen.appendChild(contenedorTL);
+    }
+
+    const nombreEquipo = activoSeleccionadoActual.nombre;
+    let eventosGlobales = [];
+
+    // 2. EXTRAER ALERTAS DE TERRENO
+    if (datosGlobalesAlertas) {
+        Object.keys(datosGlobalesAlertas).forEach(key => {
+            const al = datosGlobalesAlertas[key];
+            if (al.tag && al.tag.toUpperCase() === (nombreEquipo || '').toUpperCase()) {
+                eventosGlobales.push({
+                    tipo_origen: 'TERRENO',
+                    timestamp: al.timestamp,
+                    severidad: al.severidad,
+                    detalle: al.detalle,
+                    evidencias: al.evidencias || al.evidencia,
+                    id: key,
+                    autor: 'Inspector',
+                    icono: 'engineering',
+                    color_origen: '#3b82f6', // Azul
+                    bg_origen: 'rgba(59, 130, 246, 0.15)'
+                });
+            }
+        });
+    }
+
+    // 3. EXTRAER HISTORIAL DEL ANALISTA (COMPONENTES)
+    if (activoSeleccionadoActual.componentes) {
+        Object.values(activoSeleccionadoActual.componentes).forEach(comp => {
+            if (comp.historial) {
+                Object.keys(comp.historial).forEach(hKey => {
+                    const h = comp.historial[hKey];
+                    
+                    // Formatear texto del analista con notas y SAP
+                    let textoAnalista = `<strong style="color:white;">Componente: ${comp.nombre}</strong><br>`;
+                    if(h.tipo_evento) textoAnalista += `<span style="color:#a1a1aa; font-size:0.8rem;">Modo: ${h.tipo_evento}</span><br>`;
+                    if(h.avisos_sap) textoAnalista += `<span style="color:#fbbf24; font-size:0.8rem; font-weight:bold;">SAP: ${h.avisos_sap}</span><br>`;
+                    if(h.analisis_ia) textoAnalista += `<br><span style="color:#e2e8f0;">${h.analisis_ia.replace(/\n/g, '<br>')}</span>`;
+                    else textoAnalista += `<br><span style="color:#e2e8f0; font-style:italic;">Cambio de estado sin notas.</span>`;
+
+                    eventosGlobales.push({
+                        tipo_origen: 'ANALISTA',
+                        timestamp: h.timestamp_registro || h.ultima_medicion || new Date().toISOString(),
+                        severidad: h.estado || 'Verde',
+                        detalle: textoAnalista,
+                        evidencias: null, 
+                        id: hKey,
+                        autor: h.ultimo_editor || 'Analista CIO',
+                        icono: 'monitoring',
+                        color_origen: '#a855f7', // Morado Analista
+                        bg_origen: 'rgba(168, 85, 247, 0.15)'
+                    });
+                });
+            }
+        });
+    }
+
+    // 4. ORDENAR TODO (Mezclando Terreno y Analista cronológicamente)
+    eventosGlobales.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    // 5. RENDERIZAR
+    contenedorTL.innerHTML = '<h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;"><span class="material-symbols-outlined" style="color: var(--accent-color);">timeline</span> Bitácora Maestra del Equipo</h3>';
+
+    if (eventosGlobales.length === 0) {
+        contenedorTL.innerHTML += '<p style="color: var(--text-muted); font-style: italic;">No hay historial registrado (ni de analistas ni de terreno) para este equipo.</p>';
+        return;
+    }
+
+    let html = '<div class="timeline-container">';
+    
+    eventosGlobales.forEach(ev => {
+        let colorSev = '#22c55e'; 
+        let bgBadge = 'rgba(34, 197, 94, 0.15)';
+        if(ev.severidad === 'Rojo') { colorSev = '#ef4444'; bgBadge = 'rgba(239, 68, 68, 0.15)'; }
+        if(ev.severidad === 'Naranja') { colorSev = '#f97316'; bgBadge = 'rgba(249, 115, 22, 0.15)'; }
+        if(ev.severidad === 'Amarillo') { colorSev = '#eab308'; bgBadge = 'rgba(234, 179, 8, 0.15)'; }
+
+        let detalleFormateado = (ev.detalle || '').replace(/\n/g, '<br>');
+        const fechaObj = new Date(ev.timestamp);
+        const fechaElegante = fechaObj.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' }) + ' a las ' + fechaObj.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+
+        html += `
+            <div class="timeline-item">
+                <div class="timeline-dot" style="background-color: ${colorSev}; box-shadow: 0 0 10px ${colorSev}; border-color: #0f172a;"></div>
+                <div class="timeline-content">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="background: ${ev.bg_origen}; color: ${ev.color_origen}; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; border: 1px solid ${ev.color_origen}; display: flex; align-items: center; gap: 4px;">
+                                <span class="material-symbols-outlined" style="font-size: 1rem;">${ev.icono}</span>
+                                ${ev.tipo_origen}
+                            </span>
+                            <span style="color: #94a3b8; font-size: 0.8rem; font-family: 'Roboto Mono', monospace;">
+                                ${fechaElegante} | ${ev.autor}
+                            </span>
+                        </div>
+                        <span style="background: ${bgBadge}; color: ${colorSev}; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; border: 1px solid ${colorSev};">
+                            ${ev.severidad.toUpperCase()}
+                        </span>
+                    </div>
+                    
+                    <p style="color: #e2e8f0; font-size: 0.95rem; line-height: 1.6; margin-bottom: 5px; font-weight: 300;">${detalleFormateado}</p>
+        `;
+
+        // SI ES DE TERRENO Y TIENE FOTOS, MOSTRARLAS
+        if (ev.tipo_origen === 'TERRENO' && ev.evidencias) {
+            html += `<div style="display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; margin-top: 15px;">`;
+            let dataEvidencias = ev.evidencias;
+            if (!Array.isArray(dataEvidencias)) dataEvidencias = [dataEvidencias];
+
+            dataEvidencias.forEach((media, index) => {
+                let urlReal = (typeof media === 'string') ? media : (media.data || media.url || media.base64);
+                let esVideo = urlReal && (urlReal.includes('data:video') || urlReal.toLowerCase().includes('.mp4')) || (media.tipo === 'video');
+
+                if (urlReal) {
+                    if (esVideo) {
+                        html += `
+                            <div onclick="abrirLightbox('${ev.id}', ${index})" style="cursor: pointer; transition: 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                                <div style="display: flex; align-items: center; justify-content: center; background: #18181b; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; height: 60px; width: 80px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                                    <span class="material-symbols-outlined" style="color: #ef4444; font-size: 2rem;">play_circle</span>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <div onclick="abrirLightbox('${ev.id}', ${index})" style="cursor: pointer; transition: 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                                <div style="display: flex; align-items: center; justify-content: center; background: #18181b; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; height: 60px; width: 60px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                                    <img src="${urlReal}" style="height: 100%; width: 100%; object-fit: cover;">
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            });
+            html += `</div>`;
+        }
+        
+        html += `
+                </div> 
+            </div> 
+        `;
+    });
+    
+    html += '</div>';
+    contenedorTL.innerHTML += html;
 };

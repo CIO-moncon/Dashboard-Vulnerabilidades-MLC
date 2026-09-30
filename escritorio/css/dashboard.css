@@ -259,3 +259,68 @@ body {
     justify-content: space-between;
     align-items: center;
 }
+
+/* ==========================================
+   LÍNEA DE TIEMPO HISTÓRICA (TIMELINE) - CIO
+   ========================================== */
+.timeline-container {
+    position: relative;
+    padding: 10px 0 30px 0;
+    margin-top: 10px;
+}
+
+/* La línea vertical central/izquierda */
+.timeline-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 20px;
+    width: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 25px;
+    padding-left: 55px; /* Espacio para que el punto y la línea no tapen el contenido */
+}
+
+/* El punto de color en la línea de tiempo */
+.timeline-dot {
+    position: absolute;
+    left: 13px; /* Centrado sobre la línea vertical */
+    top: 15px;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    border: 3px solid #1e293b; /* Color del fondo de tu modal para dar efecto de corte */
+    z-index: 2;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+.timeline-content {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px;
+    padding: 16px;
+    position: relative;
+    transition: 0.2s;
+}
+
+.timeline-content:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+}
+
+/* Flechita apuntando a la línea */
+.timeline-content::before {
+    content: '';
+    position: absolute;
+    top: 18px;
+    left: -7px;
+    border-style: solid;
+    border-width: 7px 7px 7px 0;
+    border-color: transparent rgba(255,255,255,0.05) transparent transparent;
+}
