@@ -121,3 +121,82 @@ select { font-weight: 600; color: var(--text-main); }
 .btn-transmitir:active { transform: scale(0.98); }
 
 .toast-ok { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(22, 163, 74, 0.92); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 12px 24px; border-radius: 9px; font-weight: bold; font-size: 0.85rem; box-shadow: 0 12px 30px rgba(0,0,0,0.7); z-index: 9999; text-align: center; max-width: 90vw; }
+
+/* ==========================================
+   PWA: ESTILOS WIZARD Y BOTONES GIGANTES
+   ========================================== */
+.pwa-body { padding-bottom: 70px; background: var(--bg-main); transition: 0.3s; }
+.pwa-header { display: flex; justify-content: space-between; align-items: center; padding: 15px; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--glass-border); }
+.wizard-step { display: none; animation: fadeInRight 0.3s ease; padding: 15px; }
+.wizard-step.active { display: block; }
+
+.fat-input-group { margin-bottom: 20px; background: var(--glass-card); padding: 15px; border-radius: 12px; border: 1px solid var(--glass-border); }
+.fat-input-group label { display: block; font-weight: bold; margin-bottom: 10px; color: var(--text-main); font-size: 0.95rem; }
+.fat-select, .fat-input, .fat-textarea { width: 100%; padding: 15px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); color: white; border-radius: 8px; font-size: 1rem; outline: none; }
+.fat-btn { width: 100%; padding: 16px; border: none; border-radius: 10px; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-next { background: var(--accent-color); color: white; }
+.btn-back { background: transparent; color: var(--text-muted); border: 1px solid var(--glass-border); }
+.step-nav-buttons { display: flex; gap: 10px; margin-top: 20px; }
+
+/* Chips y Severidad */
+.chips-container { display: flex; flex-wrap: wrap; gap: 10px; }
+.chip { padding: 12px 18px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 20px; color: var(--text-muted); font-size: 0.95rem; cursor: pointer; transition: 0.2s; }
+.chip.active { background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; color: white; }
+.sev-selector-fat { display: flex; flex-direction: column; gap: 10px; }
+.sev-fat-btn { padding: 16px; text-align: center; border-radius: 10px; border: 2px solid transparent; background: rgba(0,0,0,0.3); color: var(--text-muted); font-weight: bold; font-size: 1.1rem; }
+.sev-fat-btn.sel-verde { background: rgba(34,197,94,0.15); border-color: #22c55e; color: #4ade80; }
+.sev-fat-btn.sel-amarillo { background: rgba(234,179,8,0.15); border-color: #eab308; color: #fde047; }
+.sev-fat-btn.sel-naranja { background: rgba(249,115,22,0.15); border-color: #f97316; color: #fdba74; }
+.sev-fat-btn.sel-rojo { background: rgba(239,68,68,0.15); border-color: #ef4444; color: #f87171; }
+
+/* Barra Inferior (Bottom Nav) */
+.pwa-bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid var(--glass-border); z-index: 1000; background: rgba(15, 17, 26, 0.95); backdrop-filter: blur(10px); }
+.nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; color: var(--text-muted); font-size: 0.75rem; font-weight: bold; }
+.nav-item.active { color: var(--accent-color); }
+.badge-pendientes { background: #ef4444; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; margin-left: 5px; }
+
+/* Iconos Gigantes Multimedia */
+.fat-media-btn { padding: 20px 10px; border-radius: 12px; border: 1px solid transparent; color: white; font-weight: bold; display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer; width: 100%; }
+.fat-media-btn.bg-blue { background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; }
+.fat-media-btn.bg-red { background: rgba(239, 68, 68, 0.2); border-color: #ef4444; }
+.icon-huge { font-size: 2.5rem !important; }
+.mic-btn { position: absolute; right: 10px; bottom: 15px; background: #3b82f6; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 10px rgba(59,130,246,0.4); }
+
+@keyframes fadeInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+/* ==========================================
+   MAPA GPS Y BOTÓN FLOTANTE PWA
+   ========================================== */
+#vista-mapa {
+    height: calc(100vh - 140px) !important; /* Resta el tamaño del header y navbar */
+    position: relative;
+}
+
+#mapa-gps-pwa {
+    height: 100% !important;
+    width: 100%;
+    z-index: 1; /* Para que no tape otros menús */
+}
+
+.btn-flotante-gps {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000; /* Asegura que flote sobre el mapa */
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.btn-flotante-gps:active {
+    transform: scale(0.9);
+}
