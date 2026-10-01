@@ -549,27 +549,111 @@ window.abrirModalEvidencia = function(idActivo) {
 };
 // <-- AQUÍ TERMINA LA FUNCIÓN
 
-window.seleccionarComponente = function(compID) {
-    componenteSeleccionado = compID;
-    renderizarListaComponentes(); 
-    
-    const comp = activoSeleccionadoActual.componentes[compID];
-    
-    const panelResumen = document.getElementById('panel-resumen-equipo');
-    if (panelResumen) panelResumen.style.display = 'none';
-    const panelTerreno = document.getElementById('panel-terreno');
-    if (panelTerreno) panelTerreno.style.display = 'none';
-    
-    document.getElementById('panel-inspeccion').style.display = 'block';
-    
-    document.getElementById('titulo-componente').innerText = `Inspección: ${comp.nombre}`;
-    document.getElementById('check-equipo-nuevo').checked = comp.es_nuevo || false;
-    document.getElementById('fecha-medicion').value = comp.ultima_medicion || '';
-    document.getElementById('avisos-sap').value = comp.avisos_sap || '';
-    document.getElementById('om-sap').value = comp.om_sap || '';
-    document.getElementById('texto-analisis-componente').value = comp.analisis_ia || '';
-    document.getElementById('select-salud-componente').value = comp.estado || 'Verde';
-    document.getElementById('input-espectro').value = '';
+// =========================================================================
+// GESTIÓN INTELIGENTE DE COMPONENTES (VALIDACIÓN Y EDICIÓN)
+// =========================================================================
+window.guardarDictamenComponente = async function() {
+    if (!activoSeleccionadoActual || !componenteSeleccionado) {
+        alert("⚠️ Selecciona un componente primero.");
+        return;
+    }
+
+    const tipoInspeccion = document.getElementById('tipo-inspeccion').value;
+    const fechaIngresada = document.getElementById('fecha-medicion').value; // Ej: "2026-10-02"
+    const avisosSap = document.getElementById('avisos-sap').value;
+    const omSap = document.getElementById('om-sap').value;
+    const analisis = document.getElementById('texto-analisis-componente').value;
+    const estadoComp = document.getElementById('select-salud-componente').value;
+    const esNuevo = document.getElementById('check-equipo-nuevo').checked;
+
+    const idEquipo = activoSeleccionadoActual.id;
+    const idComp = componenteSeleccionado.id;
+
+    const user = firebase.auth().currentUser;
+    const nombreEditor = user ? user.displayName || user.email : 'Analista CIO';
+
+    const fechaHoyStr = new Date().toISOString().split('T')[0];
+    const fechaMedicionFinal = fechaIngresada || fechaHoyStr;
+
+    // 1. ESTRUCTURA DEL DICTAMEN ACTUAL
+    const datosDictamen = {
+        nombre: componenteSeleccionado.nombre,
+        tipo_evento: tipoInspeccion,
+        fecha_medicion: fechaMedicionFinal,
+        avisos_sap: avisosSap,
+        om_sap: omSap,
+        analisis_reciente: analisis,
+        estado: estadoComp,
+        componente_reemplazado: esNuevo,
+        timestamp_registro: new Date().toISOString(),
+        ultimo_editor: nombreEditor
+    };
+
+    try {
+        const compRef = firebase.database().ref(`activos/${idEquipo}/componentes/${idComp}`);
+        
+        // Obtenemos el componente actual para comparar la fecha
+        const snapComp = await compRef.once('value');
+        const compActual = snapComp.val() || {};
+        const fechaAnterior = compActual.fecha_medicion || '';
+
+        // 2. LÓGICA DE HISTORIAL INTELIGENTE:
+        // Si la fecha de medición es DIFERENTE a la anterior (ej. avanzó de ronda o día), 
+        // guardamos una copia en el historial interno del componente para trazabilidad a largo plazo.
+        if (fechaAnterior && fechaMedicionFinal !== fechaAnterior) {
+            await compRef.child('historial_mediciones').push({
+                fecha: fechaAnterior,
+                estado: compActual.estado,
+                analisis: compActual.analisis_reciente,
+                editor: compActual.ultimo_editor
+            });
+        }
+
+        // 3. Actualizar la información actual del componente
+        await compRef.update(datosDictamen);
+
+        // =========================================================================
+        // 4. GENERAR ENTRADA EN LA BITÁCORA GLOBAL DEL EQUIPO SI ES UN NUEVO DÍA
+        // =========================================================================
+        const snapEquipo = await firebase.database().ref(`activos/${idEquipo}`).once('value');
+        const datosEquipo = snapEquipo.val();
+
+        if (datosEquipo && datosEquipo.componentes) {
+            let peorEstado = 'Verde';
+            const jerarquia = { 'Verde': 1, 'Amarillo': 2, 'Naranja': 3, 'Rojo': 4 };
+
+            let resumenComponentesHTML = "<strong>Evaluación de Componentes:</strong><br>";
+
+            Object.values(datosEquipo.componentes).forEach(c => {
+                const estC = c.estado || 'Verde';
+                resumenComponentesHTML += `- <b>${c.nombre}</b>: [${c.estado}] ${c.analisis_reciente ? ' - ' + c.analisis_reciente.substring(0, 50) + '...' : ''}<br>`;
+                if (jerarquia[estC] > jerarquia[peorEstado]) peorEstado = estC;
+            });
+
+            // Actualizar severidad global del equipo
+            await firebase.database().ref(`activos/${idEquipo}`).update({
+                severidad: peorEstado,
+                ultima_medicion: new Date().toISOString()
+            });
+
+            // Registrar en el historial global del equipo (Bitácora Maestra)
+            await firebase.database().ref(`activos/${idEquipo}/historial_global`).push({
+                timestamp_registro: new Date().toISOString(),
+                severidad_global: peorEstado,
+                resumen_notas: resumenComponentesHTML,
+                usuario: nombreEditor
+            });
+
+            activoSeleccionadoActual.severidad = peorEstado;
+        }
+
+        alert(fechaMedicionFinal === fechaAnterior ? "✅ Edición guardada con éxito." : "✅ Nuevo análisis registrado en la Bitácora Maestra.");
+        window.abrirModalEvidencia(idEquipo);
+
+    } catch (error) {
+        console.error("Error al guardar componente:", error);
+        alert("❌ Error al guardar en la base de datos.");
+    }
 };
 
 window.cerrarModal = function() {
@@ -789,13 +873,61 @@ function renderizarListaComponentes() {
         const esActivo = (componenteSeleccionado === key);
 
         lista.innerHTML += `
-            <button onclick="seleccionarComponente('${key}')" style="width: 100%; text-align: left; padding: 12px; background: ${esActivo ? 'rgba(255,255,255,0.1)' : 'transparent'}; border: none; border-bottom: 1px solid rgba(255,255,255,0.05); color: white; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='${esActivo ? 'rgba(255,255,255,0.1)' : 'transparent'}'">
-                <span>${comp.nombre}</span>
-                <span style="color: ${iconColor}; font-size: 1rem;">●</span>
-            </button>
-        `;
+        <button onclick="seleccionarComponente('${activoSeleccionadoActual.id}', '${key}')" style="width: 100%; text-align: left; padding: 12px; background: ${esActivo ? '...' : '...'}; ...">
+            <span>${comp.nombre}</span>
+            <span style="color: ${iconColor}; font-size: 1rem;">•</span>
+        </button>
+    `;
     });
 }
+
+window.seleccionarComponente = function(idEquipo, idComp) {
+    // 1. Mostrar el panel de inspección y ocultar el resumen
+    const panelResumen = document.getElementById('panel-resumen-equipo');
+    const panelTerreno = document.getElementById('panel-terreno');
+    const panelInspeccion = document.getElementById('panel-inspeccion');
+
+    if(panelResumen) panelResumen.style.display = 'none';
+    if(panelTerreno) panelTerreno.style.display = 'none';
+    if(panelInspeccion) panelInspeccion.style.display = 'block';
+
+    // 2. Validar que el equipo y componente existan
+    if (!activoSeleccionadoActual || !activoSeleccionadoActual.componentes) return;
+    
+    const comp = activoSeleccionadoActual.componentes[idComp];
+    if (!comp) return;
+
+    // Guardar referencia activa para saber qué estamos editando
+    componenteSeleccionado = {
+        id: idComp,
+        nombre: comp.nombre,
+        analisis_reciente: comp.analisis_reciente || comp.analisis_ia
+    };
+
+    // 3. Rellenar los inputs con la información actual del componente
+    document.getElementById('titulo-componente').innerText = `Inspección: ${comp.nombre}`;
+    
+    const inputFecha = document.getElementById('fecha-medicion');
+    if(inputFecha) inputFecha.value = comp.fecha_medicion || new Date().toISOString().split('T')[0];
+
+    const inputAvisos = document.getElementById('avisos-sap');
+    if(inputAvisos) inputAvisos.value = comp.avisos_sap || '';
+
+    const inputOm = document.getElementById('om-sap');
+    if(inputOm) inputOm.value = comp.om_sap || '';
+
+    const textAreaAnalisis = document.getElementById('texto-analisis-componente');
+    if(textAreaAnalisis) textAreaAnalisis.value = comp.analisis_reciente || comp.analisis_ia || '';
+
+    const selectSalud = document.getElementById('select-salud-componente');
+    if(selectSalud) selectSalud.value = comp.estado || 'Verde';
+
+    const checkNuevo = document.getElementById('check-equipo-nuevo');
+    if(checkNuevo) checkNuevo.checked = comp.componente_reemplazado || false;
+    
+    // Recargar la lista para que se marque visualmente el botón seleccionado
+    renderizarListaComponentes();
+};
 
 // ====================================================================
 // FUNCIÓN REPARADA CON LA LLAVE DE CIERRE CORRECTA
@@ -1540,7 +1672,6 @@ window.renderizarTimelineGlobal = function() {
     let panelResumen = document.getElementById('panel-resumen-equipo');
     if (!panelResumen) return;
 
-    // 1. Buscamos o creamos el contenedor de la bitácora dentro del resumen
     let contenedorTL = document.getElementById('historial-global-lista');
     if (!contenedorTL) {
         contenedorTL = document.createElement('div');
@@ -1554,7 +1685,7 @@ window.renderizarTimelineGlobal = function() {
     const nombreEquipo = activoSeleccionadoActual.nombre;
     let eventosGlobales = [];
 
-    // 2. EXTRAER ALERTAS DE TERRENO
+    // 1. EXTRAER ALERTAS DE TERRENO
     if (datosGlobalesAlertas) {
         Object.keys(datosGlobalesAlertas).forEach(key => {
             const al = datosGlobalesAlertas[key];
@@ -1566,59 +1697,72 @@ window.renderizarTimelineGlobal = function() {
                     detalle: al.detalle,
                     evidencias: al.evidencias || al.evidencia,
                     id: key,
-                    autor: 'Inspector',
+                    autor: 'Inspector Terreno',
                     icono: 'engineering',
-                    color_origen: '#3b82f6', // Azul
+                    color_origen: '#3b82f6',
                     bg_origen: 'rgba(59, 130, 246, 0.15)'
                 });
             }
         });
     }
 
-    // 3. EXTRAER HISTORIAL DEL ANALISTA (COMPONENTES)
-    if (activoSeleccionadoActual.componentes) {
-        Object.values(activoSeleccionadoActual.componentes).forEach(comp => {
-            if (comp.historial) {
-                Object.keys(comp.historial).forEach(hKey => {
-                    const h = comp.historial[hKey];
-                    
-                    // Formatear texto del analista con notas y SAP
-                    let textoAnalista = `<strong style="color:white;">Componente: ${comp.nombre}</strong><br>`;
-                    if(h.tipo_evento) textoAnalista += `<span style="color:#a1a1aa; font-size:0.8rem;">Modo: ${h.tipo_evento}</span><br>`;
-                    if(h.avisos_sap) textoAnalista += `<span style="color:#fbbf24; font-size:0.8rem; font-weight:bold;">SAP: ${h.avisos_sap}</span><br>`;
-                    if(h.analisis_ia) textoAnalista += `<br><span style="color:#e2e8f0;">${h.analisis_ia.replace(/\n/g, '<br>')}</span>`;
-                    else textoAnalista += `<br><span style="color:#e2e8f0; font-style:italic;">Cambio de estado sin notas.</span>`;
-
-                    eventosGlobales.push({
-                        tipo_origen: 'ANALISTA',
-                        timestamp: h.timestamp_registro || h.ultima_medicion || new Date().toISOString(),
-                        severidad: h.estado || 'Verde',
-                        detalle: textoAnalista,
-                        evidencias: null, 
-                        id: hKey,
-                        autor: h.ultimo_editor || 'Analista CIO',
-                        icono: 'monitoring',
-                        color_origen: '#a855f7', // Morado Analista
-                        bg_origen: 'rgba(168, 85, 247, 0.15)'
-                    });
-                });
-            }
+    // 2. EXTRAER HISTORIAL GLOBAL DEL EQUIPO (Consolidado de Analista)
+    // Buscamos si el equipo tiene un historial global de auditorías o lo construimos de sus componentes
+    if (activoSeleccionadoActual.historial_global) {
+        Object.keys(activoSeleccionadoActual.historial_global).forEach(hKey => {
+            const h = activoSeleccionadoActual.historial_global[hKey];
+            eventosGlobales.push({
+                tipo_origen: 'ANALISTA CIO',
+                timestamp: h.timestamp_registro || new Date().toISOString(),
+                severidad: h.severidad_global || 'Verde',
+                detalle: h.resumen_notas || 'Auditoría de condición global de la máquina.',
+                evidencias: null,
+                id: hKey,
+                autor: h.usuario || 'Analista',
+                icono: 'monitoring',
+                color_origen: '#a855f7',
+                bg_origen: 'rgba(168, 85, 247, 0.15)'
+            });
         });
+    } else {
+        // Fallback temporal si no existe historial global, agrupando notas recientes de componentes
+        if (activoSeleccionadoActual.componentes) {
+            let textoConsolidado = "<strong>Evaluación de Componentes:</strong><br>";
+            let peorSev = 'Verde';
+            const jerarquia = { 'Verde': 1, 'Amarillo': 2, 'Naranja': 3, 'Rojo': 4 };
+
+            Object.values(activoSeleccionadoActual.componentes).forEach(comp => {
+                textoComp = comp.analisis_reciente || comp.estado || 'Normal';
+                textoConsolidado += `- <b>${comp.nombre}</b>: [${comp.estado}] ${comp.analisis_reciente || ''}<br>`;
+                if (jerarquia[comp.estado] > jerarquia[peorSev]) peorSev = comp.estado;
+            });
+
+            eventosGlobales.push({
+                tipo_origen: 'ANALISTA CIO',
+                timestamp: activoSeleccionadoActual.ultima_medicion || new Date().toISOString(),
+                severidad: activoSeleccionadoActual.severidad || peorSev,
+                detalle: textoConsolidado,
+                evidencias: null,
+                id: 'gen_' + activoSeleccionadoActual.id,
+                autor: 'Analista CIO',
+                icono: 'monitoring',
+                color_origen: '#a855f7',
+                bg_origen: 'rgba(168, 85, 247, 0.15)'
+            });
+        }
     }
 
-    // 4. ORDENAR TODO (Mezclando Terreno y Analista cronológicamente)
+    // Ordenar cronológicamente
     eventosGlobales.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-    // 5. RENDERIZAR
-    contenedorTL.innerHTML = '<h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;"><span class="material-symbols-outlined" style="color: var(--accent-color);">timeline</span> Bitácora Maestra del Equipo</h3>';
+    contenedorTL.innerHTML = '<h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;"><span class="material-symbols-outlined" style="color: var(--accent-color);">timeline</span> Bitácora Maestra (Salud Global del Equipo)</h3>';
 
     if (eventosGlobales.length === 0) {
-        contenedorTL.innerHTML += '<p style="color: var(--text-muted); font-style: italic;">No hay historial registrado (ni de analistas ni de terreno) para este equipo.</p>';
+        contenedorTL.innerHTML += '<p style="color: var(--text-muted); font-style: italic;">No hay registros en la bitácora.</p>';
         return;
     }
 
     let html = '<div class="timeline-container">';
-    
     eventosGlobales.forEach(ev => {
         let colorSev = '#22c55e'; 
         let bgBadge = 'rgba(34, 197, 94, 0.15)';
@@ -1626,7 +1770,6 @@ window.renderizarTimelineGlobal = function() {
         if(ev.severidad === 'Naranja') { colorSev = '#f97316'; bgBadge = 'rgba(249, 115, 22, 0.15)'; }
         if(ev.severidad === 'Amarillo') { colorSev = '#eab308'; bgBadge = 'rgba(234, 179, 8, 0.15)'; }
 
-        let detalleFormateado = (ev.detalle || '').replace(/\n/g, '<br>');
         const fechaObj = new Date(ev.timestamp);
         const fechaElegante = fechaObj.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' }) + ' a las ' + fechaObj.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
 
@@ -1648,49 +1791,40 @@ window.renderizarTimelineGlobal = function() {
                             ${ev.severidad.toUpperCase()}
                         </span>
                     </div>
-                    
-                    <p style="color: #e2e8f0; font-size: 0.95rem; line-height: 1.6; margin-bottom: 5px; font-weight: 300;">${detalleFormateado}</p>
-        `;
-
-        // SI ES DE TERRENO Y TIENE FOTOS, MOSTRARLAS
-        if (ev.tipo_origen === 'TERRENO' && ev.evidencias) {
-            html += `<div style="display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; margin-top: 15px;">`;
-            let dataEvidencias = ev.evidencias;
-            if (!Array.isArray(dataEvidencias)) dataEvidencias = [dataEvidencias];
-
-            dataEvidencias.forEach((media, index) => {
-                let urlReal = (typeof media === 'string') ? media : (media.data || media.url || media.base64);
-                let esVideo = urlReal && (urlReal.includes('data:video') || urlReal.toLowerCase().includes('.mp4')) || (media.tipo === 'video');
-
-                if (urlReal) {
-                    if (esVideo) {
-                        html += `
-                            <div onclick="abrirLightbox('${ev.id}', ${index})" style="cursor: pointer; transition: 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                                <div style="display: flex; align-items: center; justify-content: center; background: #18181b; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; height: 60px; width: 80px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
-                                    <span class="material-symbols-outlined" style="color: #ef4444; font-size: 2rem;">play_circle</span>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        html += `
-                            <div onclick="abrirLightbox('${ev.id}', ${index})" style="cursor: pointer; transition: 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                                <div style="display: flex; align-items: center; justify-content: center; background: #18181b; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; height: 60px; width: 60px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
-                                    <img src="${urlReal}" style="height: 100%; width: 100%; object-fit: cover;">
-                                </div>
-                            </div>
-                        `;
-                    }
-                }
-            });
-            html += `</div>`;
-        }
-        
-        html += `
-                </div> 
-            </div> 
+                    <p style="color: #e2e8f0; font-size: 0.95rem; line-height: 1.6; margin-bottom: 5px; font-weight: 300;">${ev.detalle}</p>
+                </div>
+            </div>
         `;
     });
-    
     html += '</div>';
     contenedorTL.innerHTML += html;
+};
+
+window.mostrarResumenCriticidadEquipo = function() {
+    if (!activoSeleccionadoActual || !activoSeleccionadoActual.componentes) {
+        alert("⚠️ No hay información de componentes para este equipo.");
+        return;
+    }
+
+    let rojos = [];
+    let naranjas = [];
+    let amarillos = [];
+    let verdes = [];
+
+    Object.values(activoSeleccionadoActual.componentes).forEach(comp => {
+        const est = comp.estado || 'Verde';
+        if (est === 'Rojo') rojos.push(comp.nombre);
+        else if (est === 'Naranja') naranjas.push(comp.nombre);
+        else if (est === 'Amarillo') amarillos.push(comp.nombre);
+        else verdes.push(comp.nombre);
+    });
+
+    let mensaje = `📊 DESGLOSE DE CRITICIDAD: ${activoSeleccionadoActual.nombre}\n\n`;
+    
+    if (rojos.length > 0) mensaje += `🔴 CRÍTICOS (${rojos.length}):\n• ${rojos.join('\n• ')}\n\n`;
+    if (naranjas.length > 0) mensaje += `🟠 ALARMAS (${naranjas.length}):\n• ${naranjas.join('\n• ')}\n\n`;
+    if (amarillos.length > 0) mensaje += `🟡 SEGUIMIENTO (${amarillos.length}):\n• ${amarillos.join('\n• ')}\n\n`;
+    if (verdes.length > 0) mensaje += `🟢 NORMALES (${verdes.length}): ${verdes.length} puntos operativos.\n`;
+
+    alert(mensaje);
 };
