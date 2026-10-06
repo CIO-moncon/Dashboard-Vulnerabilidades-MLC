@@ -1,0 +1,44 @@
+/* src/css/variables.css */
+:root {
+    /* Paleta de Colores Automática (Modo Claro / Modo Oscuro) */
+    --bg-base: light-dark(#f8fafc, #0f172a);
+    --bg-panel: light-dark(#ffffff, #1e293b);
+    --bg-panel-hover: light-dark(#f1f5f9, #334155);
+    
+    --text-main: light-dark(#0f172a, #f8fafc);
+    --text-muted: light-dark(#64748b, #94a3b8);
+    
+    --border-glass: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.05));
+    --primary: #3b82f6;
+
+    /* Semántica de Salud (Norma Industrial) */
+    --status-ok: #22c55e;        /* Verde */
+    --status-seguimiento: #eab308; /* Amarillo */
+    --status-alarma: #f97316;    /* Naranja */
+    --status-critico: #ef4444;   /* Rojo */
+
+    /* Tipografía y Espaciados Dinámicos (Responden al tamaño de pantalla) */
+    --font-title: clamp(1.2rem, 3vw, 1.8rem);
+    --font-body: clamp(0.85rem, 1.5vw, 1rem);
+    
+    --space-xs: clamp(0.25rem, 1vh, 0.5rem);
+    --space-md: clamp(0.75rem, 2vh, 1.25rem);
+    --space-lg: clamp(1.5rem, 3vh, 2.5rem);
+}
+
+/* El navegador cambia el tema nativamente según la configuración del sistema del usuario */
+html {
+    color-scheme: light dark;
+    scroll-behavior: smooth;
+}
+
+/* Añadir al final de variables.css */
+body {
+    background-color: var(--bg-base);
+    color: var(--text-main);
+    font-family: 'Inter', system-ui, sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+}

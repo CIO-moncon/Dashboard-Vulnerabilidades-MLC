@@ -1,540 +1,659 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#ef4444">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>TERRENO / RONDA - CAPTURA RÁPIDA [CPF]</title>
-  
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#090a0f">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  
-  <style>
-    :root {
-      --bg-main: #090a0f;
-      --bg-radial: radial-gradient(circle at 50% 0%, #161824 0%, #090a0f 80%);
-      --text-main: #f3f4f6;
-      --text-muted: #a1a1aa;
-      --accent-color: #3b82f6;
-      --glass-surface: rgba(20, 22, 32, 0.78);
-      --glass-card: rgba(26, 28, 40, 0.62);
-      --glass-border: rgba(255, 255, 255, 0.1);
-      --glass-blur: blur(18px);
-      --input-bg: rgba(12, 14, 22, 0.85);
-    }
-    body {
-      background: var(--bg-radial); background-color: var(--bg-main); background-attachment: fixed;
-      color: var(--text-main); font-family: 'Inter', sans-serif; padding: 14px; margin: 0;
-      -webkit-tap-highlight-color: transparent; min-height: 100vh; box-sizing: border-box;
-    }
-    .app-container { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
-    .app-header {
-      background: var(--glass-surface); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-      border: 1px solid var(--glass-border); box-shadow: 0 10px 25px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.1);
-      border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;
-    }
-    .app-header h1 { font-size: 0.95rem; margin: 0; text-transform: uppercase; font-weight: 800; color: #ef4444; letter-spacing: 0.6px; }
-    .badge-field { font-size: 0.65rem; padding: 5px 10px; border-radius: 7px; font-weight: bold; border: 1px solid; backdrop-filter: blur(6px); }
-    .card-field {
-      background: var(--glass-card); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-      border: 1px solid var(--glass-border); box-shadow: 0 14px 35px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.08);
-      border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 15px;
-    }
-    label { font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; display: block; margin-bottom: 6px; }
-    input, select, textarea {
-      width: 100%; padding: 12px 14px; border-radius: 9px; border: 1px solid var(--glass-border);
-      background: var(--input-bg); color: var(--text-main); font-size: 0.92rem; font-family: 'Inter', sans-serif;
-      box-sizing: border-box; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    input:focus, select:focus, textarea:focus { border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); }
-    select { font-weight: 600; color: var(--text-main); }
-    .code-font { font-family: 'Roboto Mono', monospace; font-size: 0.98rem; font-weight: 700; text-transform: uppercase; }
-    .chips-container { display: flex; flex-wrap: wrap; gap: 8px; }
-    .chip {
-      background: rgba(18, 20, 30, 0.7); backdrop-filter: blur(6px); border: 1px solid var(--glass-border);
-      color: var(--text-muted); padding: 9px 13px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
-      cursor: pointer; transition: all 0.15s ease; user-select: none;
-    }
-    .chip.active { background: rgba(59, 130, 246, 0.35); border-color: #60a5fa; color: #ffffff; box-shadow: 0 0 12px rgba(59, 130, 246, 0.5); }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CIO Terreno - CMP</title>
     
-    /* ESTILOS GALERÍA MULTIMEDIA */
-    .media-gallery { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-    .media-thumb-container { position: relative; width: 80px; height: 80px; border-radius: 8px; border: 1px solid var(--glass-border); overflow: hidden; background: #000; }
-    .media-thumb-container img { width: 100%; height: 100%; object-fit: cover; }
-    .media-thumb-container .video-icon { 
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-      display: flex; align-items: center; justify-content: center; font-size: 1.5rem; background: rgba(0,0,0,0.6); 
-    }
-    .btn-remove-media {
-      position: absolute; top: 2px; right: 2px; background: red; color: white; border: none;
-      border-radius: 50%; width: 22px; height: 22px; font-weight: bold; cursor: pointer; z-index: 10;
-    }
+    <!-- MANIFEST PWA -->
+    <link rel="manifest" href="manifest.json"> <!-- ESTA ES LA LÍNEA CLAVE -->
+    <link rel="icon" href="logo-cpf.png" type="image/png">
+    <link rel="apple-touch-icon" href="logo-cpf.png">
+    <meta name="theme-color" content="#090a0f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
+    
+    <!-- LEAFLET MAPS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-    .sev-selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .sev-btn {
-      padding: 12px 8px; border-radius: 9px; border: 1px solid var(--glass-border); background: rgba(18, 20, 30, 0.6);
-      color: var(--text-muted); font-weight: 700; font-size: 0.75rem; cursor: pointer; text-align: center; transition: all 0.2s;
-    }
-    .sev-btn.sel-rojo { background: rgba(239, 68, 68, 0.3); border-color: #ef4444; color: #ef4444; box-shadow: 0 0 16px rgba(239, 68, 68, 0.4); }
-    .sev-btn.sel-naranja { background: rgba(249, 115, 22, 0.3); border-color: #f97316; color: #f97316; box-shadow: 0 0 16px rgba(249, 115, 22, 0.35); }
-    .sev-btn.sel-amarillo { background: rgba(234, 179, 8, 0.3); border-color: #eab308; color: #eab308; box-shadow: 0 0 16px rgba(234, 179, 8, 0.3); }
-    
-    .btn-transmitir {
-      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: 1px solid rgba(255, 255, 255, 0.2);
-      padding: 18px; border-radius: 14px; font-weight: 900; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.8px;
-      cursor: pointer; box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.3);
-      text-align: center; display: block; width: 100%; transition: transform 0.15s; margin-bottom: 20px;
-    }
-    .btn-transmitir:active { transform: scale(0.98); }
-    .toast-ok { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(22, 163, 74, 0.92); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 12px 24px; border-radius: 9px; font-weight: bold; font-size: 0.85rem; box-shadow: 0 12px 30px rgba(0,0,0,0.7); z-index: 9999; text-align: center; max-width: 90vw; }
-  </style>
+    <!-- CSS BASE -->
+    <link rel="stylesheet" href="css/estilo.css">
 </head>
-<body>
+<body class="dark-mode pwa-body">
 
-  <div class="toast-ok" id="toastConfirm">📡 ¡Alerta transmitida a Sala CIO!</div>
-  <canvas id="resizeCanvas" style="display:none;"></canvas>
+    <!-- NOTIFICACIONES FLOTANTES -->
+    <div class="toast-nav" id="toastNotificacion" style="display: none; position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: #3b82f6; color: white; padding: 10px 20px; border-radius: 20px; z-index: 9999;">Mensaje</div>
+    
+    <!-- MOTOR DE COMPRESIÓN DE FOTOS -->
+    <canvas id="resizeCanvas" style="display:none;"></canvas>
 
-  <div class="app-container">
-    <header class="app-header">
-      <h1>📱 Terreno / Ronda OEM</h1>
-      <span class="badge-field" id="badgeOfflineCount" style="background:rgba(34,197,94,0.2); color:#4ade80; border-color:rgba(34,197,94,0.4);">🟢 ONLINE / SYNC OK</span>
+    <!-- BARRA SUPERIOR (APP BAR) -->
+    <header class="pwa-header glass-panel">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="background-color: white; padding: 4px 8px; border-radius: 6px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+                <img src="../assets/logo-cpf.png" alt="CMP" style="height: 22px;">
+            </div>
+            <h1 style="font-size: 1.1rem; margin: 0; color: var(--text-main);">CIO Terreno</h1>
+        </div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <span class="badge-status online" id="badgeConexion">🟢 ONLINE</span>
+        </div>
     </header>
 
-    <main class="card-field">
-      <!-- 1. FAENA -->
-      <div>
-        <label for="fieldFaena">1. Faena</label>
-        <select id="fieldFaena" onchange="cargarAreasPorFaena()">
-          <option value="Planta, Mina los Colorados">MLC - Planta</option>
-          <option value="Mina, Mina los Colorados">MLC - Mina</option>
-          <option value="Planta de Pellets">Planta de Pellets</option>
-          <option value="Planta, Mina el Romeral">ROM - Planta</option>
-          <option value="Mina, Mina el Romeral">ROM - Mina</option>
-        </select>
-      </div>
-
-      <!-- 2. ÁREA -->
-      <div>
-        <label for="fieldArea">2. Área Operacional</label>
-        <select id="fieldArea" onchange="cargarEquiposPorArea()">
-          <option value="">-- Selecciona el Área --</option>
-        </select>
-      </div>
-
-      <!-- 3. EQUIPO -->
-      <div>
-        <label for="fieldTagSelect">3. Equipo / Tag del Catastro</label>
-        <select id="fieldTagSelect" class="code-font" onchange="syncTagInputFromSelect()">
-          <option value="">-- Selecciona el equipo --</option>
-        </select>
-        <input type="text" id="fieldTagCustom" class="code-font" placeholder="Ej: MH2709 (opcional si es libre)" style="margin-top:8px;">
-      </div>
-
-      <!-- 4. HALLAZGOS RÁPIDOS (TU VERSIÓN ACTUALIZADA) -->
-      <div>
-        <label>4. Hallazgos Rápidos (Plantas y Minas)</label>
-        <div class="chips-container" style="max-height: 140px; overflow-y: auto; padding-bottom: 5px;">
-          <!-- Lubricación y Fluidos -->
-          <div class="chip" onclick="toggleChip(this, 'Fuga de aceite / lubricante')">🛢️ Fuga aceite</div>
-          <div class="chip" onclick="toggleChip(this, 'Fuga de grasa')">💧 Fuga grasa</div>
-          <div class="chip" onclick="toggleChip(this, 'Falta de engrase')">⚙️ Falta engrase</div>
-          <!-- Mecánica -->
-          <div class="chip" onclick="toggleChip(this, 'Ruido anómalo en rodamiento')">🔊 Ruido rodamiento</div>
-          <div class="chip" onclick="toggleChip(this, 'Alto ruido en reductor')">📻 Ruido reductor</div>
-          <div class="chip" onclick="toggleChip(this, 'Alto ruido en motor')">📻 Ruido motor</div>
-          <div class="chip" onclick="toggleChip(this, 'Holgura / Pernos sueltos o cortados')">🔩 Pernos sueltos</div>
-          <div class="chip" onclick="toggleChip(this, 'Correas sueltas o dañadas')">⛓️ Correas dañadas</div>
-          <div class="chip" onclick="toggleChip(this, 'Polín trabado / dañado')">🛑 Polín trabado</div>
-          <!-- Condición (Vib/Termo) -->
-          <div class="chip" onclick="toggleChip(this, 'Vibración / Soltura estructural')">⚠️ Vibración alta</div>
-          <div class="chip" onclick="toggleChip(this, 'Sospecha de desalineamiento')">📐 Desalineamiento</div>
-          <div class="chip" onclick="toggleChip(this, 'Temperatura elevada (Termografía)')">🔥 Alta temperatura</div>
-        </div>
-      </div>
-
-      <!-- 5. NOTAS INTELIGENTES -->
-      <div>
-        <label for="fieldDetalle">5. Notas / Detalle del Hallazgo</label>
-        <textarea id="fieldDetalle" rows="4" placeholder="Toca los botones arriba o escribe tus comentarios aquí..." oninput="registrarEscrituraManual(event)"></textarea>
-      </div>
-
-      <!-- 6. EVIDENCIA MULTIMEDIA (INTERFAZ OPTIMIZADA PARA TERRENO) -->
-      <div>
-        <label>6. Evidencia (Fotos y Videos Cortos)</label>
+    <!-- CONTENEDOR PRINCIPAL DE VISTAS -->
+    <main class="pwa-main-content">
         
-        <!-- Botones grandes para uso con guantes -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-            
-            <!-- Botón de Cámara Directa -->
-            <button type="button" onclick="document.getElementById('inputCamaraFoto').click()" style="background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; color: #60a5fa; padding: 15px 10px; border-radius: 10px; font-weight: bold; font-size: 0.9rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px;">
-                <span style="font-size: 1.5rem;">📸</span> Tomar Foto
+        <!-- ==========================================
+             VISTA 1: WIZARD DE REPORTES (PASO A PASO)
+             ========================================== -->
+        <section id="vista-reporte" class="vista-activa">
+            <!-- PASO 1: IDENTIFICACIÓN -->
+            <div class="wizard-step active" id="step-1">
+                <h2 class="step-title">📍 Paso 1: Identificar Equipo</h2>
+                
+                <div class="fat-input-group">
+                    <label>Faena</label>
+                    <select id="fieldFaena" class="fat-select" onchange="window.cargarAreasPorFaena()">
+                        <option value="Planta, Mina los Colorados">MLC - Planta</option>
+                        <option value="Mina, Mina los Colorados">MLC - Mina</option>
+                        <option value="Planta de Pellets">Planta de Pellets</option>
+                    </select>
+                </div>
+
+                <div class="fat-input-group">
+                    <label>Área Operacional</label>
+                    <select id="fieldArea" class="fat-select" onchange="window.cargarEquiposPorArea()">
+                        <option value="">-- Selecciona el Área --</option>
+                    </select>
+                </div>
+
+                <div class="fat-input-group">
+                    <label>Equipo / TAG</label>
+                    <select id="fieldTagSelect" class="fat-select code-font">
+                        <option value="">-- Selecciona el equipo --</option>
+                    </select>
+                </div>
+
+                <button type="button" class="fat-btn btn-next" onclick="window.avanzarPaso(2)">Siguiente: Detalles ➡️</button>
+            </div>
+
+            <!-- PASO 2: COMPONENTE Y HALLAZGOS (DINÁMICO) -->
+            <div class="wizard-step" id="step-2">
+                <h2 class="step-title">⚙️ Paso 2: Diagnóstico Rápido</h2>
+                
+                <div class="fat-input-group">
+                    <label>Componente Afectado</label>
+                    <select id="fieldComponente" class="fat-select" onchange="window.cargarHallazgosDinamicos()">
+                        <option value="General">Problema General del Equipo</option>
+                        <option value="Motor">Motor Eléctrico</option>
+                        <option value="Reductor">Reductor / Transmisión</option>
+                        <option value="Polea_Correa">Poleas / Correas</option>
+                        <option value="Estructura">Estructura / Chasis</option>
+                    </select>
+                </div>
+
+                <div class="fat-input-group">
+                    <label>Marcadores Rápidos (Toca para seleccionar)</label>
+                    <div id="contenedor-chips-dinamicos" class="chips-container">
+                        <div class="chip" onclick="window.toggleChip(this, 'Fuga detectada')">💧 Fuga detectada</div>
+                        <div class="chip" onclick="window.toggleChip(this, 'Ruido anormal')">🔊 Ruido anormal</div>
+                        <div class="chip" onclick="window.toggleChip(this, 'Alta vibración')">⚠️ Alta vibración</div>
+                    </div>
+                </div>
+
+                <div class="step-nav-buttons">
+                    <button type="button" class="fat-btn btn-back" onclick="window.avanzarPaso(1)">⬅️ Volver</button>
+                    <button type="button" class="fat-btn btn-next" onclick="window.avanzarPaso(3)">Siguiente: Evidencia ➡️</button>
+                </div>
+            </div>
+
+            <!-- PASO 3: EVIDENCIA Y VOZ -->
+            <div class="wizard-step" id="step-3">
+                <h2 class="step-title">📸 Paso 3: Evidencia y Notas</h2>
+                
+                <div class="fat-input-group">
+                    <label>Notas del Técnico (Escribe o Dicta)</label>
+                    <div style="position: relative;">
+                        <textarea id="fieldDetalle" class="fat-textarea" rows="4" placeholder="Ej: Perno cortado..."></textarea>
+                        <button type="button" id="btn-dictado" onclick="window.iniciarDictado()" class="mic-btn" title="Dictar por voz">
+                            <span class="material-symbols-outlined">mic</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="fat-input-group">
+                    <label>Captura Multimedia</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px;">
+                        <button type="button" class="fat-media-btn bg-blue" onclick="document.getElementById('inputCamaraFoto').click()">
+                            <span class="material-symbols-outlined icon-huge">photo_camera</span> Tomar Foto
+                        </button>
+                        <button type="button" class="fat-media-btn bg-red" onclick="document.getElementById('inputCamaraVideo').click()">
+                            <span class="material-symbols-outlined icon-huge">videocam</span> Grabar Video
+                        </button>
+                    </div>
+                    
+                    <input type="file" id="inputCamaraFoto" accept="image/*" capture="environment" multiple style="display: none;" onchange="window.procesarYComprimirMedia(event)">
+                    <input type="file" id="inputCamaraVideo" accept="video/*" capture="environment" style="display: none;" onchange="window.procesarYComprimirMedia(event)">
+                    <div class="media-gallery" id="mediaGallery"></div>
+                </div>
+
+                <div class="step-nav-buttons">
+                    <button type="button" class="fat-btn btn-back" onclick="window.avanzarPaso(2)">⬅️ Volver</button>
+                    <button type="button" class="fat-btn btn-next" onclick="window.avanzarPaso(4)">Siguiente: Prioridad ➡️</button>
+                </div>
+            </div>
+
+            <!-- PASO 4: CRITICIDAD Y ENVIAR -->
+            <div class="wizard-step" id="step-4">
+                <h2 class="step-title">🚨 Paso 4: Criticidad Final</h2>
+                
+                <div class="fat-input-group">
+                    <label>Nivel de Urgencia en Terreno</label>
+                    <div class="sev-selector-fat">
+                        <div class="sev-fat-btn" id="sev_Verde" onclick="window.selectSevFat('Verde')">🟢 Normal</div>
+                        <div class="sev-fat-btn" id="sev_Amarillo" onclick="window.selectSevFat('Amarillo')">🟡 Seguimiento</div>
+                        <div class="sev-fat-btn" id="sev_Naranja" onclick="window.selectSevFat('Naranja')">🟠 Alerta</div>
+                        <div class="sev-fat-btn sel-rojo" id="sev_Rojo" onclick="window.selectSevFat('Rojo')">🔴 CRÍTICO</div>
+                    </div>
+                    <input type="hidden" id="fieldSev" value="Rojo">
+                </div>
+
+                <div class="swipe-container" style="margin-top: 30px;">
+                    <button type="button" class="fat-btn btn-transmitir" onclick="window.enviarAlertaSegura()" style="background:#22c55e; color:white; justify-content:center;">
+                        <span class="material-symbols-outlined">send</span> TRANSMITIR AL CIO
+                    </button>
+                </div>
+                <button type="button" class="fat-btn btn-back" style="margin-top: 15px; width: 100%;" onclick="window.avanzarPaso(3)">⬅️ Revisar Evidencia</button>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             VISTA 2: MAPA TÁCTICO GPS 
+             ========================================== -->
+        <section id="vista-mapa" style="display: none; height: 100%; flex-direction: column;">
+            <div style="padding: 10px; background: var(--glass-card);">
+                <div style="position: relative;">
+                    <span class="material-symbols-outlined" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted);">search</span>
+                    <input type="text" id="buscador-mapa-pwa" onkeyup="window.buscarEnMapaPWA(event)" class="fat-input" placeholder="Buscar equipo (Ej. MH2401)..." style="padding-left: 40px; border-radius: 20px;">
+                </div>
+            </div>
+            <div id="mapa-gps-pwa" style="flex: 1; width: 100%; background: #222;"></div>
+            <button type="button" class="btn-flotante-gps" onclick="window.centrarEnMiUbicacion()">
+                <span class="material-symbols-outlined">my_location</span>
             </button>
-            
-            <!-- Botón de Video Directo -->
-            <button type="button" onclick="document.getElementById('inputCamaraVideo').click()" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #f87171; padding: 15px 10px; border-radius: 10px; font-weight: bold; font-size: 0.9rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px;">
-                <span style="font-size: 1.5rem;">🎥</span> Grabar Video
-            </button>
-
-        </div>
-
-        <!-- Botón secundario para la Galería (Más discreto) -->
-        <button type="button" onclick="document.getElementById('inputGaleria').click()" style="width: 100%; background: transparent; border: 1px dashed var(--glass-border); color: var(--text-muted); padding: 10px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; margin-bottom: 10px;">
-            📁 Cargar desde la Galería...
-        </button>
-
-        <!-- Inputs ocultos que hacen el trabajo sucio -->
-        <input type="file" id="inputCamaraFoto" accept="image/*" capture="environment" style="display: none;" onchange="handleMultiFileUpload(event)">
-        <input type="file" id="inputCamaraVideo" accept="video/*" capture="environment" style="display: none;" onchange="handleMultiFileUpload(event)">
-        <input type="file" id="inputGaleria" accept="image/*,video/*" multiple style="display: none;" onchange="handleMultiFileUpload(event)">
-
-        <div class="media-gallery" id="mediaGallery"></div>
-        <p style="font-size: 0.65rem; color: #f59e0b; margin-top: 5px;">⚠️ Videos máx. 5MB. Graba solo unos segundos de audio/anomalía.</p>
-      </div>
-
-      <!-- 7. SEVERIDAD -->
-      <div>
-        <label>7. Severidad Preliminar</label>
-        <div class="sev-selector">
-          <div class="sev-btn sel-rojo" id="sev_Rojo" onclick="selectSev('Rojo')">🔴 Crítico</div>
-          <div class="sev-btn" id="sev_Naranja" onclick="selectSev('Naranja')">🟠 Alerta</div>
-          <div class="sev-btn" id="sev_Amarillo" onclick="selectSev('Amarillo')">🟡 Seguimiento</div>
-        </div>
-        <input type="hidden" id="fieldSev" value="Rojo">
-      </div>
+        </section>
     </main>
 
-    <button type="button" class="btn-transmitir" id="btnTransmitir" onclick="enviarReporteCampo()">
-      📡 TRANSMITIR A SALA CIO
-    </button>
-  </div>
+    <!-- BARRA INFERIOR (BOTTOM NAV) -->
+    <nav class="pwa-bottom-nav glass-panel">
+        <button type="button" class="nav-item active" id="nav-btn-reporte" onclick="window.cambiarVistaPWA('reporte')">
+            <span class="material-symbols-outlined">assignment</span>
+            <span>Reportar</span>
+        </button>
+        <button type="button" class="nav-item" id="nav-btn-mapa" onclick="window.cambiarVistaPWA('mapa')">
+            <span class="material-symbols-outlined">map</span>
+            <span>Mapa GPS</span>
+        </button>
+        <button type="button" class="nav-item" id="nav-btn-sync" onclick="window.forzarSincronizacionOffline()">
+            <span class="material-symbols-outlined">cloud_sync</span>
+            <span>Pendientes <span class="badge-pendientes" id="contadorOffline">0</span></span>
+        </button>
+    </nav>
 
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script>
-    // --- 1. FIREBASE CONFIG ---
-    const firebaseConfig = {
-      apiKey: "AIzaSyBd5MEZdMmgzBs1xCyeGYeKtQx5gJIeY3w",
-      authDomain: "dashboard-vulnerabilidades-mlc.firebaseapp.com",
-      databaseURL: "https://dashboard-vulnerabilidades-mlc-default-rtdb.firebaseio.com",
-      projectId: "dashboard-vulnerabilidades-mlc"
-    };
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const db = firebase.database().ref('activos_criticos');
-    const dbAlertas = firebase.database().ref('alertas_terreno');
-
-    // --- 2. VARIABLES GLOBALES ---
-    let catalogoGlobal = [];
-    let arregloEvidencias = []; 
-    let chipsSeleccionados = [];
-    let textoManualUsuario = "";
-    const QUEUE_KEY = 'cio_offline_alertas_queue';
-    const CACHE_CATASTRO_KEY = 'cio_cached_catastro';
-
-    // --- 3. LÓGICA DE TEXTO INTELIGENTE (BOTONES Y TEXTAREA) ---
-    window.registrarEscrituraManual = function(e) {
-      let contenido = e.target.value;
-      let encabezado = generarEncabezadoChips();
-      
-      if (encabezado !== "" && contenido.startsWith(encabezado)) {
-        textoManualUsuario = contenido.substring(encabezado.length);
-      } else if (chipsSeleccionados.length === 0) {
-        textoManualUsuario = contenido;
-      } else {
-        textoManualUsuario = contenido;
-      }
-    };
-
-    window.toggleChip = function(chipEl, text) {
-      const area = document.getElementById('fieldDetalle');
-      registrarEscrituraManual({target: area});
-
-      if (chipEl.classList.contains('active')) {
-        chipEl.classList.remove('active');
-        chipsSeleccionados = chipsSeleccionados.filter(c => c !== text);
-      } else {
-        chipEl.classList.add('active');
-        chipsSeleccionados.push(text);
-      }
-      area.value = generarEncabezadoChips() + textoManualUsuario;
-    };
-
-    function generarEncabezadoChips() {
-      if (chipsSeleccionados.length === 0) return "";
-      return "📌 HALLAZGOS AUTOMÁTICOS:\n" + chipsSeleccionados.map(c => "• " + c).join("\n") + "\n\n📝 NOTAS ADICIONALES:\n";
-    }
-
-    // --- 4. LÓGICA MULTIMEDIA (FOTOS Y VIDEOS) ---
-   // --- LÓGICA MULTIMEDIA CON COMPRESIÓN AGRESIVA PARA TERRENO ---
-    async function handleMultiFileUpload(event) {
-      const files = event.target.files;
-      if (!files || files.length === 0) return;
-
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const sizeMB = file.size / (1024 * 1024);
-        
-        // Límite estricto: 4MB para videos (unos 3-4 segundos), 12MB para la foto original (que luego comprimiremos)
-        const limiteMB = file.type.startsWith('video/') ? 4 : 12; 
-
-        if (sizeMB > limiteMB) {
-            if (file.type.startsWith('video/')) {
-                alert(`⚠️ El video pesa ${sizeMB.toFixed(1)}MB (Máx 4MB). Graba solo 3 segundos para registrar el ruido anómalo.`);
-            } else {
-                alert(`⚠️ La foto es demasiado pesada (${sizeMB.toFixed(1)}MB).`);
-            }
-            continue;
-        }
-
-        if (file.type.startsWith('image/')) {
-            await procesarImagen(file);
-        } else if (file.type.startsWith('video/')) {
-            await procesarVideo(file);
-        }
-      }
-      renderizarGaleria();
-      
-      // Limpiamos los 3 inputs para evitar bloqueos al repetir tomas
-      document.getElementById('inputCamaraFoto').value = ''; 
-      document.getElementById('inputCamaraVideo').value = ''; 
-      document.getElementById('inputGaleria').value = ''; 
-    }
-
-    function procesarImagen(file) {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const img = new Image();
-          img.onload = function() {
-            const canvas = document.getElementById('resizeCanvas');
-            const ctx = canvas.getContext('2d');
-            
-            // 1. REDUCCIÓN DE TAMAÑO: Máximo 500 pixeles de ancho
-            const MAX_WIDTH = 500; 
-            let width = img.width, height = img.height;
-            
-            if (width > MAX_WIDTH) {
-              height = Math.round((height * MAX_WIDTH) / width);
-              width = MAX_WIDTH;
-            }
-            
-            canvas.width = width;
-            canvas.height = height;
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            // 2. COMPRESIÓN DE CALIDAD: JPEG al 40% (0.4)
-            // Esto transforma una foto pesada en una cadena Base64 ultraliviana
-            const fotoComprimida = canvas.toDataURL('image/jpeg', 0.4);
-            
-            arregloEvidencias.push({ tipo: 'imagen', data: fotoComprimida });
-            resolve();
-          };
-          img.src = e.target.result;
+    <!-- LIBRERÍAS DE MAPAS Y FIREBASE -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <!-- CEREBRO BLINDADO Y UNIFICADO -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBd5MEZdMmgzBs1xCyeGYeKtQx5gJIeY3w",
+            authDomain: "dashboard-vulnerabilidades-mlc.firebaseapp.com",
+            databaseURL: "https://dashboard-vulnerabilidades-mlc-default-rtdb.firebaseio.com",
+            projectId: "dashboard-vulnerabilidades-mlc",
+            storageBucket: "dashboard-vulnerabilidades-mlc.firebasestorage.app",
+            messagingSenderId: "1043912631590",
+            appId: "1:1043912631590:web:14638fc1503882f1268de7"
         };
-        reader.readAsDataURL(file);
-      });
-    }
 
-    function procesarVideo(file) {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          arregloEvidencias.push({ tipo: 'video', data: e.target.result });
-          resolve();
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-
-    function renderizarGaleria() {
-      const gallery = document.getElementById('mediaGallery');
-      gallery.innerHTML = '';
-      
-      arregloEvidencias.forEach((ev, index) => {
-        let contenido = ev.tipo === 'imagen' ? `<img src="${ev.data}">` : `<div class="video-icon">🎥</div>`;
-        gallery.innerHTML += `
-          <div class="media-thumb-container">
-            ${contenido}
-            <button class="btn-remove-media" onclick="eliminarEvidencia(${index})">X</button>
-          </div>
-        `;
-      });
-    }
-
-    window.eliminarEvidencia = function(index) {
-      arregloEvidencias.splice(index, 1);
-      renderizarGaleria();
-    };
-
-    // --- 5. LÓGICA DE FORMULARIO BASE ---
-    function normalizarFaena(s) { return s || 'Planta, Mina los Colorados'; }
-
-    function mapearActivo(item, key) {
-      const data = item || {};
-      const tag = data.tag || data.Tag || data.TAG || data.equipo || data.Equipo || key || 'SIN-TAG';
-      const tipo = data.tipo || data.Tipo || 'Activo';
-      const area = data.area || data.Area || 'Área General';
-      const siteId = normalizarFaena(data.siteId || data.site || data.faena);
-      return { id: key || data.id, tag: String(tag).trim(), tipo: String(tipo).trim(), area: String(area).trim(), siteId: siteId };
-    }
-
-    function cargarDeCacheLocalInmediato() {
-      const cached = localStorage.getItem(CACHE_CATASTRO_KEY);
-      if (cached) {
+        let db = null, activosRef = null, dbAlertas = null;
         try {
-          const list = JSON.parse(cached);
-          if (Array.isArray(list) && list.length > 0) {
-            catalogoGlobal = list.map((item, idx) => mapearActivo(item, item.id || `cached_${idx}`));
-            cargarAreasPorFaena();
-          }
-        } catch(e) {}
-      }
-    }
+            if (typeof firebase !== 'undefined') {
+                if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+                db = firebase.database();
+                activosRef = db.ref('activos_criticos'); 
+                dbAlertas = db.ref('alertas_terreno');
+            }
+        } catch (e) { console.error("Error Firebase:", e); }
 
-    cargarDeCacheLocalInmediato();
-
-    if (db) {
-      db.on('value', snap => {
-        const raw = snap.val();
-        if (raw) {
-          catalogoGlobal = Object.keys(raw).map(k => mapearActivo(raw[k], k));
-          localStorage.setItem(CACHE_CATASTRO_KEY, JSON.stringify(catalogoGlobal));
-          cargarAreasPorFaena();
-        }
-      });
-    }
-
-    window.cargarAreasPorFaena = function() {
-      const faenaVal = document.getElementById('fieldFaena').value;
-      const areaSelect = document.getElementById('fieldArea');
-      const filtered = catalogoGlobal.filter(e => e.siteId === faenaVal);
-      const areasUnicas = [...new Set(filtered.map(e => e.area))].filter(Boolean).sort();
-      areaSelect.innerHTML = '<option value="">-- Selecciona el Área --</option>' + areasUnicas.map(a => `<option value="${a}">${a}</option>`).join('');
-      document.getElementById('fieldTagSelect').innerHTML = '<option value="">-- Selecciona el equipo --</option>';
-    }
-
-    window.cargarEquiposPorArea = function() {
-      const faenaVal = document.getElementById('fieldFaena').value;
-      const areaVal = document.getElementById('fieldArea').value;
-      const tagSelect = document.getElementById('fieldTagSelect');
-      const filtered = catalogoGlobal.filter(e => e.siteId === faenaVal && e.area === areaVal);
-      tagSelect.innerHTML = '<option value="">-- Selecciona el equipo --</option>' + filtered.map(e => `<option value="${e.tag}">${e.tag} (${e.tipo})</option>`).join('');
-    }
-
-    window.syncTagInputFromSelect = function() {
-      const val = document.getElementById('fieldTagSelect').value;
-      if (val) document.getElementById('fieldTagCustom').value = val;
-    }
-
-    window.selectSev = function(sev) {
-      document.getElementById('fieldSev').value = sev;
-      ['Rojo', 'Naranja', 'Amarillo'].forEach(s => {
-        document.getElementById('sev_' + s).className = 'sev-btn' + (s === sev ? ` sel-${sev.toLowerCase()}` : '');
-      });
-    }
-
-    function mostrarToast(msg) {
-      const t = document.getElementById('toastConfirm');
-      t.innerText = msg; t.style.display = 'block';
-      setTimeout(() => { t.style.display = 'none'; }, 4000);
-    }
-
-    // --- 6. LÓGICA OFFLINE Y ENVÍO ---
-    function guardarEnColaLocal(payload) {
-      let queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-      queue.push(payload);
-      
-      try {
-        // Intentamos guardar en la bóveda del teléfono
-        localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
-        actualizarContadorOfflineBadge();
-      } catch (e) {
-        // Si el teléfono dice "Memoria Llena" (QuotaExceededError)
-        alert("⚠️ ALERTA DE MEMORIA: Tienes demasiados reportes multimedia en espera. Acércate a una zona con señal para sincronizar y vaciar la cola antes de seguir tomando fotos/videos.");
+        let catalogoGlobal = [];
+        let arregloEvidencias = []; 
+        let chipsSeleccionados = [];
+        const CACHE_CATASTRO_KEY = 'cio_cached_catastro';
+        let mapaPWA = null;
         
-        // Descartamos este último reporte para no corromper los que ya están guardados a salvo
-        queue.pop(); 
-      }
-    }
+        const DB_NAME = 'CIO_BovedaOffline';
+        const STORE_NAME = 'reportes_pendientes';
+        let dbLocal = null;
 
-    function sincronizarColaOffline() {
-      if (!navigator.onLine || !dbAlertas) return;
-      let queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-      if (queue.length === 0) { actualizarContadorOfflineBadge(); return; }
-      const item = queue.shift();
-      dbAlertas.push(item).then(() => {
-        localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
-        actualizarContadorOfflineBadge();
-        if (queue.length > 0) sincronizarColaOffline();
-      }).catch(() => {
-        queue.unshift(item);
-        localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
-      });
-    }
+        // BÓVEDA OFFLINE
+        function inicializarBoveda() {
+            try {
+                if (!window.indexedDB) return;
+                const request = indexedDB.open(DB_NAME, 1);
+                request.onupgradeneeded = (e) => {
+                    const base = e.target.result;
+                    if (!base.objectStoreNames.contains(STORE_NAME)) base.createObjectStore(STORE_NAME, { keyPath: 'id_local' });
+                };
+                request.onsuccess = (e) => {
+                    dbLocal = e.target.result;
+                    actualizarContadorOffline();
+                    sincronizarBovedaOffline();
+                };
+            } catch (error) {}
+        }
+        inicializarBoveda();
 
-    function actualizarContadorOfflineBadge() {
-      let queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-      const badge = document.getElementById('badgeOfflineCount');
-      if (badge) {
-        badge.innerText = queue.length > 0 ? `📴 Cola offline: ${queue.length}` : '🟢 ONLINE / SYNC OK';
-        badge.style.background = queue.length > 0 ? 'rgba(245,158,11,0.2)' : 'rgba(34,197,94,0.2)';
-      }
-    }
+        function guardarEnBoveda(payload) {
+            if (!dbLocal) return;
+            payload.id_local = Date.now().toString();
+            try {
+                const tx = dbLocal.transaction(STORE_NAME, 'readwrite');
+                tx.objectStore(STORE_NAME).add(payload);
+                tx.oncomplete = () => { window.mostrarNotificacion("📴 Guardado offline."); actualizarContadorOffline(); };
+            } catch(e) {}
+        }
 
-    window.enviarReporteCampo = function() {
-      const faena = document.getElementById('fieldFaena').value;
-      const area = document.getElementById('fieldArea').value || 'Área General';
-      const tagFinal = (document.getElementById('fieldTagCustom').value || document.getElementById('fieldTagSelect').value || '').trim().toUpperCase();
-      const detalle = document.getElementById('fieldDetalle').value.trim();
-      const sev = document.getElementById('fieldSev').value;
+        function sincronizarBovedaOffline() {
+            if (!navigator.onLine || !dbLocal || !dbAlertas) return;
+            try {
+                const tx = dbLocal.transaction(STORE_NAME, 'readonly');
+                const store = tx.objectStore(STORE_NAME);
+                const request = store.getAll();
+                request.onsuccess = () => {
+                    const reportes = request.result;
+                    if (reportes.length === 0) return;
+                    window.mostrarNotificacion(`🟢 Sincronizando ${reportes.length} pendientes...`);
+                    reportes.forEach(reporte => {
+                        const idTemp = reporte.id_local;
+                        delete reporte.id_local;
+                        dbAlertas.push(reporte).then(() => {
+                            const deleteTx = dbLocal.transaction(STORE_NAME, 'readwrite');
+                            deleteTx.objectStore(STORE_NAME).delete(idTemp);
+                            deleteTx.oncomplete = () => actualizarContadorOffline();
+                        });
+                    });
+                };
+            } catch(e) {}
+        }
 
-      if (!tagFinal) { alert("⚠️ Selecciona o escribe el Tag del equipo."); return; }
+        function actualizarContadorOffline() {
+            if (!dbLocal) return;
+            try {
+                const tx = dbLocal.transaction(STORE_NAME, 'readonly');
+                const request = tx.objectStore(STORE_NAME).count();
+                request.onsuccess = () => {
+                    const count = request.result;
+                    const cDiv = document.getElementById('contadorOffline');
+                    if (cDiv) cDiv.innerText = count;
+                    if(count > 0 && navigator.onLine) sincronizarBovedaOffline();
+                };
+            } catch(e) {}
+        }
 
-      const payload = {
-        faena: faena,
-        area: area,
-        tag: tagFinal,
-        severidad: sev,
-        detalle: detalle || 'Reporte rápido sin detalles.',
-        evidencias: arregloEvidencias,
-        timestamp: new Date().toISOString(),
-        estado: 'nuevo'
-      };
-
-      if (navigator.onLine && dbAlertas) {
-        dbAlertas.push(payload).then(() => {
-          mostrarToast(`📡 Alerta transmitida para ${tagFinal}`);
-          limpiarFormularioTerreno();
-        }).catch(() => {
-          guardarEnColaLocal(payload); mostrarToast(`📴 Guardado offline.`); limpiarFormularioTerreno();
+        window.addEventListener('online', () => {
+            const badge = document.getElementById('badgeConexion');
+            if (badge) { badge.innerText = '🟢 ONLINE'; badge.className = 'badge-status online'; }
+            sincronizarBovedaOffline();
         });
-      } else {
-        guardarEnColaLocal(payload); mostrarToast(`📴 Sin red: Guardado offline.`); limpiarFormularioTerreno();
-      }
-    }
+        window.addEventListener('offline', () => {
+            const badge = document.getElementById('badgeConexion');
+            if (badge) { badge.innerText = '🔴 OFFLINE'; badge.className = 'badge-status offline'; }
+        });
 
-    function limpiarFormularioTerreno() {
-      document.getElementById('fieldDetalle').value = '';
-      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-      
-      chipsSeleccionados = [];
-      textoManualUsuario = "";
-      arregloEvidencias = [];
-      renderizarGaleria();
-      
-      actualizarContadorOfflineBadge();
-    }
+        // NAVEGACIÓN Y WIZARD
+        window.cambiarVistaPWA = function(vista) {
+            document.getElementById('vista-reporte').style.display = vista === 'reporte' ? 'block' : 'none';
+            document.getElementById('vista-mapa').style.display = vista === 'mapa' ? 'flex' : 'none';
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+            const btnNav = document.getElementById('nav-btn-' + vista);
+            if (btnNav) btnNav.classList.add('active');
 
-    document.addEventListener('DOMContentLoaded', () => {
-      actualizarContadorOfflineBadge();
-      sincronizarColaOffline();
-    });
-    window.addEventListener('online', sincronizarColaOffline);
-    window.addEventListener('offline', actualizarContadorOfflineBadge);
-  </script>
+            if (vista === 'mapa') {
+                if (!mapaPWA) { setTimeout(() => { window.inicializarMapaPWA(); }, 200); } 
+                else { setTimeout(() => { mapaPWA.invalidateSize(); }, 200); }
+            }
+        }
+
+        window.avanzarPaso = function(numPaso) {
+            document.querySelectorAll('.wizard-step').forEach(step => step.classList.remove('active'));
+            const siguientePaso = document.getElementById(`step-${numPaso}`);
+            if (siguientePaso) { siguientePaso.classList.add('active'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        }
+
+        window.mostrarNotificacion = function(msg) {
+            const t = document.getElementById('toastNotificacion');
+            if (t) { t.innerText = msg; t.style.display = 'block'; setTimeout(() => { t.style.display = 'none'; }, 4000); }
+        }
+
+        // CARGA DE EQUIPOS DESDE FIREBASE
+        function cargarDeCacheLocalInmediato() {
+            const cached = localStorage.getItem(CACHE_CATASTRO_KEY);
+            if (cached) { try { catalogoGlobal = JSON.parse(cached); window.cargarAreasPorFaena(); } catch(e) {} }
+        }
+        cargarDeCacheLocalInmediato();
+
+        if (activosRef) {
+            activosRef.on('value', snap => {
+                const raw = snap.val();
+                if (raw) {
+                    catalogoGlobal = Object.keys(raw).map(k => {
+                        const data = raw[k] || {};
+                        
+                        // Rescate tolerante de coordenadas (número o texto)
+                        const rawLat = data.latitud ?? data.Latitud ?? data.lat ?? data.Lat ?? data.latitude ?? null;
+                        const rawLng = data.longitud ?? data.Longitud ?? data.lng ?? data.Lng ?? data.lon ?? data.longitude ?? null;
+
+                        return {
+                            id: k,
+                            // Rescate tolerante del TAG / Nombre
+                            tag: String(data.tag || data.Tag || data.TAG || data.equipo || data.Equipo || data.nombre || k || 'SIN-TAG').trim(),
+                            area: String(data.area || data.Area || 'Área General').trim(),
+                            siteId: String(data.siteId || data.site || data.faena || data.Faena || 'Planta, Mina los Colorados').trim(),
+                            lat: rawLat ? parseFloat(rawLat) : null,
+                            lng: rawLng ? parseFloat(rawLng) : null,
+                            sev: data.severidad || data.estado || 'Verde'
+                        };
+                    });
+                    localStorage.setItem(CACHE_CATASTRO_KEY, JSON.stringify(catalogoGlobal));
+                    window.cargarAreasPorFaena(); 
+                }
+            });
+        }
+
+        window.cargarAreasPorFaena = function() {
+            const faenaSelect = document.getElementById('fieldFaena');
+            if (!faenaSelect) return;
+            const faenaVal = faenaSelect.value;
+            const filtered = catalogoGlobal.filter(e => e.siteId === faenaVal);
+            const areasUnicas = [...new Set(filtered.map(e => e.area))].filter(Boolean).sort();
+            
+            const selectArea = document.getElementById('fieldArea');
+            if (selectArea) {
+                selectArea.innerHTML = '<option value="">-- Selecciona el Área --</option>' + areasUnicas.map(a => `<option value="${a}">${a}</option>`).join('');
+            }
+            const selectEquipo = document.getElementById('fieldTagSelect');
+            if (selectEquipo) selectEquipo.innerHTML = '<option value="">-- Selecciona el equipo --</option>';
+        }
+
+        window.cargarEquiposPorArea = function() {
+            const faenaVal = document.getElementById('fieldFaena').value;
+            const areaVal = document.getElementById('fieldArea').value;
+            const filtered = catalogoGlobal.filter(e => e.siteId === faenaVal && e.area === areaVal);
+            
+            const selectEquipo = document.getElementById('fieldTagSelect');
+            if (selectEquipo) {
+                selectEquipo.innerHTML = '<option value="">-- Selecciona el equipo --</option>' + filtered.map(e => `<option value="${e.tag}">${e.tag}</option>`).join('');
+            }
+        }
+
+        // HALLAZGOS Y DICTADO POR VOZ
+        const diccionarioFallas = {
+            'General': ['💧 Fuga detectada', '🔊 Ruido anormal', '⚠️️ Alta vibración', '🔥 Alta temperatura'],
+            'Motor': ['📻 Ruido rodamiento', '🔥 Motor sobrecalentado', '⚙️ Fuga de grasa', '🔌 Problema eléctrico', '🦵 Pata coja'],
+            'Reductor': ['🛢️ Fuga de aceite', '📻 Ruido engranajes', '🌡️ Temperatura elevada', '📉 Nivel bajo'],
+            'Polea_Correa': ['⛓️️ Correa dañada', '📐 Desalineamiento', '⚙️ Polea desgastada', '💨 Patinando'],
+            'Estructura': ['🔩 Pernos sueltos', '🛑 Polín trabado', '⚡ Fisura visible', '🛡️ Falta protección']
+        };
+
+        window.cargarHallazgosDinamicos = function() {
+            const compSelect = document.getElementById('fieldComponente');
+            if (!compSelect) return;
+            const fallas = diccionarioFallas[compSelect.value] || diccionarioFallas['General'];
+            const contenedor = document.getElementById('contenedor-chips-dinamicos');
+            if (contenedor) {
+                contenedor.innerHTML = '';
+                chipsSeleccionados = [];
+                fallas.forEach(falla => { contenedor.innerHTML += `<div class="chip" onclick="window.toggleChip(this, '${falla}')">${falla}</div>`; });
+            }
+        }
+
+        window.toggleChip = function(chipEl, text) {
+            if (chipEl.classList.contains('active')) {
+                chipEl.classList.remove('active');
+                chipsSeleccionados = chipsSeleccionados.filter(c => c !== text);
+            } else {
+                chipEl.classList.add('active');
+                chipsSeleccionados.push(text);
+            }
+        }
+
+        window.iniciarDictado = function() {
+            try {
+                const btn = document.getElementById('btn-dictado');
+                const cajaTexto = document.getElementById('fieldDetalle');
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) { alert("Navegador sin soporte de voz."); return; }
+                const rec = new SpeechRecognition();
+                rec.lang = 'es-CL';
+                rec.onstart = () => { btn.style.background = '#ef4444'; window.mostrarNotificacion("🎙️ Escuchando..."); };
+                rec.onresult = (e) => { cajaTexto.value = (cajaTexto.value + " " + e.results[0][0].transcript).trim(); };
+                rec.onend = () => { btn.style.background = '#3b82f6'; };
+                rec.start();
+            } catch (e) { alert("Error con el micrófono."); }
+        }
+
+        // COMPRESIÓN MULTIMEDIA
+        window.procesarYComprimirMedia = async function(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+            for (let i = 0; i < files.length; i++) {
+                if (files[i].type.startsWith('image/')) { await procesarImagen(files[i]); } 
+                else if (files[i].type.startsWith('video/')) { await procesarVideo(files[i]); }
+            }
+            renderizarGaleria();
+        }
+
+        function procesarImagen(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        try {
+                            const canvas = document.getElementById('resizeCanvas');
+                            if(!canvas) return resolve();
+                            const ctx = canvas.getContext('2d');
+                            let width = img.width, height = img.height;
+                            if (width > 640) { height = Math.round((height * 640) / width); width = 640; }
+                            canvas.width = width; canvas.height = height;
+                            ctx.drawImage(img, 0, 0, width, height);
+                            arregloEvidencias.push({ tipo: 'imagen', data: canvas.toDataURL('image/jpeg', 0.5) });
+                        } catch(err) {} resolve();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function procesarVideo(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = function(e) { arregloEvidencias.push({ tipo: 'video', data: e.target.result }); resolve(); };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        window.eliminarEvidenciaPWA = function(index) {
+            arregloEvidencias.splice(index, 1); renderizarGaleria();
+        }
+
+        function renderizarGaleria() {
+            const gallery = document.getElementById('mediaGallery');
+            if (!gallery) return;
+            gallery.innerHTML = '';
+            arregloEvidencias.forEach((ev, index) => {
+                let cont = ev.tipo === 'imagen' ? `<img src="${ev.data}" style="border-radius:8px; height:80px;">` : `🎥`;
+                gallery.innerHTML += `<div style="position:relative; display:inline-block; margin:5px;">${cont}<button type="button" onclick="window.eliminarEvidenciaPWA(${index})" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer;">X</button></div>`;
+            });
+        }
+
+        // ENVIAR ALERTA
+        window.selectSevFat = function(sev) {
+            document.getElementById('fieldSev').value = sev;
+            ['Verde', 'Amarillo', 'Naranja', 'Rojo'].forEach(s => {
+                const btn = document.getElementById('sev_' + s);
+                if (btn) btn.className = 'sev-fat-btn' + (s === sev ? ` sel-${sev.toLowerCase()}` : '');
+            });
+        }
+
+        window.enviarAlertaSegura = function() {
+            const tagSelect = document.getElementById('fieldTagSelect').value;
+            if (!tagSelect) { alert("⚠️ Selecciona un equipo en el Paso 1."); window.avanzarPaso(1); return; }
+
+            const comp = document.getElementById('fieldComponente').value;
+            const sev = document.getElementById('fieldSev').value;
+            const notasManuales = document.getElementById('fieldDetalle').value.trim();
+
+            let textoFinal = `[COMPONENTE: ${comp}]\n`;
+            if (chipsSeleccionados.length > 0) textoFinal += "📌 " + chipsSeleccionados.join(" | ") + "\n";
+            if (notasManuales !== "") textoFinal += "📝 " + notasManuales;
+
+            const payload = {
+                faena: document.getElementById('fieldFaena').value,
+                area: document.getElementById('fieldArea').value,
+                tag: tagSelect,
+                severidad: sev,
+                detalle: textoFinal,
+                evidencias: arregloEvidencias,
+                timestamp: new Date().toISOString(),
+                estado: 'nuevo'
+            };
+
+            if (navigator.onLine && dbAlertas) {
+                dbAlertas.push(payload).then(() => { window.mostrarNotificacion("✅ Reporte enviado al CIO."); limpiarTrasEnvio(); })
+                .catch(() => { guardarEnBoveda(payload); limpiarTrasEnvio(); });
+            } else { guardarEnBoveda(payload); limpiarTrasEnvio(); }
+        }
+
+        function limpiarTrasEnvio() {
+            document.getElementById('fieldDetalle').value = '';
+            chipsSeleccionados = []; arregloEvidencias = []; renderizarGaleria();
+            window.cargarHallazgosDinamicos(); window.avanzarPaso(1); 
+        }
+
+        window.forzarSincronizacionOffline = function() { sincronizarBovedaOffline(); }
+
+        // MAPA Y PUENTE
+        window.inicializarMapaPWA = function() {
+            try {
+                const divMapa = document.getElementById('mapa-gps-pwa');
+                if (!divMapa || typeof L === 'undefined') return;
+                mapaPWA = L.map('mapa-gps-pwa').setView([-28.298, -70.785], 14);
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(mapaPWA);
+                setTimeout(() => { mapaPWA.invalidateSize(); window.centrarEnMiUbicacion(); }, 500);
+            } catch(e) {}
+        }
+
+        window.centrarEnMiUbicacion = function() {
+            if (!mapaPWA) return;
+            mapaPWA.locate({setView: true, maxZoom: 17});
+            mapaPWA.on('locationfound', function(e) {
+                if (window.marcadorGPS_PWA) mapaPWA.removeLayer(window.marcadorGPS_PWA);
+                const iconoGPS = L.divIcon({ className: 'gps-pin', html: `<div style="background-color: #3b82f6; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #3b82f6; animation: pulse 1s infinite;"></div>`, iconSize: [16, 16] });
+                window.marcadorGPS_PWA = L.marker(e.latlng, {icon: iconoGPS}).addTo(mapaPWA);
+            });
+        }
+
+        window.buscarEnMapaPWA = function(e) {
+            if (e.key !== 'Enter' || !mapaPWA) return;
+            
+            const busqueda = e.target.value.toLowerCase().trim();
+            if (!busqueda) return;
+
+            // Busca por TAG o por ID del activo
+            const equipo = catalogoGlobal.find(eq => 
+                (eq.tag && eq.tag.toLowerCase().includes(busqueda)) ||
+                (eq.id && eq.id.toLowerCase().includes(busqueda))
+            );
+
+            // 1. Diagnóstico: ¿Existe el equipo en el catastro?
+            if (!equipo) {
+                alert(`⚠️ No se encontró ningún equipo que coincida con "${busqueda}".`);
+                return;
+            }
+
+            // 2. Diagnóstico: ¿Tiene coordenadas válidas?
+            if (!equipo.lat || !equipo.lng || isNaN(equipo.lat) || isNaN(equipo.lng)) {
+                alert(`⚠️ El equipo "${equipo.tag}" está en el catastro, pero no tiene coordenadas GPS (latitud/longitud) registradas.`);
+                return;
+            }
+
+            // 3. Si todo está correcto, vuela al equipo y despliega el pin
+            mapaPWA.flyTo([equipo.lat, equipo.lng], 18, { animate: true, duration: 1.5 });
+            
+            let colorPin = equipo.sev === 'Rojo' ? '#ef4444' : equipo.sev === 'Naranja' ? '#f97316' : '#22c55e';
+            const iconEquipo = L.divIcon({
+                className: 'eq-pin',
+                html: `<div style="background-color: ${colorPin}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px ${colorPin};"></div>`,
+                iconSize: [14, 14]
+            });
+
+            const htmlPopup = `
+                <div style="font-family: sans-serif; padding: 2px;">
+                    <strong style="color:#0f172a; font-size: 1rem;">${equipo.tag}</strong><br>
+                    <span style="color:#64748b; font-size: 0.8rem;">${equipo.area}</span><br>
+                    <button onclick="window.reportarDesdeMapa('${equipo.tag}', '${equipo.area}', '${equipo.siteId}')" 
+                            style="margin-top:8px; background:#3b82f6; color:white; border:none; padding:8px 12px; border-radius:6px; width:100%; cursor:pointer; font-weight:bold;">
+                        Reportar Aquí
+                    </button>
+                </div>`;
+            
+            L.marker([equipo.lat, equipo.lng], { icon: iconEquipo })
+             .addTo(mapaPWA)
+             .bindPopup(htmlPopup)
+             .openPopup();
+        };
+
+        window.reportarDesdeMapa = function(tag, area, faena) {
+            window.cambiarVistaPWA('reporte');
+            window.avanzarPaso(1);
+            
+            const selectFaena = document.getElementById('fieldFaena');
+            if (selectFaena) { selectFaena.value = faena; window.cargarAreasPorFaena(); }
+            
+            setTimeout(() => {
+                const selectArea = document.getElementById('fieldArea');
+                if (selectArea) { selectArea.value = area; window.cargarEquiposPorArea(); }
+                setTimeout(() => {
+                    const selectTag = document.getElementById('fieldTagSelect');
+                    if (selectTag) selectTag.value = tag;
+                    window.mostrarNotificacion("📍 Equipo cargado desde el mapa.");
+                }, 50);
+            }, 50);
+        };
+
+        // =========================================================================
+        // REGISTRO DEL SERVICE WORKER (NECESARIO PARA INSTALACIÓN PWA)
+        // =========================================================================
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        console.log('✅ Service Worker registrado con éxito:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.error('❌ Error al registrar el Service Worker:', error);
+                    });
+            });
+        }
+
+    </script>
+
 </body>
 </html>

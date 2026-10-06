@@ -1,153 +1,326 @@
-/* --- LAYOUT BENTO GRID --- */
+/* ==========================================
+   DISEÑO GRID PRINCIPAL (BENTO LAYOUT)
+   ========================================== */
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Evita que la página entera tenga scroll, todo se mueve por dentro */
+}
+
 .dashboard-grid {
-  display: grid;
-  grid-template-columns: 320px 1fr 280px; /* Panel izquierdo, Mapa central, Panel derecho */
-  gap: 1.5rem;
-  padding: 1.5rem;
-  height: calc(100vh - 80px); /* Alto total menos la barra superior */
+    display: grid;
+    /* Afinando las columnas: 280px a la izq y 320px a la der, dándole más protagonismo al mapa */
+    grid-template-columns: 280px 1fr 320px; 
+    gap: 15px;
+    height: calc(100vh - 65px); /* Eliminamos la franja de abajo usando el cálculo matemático exacto */
+    padding: 15px; 
+    box-sizing: border-box;
 }
 
-/* --- BARRA SUPERIOR (NAVBAR) --- */
-.top-navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 20px;
-  margin: 15px 1.5rem 0 1.5rem;
-  height: 60px;
+/* Panel Izquierdo: Catastro */
+.panel-alertas {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
-.navbar-left { display: flex; align-items: center; gap: 15px; }
-
-/* Ajuste del Logo para que resalte en el fondo oscuro */
-.navbar-left img.logo { 
-  height: 38px; 
-  background-color: #ffffff; 
-  padding: 4px 8px; 
-  border-radius: 6px; 
+/* Panel Central: Mapa GIS */
+.panel-mapa {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 0;
+    overflow: hidden;
 }
 
-.navbar-left h1 { font-size: 1.2rem; font-weight: 600; letter-spacing: 0.5px; }
-
-/* Selector de faenas transparente */
-.faena-selector {
-  background: transparent;
-  color: var(--text-main);
-  border: 1px solid var(--glass-border);
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  outline: none;
-}
-.faena-selector option { background: var(--bg-dark); }
-
-.navbar-right { display: flex; align-items: center; gap: 20px; }
-.gadget-bar { display: flex; gap: 15px; font-size: 0.9rem; color: var(--text-muted); }
-.gadget-bar span { display: flex; align-items: center; gap: 5px; }
-
-.badge-admin {
-  background-color: var(--primary-color);
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: bold;
+/* Encabezados de Paneles (Más estilizados y proporcionados) */
+.panel-mapa .panel-header,
+.panel-alertas .panel-header,
+.panel-kpi .panel-header,
+.contenedor-alertas .panel-header {
+    padding: 12px 15px;
+    background: var(--glass-surface);
+    border-bottom: 1px solid var(--glass-border);
+    z-index: 10;
 }
 
-.icon-btn {
-  background: none;
-  border: none;
-  color: var(--text-main);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-.icon-btn:hover { opacity: 1; }
-
-/* --- PANELES (CARTAS DEL GRID) --- */
 .panel-header h2 {
-  font-size: 1.1rem;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 15px;
-  padding: 15px 15px 0 15px;
+    font-size: 0.95rem; /* Achicamos los títulos para que quepan en una sola línea elegante */
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap; /* Fuerza a no saltar de línea */
 }
 
-.panel-alertas, .panel-kpi, .panel-mapa {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+.panel-header h2 .material-symbols-outlined {
+    font-size: 1.1rem; /* Íconos un poco más pequeños para igualar el texto */
 }
 
-/* Espacio donde cargará el mapa */
 .mapa-container {
-  flex-grow: 1;
-  border-radius: 0 0 16px 16px;
-  background-color: rgba(0, 0, 0, 0.2); 
-  z-index: 1;
+    flex: 1;
+    width: 100%;
+    min-height: 100%;
+    background-color: #1a1a1a;
+}
+
+/* ==========================================
+   PANEL DERECHO (KPIS Y ALERTAS)
+   ========================================== */
+.columna-derecha {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* KPIs ISO (Ajuste para que no se salga del rincón) */
+.panel-kpi {
+    flex-shrink: 0; 
+}
+
+.kpi-card {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 8px 10px; /* Reducimos el relleno para que no apriete los bordes */
+    border-left: 3px solid var(--glass-border);
+    margin-bottom: 0; 
+}
+.kpi-card.status-ok { border-left-color: var(--status-ok); }
+.kpi-card.status-warning { border-left-color: var(--status-warning); }
+.kpi-card.status-alert { border-left-color: var(--status-alert); }
+.kpi-card.status-critical { border-left-color: var(--status-critical); }
+
+.kpi-title { display: block; color: var(--text-muted); font-size: 0.75rem; margin-bottom: 2px; }
+.kpi-value { display: block; color: white; font-size: 1.25rem; font-weight: bold; } /* Achicamos los números gigantes */
+
+/* Caja de Alertas */
+.contenedor-alertas {
+    flex: 1; 
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .lista-scroll {
-  padding: 0 15px 15px 15px;
-  overflow-y: auto;
-  flex-grow: 1;
+    flex: 1;
+    overflow-y: auto;
+    padding: 5px 10px 10px 10px;
 }
 
-/* Botón IA Copilot Especial */
-#btn-ia-copilot { 
-  margin: 15px; 
-  justify-content: center; 
-  background-color: #6366f1; /* Tono morado/tecnológico para la IA */
-}
-#btn-ia-copilot:hover { background-color: #4f46e5; }
+/* Custom Scrollbar (Barras de scroll limpias) */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
 
-/* Tarjetas KPI de la derecha */
-.kpi-card {
-  margin: 0 15px 15px 15px;
-  padding: 15px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  border-left: 4px solid;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* ==========================================
+   ESTILOS DE TARJETAS (CATASTRO)
+   ========================================== */
+.alerta-item {
+    background: var(--glass-surface);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 12px; /* Las tarjetas ahora son más compactas */
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
 }
 
-/* 4 Niveles ISO 20816-3 */
-.status-ok { border-color: var(--status-ok); }
-.status-alert { border-color: var(--status-alert); }
-.status-warning { border-color: var(--status-warning); }
-.status-critical { border-color: var(--status-critical); }
+.alerta-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
 
-.kpi-value { font-size: 1.5rem; font-weight: bold; }
+/* ==========================================
+   FIX: BARRA SUPERIOR Y LOGO (El Toque Final)
+   ========================================== */
+.top-navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px; 
+    height: 65px; 
+    background: var(--glass-surface, #1a1c23);
+    border-bottom: 1px solid var(--glass-border, #333);
+    position: relative; 
+    z-index: 99999;     
+}
 
-/* --- MODAL DE EVIDENCIA MULTIMEDIA --- */
+.navbar-left, .navbar-center, .navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* EL LOGO: Resuelto */
+.logo {
+    height: 38px !important; 
+    width: auto;
+    object-fit: contain;
+    background-color: white; /* Le damos su fondo blanco */
+    padding: 4px 12px;       /* Un poco de respiro (padding) */
+    border-radius: 6px;      /* Bordes ligeramente redondeados como un botón */
+}
+
+.navbar-left h1 {
+    font-size: 1.1rem; /* Título CIO más sutil */
+    margin: 0;
+    color: white;
+}
+
+/* ==========================================
+   WIDGET DEL CLIMA
+   ========================================== */
+.btn-clima {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #60a5fa;
+    padding: 6px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.btn-clima:hover { background: rgba(59, 130, 246, 0.2); }
+
+.panel-pronostico {
+    position: absolute;
+    top: 70px;
+    right: 120px;
+    background: rgba(26, 28, 40, 0.95);
+    border: 1px solid var(--glass-border, #333);
+    border-radius: 12px;
+    padding: 15px;
+    z-index: 999999; 
+    box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+    backdrop-filter: blur(10px);
+    width: 320px;
+    display: none; 
+}
+
+.pronostico-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.pronostico-card {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.05);
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+/* ==========================================
+   MODALES (VENTANAS EMERGENTES Y OVERLAYS)
+   ========================================== */
 .modal-overlay {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
-  display: flex; justify-content: center; align-items: center; z-index: 9999;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(9, 11, 16, 0.85); /* Fondo oscuro semitransparente */
+    backdrop-filter: blur(8px); /* Efecto de cristal esmerilado en el fondo */
+    z-index: 9999999; /* Nivel máximo, por encima del mapa, clima y navbar */
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
+
 .modal-content {
-  width: 90%; max-width: 650px; max-height: 90vh;
-  display: flex; flex-direction: column;
-  background: var(--bg-dark); border: 1px solid var(--glass-border);
-  border-radius: 12px; overflow: hidden; box-shadow: var(--glass-shadow);
+    background: var(--glass-surface, rgba(26, 28, 40, 0.98));
+    border: 1px solid var(--glass-border, rgba(255,255,255,0.1));
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8);
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
 }
+
+/* Scrollbar estilizado para dentro del modal */
+.modal-content::-webkit-scrollbar { width: 6px; }
+.modal-content::-webkit-scrollbar-track { background: transparent; }
+.modal-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+.modal-content::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+
 .modal-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
-  background: rgba(0,0,0,0.3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
-.modal-body { padding: 20px; overflow-y: auto; }
-.modal-texto { margin-bottom: 20px; font-size: 0.95rem; color: var(--text-main); line-height: 1.5; }
-.modal-texto strong { color: white; }
-.modal-galeria { display: flex; flex-direction: column; gap: 15px; }
-.modal-media-item { 
-  width: 100%; border-radius: 8px; border: 1px solid var(--glass-border); 
-  background: #000; max-height: 400px; object-fit: contain;
+
+/* ==========================================
+   LÍNEA DE TIEMPO HISTÓRICA (TIMELINE) - CIO
+   ========================================== */
+.timeline-container {
+    position: relative;
+    padding: 10px 0 30px 0;
+    margin-top: 10px;
 }
-/* Efecto hover (clic) en las alertas */
-.alerta-item { cursor: pointer; transition: transform 0.2s, background 0.2s; }
-.alerta-item:hover { transform: translateX(5px); background: rgba(255,255,255,0.08) !important; }
+
+/* La línea vertical central/izquierda */
+.timeline-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 20px;
+    width: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 25px;
+    padding-left: 55px; /* Espacio para que el punto y la línea no tapen el contenido */
+}
+
+/* El punto de color en la línea de tiempo */
+.timeline-dot {
+    position: absolute;
+    left: 13px; /* Centrado sobre la línea vertical */
+    top: 15px;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    border: 3px solid #1e293b; /* Color del fondo de tu modal para dar efecto de corte */
+    z-index: 2;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+.timeline-content {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px;
+    padding: 16px;
+    position: relative;
+    transition: 0.2s;
+}
+
+.timeline-content:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+}
+
+/* Flechita apuntando a la línea */
+.timeline-content::before {
+    content: '';
+    position: absolute;
+    top: 18px;
+    left: -7px;
+    border-style: solid;
+    border-width: 7px 7px 7px 0;
+    border-color: transparent rgba(255,255,255,0.05) transparent transparent;
+}

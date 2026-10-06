@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>CIO Predictivo - CMP</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="./assets/img/logo-cpf.png">
+    
+    <!-- Fuentes e Iconos -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+
+    <!-- CSS Base V2.0 -->
+    <link rel="stylesheet" href="./src/css/variables.css">
+    <link rel="stylesheet" href="./src/css/layout.css">
+    
+    <!-- Leaflet para el Mapa -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+
+    <!-- CABECERA -->
+    <header class="top-nav">
+        <div class="brand">
+            <img src="./assets/img/logo-cpf.png" alt="CPF Logo" class="logo-cpf" loading="lazy">
+            <h1>CIO Moncon</h1>
+        </div>
+        
+        <div style="display: flex; gap: 15px; align-items: center; margin-left: auto;">
+            <button id="btn-panel-admin" class="btn-secundario" onclick="document.getElementById('modal-admin').showModal()" style="display: none; padding: 8px 16px; border-radius: 8px; background: var(--bg-panel-hover); color: var(--text-main); border: 1px solid var(--border-glass); cursor: pointer; align-items: center; gap: 5px; font-weight: 600;">
+                <span class="material-symbols-outlined">manage_accounts</span> Usuarios
+            </button>
+            <button onclick="document.getElementById('modal-nuevo-equipo').showModal()">+ Nuevo Equipo</button>
+            <div id="widget-clima-container"></div>
+        </div>
+    </header>
+
+    <!-- CONTENEDOR PRINCIPAL ESPACIAL -->
+    <main class="layout-dashboard">
+        
+        <!-- PANEL LATERAL UNIFICADO -->
+        <aside class="panel-lateral">
+            <div class="panel-tabs">
+                <button class="tab-btn activo"><span class="material-symbols-outlined" style="vertical-align: middle; font-size: 18px;">format_list_bulleted</span> Catastro</button>
+                <button class="tab-btn"><span class="material-symbols-outlined" style="vertical-align: middle; font-size: 18px;">warning</span> Alertas</button>
+            </div>
+            
+            <div id="lista-activos" class="panel-contenido">
+                <p style="text-align: center; color: var(--text-muted); margin-top: 20px;">Cargando equipos...</p>
+            </div>
+        </aside>
+
+        <!-- ÁREA CENTRAL ESPACIAL -->
+        <section class="panel-mapa">
+            
+            <!-- 1. EL CONTENEDOR DEL MAPA (DEBE ESTAR 100% VACÍO) -->
+            <div id="mapa-principal" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1;"></div>
+            
+            <!-- 2. WIDGET FLOTANTE: Filtros de Estado -->
+            <div class="widget-flotante filtro-estados" style="display: flex; gap: 10px;">
+                <span style="font-size: 0.85rem; font-weight: bold; color: var(--text-main); margin-right: 10px; align-self: center;">Filtro:</span>
+                <span style="padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; background: var(--status-ok); color: #000; font-weight: bold; cursor: pointer;">Normal</span>
+                <span style="padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; background: var(--status-seguimiento); color: #000; font-weight: bold; cursor: pointer;">Seg.</span>
+                <span style="padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; background: var(--status-alarma); color: #fff; font-weight: bold; cursor: pointer;">Alerta</span>
+                <span style="padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; background: var(--status-critico); color: #fff; font-weight: bold; cursor: pointer;">Crítico</span>
+            </div>
+
+            <!-- 3. WIDGET FLOTANTE: Resumen ISO 20816-3 -->
+            <div class="widget-flotante estado-iso">
+                <h4 style="margin: 0 0 10px 0; font-size: 0.9rem;"><span class="material-symbols-outlined" style="vertical-align: bottom; font-size: 18px;">analytics</span> Estado ISO 20816-3</h4>
+                <div style="display: flex; gap: 15px;">
+                    <div style="text-align: center; border-bottom: 2px solid var(--status-ok); padding-bottom: 5px;">
+                        <span style="font-size: 1.2rem; font-weight: bold;">218</span>
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">Zona A</div>
+                    </div>
+                    <div style="text-align: center; border-bottom: 2px solid var(--status-seguimiento); padding-bottom: 5px;">
+                        <span style="font-size: 1.2rem; font-weight: bold;">0</span>
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">Zona B</div>
+                    </div>
+                    <div style="text-align: center; border-bottom: 2px solid var(--status-alarma); padding-bottom: 5px;">
+                        <span style="font-size: 1.2rem; font-weight: bold;">0</span>
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">Zona C</div>
+                    </div>
+                    <div style="text-align: center; border-bottom: 2px solid var(--status-critico); padding-bottom: 5px;">
+                        <span style="font-size: 1.2rem; font-weight: bold;">1</span>
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">Zona D</div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- MODAL DE LOGIN NATIVO -->
+    <dialog id="modal-login" class="modal-nativo" style="max-width: 400px; padding: 2rem; text-align: center;">
+        <img src="./assets/img/logo-cpf.png" alt="CPF Logo" class="logo-cpf" style="height: 65px; margin-bottom: 1.5rem;">
+        <h2 style="margin-bottom: 1.5rem;">Acceso CIO Moncon</h2>
+        
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <input type="email" id="login-email" placeholder="Correo corporativo" style="padding: 12px; background: var(--bg-panel-hover); border: 1px solid var(--border-glass); color: var(--text-main); border-radius: 8px;" onkeyup="if(event.key === 'Enter') iniciarSesion()">
+            <input type="password" id="login-pass" placeholder="Contraseña" style="padding: 12px; background: var(--bg-panel-hover); border: 1px solid var(--border-glass); color: var(--text-main); border-radius: 8px;" onkeyup="if(event.key === 'Enter') iniciarSesion()">
+            <button onclick="iniciarSesion()" style="padding: 12px; background: var(--primary); color: white; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; margin-top: 10px;">Ingresar al Sistema</button>
+            <p id="login-error" style="color: var(--status-critico); font-size: 0.85rem; display: none; margin: 0;"></p>
+        </div>
+    </dialog>
+
+    <!-- MODAL DE ADMINISTRACIÓN DE USUARIOS -->
+    <dialog id="modal-admin" class="modal-nativo" style="width: 400px; padding: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 style="margin: 0;">Crear Perfil</h2>
+            <form method="dialog"><button style="background:none; border:none; color:var(--text-main); cursor:pointer;"><span class="material-symbols-outlined">close</span></button></form>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <input type="text" id="nuevo-nombre" placeholder="Nombre completo" style="padding: 10px; border-radius: 6px; background: var(--bg-panel-hover); border: 1px solid var(--border-glass); color: var(--text-main);">
+            <input type="email" id="nuevo-email" placeholder="Correo electrónico" style="padding: 10px; border-radius: 6px; background: var(--bg-panel-hover); border: 1px solid var(--border-glass); color: var(--text-main);">
+            <select id="nuevo-rol" style="padding: 10px; border-radius: 6px; background: var(--bg-panel-hover); border: 1px solid var(--border-glass); color: var(--text-main);">
+                <option value="lector">Lector (Solo vista)</option>
+                <option value="analista">Analista (Edición de equipos)</option>
+                <option value="admin">Administrador (Control total)</option>
+            </select>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">* Se asignará la contraseña genérica: <strong>Cmp2026.</strong></p>
+            <button onclick="crearNuevoUsuario()" style="padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Registrar Usuario</button>
+            <p id="admin-msg" style="font-size: 0.85rem; margin: 0; text-align: center;"></p>
+        </div>
+    </dialog>
+
+    <!-- MODAL DE NUEVO EQUIPO INTELIGENTE (FASE 2) -->
+    <dialog id="modal-nuevo-equipo" class="modal-nativo" style="width: 800px; max-width: 95vw; padding: 0;">
+        <div style="padding: 1.5rem; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center; background: var(--bg-panel); border-radius: 12px 12px 0 0;">
+            <h2 style="margin: 0; display: flex; align-items: center; gap: 8px;"><span class="material-symbols-outlined" style="color: var(--primary);">precision_manufacturing</span> Alta de Equipo Inteligente</h2>
+            <form method="dialog"><button style="background:none; border:none; color:var(--text-main); cursor:pointer;"><span class="material-symbols-outlined">close</span></button></form>
+        </div>
+        
+        <div style="padding: 1.5rem; max-height: 70vh; overflow-y: auto;">
+            <!-- Fila 1: Datos Básicos -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                <div>
+                    <label style="font-size: 0.85rem; color: var(--text-muted);">TAG del Equipo</label>
+                    <input type="text" id="eq-tag" placeholder="Ej: MH2709" class="input-form">
+                </div>
+                <div>
+                    <label style="font-size: 0.85rem; color: var(--text-muted);">Área Operativa</label>
+                    <select id="eq-area" class="input-form">
+                        <option value="Área 51">Área 51</option>
+                        <option value="Área 54">Área 54</option>
+                        <option value="Área 82">Área 82</option>
+                        <option value="Planta Pellets">Planta Pellets</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 0.85rem; color: var(--text-muted);">Plantilla / Tipo</label>
+                    <select id="eq-tipo" class="input-form" onchange="window.generarArbolDinamico(this.value)">
+                        <option value="">Seleccione tipo...</option>
+                        <option value="transportador">Transportador de Correa</option>
+                        <option value="bomba_centrifuga">Bomba Centrífuga</option>
+                        <option value="harnero">Harnero Vibratorio</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Fila 2: Fotos (3 Columnas) -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                <!-- General -->
+                <div class="drop-zone" id="drop-foto-ref" onclick="document.getElementById('input-foto-ref').click()" style="min-height: 100px; padding: 15px;">
+                    <span class="material-symbols-outlined" id="icono-ref" style="font-size: 28px; color: var(--text-muted);">add_a_photo</span>
+                    <p id="texto-ref" style="margin: 5px 0 0 0; font-size: 0.8rem;">Foto General</p>
+                    <input type="file" id="input-foto-ref" accept="image/*" style="display: none;">
+                </div>
+                <!-- Placa Motor -->
+                <div class="drop-zone" id="drop-foto-motor" onclick="document.getElementById('input-foto-motor').click()" style="min-height: 100px; padding: 15px;">
+                    <span class="material-symbols-outlined" id="icono-motor" style="font-size: 28px; color: var(--accent-blue);">document_scanner</span>
+                    <p id="texto-motor" style="margin: 5px 0 0 0; font-size: 0.8rem;">Placa Motor</p>
+                    <input type="file" id="input-foto-motor" accept="image/*" style="display: none;">
+                    <button id="btn-ocr-motor" class="btn-secundario" style="margin-top: 10px; font-size: 0.75rem; padding: 4px 8px; border-radius: 6px;"><span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">smart_toy</span> Escanear Motor</button>
+                </div>
+                <!-- Placa Reductor -->
+                <div class="drop-zone" id="drop-foto-reductor" onclick="document.getElementById('input-foto-reductor').click()" style="min-height: 100px; padding: 15px;">
+                    <span class="material-symbols-outlined" id="icono-reductor" style="font-size: 28px; color: #f59e0b;">document_scanner</span>
+                    <p id="texto-reductor" style="margin: 5px 0 0 0; font-size: 0.8rem;">Placa Reductor</p>
+                    <input type="file" id="input-foto-reductor" accept="image/*" style="display: none;">
+                    <button id="btn-ocr-reductor" class="btn-secundario" style="margin-top: 10px; font-size: 0.75rem; padding: 4px 8px; border-radius: 6px;"><span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">smart_toy</span> Escanear Reductor</button>
+                </div>
+            </div>
+
+            <!-- Fila 3: Especificaciones de Ingeniería -->
+            <div style="background: color-mix(in srgb, var(--bg-panel-hover) 50%, transparent); padding: 15px; border-radius: 8px; border: 1px solid var(--border-glass); margin-bottom: 20px;">
+                
+                <h4 style="margin: 0 0 10px 0; font-size: 0.85rem; color: var(--accent-blue);">Datos del Motor Principal</h4>
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 15px;">
+                    <div><label style="font-size: 0.75rem; color: var(--text-muted);">Potencia (kW)</label><input type="text" id="eq-potencia" class="input-form" style="padding: 6px; font-size: 0.85rem;"></div>
+                    <div><label style="font-size: 0.75rem; color: var(--text-muted);">RPM</label><input type="text" id="eq-rpm" class="input-form" style="padding: 6px; font-size: 0.85rem;"></div>
+                    <div><label style="font-size: 0.75rem; color: var(--text-muted);">Carcasa (Frame)</label><input type="text" id="eq-carcasa" placeholder="Ej: 315M" class="input-form" style="padding: 6px; font-size: 0.85rem;"></div>
+                    <div><label style="font-size: 0.75rem; color: var(--text-muted);">Rodamiento DE</label><input type="text" id="eq-rod-de" class="input-form" style="padding: 6px; font-size: 0.85rem;"></div>
+                    <div><label style="font-size: 0.75rem; color: var(--text-muted);">Rodamiento NDE</label><input type="text" id="eq-rod-nde" class="input-form" style="padding: 6px; font-size: 0.85rem;"></div>
+                </div>
+
+                <h4 style="margin: 0 0 10px 0; font-size: 0.85rem; color: #f59e0b;">Datos del Reductor y Transmisión</h4>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                    <div><label style="font-size: 0.75rem; color: var(--text-muted);">Modelo / Marca</label><input type="text" id="eq-red-modelo" placeholder="Ej: Flender" class="input-form" style="padding: 6px; font-size: 0.85rem;"></div>
+                    <div><label style="font-size: 0.75rem; color: var(--text-muted);">Ratio (i)</label><input type="text" id="eq-red-ratio" placeholder="Ej: 24.5" class="input-form" style="padding: 6px; font-size: 0.85rem;"></div>
+                    <div><label style="font-size: 0.75rem; color: var(--text-muted);">RPM Salida</label><input type="text" id="eq-red-rpm" placeholder="Auto" class="input-form" style="padding: 6px; font-size: 0.85rem; background: rgba(0,0,0,0.2);"></div>
+                    <div><label style="font-size: 0.75rem; color: var(--text-muted);">Tipo de Acople</label><input type="text" id="eq-acople" placeholder="Ej: Elástico" class="input-form" style="padding: 6px; font-size: 0.85rem;"></div>
+                </div>
+            </div>
+
+            <!-- Fila 4: Árbol Dinámico de Componentes -->
+            <div>
+                <h3 style="font-size: 1rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 8px; margin-bottom: 15px;">Estructura de Medición CBM</h3>
+                <div id="contenedor-arbol-componentes" style="display: flex; flex-direction: column; gap: 8px;">
+                    <p style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">Seleccione una plantilla arriba para generar el árbol.</p>
+                </div>
+            </div>
+        </div>
+
+        <div style="padding: 1.5rem; border-top: 1px solid var(--border-glass); display: flex; justify-content: flex-end; background: var(--bg-panel); border-radius: 0 0 12px 12px;">
+            <button class="btn-primario" onclick="window.guardarNuevoEquipo()" style="display: flex; align-items: center; gap: 8px;">
+                <span class="material-symbols-outlined">save</span> Registrar Activo
+            </button>
+        </div>
+    </dialog>
+
+    <!-- SCRIPTS MODULARES -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js" defer></script>
+    
+    <!-- LIBRERÍA DE INTELIGENCIA ARTIFICIAL (OCR) -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js" defer></script>
+    
+    <script type="module" src="./src/js/main.js"></script>
+</body>
+</html>

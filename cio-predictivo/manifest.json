@@ -1,0 +1,16 @@
+{
+  "name": "CIO Predictivo Moncon",
+  "short_name": "CIO Moncon",
+  "description": "Plataforma de Monitoreo de Condiciones - Mina Los Colorados",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "./assets/img/logo-cpf.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
