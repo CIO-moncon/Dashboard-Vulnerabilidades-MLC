@@ -7,6 +7,17 @@ import { initMapa } from './ui/mapa.js';
 import { initEquiposModal } from './ui/equipos.js';
 import { initOCR } from './ui/ocr.js';
 import { initLecturaActivos } from './ui/activos.js';
+// Al inicio de main.js agrega las importaciones:
+import { iniciarReceptorAlertasCIO } from './ui/alertas.js';
+import { inicializarPaneles } from './ui/paneles.js';
+
+// Y luego, donde inicializas tu app (por ejemplo en document.addEventListener('DOMContentLoaded')):
+document.addEventListener('DOMContentLoaded', () => {
+    // ... tus otras funciones (mapa, autenticación, etc) ...
+    
+    inicializarPaneles();
+    iniciarReceptorAlertasCIO(); // ¡Esto enciende el radar de escucha del CIO!
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("🚀 CIO Predictivo V2.0 Inicializado con ES2024");
