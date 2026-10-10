@@ -66,13 +66,26 @@ function configurarEventosBase() {
         const itemNavegable = e.target.closest('.item-navegable');
         if (itemNavegable) {
             const target = itemNavegable.getAttribute('data-target');
-            if (target === 'BF-3102') renderizarExpediente('BF-3102', 'espacio-trabajo-dinamico');
-            if (target === 'alerta-001') renderizarHallazgo('alerta-001', 'espacio-trabajo-dinamico');
+            if (target === 'alerta-001') {
+                renderizarHallazgo(target, 'espacio-trabajo-dinamico');
+            } else {
+                // Si no es una alerta fija, asumimos que es el ID dinámico de un equipo
+                renderizarExpediente(target, 'espacio-trabajo-dinamico');
+            }
+            return;
         }
 
         // --- C) Volver a Planta ---
         const btnVolver = e.target.closest('#btn-volver-dashboard');
         if (btnVolver) location.reload();
+
+        // --- C.2) CREAR NUEVO EQUIPO ---
+        const btnCrearEquipo = e.target.closest('#btn-crear-equipo');
+        if (btnCrearEquipo) {
+            // Pasamos "NUEVO" como ID para que el módulo sepa que es un lienzo en blanco
+            renderizarExpediente('NUEVO', 'espacio-trabajo-dinamico');
+            return;
+        }
 
         // --- D) MODO KIOSKO ---
         const btnKiosko = e.target.closest('#btn-kiosko');

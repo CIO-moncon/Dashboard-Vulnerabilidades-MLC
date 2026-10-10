@@ -235,6 +235,21 @@
         </main>
     </section>
 
+    <!-- MODAL DE TENDENCIAS CBM (GRÁFICO HISTÓRICO) -->
+<div id="modal-tendencia" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: 12px; width: 650px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); animation: fadeIn 0.2s ease;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-glass); padding-bottom: 10px;">
+            <h3 id="modal-titulo-punto" style="color: var(--primary-blue); font-size: 1.1rem;">Tendencia Histórica: Punto</h3>
+            <button id="btn-cerrar-modal" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; display: flex; align-items: center;">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div style="position: relative; height: 300px; width: 100%;">
+            <canvas id="chartTendenciaSpot"></canvas>
+        </div>
+    </div>
+</div>
+
     <script type="module" src="./js/app.js"></script>
 </body>
 </html>
