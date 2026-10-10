@@ -1,0 +1,17 @@
+:root {
+    --bg-dark: #0d1117;
+    --bg-card: #161b22;
+    --bg-input: #010409;
+    --border-glass: rgba(255, 255, 255, 0.12);
+    
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    
+    --primary-blue: #38bdf8;
+    --primary-hover: #0284c7;
+
+    --iso-zona-a: #10b981;
+    --iso-zona-b: #84cc16;
+    --iso-zona-c: #f59e0b;
+    --iso-zona-d: #ef4444;
+}

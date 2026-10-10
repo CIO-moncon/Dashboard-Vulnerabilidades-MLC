@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>CIO Predictivo 2.0 - CPF Ingeniería | CMP Mina Los Colorados</title>
+    
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    
+    <!-- Librería de Gráficos Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Librerías de Google Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <!-- Librerías para Generación de PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <link rel="stylesheet" href="./css/main.css">
+</head>
+<body>
+
+    <!-- MÓDULO LOGIN -->
+    <main id="vista-login" class="fullscreen-view activa">
+        <div class="login-card">
+            <div class="login-header">
+                <span class="material-symbols-outlined logo-icon">precision_manufacturing</span>
+                <h2>CIO Predictivo 2.0</h2>
+                <p>CPF Ingeniería • Mina Los Colorados (CMP)</p>
+            </div>
+            
+            <div class="login-body">
+                <div class="input-group">
+                    <span class="material-symbols-outlined">person</span>
+                    <input type="email" id="login-email" placeholder="Correo (ej: analista@cpf.cl)">
+                </div>
+                <div class="input-group">
+                    <span class="material-symbols-outlined">lock</span>
+                    <input type="password" id="login-pass" placeholder="Contraseña">
+                </div>
+                
+                <button id="btn-ingresar" class="btn-accion">
+                    Autenticar <span class="material-symbols-outlined">login</span>
+                </button>
+                <div id="login-error" style="margin-top: 10px; font-size: 0.8rem; color: var(--iso-zona-d);"></div>
+
+                <footer class="legal-footer">
+                    <p>© 2026 CPF Ingeniería. Desarrollado para CMP - Mina Los Colorados.</p>
+                    <p style="margin-top: 8px; font-weight: 700; color: var(--primary-blue); letter-spacing: 0.5px;">
+                        Plataforma creada por Francisco Leiva
+                    </p>
+                </footer>
+            </div>
+        </div>
+    </main>
+
+    <!-- MÓDULO APP PRINCIPAL -->
+    <section id="vista-app" class="app-layout oculta">
+        
+        <!-- Nueva Barra Lateral (Tabs y Áreas) -->
+        <aside class="sidebar-principal">
+            <div class="brand">
+                <span class="material-symbols-outlined">donut_large</span>
+                <span>CIO Moncon (CPF)</span>
+            </div>
+            
+            <!-- PESTAÑAS CON IDs -->
+            <div class="sidebar-tabs">
+                <button class="tab-btn active" id="btn-tab-catastro">
+                    <span class="material-symbols-outlined" style="font-size: 1.1rem;">format_list_bulleted</span> Catastro
+                </button>
+                <button class="tab-btn" id="btn-tab-alertas">
+                    <span class="material-symbols-outlined" style="font-size: 1.1rem;">warning</span> Alertas 
+                    <span class="badge-alerta">1</span>
+                </button>
+            </div>
+
+            <div class="sidebar-search">
+                <span class="material-symbols-outlined">search</span>
+                <input type="text" placeholder="Buscar equipo o TAG...">
+            </div>
+
+            <!-- CONTENEDOR 1: CATASTRO (Visible por defecto) -->
+            <div class="area-list" id="lista-catastro">
+                <div class="area-card-v2 status-danger item-navegable" data-target="alerta-001">
+                    <span class="material-symbols-outlined icon">account_tree</span>
+                    <div class="info">
+                        <h4>Área 100 - Chancado</h4>
+                        <p><span class="dot" style="background: var(--iso-zona-d);"></span> <span style="color: var(--iso-zona-d);">Fuga aceite Reductor</span></p>
+                    </div>
+                    <div class="badge-count">
+                        <span class="material-symbols-outlined" style="font-size: 0.9rem;">groups</span> 3
+                    </div>
+                </div>
+
+                <div class="area-card-v2 status-ok item-navegable" data-target="BF-3102">
+                    <span class="material-symbols-outlined icon">conveyor_belt</span>
+                    <div class="info">
+                        <h4>Beltfeeder 3102</h4>
+                        <p><span class="dot" style="background: var(--iso-zona-a);"></span> <span style="color: var(--iso-zona-a);">100% Normal</span></p>
+                    </div>
+                    <div class="badge-count">
+                        <span class="material-symbols-outlined" style="font-size: 0.9rem;">insights</span> CBM
+                    </div>
+                </div>
+
+                <div class="area-card-v2 status-ok">
+                    <span class="material-symbols-outlined icon">account_tree</span>
+                    <div class="info">
+                        <h4>Área 200 - Molienda</h4>
+                        <p><span class="dot" style="background: var(--iso-zona-a);"></span> <span style="color: var(--iso-zona-a);">100% Normal</span></p>
+                    </div>
+                    <div class="badge-count">
+                        <span class="material-symbols-outlined" style="font-size: 0.9rem;">groups</span> 36
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTENEDOR 2: ALERTAS (Oculto por defecto con la clase 'oculta') -->
+            <div class="area-list oculta" id="lista-alertas">
+                <div class="area-card-v2 status-danger item-navegable" data-target="alerta-001">
+                    <span class="material-symbols-outlined icon" style="color: var(--iso-zona-d);">warning</span>
+                    <div class="info">
+                        <h4 style="color: var(--iso-zona-d);">Fuga de Aceite</h4>
+                        <p><span class="dot" style="background: var(--text-muted);"></span> <span style="color: var(--text-muted);">Reductor 3102 (Área 100)</span></p>
+                    </div>
+                    <div class="badge-count" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: var(--iso-zona-d);">
+                        Hace 2h
+                    </div>
+                </div>
+            </div>
+            
+            <!-- PERFIL DE USUARIO -->
+            <div style="margin-top: auto;">
+                <div class="user-profile">
+                    <div class="avatar">FL</div>
+                    <div class="info">
+                        <span class="name">Usuario</span>
+                        <span class="role">Rol</span>
+                    </div>
+                    <button id="btn-salir" class="btn-icon">
+                        <span class="material-symbols-outlined">logout</span>
+                    </button>
+                </div>
+                <div style="text-align: center; font-size: 0.65rem; color: var(--text-muted); margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-glass);">
+                    Creado por <span style="color: var(--text-main); font-weight: 600;">Francisco Leiva</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Contenedor Principal (Dashboard y Vistas Dinámicas) -->
+        <main id="contenido-principal">
+            <header class="topbar">
+                <h2>Dashboard CBM - Mina Los Colorados</h2>
+                <div class="topbar-actions">
+                    <div class="smart-cards-container">
+                        <div class="smart-card">
+                            <span>FAENA</span>
+                            <span class="val">Mina Los Colorados</span>
+                        </div>
+                    </div>
+
+                    <button id="btn-crear-equipo" class="btn-topbar">
+                        <span class="material-symbols-outlined">add_circle</span> Crear Equipo
+                    </button>
+                    <button id="btn-crear-usuario" class="btn-topbar">
+                        <span class="material-symbols-outlined">person_add</span> Crear Usuario
+                    </button>
+                    <!-- NUEVO BOTÓN KIOSKO -->
+                    <button id="btn-kiosko" class="btn-topbar" style="background: rgba(132, 204, 22, 0.1); color: var(--iso-zona-b); border-color: rgba(132, 204, 22, 0.3);">
+                        <span class="material-symbols-outlined">fullscreen</span> Kiosko
+                    </button>
+                </div>
+            </header>
+            
+            <div class="workspace" id="espacio-trabajo-dinamico">
+                <!-- Visor Gemelo Digital HMI Base -->
+                <!-- Visor Gemelo Digital HMI (Tren Motriz) -->
+                <section class="hmi-view-container">
+                    <div class="hmi-grid-bg"></div>
+                    
+                    <!-- DIAGRAMA CINEMÁTICO 2D -->
+                    <div class="diagrama-tren-motriz">
+                        <!-- Motor Principal -->
+                        <div class="bloque-maquina iso-a" id="hmi-motor">
+                            <div class="punto-medicion nde" title="M1 (Lado Libre)">M1</div>
+                            <div class="punto-medicion de" title="M2 (Lado Carga)">M2</div>
+                            <span class="material-symbols-outlined" style="font-size: 32px; color: var(--text-muted); margin-bottom: 5px;">bolt</span>
+                            <h4>Motor Principal</h4>
+                            <p>350 kW / 1480 RPM</p>
+                        </div>
+                        
+                        <!-- Acoplamiento de Alta -->
+                        <div class="eje-acople"></div>
+
+                        <!-- Reductor Principal -->
+                        <div class="bloque-maquina iso-c" id="hmi-reductor">
+                            <div class="punto-medicion nde" title="G1 (Entrada Alta)">G1</div>
+                            <div class="punto-medicion de" title="G6 (Salida Baja)">G6</div>
+                            <span class="material-symbols-outlined" style="font-size: 32px; color: var(--iso-zona-c); margin-bottom: 5px;">settings</span>
+                            <h4>Reductor de Velocidad</h4>
+                            <p>Ratio 25:1 / Falk</p>
+                        </div>
+
+                        <!-- Acoplamiento de Baja -->
+                        <div class="eje-acople"></div>
+
+                        <!-- Polea / Carga -->
+                        <div class="bloque-maquina iso-a" id="hmi-carga">
+                            <div class="punto-medicion nde" title="Descanso L/I">P1</div>
+                            <span class="material-symbols-outlined" style="font-size: 32px; color: var(--text-muted); margin-bottom: 5px;">conveyor_belt</span>
+                            <h4>Polea Motriz</h4>
+                            <p>Correa 3102</p>
+                        </div>
+                    </div>
+
+                    <div class="hmi-overlay-content">
+                        <div class="hmi-badge-equipo">
+                            <h4>Gemelo Digital: BF-3102</h4>
+                            <p>Estado Global: <strong style="color: var(--iso-zona-c);">ALARMA RESTRINGIDA</strong></p>
+                        </div>
+                    </div>
+                </section>
+                
+                <div class="panel-industrial" style="text-align: center; padding: 40px; margin-top: 20px;">
+                    <span class="material-symbols-outlined" style="font-size: 48px; color: var(--text-muted);">monitoring</span>
+                    <h3 style="margin-top: 15px;">Seleccione un Activo o Alerta</h3>
+                    <p style="color: var(--text-muted); margin-top: 5px;">Utilice la barra lateral para inspeccionar equipos o revisar hallazgos en terreno.</p>
+                </div>
+            </div>
+        </main>
+    </section>
+
+    <script type="module" src="./js/app.js"></script>
+</body>
+</html>
