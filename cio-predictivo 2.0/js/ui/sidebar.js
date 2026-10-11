@@ -1,20 +1,19 @@
 // ==========================================
 // MÓDULO UI: BARRA LATERAL DINÁMICA (ÁREAS -> EQUIPOS)
 // ==========================================
-import { refEquipos, refAlertas } from '../core/firebase-config.js';
+import { db } from '../core/firebase-config.js';
 
-let datosGlobalesEquipos = {}; // Guardaremos los datos aquí para no consultar a Firebase todo el tiempo al navegar
+let datosGlobalesEquipos = {}; 
 
 export function inicializarBarraLateral() {
-    escucharEquiposFirebase();
-    cargarAlertasTerreno();
+    escutarEquiposFirebase();
 }
 
-function escucharEquiposFirebase() {
+function escutarEquiposFirebase() {
     const listaCatastro = document.getElementById('lista-catastro');
     if (!listaCatastro) return;
 
-    refEquipos.on('value', (snapshot) => {
+    db.ref('activos_criticos').on('value', (snapshot) => {
         if (!snapshot.exists()) {
             listaCatastro.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:20px 0;">No hay activos registrados.</p>';
             return;
@@ -25,7 +24,7 @@ function escucharEquiposFirebase() {
     });
 }
 
-// --- NIVEL 1: VISTA DE ÁREAS (CON REGLA DE PORCENTAJES) ---
+// --- NIVEL 1: VISTA DE ÁREAS (CON COLORES PREDOMINANTES SEGÚN CRITICIDAD) ---
 export function renderizarVistaAreas(contenedor) {
     contenedor.innerHTML = '';
     
@@ -57,42 +56,43 @@ export function renderizarVistaAreas(contenedor) {
         }
     });
 
-    // 2. APLICAR REGLAS DE PORCENTAJE (Configurables)
-    const UMBRAL_ROJO = 15;    // Si el 15% o más de los equipos está Rojo -> Área Roja
-    const UMBRAL_NARANJA = 25; // Si el 25% o más tiene algún problema (Rojo + Naranja) -> Área Naranja
+    // 2. Calcular Salud y Porcentaje de Fallas
+    const UMBRAL_ROJO = 15;    
+    const UMBRAL_NARANJA = 25; 
 
     Object.values(areasObj).forEach(area => {
         const pctRojo = (area.countRojo / area.totalEquipos) * 100;
         const pctProblemas = ((area.countRojo + area.countNaranja) / area.totalEquipos) * 100;
         
-        // El porcentaje de salud es el inverso de los problemas
         area.saludGlobal = Math.round(100 - pctProblemas); 
+        area.pctFallas = pctProblemas; 
 
-        if (pctRojo >= UMBRAL_ROJO) {
-            area.estadoCritico = 'rojo';
-        } else if (pctProblemas >= UMBRAL_NARANJA) {
-            area.estadoCritico = 'naranja';
+        // Definir el estado predominante en base al impacto real de la zona
+        if (pctRojo >= UMBRAL_ROJO || area.countRojo > 0) {
+            area.estadoCritico = 'rojo'; // Si hay rojos relevantes, domina el rojo
+        } else if (pctProblemas >= UMBRAL_NARANJA || area.countNaranja > 0) {
+            area.estadoCritico = 'naranja'; // Si hay advertencias, domina el naranja/salmón
         } else {
             area.estadoCritico = 'verde';
         }
     });
 
-    // 3. Ordenar Áreas: Rojas primero, luego Naranjas, luego Verdes
+    // 3. ORDENAR ÁREAS: Del mayor porcentaje de fallas al menor
     const areasArray = Object.values(areasObj).sort((a, b) => {
-        const valores = { 'rojo': 3, 'naranja': 2, 'verde': 1 };
-        return valores[b.estadoCritico] - valores[a.estadoCritico];
+        return b.pctFallas - a.pctFallas; 
     });
 
-    // 4. Dibujar las tarjetas de Área con el Índice de Salud
+    // 4. Dibujar las tarjetas de Área aplicando el color predominante exacto
     areasArray.forEach(area => {
         let statusClass = 'status-ok';
         let dotColor = 'var(--iso-zona-a)';
         
+        // El color de la tarjeta responde directamente al nivel crítico predominante
         if (area.estadoCritico === 'rojo') {
             statusClass = 'status-danger';
             dotColor = 'var(--iso-zona-d)';
         } else if (area.estadoCritico === 'naranja') {
-            statusClass = 'status-warning'; 
+            statusClass = 'status-warning'; // Asegura el tono naranja/salmón característico
             dotColor = 'var(--iso-zona-c)';
         }
 
@@ -111,7 +111,7 @@ export function renderizarVistaAreas(contenedor) {
         contenedor.insertAdjacentHTML('beforeend', cardHTML);
     });
 
-    // Añadir listener para entrar a la vista de equipos
+    // Listener para entrar a la vista de equipos de esa área
     document.querySelectorAll('.area-nav-item').forEach(item => {
         item.addEventListener('click', (e) => {
             const nombreArea = e.currentTarget.getAttribute('data-area');
@@ -120,11 +120,10 @@ export function renderizarVistaAreas(contenedor) {
     });
 }
 
-// --- NIVEL 2: VISTA DE EQUIPOS POR ÁREA ---
+// --- NIVEL 2: VISTA DE EQUIPOS POR ÁREA (TAMBIÉN CON RANKING DE CRITICIDAD) ---
 function renderizarVistaEquiposArea(contenedor, areaData) {
     contenedor.innerHTML = '';
     
-    // 1. Botón para volver al menú de Áreas
     contenedor.innerHTML = `
         <button id="btn-volver-areas" style="background:transparent; border:none; color:var(--primary-blue); font-size:0.8rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:5px; margin-bottom:10px;">
             <span class="material-symbols-outlined" style="font-size:1.2rem;">arrow_back</span> Volver a Áreas
@@ -132,7 +131,7 @@ function renderizarVistaEquiposArea(contenedor, areaData) {
         <h4 style="color:var(--text-muted); margin-bottom:10px; font-size:0.8rem; padding-left:5px;">Equipos en ${areaData.nombre}</h4>
     `;
 
-    // 2. Ordenar equipos: Más críticos arriba
+    // Ordenar equipos dentro del área: Más críticos arriba
     const equiposOrdenados = areaData.equipos.sort((a, b) => {
         const severidadA = (a.severidad || a.estado || 'verde').toLowerCase();
         const severidadB = (b.severidad || b.estado || 'verde').toLowerCase();
@@ -140,7 +139,6 @@ function renderizarVistaEquiposArea(contenedor, areaData) {
         return (valores[severidadB] || 0) - (valores[severidadA] || 0);
     });
 
-    // 3. Dibujar tarjetas de equipos (Igual que antes)
     equiposOrdenados.forEach(eq => {
         const severidad = (eq.severidad || eq.estado || 'verde').toLowerCase();
         
@@ -154,7 +152,7 @@ function renderizarVistaEquiposArea(contenedor, areaData) {
             dotColor = 'var(--iso-zona-d)';
             statusText = 'Alarma Crítica';
         } else if (severidad === 'naranja' || severidad === 'amarillo') {
-            statusClass = 'status-danger'; // O crea un status-warning
+            statusClass = 'status-danger';
             dotColor = 'var(--iso-zona-c)';
             statusText = 'Alarma Restringida';
         }
@@ -174,13 +172,46 @@ function renderizarVistaEquiposArea(contenedor, areaData) {
         contenedor.insertAdjacentHTML('beforeend', cardHTML);
     });
 
-    // 4. Funcionalidad del botón de volver
     document.getElementById('btn-volver-areas').addEventListener('click', () => {
         renderizarVistaAreas(contenedor);
     });
 }
 
-function cargarAlertasTerreno() {
-    // ... [MANTENER EL CÓDIGO ACTUAL DE cargarAlertasTerreno IGUAL QUE ANTES] ...
-    // ... no lo modifico para ahorrar espacio aquí, déjalo como estaba.
+// --- GESTIÓN DE ALERTAS DESDE FIREBASE ---
+export function cargarAlertasTerreno() {
+    const btnTabAlertas = document.querySelector('[data-tab="alertas"]') || document.getElementById('tab-alertas') || document.querySelector('.fa-bell')?.closest('button');
+    // Escuchamos la pestaña o nodo de alertas en Firebase
+    db.ref('activos_criticos').on('value', (snapshot) => {
+        if (!snapshot.exists()) return;
+        const equipos = snapshot.val();
+        let contadorCriticos = 0;
+        let htmlAlertas = '<div style="padding: 15px;"><h4 style="color:var(--text-muted); font-size:0.8rem; margin-bottom:10px;">REGISTRO DE ALERTAS ACTIVAS</h4>';
+
+        Object.entries(equipos).forEach(([id, eq]) => {
+            const sev = (eq.severidad || eq.estado || 'verde').toLowerCase();
+            if (sev === 'rojo' || sev === 'critico' || sev === 'naranja') {
+                contadorCriticos++;
+                const colorBorde = sev === 'rojo' ? 'var(--iso-zona-d)' : 'var(--iso-zona-c)';
+                htmlAlertas += `
+                    <div class="item-navegable" data-target="${id}" style="background: rgba(0,0,0,0.3); border-left: 4px solid ${colorBorde}; padding: 10px; border-radius: 4px; margin-bottom: 8px; cursor: pointer;">
+                        <div style="font-weight: bold; font-size: 0.85rem; color: white;">${eq.tag || id}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">${eq.nombre || 'Sin descripción'}</div>
+                        <div style="font-size: 0.7rem; color: ${colorBorde}; margin-top: 4px; text-transform: uppercase; font-weight: bold;">${sev === 'rojo' ? 'Alarma Crítica' : 'Alarma Restringida'}</div>
+                    </div>
+                `;
+            }
+        });
+
+        if (contadorCriticos === 0) {
+            htmlAlertas += '<p style="color: var(--text-muted); text-align: center; font-size: 0.85rem; padding: 20px;">No hay alertas activas en la operación.</p>';
+        }
+        htmlAlertas += '</div>';
+
+        // Actualizar contador visual de la pestaña de alertas si existe el badge
+        const badgeAlertas = document.querySelector('.badge-alertas');
+        if (badgeAlertas) badgeAlertas.textContent = contadorCriticos;
+
+        // Si el usuario hace clic en la pestaña de alertas, inyectamos este HTML en el contenedor lateral
+        window._htmlAlertasCache = htmlAlertas;
+    });
 }

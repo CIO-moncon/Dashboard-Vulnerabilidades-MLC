@@ -186,3 +186,10 @@ body.modo-kiosko .topbar {
 }
 
 @keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* Animación para el Dashboard de Planta (Equipos en Rojo) */
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}

@@ -1,147 +1,340 @@
-import { autenticarUsuario, obtenerSesionActiva, cerrarSesion } from './core/auth.js';
+// ==========================================
+// MÓDULO PRINCIPAL: APP.JS (CON MAPA SATELITAL REAL LEAFLET)
+// ==========================================
+import { auth, db } from './core/firebase-config.js';
+import { inicializarBarraLateral } from './ui/sidebar.js'; 
 import { renderizarExpediente } from './ui/expediente.js';
-import { renderizarHallazgo } from './ui/terreno.js';
-import { inicializarBarraLateral } from './ui/sidebar.js';
 
-const vistaLogin = document.getElementById('vista-login');
-const vistaApp = document.getElementById('vista-app');
+let datosGlobalesEquipos = {}; 
+let mapaActivo = null; // Variable global para guardar la instancia del mapa
 
-function init() {
-    const sesion = obtenerSesionActiva();
-    if (sesion) activarInterfazApp(sesion);
-    else activarPantallaLogin();
-    configurarEventosBase();
+document.addEventListener('DOMContentLoaded', () => {
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            mostrarPlataforma(user);
+        } else {
+            document.getElementById('vista-login').classList.remove('oculta');
+            document.getElementById('vista-app').classList.add('oculta');
+        }
+    });
+
+    const btnIngresar = document.getElementById('btn-ingresar');
+    if (btnIngresar) {
+        btnIngresar.addEventListener('click', () => {
+            const email = document.getElementById('login-email').value.trim();
+            const pass = document.getElementById('login-pass').value.trim();
+            const errorDiv = document.getElementById('login-error');
+            
+            if (!email || !pass) return errorDiv.textContent = 'Ingrese correo y contraseña.';
+            
+            btnIngresar.innerHTML = `<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">autorenew</span> Autenticando...`;
+            btnIngresar.disabled = true;
+            errorDiv.textContent = '';
+            
+            auth.signInWithEmailAndPassword(email, pass)
+                .then(() => {
+                    btnIngresar.innerHTML = `Autenticar <span class="material-symbols-outlined">login</span>`;
+                    btnIngresar.disabled = false;
+                })
+                .catch((error) => {
+                    errorDiv.textContent = 'Usuario o contraseña incorrectos.';
+                    btnIngresar.innerHTML = `Autenticar <span class="material-symbols-outlined">login</span>`;
+                    btnIngresar.disabled = false;
+                });
+        });
+    }
+});
+
+function mostrarPlataforma(user) {
+    document.getElementById('vista-login').classList.add('oculta');
+    document.getElementById('vista-app').classList.remove('oculta');
+    
+    let nombreTemp = user.email.split('@')[0].replace('.', ' ');
+    document.getElementById('perfil-nombre').textContent = nombreTemp;
+    document.getElementById('perfil-rol').textContent = 'Analista CBM';
+    document.getElementById('avatar-iniciales').textContent = nombreTemp.substring(0, 2).toUpperCase();
+
+    inicializarApp();
 }
 
-function configurarEventosBase() {
-    // 1. Evento Login
-    document.getElementById('btn-ingresar').addEventListener('click', async () => {
-        const email = document.getElementById('login-email').value.trim();
-        const pass = document.getElementById('login-pass').value.trim();
-        const btn = document.getElementById('btn-ingresar');
-        
-        // Cambiar botón a estado de carga
-        btn.innerHTML = `<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">autorenew</span> Validando...`;
+function inicializarApp() {
+    inicializarBarraLateral();
 
-        // Esperar la respuesta de Firebase
-        const res = await autenticarUsuario(email, pass);
-        
-        if (res.exito) {
-            activarInterfazApp(res.usuario);
-        } else {
-            document.getElementById('login-error').textContent = res.mensaje;
-            btn.innerHTML = `Autenticar <span class="material-symbols-outlined">login</span>`; // Restaurar botón
-        }
-    });
-
-    // 2. Evento Salir
-    document.getElementById('btn-salir').addEventListener('click', () => {
-        cerrarSesion();
-        location.reload();
-    });
-
-    // 3. DELEGACIÓN DE EVENTOS MAESTRA (Clics dinámicos)
-    document.addEventListener('click', (e) => {
-        
-        // --- A) Lógica de Pestañas (Tabs) ---
-        const tabCatastro = e.target.closest('#btn-tab-catastro');
-        if (tabCatastro) {
-            document.getElementById('btn-tab-catastro').classList.add('active');
-            document.getElementById('btn-tab-alertas').classList.remove('active');
-            document.getElementById('lista-catastro').classList.remove('oculta');
-            document.getElementById('lista-alertas').classList.add('oculta');
-            return;
-        }
-
-        const tabAlertas = e.target.closest('#btn-tab-alertas');
-        if (tabAlertas) {
-            document.getElementById('btn-tab-alertas').classList.add('active');
-            document.getElementById('btn-tab-catastro').classList.remove('active');
-            document.getElementById('lista-alertas').classList.remove('oculta');
-            document.getElementById('lista-catastro').classList.add('oculta');
-            return;
-        }
-
-        // --- B) Navegación a Expediente CBM o Hallazgo en Terreno ---
-        const itemNavegable = e.target.closest('.item-navegable');
-        if (itemNavegable) {
-            const target = itemNavegable.getAttribute('data-target');
-            if (target === 'alerta-001') {
-                renderizarHallazgo(target, 'espacio-trabajo-dinamico');
-            } else {
-                // Si no es una alerta fija, asumimos que es el ID dinámico de un equipo
-                renderizarExpediente(target, 'espacio-trabajo-dinamico');
+    // Cargar Mapa Satelital
+    db.ref('activos_criticos').on('value', snapshot => {
+        if (snapshot.exists()) {
+            datosGlobalesEquipos = snapshot.val();
+            const espacioDinámico = document.getElementById('espacio-trabajo-dinamico');
+            // Si el mapa ya está dibujado, solo actualizamos los pines, si no, dibujamos todo.
+            if (espacioDinámico && (!espacioDinámico.innerHTML.includes('mapa-satelital') || espacioDinámico.innerHTML.includes('Seleccione un Activo'))) {
+                renderizarMapaPlanta();
+            } else if (mapaActivo) {
+                // Función para refrescar solo los pines si cambia el estado en Firebase
+                dibujarPinesEnMapa();
             }
+        }
+    });
+
+    // Delegación de Eventos
+    document.addEventListener('click', (e) => {
+        // Clic en un equipo del menú lateral o del globo del mapa
+        const btnEquipo = e.target.closest('.item-navegable');
+        if (btnEquipo) {
+            const idFirebase = btnEquipo.getAttribute('data-target');
+            document.querySelectorAll('.item-navegable').forEach(b => b.style.border = 'none');
+            
+            // Si el clic viene del menú lateral, lo marcamos
+            if(btnEquipo.closest('.sidebar-principal')) {
+                btnEquipo.style.border = '1px solid var(--primary-blue)';
+            }
+            
+            // Destruimos la instancia del mapa para liberar memoria antes de abrir el expediente
+            if(mapaActivo) { mapaActivo.remove(); mapaActivo = null; }
+            
+            renderizarExpediente(idFirebase, 'espacio-trabajo-dinamico');
             return;
         }
 
-        // --- C) Volver a Planta ---
-        const btnVolver = e.target.closest('#btn-volver-dashboard');
-        if (btnVolver) location.reload();
+        const btnSalir = e.target.closest('#btn-salir');
+        if (btnSalir) {
+            auth.signOut().then(() => window.location.reload());
+            return;
+        }
 
-        // --- C.2) CREAR NUEVO EQUIPO ---
+        const btnVolver = e.target.closest('#btn-volver-dashboard');
+        if (btnVolver) {
+            document.querySelectorAll('.item-navegable').forEach(b => b.style.border = 'none');
+            if(mapaActivo) { mapaActivo.remove(); mapaActivo = null; }
+            renderizarMapaPlanta();
+            return;
+        }
+
         const btnCrearEquipo = e.target.closest('#btn-crear-equipo');
         if (btnCrearEquipo) {
-            // Pasamos "NUEVO" como ID para que el módulo sepa que es un lienzo en blanco
+            document.querySelectorAll('.item-navegable').forEach(b => b.style.border = 'none');
+            if(mapaActivo) { mapaActivo.remove(); mapaActivo = null; }
             renderizarExpediente('NUEVO', 'espacio-trabajo-dinamico');
             return;
         }
-
-        // --- D) MODO KIOSKO ---
-        const btnKiosko = e.target.closest('#btn-kiosko');
-        if (btnKiosko) {
-            if (!document.fullscreenElement) {
-                // Entrar a pantalla completa
-                document.documentElement.requestFullscreen().catch(err => console.log(err));
-                document.body.classList.add('modo-kiosko');
-                btnKiosko.innerHTML = `<span class="material-symbols-outlined">fullscreen_exit</span> Salir Kiosko`;
-            } else {
-                // Salir de pantalla completa
-                document.exitFullscreen();
-                document.body.classList.remove('modo-kiosko');
-                btnKiosko.innerHTML = `<span class="material-symbols-outlined">fullscreen</span> Kiosko`;
-            }
-            return;
-        }
     });
+}
 
-    // 4. Escuchar si el usuario presiona "ESC" en su teclado para salir del Kiosko
-    document.addEventListener('fullscreenchange', () => {
-        if (!document.fullscreenElement) {
-            document.body.classList.remove('modo-kiosko');
-            const btnKiosko = document.getElementById('btn-kiosko');
-            if (btnKiosko) btnKiosko.innerHTML = `<span class="material-symbols-outlined">fullscreen</span> Kiosko`;
+// ---------------------------------------------------------
+// MÓDULO NUEVO: MAPA SATELITAL (LEAFLET + ESRI)
+// ---------------------------------------------------------
+let capaMarcadores = null; // Para borrar los pines viejos al actualizar
+
+function renderizarMapaPlanta() {
+    const contenedor = document.getElementById('espacio-trabajo-dinamico');
+    if (!contenedor) return;
+
+    // 1. Estructura HTML del visor del mapa
+    contenedor.innerHTML = `
+        <div style="animation: fadeIn 0.4s ease; padding: 10px; height: 100%; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: rgba(15, 23, 42, 0.6); padding: 15px 25px; border-radius: 12px; border: 1px solid var(--border-glass);">
+                <div>
+                    <h2 style="color: white; font-size: 1.5rem; margin: 0 0 5px 0; display:flex; align-items:center; gap:10px;">
+                        <span class="material-symbols-outlined" style="color: var(--primary-blue);">satellite_alt</span> Vista Topográfica
+                    </h2>
+                    <p style="color: var(--text-muted); margin: 0; font-size: 0.8rem;">Mina Los Colorados - Geolocalización de Activos Críticos</p>
+                </div>
+            </div>
+            
+            <!-- Contenedor donde Leaflet dibujará el mapa -->
+            <div id="mapa-satelital" style="flex-grow: 1; min-height: 500px; border-radius: 12px; border: 1px solid var(--border-glass); overflow: hidden; z-index: 1;"></div>
+        </div>
+    `;
+
+    // 2. Inicializar Leaflet centrado en la faena con restricciones de zoom
+    mapaActivo = L.map('mapa-satelital', {
+        minZoom: 14, // No permite alejarse demasiado
+        maxZoom: 17  // Evita el error "Map data not yet available" (antes estaba en 19)
+    }).setView([-28.290846, -70.813030], 15);
+
+    // 3. Añadir la capa de imagen satelital de Esri
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Esri',
+        maxZoom: 17 // Debe coincidir con el límite del mapa superior
+    }).addTo(mapaActivo);
+
+    // Inicializamos la capa donde irán los pines
+    capaMarcadores = L.layerGroup().addTo(mapaActivo);
+
+    // 4. Dibujar los pines de los equipos
+    dibujarPinesEnMapa();
+}
+
+function dibujarPinesEnMapa() {
+    if (!mapaActivo || !capaMarcadores) return;
+    
+    // Limpiamos los pines viejos
+    capaMarcadores.clearLayers();
+
+    Object.values(datosGlobalesEquipos).forEach(eq => {
+        // Solo dibujamos los equipos que tengan coordenadas configuradas
+        if (eq.latitud && eq.longitud) {
+            
+            // Determinar color según severidad
+            const sev = (eq.severidad || eq.estado || 'verde').toLowerCase();
+            let colorHex = '#10b981'; // Verde
+            if (sev === 'rojo' || sev === 'critico') colorHex = '#ef4444';
+            else if (sev === 'naranja') colorHex = '#f97316';
+            else if (sev === 'amarillo') colorHex = '#eab308';
+
+            // Crear un Pin (Marcador) personalizado dibujado con HTML/CSS
+            const iconoPersonalizado = L.divIcon({
+                className: 'custom-pin',
+                html: `
+                    <div style="background-color: ${colorHex}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.8); position: relative; ${sev === 'rojo' ? 'animation: pulse 1.5s infinite;' : ''}">
+                        <div style="position: absolute; bottom: -10px; left: 5px; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 10px solid ${colorHex};"></div>
+                    </div>
+                `,
+                iconSize: [20, 30],
+                iconAnchor: [10, 30] // Punto de anclaje (la punta del triángulo abajo)
+            });
+
+            const marcador = L.marker([parseFloat(eq.latitud), parseFloat(eq.longitud)], { icon: iconoPersonalizado });
+
+            // Globo de información (Popup) al hacer clic en el pin
+            const popupHTML = `
+                <div style="text-align: center; color: #333; font-family: 'Inter', sans-serif;">
+                    <h4 style="margin: 0 0 5px 0; font-size: 1rem; color: #0f172a;">${eq.tag}</h4>
+                    <p style="margin: 0 0 10px 0; font-size: 0.8rem; color: #64748b;">${eq.nombre}</p>
+                    <button class="item-navegable" data-target="${eq.tag.toUpperCase().replace(/\s+/g, '_')}" style="background: #38bdf8; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%;">
+                        Abrir Expediente
+                    </button>
+                </div>
+            `;
+            marcador.bindPopup(popupHTML);
+            capaMarcadores.addLayer(marcador);
         }
     });
 }
 
-function activarPantallaLogin() {
-    vistaApp.classList.remove('activa');
-    vistaApp.classList.add('oculta');
-    vistaLogin.classList.remove('oculta');
-    vistaLogin.classList.add('activa');
-}
-
-function activarInterfazApp(usuario) {
-    vistaLogin.classList.remove('activa');
-    vistaLogin.classList.add('oculta');
-    vistaApp.classList.remove('oculta');
-    vistaApp.classList.add('activa');
-
-    document.querySelector('.user-profile .name').textContent = usuario.nombre;
-    document.querySelector('.user-profile .role').textContent = usuario.rol;
-    document.querySelector('.user-profile .avatar').textContent = usuario.nombre.charAt(0);
-
-    // Seguridad RBAC
-    if (usuario.rol === 'lector' || usuario.rol === 'tecnico') {
-        document.getElementById('btn-crear-equipo').style.display = 'none';
-        document.getElementById('btn-crear-usuario').style.display = 'none';
-    } else if (usuario.rol === 'analista') {
-        document.getElementById('btn-crear-usuario').style.display = 'none';
+// --- MODO KIOSKO (PANTALLA DE CONTROL) ---
+document.addEventListener('click', (e) => {
+    const btnKiosko = e.target.closest('#kiosko') || e.target.closest('.btn-kiosko');
+    if (btnKiosko) {
+        const sidebar = document.querySelector('.sidebar') || document.querySelector('aside');
+        const topbar = document.querySelector('header') || document.querySelector('.topbar');
+        
+        // Alternar modo pantalla completa de sala de control
+        const esKioskoActivo = document.body.classList.toggle('modo-kiosko-activo');
+        
+        if (esKioskoActivo) {
+            if (sidebar) sidebar.style.display = 'none';
+            if (topbar) topbar.style.display = 'none';
+            btnKiosko.innerHTML = '<span class="material-symbols-outlined">fullscreen_exit</span> Salir Kiosko';
+        } else {
+            if (sidebar) sidebar.style.display = 'flex';
+            if (topbar) topbar.style.display = 'flex';
+            btnKiosko.innerHTML = '<span class="material-symbols-outlined">kiosko</span> Kiosko';
+        }
+        
+        // Recalcular tamaño del mapa para que llene la pantalla completa
+        if (window.mapaActivo) {
+            setTimeout(() => window.mapaActivo.invalidateSize(), 200);
+        }
     }
+});
 
-    // 🔥 INICIAR SINCRONIZACIÓN EN TIEMPO REAL CON FIREBASE
-    inicializarBarraLateral();
-}
+// --- MODAL PROFESIONAL DE CREACIÓN DE USUARIOS ---
+document.addEventListener('click', (e) => {
+    const btnCrearUsr = e.target.closest('#btn-crear-usuario') || e.target.closest('.btn-crear-usuario');
+    if (!btnCrearUsr) return;
 
-document.addEventListener('DOMContentLoaded', init);
+    // Si ya existe un modal previo, lo removemos
+    const modalAnterior = document.getElementById('modal-crear-usuario');
+    if (modalAnterior) modalAnterior.remove();
+
+    // Crear el contenedor del Modal
+    const modalHTML = `
+        <div id="modal-crear-usuario" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(5px); z-index: 1000; display: flex; justify-content: center; align-items: center; animation: fadeIn 0.3s ease;">
+            <div style="background: var(--bg-card); border: 1px solid var(--border-glass); padding: 30px; border-radius: 12px; width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-glass); padding-bottom: 10px;">
+                    <h3 style="color: white; margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="color: var(--primary-blue);">person_add</span> Registrar Nuevo Usuario
+                    </h3>
+                    <button id="cerrar-modal-usr" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem;">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+
+                <form id="form-crear-usuario" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div>
+                        <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Nombre</label>
+                        <input type="text" id="usr-nombre" required placeholder="Ej: Carlos" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-glass); background: var(--bg-input); color: white; outline: none;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Apellido</label>
+                        <input type="text" id="usr-apellido" required placeholder="Ej: Soto" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-glass); background: var(--bg-input); color: white; outline: none;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Correo Electrónico</label>
+                        <input type="email" id="usr-email" required placeholder="carlos.soto@ndtcpf.cl" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-glass); background: var(--bg-input); color: white; outline: none;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Contraseña Temporal</label>
+                        <input type="password" id="usr-pass" required minlength="6" placeholder="Mínimo 6 caracteres" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-glass); background: var(--bg-input); color: white; outline: none;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Rol en el Sistema</label>
+                        <select id="usr-rol" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-glass); background: var(--bg-input); color: white; outline: none; cursor: pointer;">
+                            <option value="ANALISTA CBM">Analista CBM</option>
+                            <option value="ADMINISTRADOR">Administrador</option>
+                            <option value="OPERADOR TERRENO">Operador de Terreno</option>
+                            <option value="JEFE DE MANTENIMIENTO">Jefe de Mantenimiento</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" id="btn-ejecutar-crear" style="margin-top: 10px; background: rgba(56, 189, 248, 0.15); color: var(--primary-blue); border: 1px solid rgba(56, 189, 248, 0.4); padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 5px;">
+                        <span class="material-symbols-outlined" style="font-size: 1.1rem;">check_circle</span> Guardar y Registrar
+                    </button>
+                </form>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // Evento Cerrar Modal
+    document.getElementById('cerrar-modal-usr').addEventListener('click', () => {
+        document.getElementById('modal-crear-usuario').remove();
+    });
+
+    // Evento Enviar Formulario
+    document.getElementById('form-crear-usuario').addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const nombre = document.getElementById('usr-nombre').value.trim();
+        const apellido = document.getElementById('usr-apellido').value.trim();
+        const email = document.getElementById('usr-email').value.trim();
+        const pass = document.getElementById('usr-pass').value.trim();
+        const rol = document.getElementById('usr-rol').value;
+
+        const btnSubmit = document.getElementById('btn-ejecutar-crear');
+        btnSubmit.innerHTML = `<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">autorenew</span> Registrando...`;
+        btnSubmit.disabled = true;
+
+        try {
+            // 1. Crear credencial en Firebase Auth
+            const credUser = await auth.createUserWithEmailAndPassword(email, pass);
+            const uid = credUser.user.uid;
+
+            // 2. Guardar metadatos extendidos en la Realtime Database
+            await db.ref(`usuarios/${uid}`).set({
+                nombre: nombre,
+                apellido: apellido,
+                email: email,
+                rol: rol,
+                creadoEn: Date.now()
+            });
+
+            alert(`¡Usuario ${nombre} ${apellido} (${rol}) creado exitosamente!`);
+            document.getElementById('modal-crear-usuario').remove();
+        } catch (error) {
+            alert("Error al registrar usuario: " + error.message);
+            btnSubmit.innerHTML = `<span class="material-symbols-outlined" style="font-size: 1.1rem;">check_circle</span> Guardar y Registrar`;
+            btnSubmit.disabled = false;
+        }
+    });
+});
