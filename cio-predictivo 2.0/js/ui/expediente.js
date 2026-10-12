@@ -9,6 +9,7 @@ let miniMapaInstancia = null; // Caché para el mini-mapa interactivo
 
 // --- DICCIONARIO DE PLANTILLAS CBM ---
 const motorGen = [ { punto: 'M1', comp: 'Motor NDE (Lado Libre)' }, { punto: 'M2', comp: 'Motor DE (Lado Carga)' } ];
+
 const pChancador = [ ...motorGen, { punto: 'C1', comp: 'Contraeje NDE' }, { punto: 'C2', comp: 'Contraeje DE' } ];
 const pTransportador = [ ...motorGen ];
 for (let i = 1; i <= 10; i++) pTransportador.push({ punto: `G${i}`, comp: `Reductor Punto ${i}` });
@@ -39,11 +40,38 @@ for (let i = 1; i <= 2; i++) {
     pBeltFeeder.push({ punto: `PL${i}_LI`, comp: `Polea ${i} Lado Izq` });
     pBeltFeeder.push({ punto: `PL${i}_LD`, comp: `Polea ${i} Lado Der` });
 }
+
+// 🚀 Tus Nuevas Plantillas Corregidas
+const pModulo = [ ...motorGen ];
+for (let i = 1; i <= 6; i++) pModulo.push({ punto: `G${i}`, comp: `Reductor Punto ${i}` });
+for (let i = 1; i <= 4; i++) {
+    pModulo.push({ punto: `PL${i}_LI`, comp: `Polea ${i} Lado Izq` });
+    pModulo.push({ punto: `PL${i}_LD`, comp: `Polea ${i} Lado Der` });
+}
+
+const pGrasshopper = [ ...motorGen ];
+for (let i = 1; i <= 6; i++) pGrasshopper.push({ punto: `G${i}`, comp: `Reductor Punto ${i}` });
+for (let i = 1; i <= 2; i++) {
+    pGrasshopper.push({ punto: `PL${i}_LI`, comp: `Polea ${i} Lado Izq` });
+    pGrasshopper.push({ punto: `PL${i}_LD`, comp: `Polea ${i} Lado Der` });
+}
+
+// 🚀 Diccionario Actualizado
 const PLANTILLAS_CBM = {
-    chancador: pChancador, transportador: pTransportador, colector: pColector, alimentador: pAlimentador,
-    harneroSec: pHarneroSec, tripper: pTripper, prensa: pPrensa, harneroTer: pHarneroTer, beltFeeder: pBeltFeeder
+    chancador: pChancador, 
+    transportador: pTransportador, 
+    colector: pColector, 
+    alimentador: pAlimentador,
+    harneroSec: pHarneroSec, 
+    tripper: pTripper, 
+    prensa: pPrensa, 
+    harneroTer: pHarneroTer, 
+    beltFeeder: pBeltFeeder,
+    modulo: pModulo, 
+    grasshopper: pGrasshopper 
 };
 
+// 🚀 Detector Actualizado
 function obtenerPlantilla(tipoStr) {
     const t = (tipoStr || '').toLowerCase();
     if (t.includes('terciario') || t.includes('exitatriz')) return PLANTILLAS_CBM.harneroTer;
@@ -55,9 +83,12 @@ function obtenerPlantilla(tipoStr) {
     if (t.includes('colector') || t.includes('polvo')) return PLANTILLAS_CBM.colector;
     if (t.includes('alimentador') || t.includes('vibratorio')) return PLANTILLAS_CBM.alimentador;
     if (t.includes('chancador') || t.includes('trituradora')) return PLANTILLAS_CBM.chancador;
+    
+    if (t.includes('modulo') || t.includes('módulo')) return PLANTILLAS_CBM.modulo;
+    if (t.includes('grasshopper')) return PLANTILLAS_CBM.grasshopper;
+    
     return null;
 }
-
 // ---------------------------------------------------------
 // 2. RENDERIZADO DEL EXPEDIENTE
 // ---------------------------------------------------------
@@ -155,7 +186,6 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
         miniaturaHeader = `<div style="width: 55px; height: 55px; border-radius: 6px; background: rgba(0,0,0,0.2); border: 1px dashed rgba(255,255,255,0.2); display: flex; justify-content: center; align-items: center;"><span class="material-symbols-outlined" style="color: var(--text-muted);">image</span></div>`;
     }
 
-    // (Búscalo en construirPanelInspeccion)
     contenedor.innerHTML = `
         <div class="panel-industrial" style="animation: fadeIn 0.3s ease; display: flex; flex-direction: column; height: 100%; max-height: calc(100vh - 120px); padding: 0;">
             
@@ -216,9 +246,9 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
     document.getElementById('btn-modo-config').addEventListener('click', () => renderizarExpediente(idFirebase, contenedor.id, true));
     document.getElementById('btn-exportar-pdf').addEventListener('click', () => generarPDFExpediente(eq.tag, contenedor.id));
     
-    // NUEVO EVENTO PARA CERRAR EL EXPEDIENTE
+    // EVENTO PARA CERRAR EL EXPEDIENTE (No requiere confirmación porque es modo inspección y aún no se guardan cambios al salir)
     document.getElementById('btn-cerrar-expediente').addEventListener('click', () => {
-        document.getElementById('btn-volver-dashboard').click(); // Simulamos un clic en el logo para aprovechar la lógica de app.js
+        document.getElementById('btn-volver-dashboard').click();
     });
 
     document.querySelectorAll('.btn-ver-tendencia').forEach(btn => {
@@ -230,9 +260,10 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
         });
     });
 
+    // EVENTO REFACTORIZADO
     document.getElementById('btn-guardar-ruta').addEventListener('click', async () => {
         const fechaHoraRuta = document.getElementById('fecha-inspeccion').value;
-        if (!fechaHoraRuta) return alert("Indica la fecha y hora.");
+        if (!fechaHoraRuta) return UI.mostrarToast("Indica la fecha y hora de la medición.", "alerta");
 
         const inputs = document.querySelectorAll('.input-lectura-hoy');
         const updates = {};
@@ -257,7 +288,7 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
             }
         });
 
-        if (ingresados === 0) return alert("No ingresaste ningún valor.");
+        if (ingresados === 0) return UI.mostrarToast("No ingresaste ningún valor de vibración.", "alerta");
 
         const btn = document.getElementById('btn-guardar-ruta');
         btn.innerHTML = `<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">autorenew</span>`;
@@ -266,10 +297,12 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
         try {
             await db.ref(`activos_criticos/${idFirebase}`).update(updates);
             btn.innerHTML = `<span class="material-symbols-outlined">check_circle</span> ¡Guardado!`;
+            UI.mostrarToast("Mediciones de ruta guardadas exitosamente", "exito");
             setTimeout(() => renderizarExpediente(idFirebase, contenedor.id), 1200);
         } catch (error) {
-            alert("Error al guardar.");
+            UI.mostrarToast("Error de conexión al guardar.", "error");
             btn.innerHTML = `<span class="material-symbols-outlined">save</span> Guardar Mediciones`;
+            console.error(error);
         }
     });
 }
@@ -608,8 +641,10 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
     // --- EVENTOS MODO CONFIGURACIÓN ---
     if (!esNuevo) document.getElementById('btn-modo-inspeccion').addEventListener('click', () => renderizarExpediente(idFirebase, contenedor.id, false));
 
-    document.getElementById('btn-cerrar-expediente').addEventListener('click', () => {
-        if(confirm("¿Estás seguro de salir? Los cambios no guardados se perderán.")){
+    // EVENTOS REFACTORIZADOS CON UI.CONFIRMAR Y UI.MOSTRARTOAST
+    document.getElementById('btn-cerrar-expediente').addEventListener('click', async () => {
+        const confirmado = await UI.confirmar("¿Estás seguro de salir? Los cambios no guardados se perderán.", "Cerrar Configuración");
+        if(confirmado){
             document.getElementById('btn-volver-dashboard').click();
         }
     });
@@ -617,17 +652,19 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
     document.getElementById('btn-cargar-plantilla').addEventListener('click', async () => {
         const tipoStr = document.getElementById('edit-tipo').value;
         const plantillaSeleccionada = obtenerPlantilla(tipoStr);
-        if (!plantillaSeleccionada) return alert(`No detecté plantilla para: "${tipoStr}".`);
+        if (!plantillaSeleccionada) return UI.mostrarToast(`No detecté plantilla para: "${tipoStr}".`, "error");
         
         const puntosExistentes = spotsArray.map(s => s.punto);
         const puntosFaltantes = plantillaSeleccionada.filter(spot => !puntosExistentes.includes(spot.punto));
-        if (puntosFaltantes.length === 0) return alert("✅ Ya están todos los puntos estándar.");
+        if (puntosFaltantes.length === 0) return UI.mostrarToast("Ya están todos los puntos estándar.", "exito");
 
-        if(confirm(`Se insertarán ${puntosFaltantes.length} punto(s). ¿Continuar?`)) {
+        const confirmado = await UI.confirmar(`Se insertarán ${puntosFaltantes.length} punto(s). ¿Continuar?`, "Cargar Plantilla CBM");
+        if(confirmado) {
             const updates = {};
             puntosFaltantes.forEach((spot, i) => { updates[`spot_auto_${Date.now()}_${i}`] = { punto: spot.punto, componente: spot.comp, rms: 0.00 }; });
             if (esNuevo) { Object.assign(eq.spots || (eq.spots = {}), updates); construirPanelConfiguracion(idFirebase, eq, contenedor, true); } 
             else { await db.ref(`activos_criticos/${idFirebase}/spots`).update(updates); renderizarExpediente(idFirebase, contenedor.id, true); }
+            UI.mostrarToast("Plantilla cargada correctamente.", "exito");
         }
     });
 
@@ -678,7 +715,9 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
 
     document.querySelectorAll('.btn-eliminar-foto').forEach(btn => {
         btn.addEventListener('click', async (e) => {
-            if(!confirm("¿Eliminar esta foto permanentemente?")) return;
+            const confirmado = await UI.confirmar("¿Eliminar esta foto permanentemente?", "Eliminar Fotografía");
+            if(!confirmado) return;
+
             const fKey = e.currentTarget.getAttribute('data-foto');
             if (esNuevo) {
                 delete eq.galeria[fKey];
@@ -687,12 +726,13 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
                 await db.ref(`activos_criticos/${idFirebase}/galeria/${fKey}`).remove();
                 renderizarExpediente(idFirebase, contenedor.id, true);
             }
+            UI.mostrarToast("Fotografía eliminada.", "exito");
         });
     });
 
     document.getElementById('btn-guardar-equipo').addEventListener('click', async () => {
         const tagValue = document.getElementById('edit-tag').value.trim();
-        if (!tagValue) return alert("El TAG es obligatorio.");
+        if (!tagValue) return UI.mostrarToast("El TAG es obligatorio.", "error");
 
         const nuevosDatos = {
             tag: tagValue, nombre: document.getElementById('edit-nombre').value,
@@ -711,6 +751,7 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
             if (eq.dataRoom) await db.ref(`activos_criticos/${idFinal}/dataRoom`).update(eq.dataRoom);
             if (eq.galeria) await db.ref(`activos_criticos/${idFinal}/galeria`).update(eq.galeria);
         }
+        UI.mostrarToast("Configuración guardada exitosamente.", "exito");
         renderizarExpediente(idFinal, contenedor.id, false);
     });
 
@@ -721,14 +762,18 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
         const nuevoDoc = { nombre: docNombre, url: docUrl };
         if (esNuevo) { eq.dataRoom = eq.dataRoom || {}; eq.dataRoom[`doc_${Date.now()}`] = nuevoDoc; construirPanelConfiguracion(idFirebase, eq, contenedor, true); } 
         else { await db.ref(`activos_criticos/${idFirebase}/dataRoom/doc_${Date.now()}`).set(nuevoDoc); renderizarExpediente(idFirebase, contenedor.id, true); }
+        UI.mostrarToast("Documento añadido.", "exito");
     });
 
     document.querySelectorAll('.btn-eliminar-doc').forEach(btn => {
         btn.addEventListener('click', async (e) => {
-            if (!confirm("¿Quitar este documento?")) return;
+            const confirmado = await UI.confirmar("¿Quitar este documento?", "Eliminar Documento");
+            if (!confirmado) return;
+
             const docKey = e.currentTarget.getAttribute('data-doc');
             if (esNuevo) { delete eq.dataRoom[docKey]; construirPanelConfiguracion(idFirebase, eq, contenedor, true); } 
             else { await db.ref(`activos_criticos/${idFirebase}/dataRoom/${docKey}`).remove(); renderizarExpediente(idFirebase, contenedor.id, true); }
+            UI.mostrarToast("Documento eliminado.", "exito");
         });
     });
 
@@ -739,6 +784,7 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
         const nuevoPunto = { punto: punto, componente: comp, rms: 0.00 };
         if (esNuevo) { eq.spots = eq.spots || {}; eq.spots[`spot_manual_${Date.now()}`] = nuevoPunto; construirPanelConfiguracion(idFirebase, eq, contenedor, true); } 
         else { await db.ref(`activos_criticos/${idFirebase}/spots/spot_manual_${Date.now()}` ).set(nuevoPunto); renderizarExpediente(idFirebase, contenedor.id, true); }
+        UI.mostrarToast("Punto añadido.", "exito");
     });
 
     document.querySelectorAll('.btn-eliminar-spot').forEach(btn => {
@@ -751,9 +797,14 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
                 const pre = match[1]; const num = parseInt(match[2]); 
                 spotsArray.forEach(s => { const m = s.punto.match(/^(G|PL)(\d+)/); if (m && m[1] === pre && parseInt(m[2]) >= num && s.idInterno !== spotKey) keysAEliminar.push(s.idInterno); });
             }
-            if (confirm(`¿Eliminar ${keysAEliminar.length > 1 ? 'este punto y subsecuentes' : 'este punto'}?`)) {
+            
+            const mensaje = keysAEliminar.length > 1 ? `¿Eliminar este punto y subsecuentes?` : `¿Eliminar este punto?`;
+            const confirmado = await UI.confirmar(mensaje, "Eliminar Punto");
+
+            if (confirmado) {
                 if (esNuevo) { keysAEliminar.forEach(k => delete eq.spots[k]); construirPanelConfiguracion(idFirebase, eq, contenedor, true); } 
                 else { const up = {}; keysAEliminar.forEach(k => up[k] = null); await db.ref(`activos_criticos/${idFirebase}/spots`).update(up); renderizarExpediente(idFirebase, contenedor.id, true); }
+                UI.mostrarToast("Punto(s) eliminado(s).", "exito");
             }
         });
     });

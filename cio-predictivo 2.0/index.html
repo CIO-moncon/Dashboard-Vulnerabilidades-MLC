@@ -28,48 +28,68 @@
 </head>
 <body>
 
-    <!-- MÓDULO LOGIN -->
-    <main id="vista-login" class="fullscreen-view activa">
-        <div class="login-card">
-            <div class="login-header">
-                <span class="material-symbols-outlined logo-icon">precision_manufacturing</span>
-                <h2>CIO Predictivo 2.0</h2>
-                <p>CPF Ingeniería • Mina Los Colorados (CMP)</p>
+<!-- MÓDULO LOGIN -->
+<main id="vista-login" class="fullscreen-view activa" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: radial-gradient(circle at 50% 30%, #1a2234 0%, #090a0f 75%); display: flex; justify-content: center; align-items: center; z-index: 9999;">
+    
+    <div class="login-card glass-panel" style="background: rgba(20, 24, 33, 0.9); border: 1px solid rgba(255,255,255,0.08); padding: 40px; border-radius: 16px; width: 90%; max-width: 850px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); display: flex; gap: 40px; align-items: center; box-sizing: border-box;">
+        
+        <!-- Columna Izquierda: Logo y Títulos -->
+        <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            
+            <!-- Contenedor del Logo (Elegante y proporción correcta) -->
+            <div style="background: white; padding: 10px 18px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                <img src="./assets/img/logo-cpf.png" alt="Logo CPF Ingeniería" style="width: 130px; height: auto; display: block;">
             </div>
             
-            <div class="login-body">
-                <div class="input-group">
-                    <span class="material-symbols-outlined">person</span>
-                    <input type="email" id="login-email" placeholder="Correo (ej: analista@cpf.cl)">
-                </div>
-                <div class="input-group">
-                    <span class="material-symbols-outlined">lock</span>
-                    <input type="password" id="login-pass" placeholder="Contraseña">
-                </div>
-                
-                <button id="btn-ingresar" class="btn-accion">
-                    Autenticar <span class="material-symbols-outlined">login</span>
-                </button>
-                <div id="login-error" style="margin-top: 10px; font-size: 0.8rem; color: var(--iso-zona-d);"></div>
-
-                <footer class="legal-footer">
-                    <p>© 2026 CPF Ingeniería. Desarrollado para CMP - Mina Los Colorados.</p>
-                    <p style="margin-top: 8px; font-weight: 700; color: var(--primary-blue); letter-spacing: 0.5px;">
-                        Plataforma creada por Francisco Leiva
-                    </p>
-                </footer>
+            <h2 style="color: white; font-size: 1.6rem; margin: 0 0 8px 0; font-weight: 700; letter-spacing: 0.5px;">CIO Predictivo 2.0</h2>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Mina Los Colorados (CMP)</p>
+        </div>
+        
+        <!-- Columna Derecha: Formulario de Acceso -->
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 15px; border-left: 1px solid rgba(255,255,255,0.08); padding-left: 40px;">
+            <div>
+                <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Correo Electrónico</label>
+                <input type="email" id="login-email" placeholder="analista@cpf.cl" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(12, 14, 22, 0.85); color: white; outline: none; font-size: 0.9rem; box-sizing: border-box;">
+            </div>
+            <div>
+                <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Contraseña</label>
+                <input type="password" id="login-pass" placeholder="••••••••" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(12, 14, 22, 0.85); color: white; outline: none; font-size: 0.9rem; box-sizing: border-box;">
+            </div>
+            
+            <button id="btn-ingresar" class="btn-primary" style="width: 100%; margin-top: 5px; padding: 12px; border-radius: 8px; background: #38bdf8; color: #0f172a; font-weight: 700; border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 0.95rem;">
+                Autenticar <span class="material-symbols-outlined" style="font-size: 1.1rem;">login</span>
+            </button>
+            
+            <p id="login-error" style="color: #ef4444; font-size: 0.8rem; margin: 0; text-align: center;"></p>
+            
+            <div style="text-align: center; margin-top: 10px; font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;">
+                <p style="margin: 0 0 2px 0;">© 2026 CPF Ingeniería. Desarrollado para CMP.</p>
+                <p style="margin: 0; color: #38bdf8; font-weight: 500;">Plataforma creada por Francisco Leiva</p>
             </div>
         </div>
-    </main>
+
+    </div>
+</main>
 
     <!-- MÓDULO APP PRINCIPAL -->
     <section id="vista-app" class="app-layout oculta">
         
         <!-- Nueva Barra Lateral (Tabs y Áreas) -->
         <aside class="sidebar-principal">
-            <div class="sidebar-header" style="background: white; padding: 12px 20px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--border-glass);">
-    <h2 style="color: #0f172a; font-size: 1.1rem; font-weight: 800; margin: 0; letter-spacing: 0.5px;">CPF Ingeniería</h2>
+    
+    <!-- Encabezado del Sidebar -->
+    <div class="sidebar-header" style="text-align: center; padding: 20px 10px; border-bottom: 1px solid var(--border-glass);">
+        
+        <!-- Contenedor del Logo idéntico al Login -->
+<div style="text-align: center; padding: 20px 10px; border-bottom: 1px solid #1f2937; background-color: #030712;">
+    <div style="background: rgba(255, 255, 255, 0.95); padding: 6px; border-radius: 8px; display: inline-block; margin-bottom: 10px; width: 110px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);">
+        <img src="./assets/img/logo-cpf.png" alt="Logo CPF Ingeniería" style="width: 100%; height: auto; display: block; object-fit: contain;">
+    </div>
+    <div style="color: #f3f4f6; font-weight: 700; font-size: 14px; letter-spacing: 0.025em;">CIO Predictivo</div>
 </div>
+        
+        
+    </div>
             
             <!-- PESTAÑAS CON IDs -->
             <div class="sidebar-tabs">
@@ -134,9 +154,10 @@
                         <span class="material-symbols-outlined">person_add</span> Crear Usuario
                     </button>
                     <!-- NUEVO BOTÓN KIOSKO -->
-                    <button id="btn-kiosko" class="btn-topbar" style="background: rgba(132, 204, 22, 0.1); color: var(--iso-zona-b); border-color: rgba(132, 204, 22, 0.3);">
-                        <span class="material-symbols-outlined">fullscreen</span> Kiosko
-                    </button>
+                    <button id="kiosko" class="btn-kiosko" style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); padding: 8px 14px; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">
+    <span class="material-symbols-outlined">fullscreen</span> 
+    <span>Kiosko</span>
+</button>
                 </div>
             </header>
             
@@ -166,5 +187,36 @@
     </div>
 
     <script type="module" src="./js/app.js"></script>
+
+    <!-- ... otras librerías ... -->
+    
+    <!-- Scripts de la Aplicación -->
+    <script src="./js/ui/notificaciones.js"></script> <!-- Agregar aquí -->
+    <script src="./js/core/auth.js"></script>
+
+<!-- ========================================== -->
+<!-- SISTEMA DE NOTIFICACIONES Y MODALES (UI)   -->
+<!-- ========================================== -->
+
+<!-- Contenedor para Notificaciones Toast -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- Modal Genérico de Confirmación -->
+<div id="modal-confirmacion" class="modal-overlay oculto">
+    <div class="modal-box glass-panel">
+        <div class="modal-header">
+            <h3 id="modal-confirmacion-titulo">Confirmar Acción</h3>
+            <button class="btn-cerrar-modal" id="btn-cerrar-confirmacion">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="modal-confirmacion-mensaje">¿Estás seguro de que deseas realizar esta acción?</p>
+        </div>
+        <div class="modal-footer">
+            <button id="btn-cancelar-confirmacion" class="btn-secundario">Cancelar</button>
+            <button id="btn-aceptar-confirmacion" class="btn-peligro">Confirmar</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>

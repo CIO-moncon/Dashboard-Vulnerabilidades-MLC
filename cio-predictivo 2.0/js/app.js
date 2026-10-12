@@ -75,36 +75,63 @@ function inicializarApp() {
         }
     });
 
-    // Delegación de Eventos
-    document.addEventListener('click', (e) => {
+    // Delegación de Eventos (Convertido a async para soportar UI.confirmar)
+    document.addEventListener('click', async (e) => {
         // Clic en un equipo del menú lateral o del globo del mapa
         const btnEquipo = e.target.closest('.item-navegable');
         if (btnEquipo) {
+            // 🚀 Desactivar completamente el modo Kiosko al abrir un expediente
+            if (document.body.classList.contains('modo-kiosko-activo')) {
+                document.body.classList.remove('modo-kiosko-activo');
+                const sidebar = document.querySelector('aside') || document.querySelector('.sidebar-principal');
+                const topbar = document.querySelector('header') || document.querySelector('.topbar');
+                if (sidebar) sidebar.style.removeProperty('display');
+                if (topbar) topbar.style.removeProperty('display');
+
+                const btnOriginal = document.getElementById('kiosko');
+                if (btnOriginal) {
+                    btnOriginal.innerHTML = '<span class="material-symbols-outlined">fullscreen</span> Kiosko';
+                }
+
+                const btnFlotante = document.getElementById('btn-salir-kiosko-flotante');
+                if (btnFlotante) btnFlotante.style.display = 'none';
+            }
+
             const idFirebase = btnEquipo.getAttribute('data-target');
             document.querySelectorAll('.item-navegable').forEach(b => b.style.border = 'none');
-            
+
             // Si el clic viene del menú lateral, lo marcamos
-            if(btnEquipo.closest('.sidebar-principal')) {
+            if (btnEquipo.closest('.sidebar-principal')) {
                 btnEquipo.style.border = '1px solid var(--primary-blue)';
             }
-            
+
             // Destruimos la instancia del mapa para liberar memoria antes de abrir el expediente
-            if(mapaActivo) { mapaActivo.remove(); mapaActivo = null; }
-            
+            if (mapaActivo) {
+                mapaActivo.remove();
+                mapaActivo = null;
+            }
+
             renderizarExpediente(idFirebase, 'espacio-trabajo-dinamico');
             return;
         }
 
         const btnSalir = e.target.closest('#btn-salir');
         if (btnSalir) {
-            auth.signOut().then(() => window.location.reload());
+            const confirmado = await UI.confirmar("¿Estás seguro de cerrar tu sesión en el sistema?", "Cerrar Sesión");
+            if (confirmado) {
+                auth.signOut().then(() => window.location.reload());
+            }
             return;
         }
 
-        const btnVolver = e.target.closest('#btn-volver-dashboard');
+        const btnVolver = e.target.closest('#btn-volver-dashboard') || e.target.closest('#btn-cerrar-expediente') || e.target.closest('.btn-cerrar-modal');
+        
         if (btnVolver) {
             document.querySelectorAll('.item-navegable').forEach(b => b.style.border = 'none');
-            if(mapaActivo) { mapaActivo.remove(); mapaActivo = null; }
+            // Limpiamos el mapa miniatura del expediente si existe
+            if (window.miniMapaInstancia) { window.miniMapaInstancia.remove(); window.miniMapaInstancia = null; }
+            
+            // Volvemos a renderizar el mapa principal
             renderizarMapaPlanta();
             return;
         }
@@ -148,8 +175,11 @@ function renderizarMapaPlanta() {
     // 2. Inicializar Leaflet centrado en la faena con restricciones de zoom
     mapaActivo = L.map('mapa-satelital', {
         minZoom: 14, // No permite alejarse demasiado
-        maxZoom: 17  // Evita el error "Map data not yet available" (antes estaba en 19)
+        maxZoom: 17  // Evita el error "Map data not yet available"
     }).setView([-28.290846, -70.813030], 15);
+
+    // 🚀 Hacerla global explícitamente para que el modo kiosko la detecte siempre
+    window.mapaActivo = mapaActivo;
 
     // 3. Añadir la capa de imagen satelital de Esri
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -213,29 +243,69 @@ function dibujarPinesEnMapa() {
 
 // --- MODO KIOSKO (PANTALLA DE CONTROL) ---
 document.addEventListener('click', (e) => {
-    const btnKiosko = e.target.closest('#kiosko') || e.target.closest('.btn-kiosko');
-    if (btnKiosko) {
-        const sidebar = document.querySelector('.sidebar') || document.querySelector('aside');
-        const topbar = document.querySelector('header') || document.querySelector('.topbar');
+    const btnKiosko = e.target.closest('#kiosko') || e.target.closest('.btn-kiosko') || e.target.closest('#btn-salir-kiosko-flotante');
+    if (!btnKiosko) return;
+
+    // Conmutamos la clase en el body
+    const esKioskoActivo = document.body.classList.toggle('modo-kiosko-activo');
+    
+    // Buscamos los elementos de navegación de la interfaz
+    const sidebar = document.querySelector('aside') || document.querySelector('.sidebar-principal');
+    const topbar = document.querySelector('header') || document.querySelector('.topbar');
+    
+    // Manejar botón flotante de salida para modo Kiosko
+    let btnFlotante = document.getElementById('btn-salir-kiosko-flotante');
+
+    if (esKioskoActivo) {
+        if (sidebar) sidebar.style.setProperty('display', 'none', 'important');
+        if (topbar) topbar.style.setProperty('display', 'none', 'important');
         
-        // Alternar modo pantalla completa de sala de control
-        const esKioskoActivo = document.body.classList.toggle('modo-kiosko-activo');
-        
-        if (esKioskoActivo) {
-            if (sidebar) sidebar.style.display = 'none';
-            if (topbar) topbar.style.display = 'none';
-            btnKiosko.innerHTML = '<span class="material-symbols-outlined">fullscreen_exit</span> Salir Kiosko';
+        if (!btnFlotante) {
+            btnFlotante = document.createElement('button');
+            btnFlotante.id = 'btn-salir-kiosko-flotante';
+            btnFlotante.className = 'btn-kiosko';
+            btnFlotante.innerHTML = '<span class="material-symbols-outlined">fullscreen_exit</span> Salir Kiosko';
+            btnFlotante.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 100000; background: rgba(15, 23, 42, 0.85); color: white; border: 1px solid rgba(255,255,255,0.2); padding: 10px 18px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; backdrop-filter: blur(5px); box-shadow: 0 4px 12px rgba(0,0,0,0.5); font-family: inherit;';
+            document.body.appendChild(btnFlotante);
         } else {
-            if (sidebar) sidebar.style.display = 'flex';
-            if (topbar) topbar.style.display = 'flex';
-            btnKiosko.innerHTML = '<span class="material-symbols-outlined">kiosko</span> Kiosko';
+            btnFlotante.style.display = 'flex';
         }
+
+        const btnOriginal = document.getElementById('kiosko');
+        if (btnOriginal) {
+            btnOriginal.innerHTML = '<span class="material-symbols-outlined">fullscreen_exit</span> Salir Kiosko';
+        }
+    } else {
+        if (sidebar) sidebar.style.removeProperty('display');
+        if (topbar) topbar.style.removeProperty('display');
         
-        // Recalcular tamaño del mapa para que llene la pantalla completa
-        if (window.mapaActivo) {
-            setTimeout(() => window.mapaActivo.invalidateSize(), 200);
+        if (btnFlotante) btnFlotante.style.display = 'none';
+
+        const btnOriginal = document.getElementById('kiosko');
+        if (btnOriginal) {
+            btnOriginal.innerHTML = '<span class="material-symbols-outlined">fullscreen</span> Kiosko';
+        }
+
+        // Si estábamos viendo un expediente y salimos de Kiosko, devolvemos la vista al mapa general
+        const espacioDinámico = document.getElementById('espacio-trabajo-dinamico');
+        if (espacioDinámico && espacioDinámico.innerHTML.includes('Inspección CBM')) {
+            renderizarMapaPlanta();
+            return;
         }
     }
+    
+    // Forzar redibujado del mapa activo
+    setTimeout(() => {
+        if (window.mapaActivo) {
+            window.mapaActivo.invalidateSize();
+        }
+    }, 150);
+
+    setTimeout(() => {
+        if (window.mapaActivo) {
+            window.mapaActivo.invalidateSize();
+        }
+    }, 400);
 });
 
 // --- MODAL PROFESIONAL DE CREACIÓN DE USUARIOS ---
@@ -302,7 +372,7 @@ document.addEventListener('click', (e) => {
         document.getElementById('modal-crear-usuario').remove();
     });
 
-    // Evento Enviar Formulario
+    // Evento Enviar Formulario REFACTORIZADO
     document.getElementById('form-crear-usuario').addEventListener('submit', async (ev) => {
         ev.preventDefault();
         const nombre = document.getElementById('usr-nombre').value.trim();
@@ -329,10 +399,10 @@ document.addEventListener('click', (e) => {
                 creadoEn: Date.now()
             });
 
-            alert(`¡Usuario ${nombre} ${apellido} (${rol}) creado exitosamente!`);
+            UI.mostrarToast(`¡Usuario ${nombre} ${apellido} (${rol}) creado exitosamente!`, "exito");
             document.getElementById('modal-crear-usuario').remove();
         } catch (error) {
-            alert("Error al registrar usuario: " + error.message);
+            UI.mostrarToast("Error al registrar usuario: " + error.message, "error");
             btnSubmit.innerHTML = `<span class="material-symbols-outlined" style="font-size: 1.1rem;">check_circle</span> Guardar y Registrar`;
             btnSubmit.disabled = false;
         }
