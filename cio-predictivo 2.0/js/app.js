@@ -4,10 +4,13 @@
 import { auth, db } from './core/firebase-config.js';
 import { inicializarBarraLateral } from './ui/sidebar.js'; 
 import { renderizarExpediente } from './ui/expediente.js';
-import { renderizarModuloPMS } from './ui/pms.js'; // <-- NUEVO IMPORT
+import { renderizarModuloPMS } from './ui/pms.js';
 
 let datosGlobalesEquipos = {}; 
-let mapaActivo = null; // Variable global para guardar la instancia del mapa
+let mapaActivo = null; 
+
+// Referencia al nodo de alertas enviadas desde terreno.html
+const dbAlertas = db.ref('alertas_terreno');
 
 document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(user => {
@@ -44,6 +47,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
         });
     }
+
+    // Escuchar en tiempo real las alertas de terreno para actualizar el badge rojo
+    if (dbAlertas) {
+        dbAlertas.on('value', snap => {
+            renderizarAlertasTerrenoManager(snap.val());
+        });
+    }
 });
 
 function mostrarPlataforma(user) {
@@ -66,22 +76,18 @@ function inicializarApp() {
         if (snapshot.exists()) {
             datosGlobalesEquipos = snapshot.val();
             const espacioDinámico = document.getElementById('espacio-trabajo-dinamico');
-            // Si el mapa ya está dibujado, solo actualizamos los pines, si no, dibujamos todo.
             if (espacioDinámico && (!espacioDinámico.innerHTML.includes('mapa-satelital') || espacioDinámico.innerHTML.includes('Seleccione un Activo'))) {
                 renderizarMapaPlanta();
             } else if (mapaActivo) {
-                // Función para refrescar solo los pines si cambia el estado en Firebase
                 dibujarPinesEnMapa();
             }
         }
     });
 
-    // Delegación de Eventos (Convertido a async para soportar UI.confirmar)
+    // Delegación de Eventos
     document.addEventListener('click', async (e) => {
-        // Clic en un equipo del menú lateral o del globo del mapa
         const btnEquipo = e.target.closest('.item-navegable');
         if (btnEquipo) {
-            // 🚀 Desactivar completamente el modo Kiosko al abrir un expediente
             if (document.body.classList.contains('modo-kiosko-activo')) {
                 document.body.classList.remove('modo-kiosko-activo');
                 const sidebar = document.querySelector('aside') || document.querySelector('.sidebar-principal');
@@ -101,12 +107,10 @@ function inicializarApp() {
             const idFirebase = btnEquipo.getAttribute('data-target');
             document.querySelectorAll('.item-navegable').forEach(b => b.style.border = 'none');
 
-            // Si el clic viene del menú lateral, lo marcamos
             if (btnEquipo.closest('.sidebar-principal')) {
                 btnEquipo.style.border = '1px solid var(--primary-blue)';
             }
 
-            // Destruimos la instancia del mapa para liberar memoria antes de abrir el expediente
             if (mapaActivo) {
                 mapaActivo.remove();
                 mapaActivo = null;
@@ -126,13 +130,9 @@ function inicializarApp() {
         }
 
         const btnVolver = e.target.closest('#btn-volver-dashboard') || e.target.closest('#btn-cerrar-expediente') || e.target.closest('.btn-cerrar-modal');
-        
         if (btnVolver) {
             document.querySelectorAll('.item-navegable').forEach(b => b.style.border = 'none');
-            // Limpiamos el mapa miniatura del expediente si existe
             if (window.miniMapaInstancia) { window.miniMapaInstancia.remove(); window.miniMapaInstancia = null; }
-            
-            // Volvemos a renderizar el mapa principal
             renderizarMapaPlanta();
             return;
         }
@@ -145,7 +145,6 @@ function inicializarApp() {
             return;
         }
 
-        // 🚀 NUEVO: Abrir Módulo de Programa Semanal (PMS)
         const btnModuloPMS = e.target.closest('#btn-modulo-pms');
         if (btnModuloPMS) {
             document.querySelectorAll('.item-navegable').forEach(b => b.style.border = 'none');
@@ -157,15 +156,87 @@ function inicializarApp() {
 }
 
 // ---------------------------------------------------------
-// MÓDULO NUEVO: MAPA SATELITAL (LEAFLET + ESRI)
+// GESTIÓN DE ALERTAS DE TERRENO (BANDEJA EN TIEMPO REAL)
 // ---------------------------------------------------------
-let capaMarcadores = null; // Para borrar los pines viejos al actualizar
+window.abrirModalAlertasTerreno = function() {
+    const modal = document.getElementById('modal-alertas-terreno');
+    if (modal) modal.style.display = 'flex';
+    renderizarAlertasTerrenoModal();
+};
+
+function renderizarAlertasTerrenoManager(alertasData) {
+    const contenedor = document.getElementById('lista-alertas-terreno-container');
+    const badge = document.getElementById('badgeAlertasTerreno');
+    
+    if (!alertasData) {
+        if (badge) badge.innerText = '0';
+        if (contenedor) contenedor.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">No hay reportes de terreno recibidos.</p>';
+        return;
+    }
+
+    const keys = Object.keys(alertasData);
+    if (badge) badge.innerText = keys.length;
+    if (!contenedor) return;
+
+    contenedor.innerHTML = '';
+    keys.reverse().forEach(key => {
+        const al = alertasData[key];
+        const fecha = al.timestamp ? new Date(al.timestamp).toLocaleString() : 'Fecha no registrada';
+        
+        let colorSev = '#10b981';
+        if (al.severidad === 'Rojo') colorSev = '#ef4444';
+        else if (al.severidad === 'Naranja') colorSev = '#f97316';
+        else if (al.severidad === 'Amarillo') colorSev = '#eab308';
+
+        let htmlFoto = '';
+        if (al.fotoBase64) {
+            htmlFoto = `<img src="${al.fotoBase64}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-glass); cursor: pointer;" onclick="window.open('${al.fotoBase64}')" title="Ver foto ampliada">`;
+        }
+
+        contenedor.innerHTML += `
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-left: 4px solid ${colorSev}; padding: 14px; border-radius: 8px; display: flex; gap: 15px; align-items: flex-start;">
+                ${htmlFoto}
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <strong style="color: white; font-size: 1rem; font-family: monospace;">TAG: ${al.tag}</strong>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">${fecha}</span>
+                    </div>
+                    <span style="font-size: 0.8rem; color: #38bdf8; font-weight: 600;">Área: ${al.area} | Componente: ${al.componente || 'General'}</span>
+                    <p style="margin: 6px 0 0 0; font-size: 0.85rem; color: #e2e8f0; white-space: pre-line; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px;">${al.detalle}</p>
+                </div>
+                <button onclick="window.eliminarAlertaTerreno('${key}')" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.4); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem;" title="Eliminar reporte">🗑️</button>
+            </div>
+        `;
+    });
+}
+
+window.renderizarAlertasTerrenoModal = function() {
+    if (dbAlertas) {
+        dbAlertas.once('value', snap => {
+            renderizarAlertasTerrenoManager(snap.val());
+        });
+    }
+}
+
+window.eliminarAlertaTerreno = function(key) {
+    if (confirm("¿Estás seguro de eliminar este reporte de la bandeja?")) {
+        dbAlertas.child(key).remove().then(() => {
+            if (typeof UI !== 'undefined' && UI.mostrarToast) {
+                UI.mostrarToast("Reporte de terreno eliminado.", "exito");
+            }
+        });
+    }
+}
+
+// ---------------------------------------------------------
+// MAPA SATELITAL (LEAFLET + ESRI)
+// ---------------------------------------------------------
+let capaMarcadores = null;
 
 function renderizarMapaPlanta() {
     const contenedor = document.getElementById('espacio-trabajo-dinamico');
     if (!contenedor) return;
 
-    // 1. Estructura HTML del visor del mapa
     contenedor.innerHTML = `
         <div style="animation: fadeIn 0.4s ease; padding: 10px; height: 100%; display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: rgba(15, 23, 42, 0.6); padding: 15px 25px; border-radius: 12px; border: 1px solid var(--border-glass);">
@@ -177,51 +248,39 @@ function renderizarMapaPlanta() {
                 </div>
             </div>
             
-            <!-- Contenedor donde Leaflet dibujará el mapa -->
             <div id="mapa-satelital" style="flex-grow: 1; min-height: 500px; border-radius: 12px; border: 1px solid var(--border-glass); overflow: hidden; z-index: 1;"></div>
         </div>
     `;
 
-    // 2. Inicializar Leaflet centrado en la faena con restricciones de zoom
     mapaActivo = L.map('mapa-satelital', {
-        minZoom: 14, // No permite alejarse demasiado
-        maxZoom: 17  // Evita el error "Map data not yet available"
+        minZoom: 14,
+        maxZoom: 17 
     }).setView([-28.290846, -70.813030], 15);
 
-    // 🚀 Hacerla global explícitamente para que el modo kiosko la detecte siempre
     window.mapaActivo = mapaActivo;
 
-    // 3. Añadir la capa de imagen satelital de Esri
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Esri',
-        maxZoom: 17 // Debe coincidir con el límite del mapa superior
+        maxZoom: 17 
     }).addTo(mapaActivo);
 
-    // Inicializamos la capa donde irán los pines
     capaMarcadores = L.layerGroup().addTo(mapaActivo);
-
-    // 4. Dibujar los pines de los equipos
     dibujarPinesEnMapa();
 }
 
 function dibujarPinesEnMapa() {
     if (!mapaActivo || !capaMarcadores) return;
     
-    // Limpiamos los pines viejos
     capaMarcadores.clearLayers();
 
     Object.values(datosGlobalesEquipos).forEach(eq => {
-        // Solo dibujamos los equipos que tengan coordenadas configuradas
         if (eq.latitud && eq.longitud) {
-            
-            // Determinar color según severidad
             const sev = (eq.severidad || eq.estado || 'verde').toLowerCase();
-            let colorHex = '#10b981'; // Verde
+            let colorHex = '#10b981';
             if (sev === 'rojo' || sev === 'critico') colorHex = '#ef4444';
             else if (sev === 'naranja') colorHex = '#f97316';
             else if (sev === 'amarillo') colorHex = '#eab308';
 
-            // Crear un Pin (Marcador) personalizado dibujado con HTML/CSS
             const iconoPersonalizado = L.divIcon({
                 className: 'custom-pin',
                 html: `
@@ -230,12 +289,11 @@ function dibujarPinesEnMapa() {
                     </div>
                 `,
                 iconSize: [20, 30],
-                iconAnchor: [10, 30] // Punto de anclaje (la punta del triángulo abajo)
+                iconAnchor: [10, 30]
             });
 
             const marcador = L.marker([parseFloat(eq.latitud), parseFloat(eq.longitud)], { icon: iconoPersonalizado });
 
-            // Globo de información (Popup) al hacer clic en el pin
             const popupHTML = `
                 <div style="text-align: center; color: #333; font-family: 'Inter', sans-serif;">
                     <h4 style="margin: 0 0 5px 0; font-size: 1rem; color: #0f172a;">${eq.tag}</h4>
@@ -251,19 +309,14 @@ function dibujarPinesEnMapa() {
     });
 }
 
-// --- MODO KIOSKO (PANTALLA DE CONTROL) ---
+// --- MODO KIOSKO ---
 document.addEventListener('click', (e) => {
     const btnKiosko = e.target.closest('#kiosko') || e.target.closest('.btn-kiosko') || e.target.closest('#btn-salir-kiosko-flotante');
     if (!btnKiosko) return;
 
-    // Conmutamos la clase en el body
     const esKioskoActivo = document.body.classList.toggle('modo-kiosko-activo');
-    
-    // Buscamos los elementos de navegación de la interfaz
     const sidebar = document.querySelector('aside') || document.querySelector('.sidebar-principal');
     const topbar = document.querySelector('header') || document.querySelector('.topbar');
-    
-    // Manejar botón flotante de salida para modo Kiosko
     let btnFlotante = document.getElementById('btn-salir-kiosko-flotante');
 
     if (esKioskoActivo) {
@@ -296,7 +349,6 @@ document.addEventListener('click', (e) => {
             btnOriginal.innerHTML = '<span class="material-symbols-outlined">fullscreen</span> Kiosko';
         }
 
-        // Si estábamos viendo un expediente y salimos de Kiosko, devolvemos la vista al mapa general
         const espacioDinámico = document.getElementById('espacio-trabajo-dinamico');
         if (espacioDinámico && espacioDinámico.innerHTML.includes('Inspección CBM')) {
             renderizarMapaPlanta();
@@ -304,30 +356,19 @@ document.addEventListener('click', (e) => {
         }
     }
     
-    // Forzar redibujado del mapa activo
     setTimeout(() => {
-        if (window.mapaActivo) {
-            window.mapaActivo.invalidateSize();
-        }
+        if (window.mapaActivo) window.mapaActivo.invalidateSize();
     }, 150);
-
-    setTimeout(() => {
-        if (window.mapaActivo) {
-            window.mapaActivo.invalidateSize();
-        }
-    }, 400);
 });
 
-// --- MODAL PROFESIONAL DE CREACIÓN DE USUARIOS ---
+// --- MODAL DE CREACIÓN DE USUARIOS ---
 document.addEventListener('click', (e) => {
     const btnCrearUsr = e.target.closest('#btn-crear-usuario') || e.target.closest('.btn-crear-usuario');
     if (!btnCrearUsr) return;
 
-    // Si ya existe un modal previo, lo removemos
     const modalAnterior = document.getElementById('modal-crear-usuario');
     if (modalAnterior) modalAnterior.remove();
 
-    // Crear el contenedor del Modal
     const modalHTML = `
         <div id="modal-crear-usuario" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(5px); z-index: 1000; display: flex; justify-content: center; align-items: center; animation: fadeIn 0.3s ease;">
             <div style="background: var(--bg-card); border: 1px solid var(--border-glass); padding: 30px; border-radius: 12px; width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
@@ -377,12 +418,10 @@ document.addEventListener('click', (e) => {
 
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-    // Evento Cerrar Modal
     document.getElementById('cerrar-modal-usr').addEventListener('click', () => {
         document.getElementById('modal-crear-usuario').remove();
     });
 
-    // Evento Enviar Formulario REFACTORIZADO
     document.getElementById('form-crear-usuario').addEventListener('submit', async (ev) => {
         ev.preventDefault();
         const nombre = document.getElementById('usr-nombre').value.trim();
@@ -396,11 +435,9 @@ document.addEventListener('click', (e) => {
         btnSubmit.disabled = true;
 
         try {
-            // 1. Crear credencial en Firebase Auth
             const credUser = await auth.createUserWithEmailAndPassword(email, pass);
             const uid = credUser.user.uid;
 
-            // 2. Guardar metadatos extendidos en la Realtime Database
             await db.ref(`usuarios/${uid}`).set({
                 nombre: nombre,
                 apellido: apellido,
@@ -418,102 +455,3 @@ document.addEventListener('click', (e) => {
         }
     });
 });
-
-// Manejo y validación del formulario de mediciones de terreno
-const formMediciones = document.getElementById('form-mediciones-cbm');
-const alertaValidacion = document.getElementById('alerta-validacion');
-
-if (formMediciones) {
-    formMediciones.addEventListener('submit', function(evento) {
-        evento.preventDefault(); // Evita que la página se recargue
-
-        // Recopilar valores de los inputs
-        const velRMS = parseFloat(document.getElementById('vib-vel').value);
-        const peakVue = parseFloat(document.getElementById('vib-peakvue').value);
-        const tempMax = parseFloat(document.getElementById('termo-temp').value);
-        
-        let errores = [];
-        let advertencias = [];
-
-        // 1. Validaciones Críticas (Bloquean el guardado)
-        if (velRMS < 0 || isNaN(velRMS)) {
-            errores.push("La velocidad RMS debe ser un valor numérico positivo.");
-        }
-        if (tempMax < -50 || isNaN(tempMax)) {
-            errores.push("La temperatura ingresada está fuera del rango del sensor.");
-        }
-
-        // 2. Evaluaciones de Severidad (No bloquean, pero levantan advertencia visual)
-        // Usando como referencia límites de peligro comunes para equipos rígidos
-        if (velRMS >= 7.1) {
-            advertencias.push("Alerta: Velocidad RMS en umbral de PELIGRO. Se notificará a planificación.");
-        }
-
-        // Procesar Errores
-        if (errores.length > 0) {
-            mostrarAlerta(errores.join('<br>'), 'error');
-            return; // Aborta el proceso de guardado
-        }
-
-        // Si hay advertencias pero no errores, se guarda igual pero informando al inspector
-        if (advertencias.length > 0) {
-            mostrarAlerta(advertencias.join('<br>'), 'advertencia');
-        } else {
-            mostrarAlerta("Mediciones validadas correctamente. Guardando...", 'exito');
-        }
-
-        // Empaquetar datos para Firebase
-        const payloadMediciones = {
-            fecha: new Date().toISOString(),
-            vibraciones: {
-                velocidad_rms: velRMS,
-                peakvue: isNaN(peakVue) ? null : peakVue
-            },
-            termografia: {
-                temp_max: tempMax
-            },
-            // Aquí agregas el ID del usuario activo de Firebase Auth y el ID del equipo
-            registrado_por: firebase.auth().currentUser ? firebase.auth().currentUser.uid : 'Desconocido'
-        };
-
-        // TODO: Llamar a la función que sube 'payloadMediciones' a Firebase
-        // guardarEnFirebase(equipoActualId, payloadMediciones);
-    });
-}
-
-// Función auxiliar para manejar las alertas visuales en el UI
-function mostrarAlerta(mensaje, tipo) {
-    alertaValidacion.innerHTML = mensaje;
-    // Resetea las clases y aplica el estilo oscuro correspondiente según el tipo
-    alertaValidacion.className = `alerta-mensaje alerta-${tipo} visible`;
-    
-    // Opcional: Ocultar alertas de éxito automáticamente después de 3 segundos
-    if(tipo === 'exito') {
-        setTimeout(() => {
-            alertaValidacion.className = 'oculto';
-        }, 3000);
-    }
-}
-
-// Función para enviar las mediciones a Firebase Realtime Database
-function guardarEnFirebase(equipoId, payloadMediciones) {
-    // Referencia a la ruta del historial del equipo específico
-    // Ajusta 'activos_criticos' según el nodo exacto que uses en tu base de datos
-    const nodoMediciones = firebase.database().ref(`activos_criticos/${equipoId}/historial_mediciones`);
-
-    // push() genera un ID único (timestamp) para cada nueva lectura de ruta
-    nodoMediciones.push(payloadMediciones)
-        .then(() => {
-            // Éxito: Mostrar mensaje y limpiar el formulario para la siguiente inspección
-            mostrarAlerta("Mediciones guardadas exitosamente en la nube.", 'exito');
-            document.getElementById('form-mediciones-cbm').reset();
-            
-            // Opcional: Aquí podrías llamar a una función que actualice el gráfico de tendencias
-            // actualizarGraficosTendencia(equipoId);
-        })
-        .catch((error) => {
-            // Error de red o permisos
-            console.error("Error al registrar en Firebase:", error);
-            mostrarAlerta("Fallo al guardar. Verifica la conexión a la red.", 'error');
-        });
-}
