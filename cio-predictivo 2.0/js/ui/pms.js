@@ -1,5 +1,5 @@
 // ==========================================
-// MÓDULO UI: PROGRAMA SEMANAL (PMS), AUDITORÍA SAP PM Y EXPORTADOR PDF CORPORATIVO
+// MÓDULO UI: PROGRAMA SEMANAL (PMS), AUDITORÍA SAP PM Y EXPORTADOR HTML / PDF CORPORATIVO (CON OBSERVACIÓN)
 // ==========================================
 import { db } from '../core/firebase-config.js';
 import { renderizarExpediente } from './expediente.js';
@@ -206,7 +206,7 @@ export async function renderizarModuloPMS(contenedorId = 'espacio-trabajo-dinami
 
         const btnExportPDF = document.getElementById('btn-exportar-pdf-pms');
         if (btnExportPDF) {
-            btnExportPDF.addEventListener('click', () => generarPDFResumenPMS(semanaActiva, ordenes, { porcCumplimiento, total, ejecutadas, pendientes, porcNotif, notificadasCount, porcTeco, tecoCount }));
+            btnExportPDF.addEventListener('click', () => mostrarResumenPMSModal(semanaActiva, ordenes, { porcCumplimiento, total, ejecutadas, pendientes, porcNotif, notificadasCount, porcTeco, tecoCount }));
         }
 
         const inputExcel = document.getElementById('input-excel-pms');
@@ -428,7 +428,7 @@ function renderizarContenidoTablaPMS(ordenes, activosMap) {
         const teco = item.tecoSAP || 'NO';
         const cantAdjuntos = item.adjuntosSAP || 0;
         const fechaFormateada = formatearFechaExcel(item.fechaProg);
-        const searchString = `${item.orden} ${item.tag} ${item.descripcion} ${item.ubicacionTecnica || ''} ${fechaFormateada}`;
+        const searchString = `${item.orden} ${item.tag} ${item.descripcion} ${item.ubicacionTecnica || ''} ${fechaFormateada} ${item.observacionAuditor || ''}`;
 
         filasHTML += `
             <tr class="fila-orden-pms" data-key="${item.idKey}" data-estado="${est}" data-search="${searchString}" style="border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.8rem;">
@@ -441,7 +441,7 @@ function renderizarContenidoTablaPMS(ordenes, activosMap) {
                 </td>
                 <td style="padding: 10px 12px; color: #f8fafc; font-weight: 700; font-family: monospace;">${item.orden}</td>
                 <td style="padding: 10px 12px;">${badgeCatastro}</td>
-                <td style="padding: 10px 12px; color: #cbd5e1; max-width: 220px;" title="${item.descripcion}">${item.descripcion}</td>
+                <td style="padding: 10px 12px; color: #cbd5e1; max-width: 200px;" title="${item.descripcion}">${item.descripcion}</td>
                 
                 <!-- ESTADO REAL -->
                 <td style="padding: 10px 12px;">
@@ -477,7 +477,7 @@ function renderizarContenidoTablaPMS(ordenes, activosMap) {
 
                 <!-- OBSERVACIÓN -->
                 <td style="padding: 10px 12px;">
-                    <input type="text" class="input-obs-pms" value="${item.observacionAuditor || ''}" placeholder="Nota..." style="background: var(--bg-input); color: white; border: 1px solid var(--border-glass); padding: 5px 8px; border-radius: 6px; font-size: 0.75rem; width: 100%; outline: none; box-sizing: border-box;">
+                    <input type="text" class="input-obs-pms" value="${item.observacionAuditor || ''}" placeholder="Motivo o nota..." style="background: var(--bg-input); color: white; border: 1px solid var(--border-glass); padding: 5px 8px; border-radius: 6px; font-size: 0.75rem; width: 100%; outline: none; box-sizing: border-box;">
                 </td>
             </tr>
         `;
@@ -499,7 +499,7 @@ function renderizarContenidoTablaPMS(ordenes, activosMap) {
                         <th style="padding: 10px 12px; text-align: center;">Notif. SAP</th>
                         <th style="padding: 10px 12px; text-align: center;">CTEC</th>
                         <th style="padding: 10px 12px; text-align: center;">Adjuntos</th>
-                        <th style="padding: 10px 12px; min-width: 150px;">Observación</th>
+                        <th style="padding: 10px 12px; min-width: 180px;">Observación / Justificación</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -600,117 +600,103 @@ async function procesarArchivoExcelSAP(file, semanaActiva, activosMap, contenedo
 }
 
 // =========================================================
-// GENERADOR DE PDF EJECUTIVO CON LOGO CPF Y ANCHO OPTIMIZADO
+// VISOR MODAL DE PDF CORPORATIVO (CON OBSERVACIÓN INCLUIDA)
 // =========================================================
-async function generarPDFResumenPMS(semanaActiva, ordenes, kpis) {
-    if (!window.jspdf || !window.jspdf.jsPDF) {
-        if (window.UI && UI.mostrarToast) UI.mostrarToast("Librería jsPDF no disponible", "error");
-        return;
+function mostrarResumenPMSModal(semanaActiva, ordenes, kpis) {
+    let tablaHtml = `
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.72rem; text-align: left; margin-top: 15px;">
+            <thead>
+                <tr style="background-color: #0f172a; color: white;">
+                    <th style="padding: 8px; border: 1px solid #cbd5e1; width: 4%;">#</th>
+                    <th style="padding: 8px; border: 1px solid #cbd5e1; width: 10%;">Fecha</th>
+                    <th style="padding: 8px; border: 1px solid #cbd5e1; width: 8%;">Área</th>
+                    <th style="padding: 8px; border: 1px solid #cbd5e1; width: 18%;">Equipo</th>
+                    <th style="padding: 8px; border: 1px solid #cbd5e1; width: 12%;">OM</th>
+                    <th style="padding: 8px; border: 1px solid #cbd5e1; width: 13%;">Estado</th>
+                    <th style="padding: 8px; border: 1px solid #cbd5e1; width: 6%; text-align: center;">Notif</th>
+                    <th style="padding: 8px; border: 1px solid #cbd5e1; width: 6%; text-align: center;">CTEC</th>
+                    <th style="padding: 8px; border: 1px solid #cbd5e1; width: 5%; text-align: center;">Adj</th>
+                    <th style="padding: 8px; border: 1px solid #cbd5e1; width: 18%;">Observación / Justificación</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    ordenes.forEach((o, index) => {
+        const bgRow = index % 2 === 0 ? '#ffffff' : '#f8fafc';
+        tablaHtml += `
+            <tr style="background-color: ${bgRow}; border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 7px; border: 1px solid #cbd5e1; text-align: center; color: #64748b; font-weight: bold;">${index + 1}</td>
+                <td style="padding: 7px; border: 1px solid #cbd5e1; color: #334155;">${formatearFechaExcel(o.fechaProg)}</td>
+                <td style="padding: 7px; border: 1px solid #cbd5e1; color: #0f172a; font-weight: bold;">${o.area || ''}</td>
+                <td style="padding: 7px; border: 1px solid #cbd5e1; color: #0284c7; font-family: monospace; font-weight: bold;">${o.tag || ''}</td>
+                <td style="padding: 7px; border: 1px solid #cbd5e1; color: #0f172a; font-family: monospace; font-weight: bold;">${o.orden || ''}</td>
+                <td style="padding: 7px; border: 1px solid #cbd5e1; color: #334155;">${o.estadoEjecucion || ''}</td>
+                <td style="padding: 7px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: ${o.notificadaSAP === 'SI' ? '#7c3aed' : '#64748b'};">${o.notificadaSAP || 'NO'}</td>
+                <td style="padding: 7px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: ${o.tecoSAP === 'SI' ? '#059669' : '#64748b'};">${o.tecoSAP || 'NO'}</td>
+                <td style="padding: 7px; border: 1px solid #cbd5e1; text-align: center; color: #0284c7; font-weight: bold;">${o.adjuntosSAP || 0}</td>
+                <td style="padding: 7px; border: 1px solid #cbd5e1; color: #475569; font-style: italic;">${o.observacionAuditor || '-'}</td>
+            </tr>
+        `;
+    });
+
+    tablaHtml += `</tbody></table>`;
+
+    let modalResumen = document.getElementById('modal-resumen-pms-sap');
+    if (!modalResumen) {
+        modalResumen = document.createElement('div');
+        modalResumen.id = 'modal-resumen-pms-sap';
+        modalResumen.style.cssText = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 99999; display: flex; justify-content: center; align-items: center;";
+        document.body.appendChild(modalResumen);
     }
 
-    try {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('p', 'mm', 'a4');
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
+    modalResumen.innerHTML = `
+        <style>
+            @media print {
+                body * { visibility: hidden; }
+                #contenedor-impresion-pms, #contenedor-impresion-pms * { visibility: visible; }
+                #contenedor-impresion-pms { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none; border-radius: 0; }
+                #btn-cerrar-pms-modal, #btn-imprimir-pms-pdf, .footer-botones { display: none !important; }
+            }
+        </style>
+        <div id="contenedor-impresion-pms" style="background: #ffffff; color: #1e293b; border-radius: 12px; width: 1100px; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.6); overflow: hidden;">
+            
+            <!-- Cabecera Corporativa CPF idéntica al expediente -->
+            <div style="background: #0f172a; color: white; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <div style="background: white; padding: 6px 12px; border-radius: 6px; display: flex; align-items: center; justify-content: center; height: 44px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                        <img src="./assets/img/logo-cpf.png" alt="CPF Logo" style="height: 32px; width: auto; display: block; object-fit: contain;" onerror="this.outerHTML='<span style=\\'font-weight: 900; color: #0f172a; font-size: 1.2rem;\\'>CPF</span>'">
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.1rem; color: #38bdf8;">Informe de Auditoría Programa Semanal (PMS)</h3>
+                        <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: #94a3b8;">Mina Los Colorados (CMP) | Período: ${semanaActiva}</p>
+                    </div>
+                </div>
+                <button type="button" id="btn-cerrar-pms-modal" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 1.4rem;"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            
+            <!-- Cuerpo con Fondo Blanco y KPIs -->
+            <div style="padding: 25px 30px; overflow-y: auto; flex-grow: 1; background: #ffffff;">
+                <div style="margin-bottom: 20px; background: #f8fafc; padding: 12px 18px; border-radius: 6px; border: 1px solid #cbd5e1; display: flex; justify-content: space-between; font-size: 0.82rem; color: #334155;">
+                    <span><b>Cumplimiento Terreno:</b> <span style="color: #0284c7; font-weight: bold;">${kpis.porcCumplimiento}% (${kpis.ejecutadas}/${kpis.total})</span></span>
+                    <span><b>Pendientes:</b> <span style="color: #d97706; font-weight: bold;">${kpis.pendientes}</span></span>
+                    <span><b>Notificadas SAP:</b> <span style="color: #7c3aed; font-weight: bold;">${kpis.porcNotif}% (${kpis.notificadasCount}/${kpis.total})</span></span>
+                    <span><b>Cierre CTEC:</b> <span style="color: #059669; font-weight: bold;">${kpis.porcTeco}% (${kpis.tecoCount}/${kpis.total})</span></span>
+                </div>
 
-        // 1. Fondo blanco puro en toda la página
-        doc.setFillColor(255, 255, 255);
-        doc.rect(0, 0, pageWidth, pageHeight, 'F');
+                <h4 style="color: #0f172a; font-size: 0.95rem; border-bottom: 2px solid #38bdf8; padding-bottom: 5px; margin-top: 0;">📋 Detalle de Órdenes y Justificaciones SAP</h4>
+                ${ordenes.length > 0 ? tablaHtml : '<p style="text-align: center; color: #64748b; padding: 20px;">No hay órdenes registradas.</p>'}
+            </div>
 
-        // 2. Cabecera Corporativa con Fondo Azul Oscuro (#0f172a)
-        doc.setFillColor(15, 23, 42);
-        doc.rect(0, 0, pageWidth, 24, 'F');
+            <!-- Pie con botón de impresión -->
+            <div class="footer-botones" style="padding: 12px 30px; border-top: 1px solid #cbd5e1; text-align: right; background: #e2e8f0;">
+                <button type="button" id="btn-imprimir-pms-pdf" style="background: #0284c7; color: white; border: none; padding: 8px 20px; font-weight: bold; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 1.1rem;">print</span> Imprimir / Guardar PDF
+                </button>
+            </div>
+        </div>
+    `;
 
-        // Incrustar el logotipo oficial CPF de forma proporcionada
-        try {
-            const img = new Image();
-            img.src = './assets/img/logo-cpf.png';
-            await new Promise((resolve) => {
-                img.onload = () => {
-                    // x: 12, y: 4, width: 32, height: 16 (Proporción perfecta sin pisar texto)
-                    doc.addImage(img, 'PNG', 12, 4, 32, 16);
-                    resolve();
-                };
-                img.onerror = () => resolve();
-            });
-        } catch (e) { console.warn("Logo no disponible para PDF"); }
-
-        // Textos de cabecera desplazados a la derecha del logo
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(10.5);
-        doc.setFont("helvetica", "bold");
-        doc.text("INFORME DE AUDITORÍA PROGRAMA SEMANAL (PMS)", 48, 10);
-        
-        doc.setFontSize(7.5);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(148, 163, 184);
-        doc.text(`Mina Los Colorados (CMP)  |  Período: ${semanaActiva}  |  Fecha: ${new Date().toLocaleDateString('es-CL')}`, 48, 16.5);
-
-        // 3. Tarjetas KPI de Resumen (Aprovechando todo el ancho de margen a margen: 14mm a 14mm)
-        let startY = 30;
-        doc.setFillColor(241, 245, 249);
-        doc.roundedRect(14, startY, pageWidth - 28, 14, 1.5, 1.5, 'F');
-
-        doc.setTextColor(30, 41, 59);
-        doc.setFontSize(7.5);
-        doc.setFont("helvetica", "bold");
-        
-        // Distribución equitativa de los KPIs en el espacio horizontal
-        doc.text(`Cumplimiento Terreno: ${kpis.porcCumplimiento}% (${kpis.ejecutadas}/${kpis.total})`, 18, startY + 9);
-        doc.text(`Pendientes: ${kpis.pendientes}`, 76, startY + 9);
-        doc.text(`Notificadas SAP: ${kpis.porcNotif}% (${kpis.notificadasCount}/${kpis.total})`, 112, startY + 9);
-        doc.text(`Cierre CTEC: ${kpis.porcTeco}% (${kpis.tecoCount}/${kpis.total})`, 164, startY + 9);
-
-        // 4. Tabla Detallada Optimizada para el Ancho Total de la Página
-        startY = 48;
-        doc.setFontSize(9.5);
-        doc.setTextColor(15, 23, 42);
-        doc.text("Detalle de Órdenes y Estatus SAP", 14, startY);
-
-        if (typeof doc.autoTable === 'function') {
-            const headers = [["#", "Fecha Prog.", "Área", "Equipo / Ubicación Técnica", "Orden (OM)", "Estado", "Notif", "CTEC", "Adj"]];
-            const data = ordenes.map((o, index) => [
-                index + 1,
-                formatearFechaExcel(o.fechaProg),
-                o.area || '',
-                o.tag || '',
-                o.orden || '',
-                o.estadoEjecucion || '',
-                o.notificadaSAP || '',
-                o.tecoSAP || '',
-                o.adjuntosSAP || 0
-            ]);
-
-            // Ancho útil disponible: 210mm (A4) - 28mm (márgenes) = 182 mm
-            doc.autoTable({
-                startY: startY + 3,
-                head: headers,
-                body: data,
-                theme: 'grid',
-                headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontSize: 7, fontStyle: 'bold' },
-                bodyStyles: { fontSize: 6.5, textColor: [30, 41, 59], fillColor: [255, 255, 255] },
-                alternateRowStyles: { fillColor: [248, 250, 252] },
-                columnStyles: {
-                    0: { halign: 'center', cellWidth: 8 },   // #
-                    1: { cellWidth: 20 },                  // Fecha
-                    2: { cellWidth: 15 },                  // Área
-                    3: { cellWidth: 50 },                  // Equipo (ampliado para que no se corte)
-                    4: { cellWidth: 26 },                  // OM
-                    5: { cellWidth: 30 },                  // Estado
-                    6: { halign: 'center', cellWidth: 11 },// Notif
-                    7: { halign: 'center', cellWidth: 11 },// CTEC
-                    8: { halign: 'center', cellWidth: 11 } // Adj
-                },
-                margin: { left: 14, right: 14 }
-            });
-        }
-
-        doc.save(`Auditoria_${semanaActiva}.pdf`);
-        if (window.UI && UI.mostrarToast) UI.mostrarToast("¡Informe PDF corporativo generado con éxito!", "exito");
-
-    } catch (err) {
-        console.error("Error generando PDF:", err);
-        if (window.UI && UI.mostrarToast) UI.mostrarToast("Error al exportar PDF", "error");
-    }
+    document.getElementById('btn-cerrar-pms-modal').addEventListener('click', () => modalResumen.remove());
+    document.getElementById('btn-imprimir-pms-pdf').addEventListener('click', () => window.print());
 }
