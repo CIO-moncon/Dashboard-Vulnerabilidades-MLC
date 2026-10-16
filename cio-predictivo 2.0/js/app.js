@@ -408,3 +408,102 @@ document.addEventListener('click', (e) => {
         }
     });
 });
+
+// Manejo y validación del formulario de mediciones de terreno
+const formMediciones = document.getElementById('form-mediciones-cbm');
+const alertaValidacion = document.getElementById('alerta-validacion');
+
+if (formMediciones) {
+    formMediciones.addEventListener('submit', function(evento) {
+        evento.preventDefault(); // Evita que la página se recargue
+
+        // Recopilar valores de los inputs
+        const velRMS = parseFloat(document.getElementById('vib-vel').value);
+        const peakVue = parseFloat(document.getElementById('vib-peakvue').value);
+        const tempMax = parseFloat(document.getElementById('termo-temp').value);
+        
+        let errores = [];
+        let advertencias = [];
+
+        // 1. Validaciones Críticas (Bloquean el guardado)
+        if (velRMS < 0 || isNaN(velRMS)) {
+            errores.push("La velocidad RMS debe ser un valor numérico positivo.");
+        }
+        if (tempMax < -50 || isNaN(tempMax)) {
+            errores.push("La temperatura ingresada está fuera del rango del sensor.");
+        }
+
+        // 2. Evaluaciones de Severidad (No bloquean, pero levantan advertencia visual)
+        // Usando como referencia límites de peligro comunes para equipos rígidos
+        if (velRMS >= 7.1) {
+            advertencias.push("Alerta: Velocidad RMS en umbral de PELIGRO. Se notificará a planificación.");
+        }
+
+        // Procesar Errores
+        if (errores.length > 0) {
+            mostrarAlerta(errores.join('<br>'), 'error');
+            return; // Aborta el proceso de guardado
+        }
+
+        // Si hay advertencias pero no errores, se guarda igual pero informando al inspector
+        if (advertencias.length > 0) {
+            mostrarAlerta(advertencias.join('<br>'), 'advertencia');
+        } else {
+            mostrarAlerta("Mediciones validadas correctamente. Guardando...", 'exito');
+        }
+
+        // Empaquetar datos para Firebase
+        const payloadMediciones = {
+            fecha: new Date().toISOString(),
+            vibraciones: {
+                velocidad_rms: velRMS,
+                peakvue: isNaN(peakVue) ? null : peakVue
+            },
+            termografia: {
+                temp_max: tempMax
+            },
+            // Aquí agregas el ID del usuario activo de Firebase Auth y el ID del equipo
+            registrado_por: firebase.auth().currentUser ? firebase.auth().currentUser.uid : 'Desconocido'
+        };
+
+        // TODO: Llamar a la función que sube 'payloadMediciones' a Firebase
+        // guardarEnFirebase(equipoActualId, payloadMediciones);
+    });
+}
+
+// Función auxiliar para manejar las alertas visuales en el UI
+function mostrarAlerta(mensaje, tipo) {
+    alertaValidacion.innerHTML = mensaje;
+    // Resetea las clases y aplica el estilo oscuro correspondiente según el tipo
+    alertaValidacion.className = `alerta-mensaje alerta-${tipo} visible`;
+    
+    // Opcional: Ocultar alertas de éxito automáticamente después de 3 segundos
+    if(tipo === 'exito') {
+        setTimeout(() => {
+            alertaValidacion.className = 'oculto';
+        }, 3000);
+    }
+}
+
+// Función para enviar las mediciones a Firebase Realtime Database
+function guardarEnFirebase(equipoId, payloadMediciones) {
+    // Referencia a la ruta del historial del equipo específico
+    // Ajusta 'activos_criticos' según el nodo exacto que uses en tu base de datos
+    const nodoMediciones = firebase.database().ref(`activos_criticos/${equipoId}/historial_mediciones`);
+
+    // push() genera un ID único (timestamp) para cada nueva lectura de ruta
+    nodoMediciones.push(payloadMediciones)
+        .then(() => {
+            // Éxito: Mostrar mensaje y limpiar el formulario para la siguiente inspección
+            mostrarAlerta("Mediciones guardadas exitosamente en la nube.", 'exito');
+            document.getElementById('form-mediciones-cbm').reset();
+            
+            // Opcional: Aquí podrías llamar a una función que actualice el gráfico de tendencias
+            // actualizarGraficosTendencia(equipoId);
+        })
+        .catch((error) => {
+            // Error de red o permisos
+            console.error("Error al registrar en Firebase:", error);
+            mostrarAlerta("Fallo al guardar. Verifica la conexión a la red.", 'error');
+        });
+}
