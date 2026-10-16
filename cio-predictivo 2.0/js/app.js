@@ -4,6 +4,7 @@
 import { auth, db } from './core/firebase-config.js';
 import { inicializarBarraLateral } from './ui/sidebar.js'; 
 import { renderizarExpediente } from './ui/expediente.js';
+import { renderizarModuloPMS } from './ui/pms.js'; // <-- NUEVO IMPORT
 
 let datosGlobalesEquipos = {}; 
 let mapaActivo = null; // Variable global para guardar la instancia del mapa
@@ -141,6 +142,15 @@ function inicializarApp() {
             document.querySelectorAll('.item-navegable').forEach(b => b.style.border = 'none');
             if(mapaActivo) { mapaActivo.remove(); mapaActivo = null; }
             renderizarExpediente('NUEVO', 'espacio-trabajo-dinamico');
+            return;
+        }
+
+        // 🚀 NUEVO: Abrir Módulo de Programa Semanal (PMS)
+        const btnModuloPMS = e.target.closest('#btn-modulo-pms');
+        if (btnModuloPMS) {
+            document.querySelectorAll('.item-navegable').forEach(b => b.style.border = 'none');
+            if (mapaActivo) { mapaActivo.remove(); mapaActivo = null; }
+            renderizarModuloPMS('espacio-trabajo-dinamico');
             return;
         }
     });

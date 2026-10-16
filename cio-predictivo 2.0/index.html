@@ -19,6 +19,12 @@
     <!-- Librerías para Generación de PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Librería para Generación de PDF y Tablas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Librería SheetJS (Excel / CSV para Programa Semanal SAP PM) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <link rel="stylesheet" href="./css/main.css">
 
@@ -147,6 +153,9 @@
                         </div>
                     </div>
 
+                    <button id="btn-modulo-pms" class="btn-topbar" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);">
+                        <span class="material-symbols-outlined">calendar_month</span> Programa Semanal (PMS)
+                    </button>
                     <button id="btn-crear-equipo" class="btn-topbar">
                         <span class="material-symbols-outlined">add_circle</span> Crear Equipo
                     </button>
