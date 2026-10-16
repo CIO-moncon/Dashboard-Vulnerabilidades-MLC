@@ -3,9 +3,10 @@
 // ==========================================
 import { db } from '../core/firebase-config.js';
 import { generarPDFExpediente } from '../core/reportes.js';
+import { renderizarModuloAnalisis } from './analisis.js'; 
 
-let chartInstancia = null;
-let miniMapaInstancia = null; // Caché para el mini-mapa interactivo
+let chartsInstancias = []; // Arreglo global para almacenar las instancias de Chart.js
+let miniMapaInstancia = null;
 
 // --- DICCIONARIO DE PLANTILLAS CBM ---
 const motorGen = [ { punto: 'M1', comp: 'Motor NDE (Lado Libre)' }, { punto: 'M2', comp: 'Motor DE (Lado Carga)' } ];
@@ -41,7 +42,6 @@ for (let i = 1; i <= 2; i++) {
     pBeltFeeder.push({ punto: `PL${i}_LD`, comp: `Polea ${i} Lado Der` });
 }
 
-// 🚀 Tus Nuevas Plantillas Corregidas
 const pModulo = [ ...motorGen ];
 for (let i = 1; i <= 6; i++) pModulo.push({ punto: `G${i}`, comp: `Reductor Punto ${i}` });
 for (let i = 1; i <= 4; i++) {
@@ -56,7 +56,6 @@ for (let i = 1; i <= 2; i++) {
     pGrasshopper.push({ punto: `PL${i}_LD`, comp: `Polea ${i} Lado Der` });
 }
 
-// 🚀 Diccionario Actualizado
 const PLANTILLAS_CBM = {
     chancador: pChancador, 
     transportador: pTransportador, 
@@ -71,7 +70,6 @@ const PLANTILLAS_CBM = {
     grasshopper: pGrasshopper 
 };
 
-// 🚀 Detector Actualizado
 function obtenerPlantilla(tipoStr) {
     const t = (tipoStr || '').toLowerCase();
     if (t.includes('terciario') || t.includes('exitatriz')) return PLANTILLAS_CBM.harneroTer;
@@ -89,6 +87,40 @@ function obtenerPlantilla(tipoStr) {
     
     return null;
 }
+
+// ---------------------------------------------------------
+// ORDENADOR CINEMÁTICO NATURAL (TREN DE POTENCIA)
+// ---------------------------------------------------------
+function obtenerPesoOrdenSpot(puntoNombre) {
+    const p = (puntoNombre || '').toUpperCase().trim();
+    let grupo = 50; 
+    if (p.startsWith('M')) grupo = 10;       // 1° Motores (M1, M2...)
+    else if (p.startsWith('G')) grupo = 20;  // 2° Reductores (G1...G10)
+    else if (p.startsWith('D') || p.startsWith('R') || p.startsWith('E') || p.startsWith('C')) grupo = 30; // 3° Descansos / Contraejes
+    else if (p.startsWith('PL')) grupo = 40; // 4° Poleas (PL1_LI, PL1_LD...)
+
+    const matchNum = p.match(/\d+/);
+    const numero = matchNum ? parseInt(matchNum[0], 10) : 999;
+
+    let subLado = 0;
+    if (p.includes('_LI') || p.endsWith('LI') || p.includes('IZQ')) subLado = 1;
+    else if (p.includes('_LD') || p.endsWith('LD') || p.includes('DER')) subLado = 2;
+
+    return { grupo, numero, subLado, codigo: p };
+}
+
+function ordenarSpotsArray(spotsArray) {
+    return spotsArray.sort((a, b) => {
+        const pesoA = obtenerPesoOrdenSpot(a.punto);
+        const pesoB = obtenerPesoOrdenSpot(b.punto);
+
+        if (pesoA.grupo !== pesoB.grupo) return pesoA.grupo - pesoB.grupo;
+        if (pesoA.numero !== pesoB.numero) return pesoA.numero - pesoB.numero;
+        if (pesoA.subLado !== pesoB.subLado) return pesoA.subLado - pesoB.subLado;
+        return pesoA.codigo.localeCompare(pesoB.codigo, undefined, { numeric: true });
+    });
+}
+
 // ---------------------------------------------------------
 // 2. RENDERIZADO DEL EXPEDIENTE
 // ---------------------------------------------------------
@@ -122,20 +154,18 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
     let spotsHTML = '';
     const spotsObj = eq.spots || {};
     let spotsArray = Object.keys(spotsObj).map(k => ({ idInterno: k, ...spotsObj[k] }));
-    const plantilla = obtenerPlantilla(eq.tipo_equipo);
 
-    spotsArray.sort((a, b) => {
-        let iA = plantilla ? plantilla.findIndex(p => p.punto === a.punto) : -1;
-        let iB = plantilla ? plantilla.findIndex(p => p.punto === b.punto) : -1;
-        if (iA === -1) iA = 9999; if (iB === -1) iB = 9999;
-        return (iA !== iB) ? iA - iB : (a.punto || '').localeCompare(b.punto || '', undefined, {numeric: true});
-    });
+    // Aplicar orden cinemático natural
+    spotsArray = ordenarSpotsArray(spotsArray);
 
     if (spotsArray.length === 0) {
-        spotsHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;">No hay puntos de medición. Ve a Configuración.</td></tr>';
+        spotsHTML = '<tr><td colspan="7" style="text-align:center; padding: 20px;">No hay puntos de medición. Ve a Configuración.</td></tr>';
     } else {
         spotsArray.forEach(s => {
             const rmsAnterior = parseFloat(s.rms || 0).toFixed(2);
+            const tempAnterior = s.temp ? parseFloat(s.temp).toFixed(1) : '--';
+            const fcAnterior = s.fc ? parseFloat(s.fc).toFixed(2) : '--';
+
             let colorAnterior = 'var(--iso-zona-a)';
             if (rmsAnterior >= 7.1) colorAnterior = 'var(--iso-zona-d)';
             else if (rmsAnterior >= 4.5) colorAnterior = 'var(--iso-zona-c)';
@@ -147,18 +177,27 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                     <td><strong>${s.punto}</strong></td>
                     <td style="font-size: 0.8rem; color: var(--text-muted);">${s.componente}</td>
+                    <td style="text-align: center;">
+                        <button class="btn-icon btn-ver-tendencia" data-spot-id="${s.idInterno}" data-punto-nombre="${s.punto} ${s.componente}" title="Ver Gráfico de Tendencia" style="color: var(--primary-blue); cursor:pointer; background:transparent; border:none;">
+                            <span class="material-symbols-outlined">monitoring</span>
+                        </button>
+                    </td>
                     <td>
                         <div style="font-size: 0.9rem; color: ${colorAnterior}; font-weight: bold;">${rmsAnterior} mm/s</div>
+                        <div style="font-size: 0.75rem; color: #f97316;">${tempAnterior} °C <span style="color:var(--text-muted)">| FC+ ${fcAnterior}</span></div>
                         <div style="font-size: 0.65rem; color: var(--text-muted);">${fechaAnterior}</div>
                     </td>
                     <td>
-                        <input type="number" step="0.01" class="input-lectura-hoy" data-spot="${s.idInterno}" placeholder="0.00" 
-                        style="width: 80px; padding: 6px; border-radius: 4px; border: 1px solid var(--border-glass); background: var(--bg-input); color: white; outline:none; text-align: right;">
+                        <input type="number" step="0.01" class="input-lectura-hoy" data-spot="${s.idInterno}" placeholder="RMS" 
+                        style="width: 60px; padding: 6px; border-radius: 4px; border: 1px solid var(--border-glass); background: var(--bg-input); color: white; outline:none; text-align: right;" title="Vibración Global (mm/s)">
                     </td>
-                    <td style="text-align: center;">
-                        <button class="btn-icon btn-ver-tendencia" data-spot-id="${s.idInterno}" data-punto-nombre="${s.punto} - ${s.componente}" title="Ver Gráfico de Tendencia" style="color: var(--primary-blue); cursor:pointer; background:transparent; border:none;">
-                            <span class="material-symbols-outlined">monitoring</span>
-                        </button>
+                    <td>
+                        <input type="number" step="0.1" class="input-temp-hoy" data-spot="${s.idInterno}" placeholder="°C" 
+                        style="width: 60px; padding: 6px; border-radius: 4px; border: 1px solid var(--border-glass); background: var(--bg-input); color: white; outline:none; text-align: right;" title="Temperatura Máxima (°C)">
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" class="input-fc-hoy" data-spot="${s.idInterno}" placeholder="FC+" 
+                        style="width: 60px; padding: 6px; border-radius: 4px; border: 1px solid var(--border-glass); background: var(--bg-input); color: white; outline:none; text-align: right;" title="Factor de Cresta">
                     </td>
                 </tr>
             `;
@@ -168,7 +207,6 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
     const ahora = new Date();
     const fechaHoraActual = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}T${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
 
-    // Construcción de Miniaturas de la Galería
     const galeriaObj = eq.galeria || {};
     const galeriaKeys = Object.keys(galeriaObj);
     let miniaturaHeader = '';
@@ -189,7 +227,6 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
     contenedor.innerHTML = `
         <div class="panel-industrial" style="animation: fadeIn 0.3s ease; display: flex; flex-direction: column; height: 100%; max-height: calc(100vh - 120px); padding: 0;">
             
-            <!-- BARRA DE HERRAMIENTAS (SIEMPRE VISIBLE) -->
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding: 20px; background: var(--bg-card); border-radius: 8px 8px 0 0; position: sticky; top: 0; z-index: 50; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
                 <div style="display: flex; gap: 15px; align-items: center;">
                     ${miniaturaHeader}
@@ -199,6 +236,10 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
                     </div>
                 </div>
                 <div style="display: flex; gap: 10px;">
+                    <button id="btn-modo-analisis" class="btn-topbar" style="background: rgba(56, 189, 248, 0.1); color: var(--primary-blue); border-color: rgba(56, 189, 248, 0.3);">
+                        <span class="material-symbols-outlined">psychology</span> Análisis Experto
+                    </button>
+                    
                     <button id="btn-modo-config" class="btn-topbar" style="background: rgba(255, 255, 255, 0.05); color: var(--text-main); border-color: rgba(255, 255, 255, 0.1);">
                         <span class="material-symbols-outlined">settings</span> Configurar Máquina
                     </button>
@@ -211,7 +252,6 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
                 </div>
             </div>
 
-            <!-- CONTENIDO DESLIZABLE (TABLA DE INSPECCIÓN) -->
             <div style="padding: 20px; overflow-y: auto; flex-grow: 1;">
                 <div style="background: var(--bg-input); padding: 20px; border-radius: 8px; border: 1px solid var(--border-glass);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -227,7 +267,15 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
                     <div style="border: 1px solid var(--border-glass); border-radius: 6px; margin-bottom: 15px;">
                         <table class="tabla-cbm" style="margin-top: 0; border-bottom: none; width: 100%;">
                             <thead style="background: rgba(0,0,0,0.2);">
-                                <tr><th>Punto</th><th>Componente</th><th>Lectura Anterior</th><th>Ingresar Hoy (mm/s)</th><th>Gráfico</th></tr>
+                                <tr>
+                                    <th>Punto</th>
+                                    <th>Componente</th>
+                                    <th style="text-align: center;">Gráfico</th>
+                                    <th>Lectura Anterior</th>
+                                    <th>RMS (mm/s)</th>
+                                    <th>Temp (°C)</th>
+                                    <th>FC+</th>
+                                </tr>
                             </thead>
                             <tbody>${spotsHTML}</tbody>
                         </table>
@@ -244,9 +292,15 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
     `;
 
     document.getElementById('btn-modo-config').addEventListener('click', () => renderizarExpediente(idFirebase, contenedor.id, true));
-    document.getElementById('btn-exportar-pdf').addEventListener('click', () => generarPDFExpediente(eq.tag, contenedor.id));
     
-    // EVENTO PARA CERRAR EL EXPEDIENTE (No requiere confirmación porque es modo inspección y aún no se guardan cambios al salir)
+    document.getElementById('btn-modo-analisis').addEventListener('click', () => {
+        renderizarModuloAnalisis(idFirebase, contenedor.id);
+    });
+
+    document.getElementById('btn-exportar-pdf').addEventListener('click', () => {
+        mostrarResumenDiarioSAP(eq);
+    });
+    
     document.getElementById('btn-cerrar-expediente').addEventListener('click', () => {
         document.getElementById('btn-volver-dashboard').click();
     });
@@ -260,35 +314,87 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
         });
     });
 
-    // EVENTO REFACTORIZADO
     document.getElementById('btn-guardar-ruta').addEventListener('click', async () => {
         const fechaHoraRuta = document.getElementById('fecha-inspeccion').value;
         if (!fechaHoraRuta) return UI.mostrarToast("Indica la fecha y hora de la medición.", "alerta");
 
-        const inputs = document.querySelectorAll('.input-lectura-hoy');
+        const inputsVib = document.querySelectorAll('.input-lectura-hoy');
         const updates = {};
         let ingresados = 0;
         let peorSeveridad = 'verde';
+        
+        let alertasFaltantes = [];
 
-        inputs.forEach(input => {
-            const val = input.value.trim();
-            if (val !== '') {
-                const num = parseFloat(val);
-                const spotId = input.getAttribute('data-spot');
+        inputsVib.forEach(inputVib => {
+            const spotId = inputVib.getAttribute('data-spot');
+            const fila = inputVib.closest('tr');
+            const nombrePunto = fila.querySelector('strong').textContent; 
+
+            const valVib = inputVib.value.trim();
+            const inputTemp = document.querySelector(`.input-temp-hoy[data-spot="${spotId}"]`);
+            const valTemp = inputTemp ? inputTemp.value.trim() : '';
+            const inputFc = document.querySelector(`.input-fc-hoy[data-spot="${spotId}"]`);
+            const valFc = inputFc ? inputFc.value.trim() : '';
+
+            let datosFaltantes = [];
+            if (valVib === '') datosFaltantes.push('RMS');
+            if (valTemp === '') datosFaltantes.push('Temperatura');
+            if (valFc === '') datosFaltantes.push('FC+');
+
+            if (datosFaltantes.length > 0 && datosFaltantes.length < 3) {
+                alertasFaltantes.push(`El punto <b>${nombrePunto}</b> se encuentra sin el dato: <b>${datosFaltantes.join(' y ')}</b>`);
+            } else if (datosFaltantes.length === 3) {
+                alertasFaltantes.push(`El punto <b>${nombrePunto}</b> se encuentra sin registrar completamente`);
+            }
+
+            if (valVib !== '' || valTemp !== '' || valFc !== '') {
+                const numVib = valVib !== '' ? parseFloat(valVib) : (spotsObj[spotId]?.rms || 0);
+                const numTemp = valTemp !== '' ? parseFloat(valTemp) : (spotsObj[spotId]?.temp || 0);
+                const numFc = valFc !== '' ? parseFloat(valFc) : (spotsObj[spotId]?.fc || 0);
+
+                if (valVib !== '') updates[`spots/${spotId}/rms`] = numVib;
+                if (valTemp !== '') updates[`spots/${spotId}/temp`] = numTemp;
+                if (valFc !== '') updates[`spots/${spotId}/fc`] = numFc;
                 
-                updates[`spots/${spotId}/rms`] = num;
                 updates[`spots/${spotId}/ultima_medicion`] = fechaHoraRuta;
+                
                 const timestampKey = new Date(fechaHoraRuta).getTime() + "_" + Math.floor(Math.random() * 1000);
-                updates[`spots/${spotId}/historial/${timestampKey}`] = { valor: num, fechaHora: fechaHoraRuta };
+                updates[`spots/${spotId}/historial/${timestampKey}`] = { 
+                    valor: numVib, 
+                    temp: numTemp, 
+                    fc: numFc, 
+                    fechaHora: fechaHoraRuta 
+                };
                 
                 ingresados++;
-                if (num >= 7.1) peorSeveridad = 'rojo';
-                else if (num >= 4.5 && peorSeveridad !== 'rojo') peorSeveridad = 'naranja';
-                else if (num >= 2.8 && peorSeveridad === 'verde') peorSeveridad = 'amarillo';
+                
+                if (numVib >= 7.1) peorSeveridad = 'rojo';
+                else if (numVib >= 4.5 && peorSeveridad !== 'rojo') peorSeveridad = 'naranja';
+                else if (numVib >= 2.8 && peorSeveridad === 'verde') peorSeveridad = 'amarillo';
+
+                if (numTemp >= 80) peorSeveridad = 'rojo';
+                else if (numTemp >= 65 && peorSeveridad !== 'rojo') peorSeveridad = 'naranja';
+
+                if (numFc >= 5.0) peorSeveridad = 'rojo';
+                else if (numFc >= 3.0 && peorSeveridad !== 'rojo') peorSeveridad = 'naranja';
             }
         });
 
-        if (ingresados === 0) return UI.mostrarToast("No ingresaste ningún valor de vibración.", "alerta");
+        if (ingresados === 0) return UI.mostrarToast("No ingresaste ningún valor de medición en toda la ruta.", "alerta");
+
+        if (alertasFaltantes.length > 0) {
+            let mensajeConfirmacion = "¿Estás seguro de guardar la ruta? Detectamos los siguientes faltantes:<br><br>";
+            const maxMostrar = 6;
+            for (let i = 0; i < Math.min(alertasFaltantes.length, maxMostrar); i++) {
+                mensajeConfirmacion += `• <span style="font-size:0.9rem; color:var(--text-muted);">${alertasFaltantes[i]}</span><br>`;
+            }
+            if (alertasFaltantes.length > maxMostrar) {
+                mensajeConfirmacion += `• <span style="font-size:0.9rem; color:var(--text-muted);">...y ${alertasFaltantes.length - maxMostrar} punto(s) más.</span>`;
+            }
+
+            const confirmado = await UI.confirmar(mensajeConfirmacion, "Confirmar Faltantes en Terreno");
+            if (!confirmado) return;
+        }
 
         const btn = document.getElementById('btn-guardar-ruta');
         btn.innerHTML = `<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">autorenew</span>`;
@@ -297,7 +403,7 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
         try {
             await db.ref(`activos_criticos/${idFirebase}`).update(updates);
             btn.innerHTML = `<span class="material-symbols-outlined">check_circle</span> ¡Guardado!`;
-            UI.mostrarToast("Mediciones de ruta guardadas exitosamente", "exito");
+            UI.mostrarToast("Ruta guardada. Matriz CBM actualizada.", "exito");
             setTimeout(() => renderizarExpediente(idFirebase, contenedor.id), 1200);
         } catch (error) {
             UI.mostrarToast("Error de conexión al guardar.", "error");
@@ -305,78 +411,170 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
             console.error(error);
         }
     });
+
+    // FEEDBACK VISUAL EN TIEMPO REAL (COLORES)
+    document.querySelectorAll('.input-lectura-hoy').forEach(input => {
+        input.addEventListener('input', function() {
+            const val = parseFloat(this.value.trim());
+            if (isNaN(val)) {
+                this.style.borderColor = 'var(--border-glass)'; this.style.color = 'white'; this.style.backgroundColor = 'var(--bg-input)';
+            } else if (val >= 7.1) {
+                this.style.borderColor = '#ef4444'; this.style.color = '#ef4444'; this.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+            } else if (val >= 4.5) {
+                this.style.borderColor = '#eab308'; this.style.color = '#eab308'; this.style.backgroundColor = 'rgba(234, 179, 8, 0.1)';
+            } else {
+                this.style.borderColor = '#10b981'; this.style.color = '#10b981'; this.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
+            }
+        });
+    });
+
+    document.querySelectorAll('.input-temp-hoy').forEach(input => {
+        input.addEventListener('input', function() {
+            const val = parseFloat(this.value.trim());
+            if (isNaN(val)) {
+                this.style.borderColor = 'var(--border-glass)'; this.style.color = 'white'; this.style.backgroundColor = 'var(--bg-input)';
+            } else if (val >= 80) {
+                this.style.borderColor = '#ef4444'; this.style.color = '#ef4444'; this.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+            } else if (val >= 65) {
+                this.style.borderColor = '#f97316'; this.style.color = '#f97316'; this.style.backgroundColor = 'rgba(249, 115, 22, 0.1)';
+            } else {
+                this.style.borderColor = '#10b981'; this.style.color = '#10b981'; this.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
+            }
+        });
+    });
+
+    document.querySelectorAll('.input-fc-hoy').forEach(input => {
+        input.addEventListener('input', function() {
+            const val = parseFloat(this.value.trim());
+            if (isNaN(val)) {
+                this.style.borderColor = 'var(--border-glass)'; this.style.color = 'white'; this.style.backgroundColor = 'var(--bg-input)';
+            } else if (val >= 5.0) {
+                this.style.borderColor = '#ef4444'; this.style.color = '#ef4444'; this.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+            } else if (val >= 3.0) {
+                this.style.borderColor = '#f97316'; this.style.color = '#f97316'; this.style.backgroundColor = 'rgba(249, 115, 22, 0.1)';
+            } else {
+                this.style.borderColor = '#10b981'; this.style.color = '#10b981'; this.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
+            }
+        });
+    });
 }
 
 // ---------------------------------------------------------
-// 4. FUNCIONALIDAD DEL MODAL Y GRÁFICO (CHART.JS)
+// 4. FUNCIONALIDAD DEL MODAL Y GRÁFICOS (CHART.JS MÚLTIPLES)
 // ---------------------------------------------------------
 function abrirModalTendencia(puntoNombre, historialObj) {
     const modal = document.getElementById('modal-tendencia');
     const titulo = document.getElementById('modal-titulo-punto');
     const btnCerrar = document.getElementById('btn-cerrar-modal');
     
-    titulo.textContent = `Tendencia Histórica & Bandas ISO: ${puntoNombre}`;
+    titulo.textContent = `Tendencias Históricas: ${puntoNombre}`;
     modal.style.display = 'flex';
 
-    const historialArray = Object.values(historialObj).sort((a, b) => new Date(a.fechaHora) - new Date(b.fechaHora));
-    const labels = historialArray.map(h => h.fechaHora ? h.fechaHora.replace('T', ' ') : 'Desconocida');
-    const valores = historialArray.map(h => h.valor);
-    const maxValorDatos = Math.max(...valores, 0);
-    const maxYScale = Math.max(10, Math.ceil(maxValorDatos * 1.2)); 
+    const historialArray = historialObj ? Object.values(historialObj).sort((a, b) => new Date(a.fechaHora) - new Date(b.fechaHora)) : [];
+    const labels = historialArray.length > 0 ? historialArray.map(h => h.fechaHora ? h.fechaHora.replace('T', ' ') : 'Desconocida') : ['Sin registros'];
 
-    const ctx = document.getElementById('chartTendenciaSpot').getContext('2d');
-    if (chartInstancia) chartInstancia.destroy();
+    chartsInstancias.forEach(chart => chart.destroy());
+    chartsInstancias = [];
 
-    const bandasISOPlugin = {
-        id: 'bandasISOPlugin',
-        beforeDraw: (chart) => {
-            const { ctx, chartArea: { left, right, width }, scales: { y } } = chart;
-            if (!y) return;
-            ctx.save();
-            const zonas = [
-                { yMin: 0,   yMax: 2.8, color: 'rgba(16, 185, 129, 0.08)' }, 
-                { yMin: 2.8, yMax: 4.5, color: 'rgba(234, 179, 8, 0.08)' },  
-                { yMin: 4.5, yMax: 7.1, color: 'rgba(249, 115, 22, 0.08)' }, 
-                { yMin: 7.1, yMax: maxYScale, color: 'rgba(239, 68, 68, 0.08)' } 
-            ];
-            zonas.forEach(zona => {
-                const yTop = y.getPixelForValue(Math.min(zona.yMax, maxYScale));
-                const yBottom = y.getPixelForValue(zona.yMin);
-                if (yTop < y.bottom && yBottom > y.top) {
-                    ctx.fillStyle = zona.color;
-                    ctx.fillRect(left, Math.max(yTop, y.top), width, Math.min(yBottom, y.bottom) - Math.max(yTop, y.top));
+    const construirGrafico = (canvasId, valores, labelEjeY, colorLinea, limites, funcionColorPunto, limiteEjeY) => {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        const datosValidos = valores.length > 0 ? valores : [0];
+        const maxValorDatos = Math.max(...datosValidos, 0);
+        const maxYScale = Math.max(limiteEjeY, Math.ceil(maxValorDatos * 1.2));
+
+        const pluginFondo = {
+            id: 'pluginFondo_' + canvasId,
+            beforeDraw: (chart) => {
+                const { ctx, chartArea: { left, right, width }, scales: { y } } = chart;
+                if (!y) return;
+                ctx.save();
+                limites.forEach(zona => {
+                    const yTop = y.getPixelForValue(Math.min(zona.yMax, maxYScale));
+                    const yBottom = y.getPixelForValue(zona.yMin);
+                    if (yTop < y.bottom && yBottom > y.top) {
+                        ctx.fillStyle = zona.color;
+                        ctx.fillRect(left, Math.max(yTop, y.top), width, Math.min(yBottom, y.bottom) - Math.max(yTop, y.top));
+                    }
+                });
+                ctx.restore();
+            }
+        };
+
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: labelEjeY,
+                    data: datosValidos,
+                    borderColor: colorLinea,
+                    backgroundColor: `${colorLinea}26`,
+                    borderWidth: 2,
+                    pointBackgroundColor: datosValidos.map(v => funcionColorPunto(v)),
+                    pointBorderColor: '#ffffff',
+                    pointRadius: 4,
+                    fill: true, tension: 0.2
+                }]
+            },
+            options: {
+                responsive: true, 
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+                    y: { grid: { color: 'rgba(255, 255, 255, 0.08)' }, ticks: { color: '#94a3b8', font: { size: 10 } }, beginAtZero: true, max: maxYScale }
                 }
-            });
-            ctx.restore();
-        }
+            },
+            plugins: [pluginFondo]
+        });
+
+        chartsInstancias.push(chart);
     };
 
-    chartInstancia = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels.length > 0 ? labels : ['Sin datos'],
-            datasets: [{
-                label: 'RMS (mm/s)',
-                data: valores.length > 0 ? valores : [0],
-                borderColor: '#38bdf8',
-                backgroundColor: 'rgba(56, 189, 248, 0.15)',
-                borderWidth: 2,
-                pointBackgroundColor: valores.map(v => v >= 7.1 ? '#ef4444' : v >= 4.5 ? '#f97316' : v >= 2.8 ? '#eab308' : '#10b981'),
-                pointBorderColor: '#ffffff',
-                pointRadius: 5,
-                fill: true, tension: 0.2
-            }]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
-                y: { grid: { color: 'rgba(255, 255, 255, 0.08)' }, ticks: { color: '#94a3b8', font: { size: 10 } }, beginAtZero: true, max: maxYScale }
-            }
-        },
-        plugins: [bandasISOPlugin] 
-    });
+    setTimeout(() => {
+        construirGrafico(
+            'chartRMS', 
+            historialArray.map(h => h.valor ?? h.rms ?? 0), 
+            'RMS (mm/s)', '#38bdf8', 
+            [
+                { yMin: 0,   yMax: 2.8, color: 'rgba(16, 185, 129, 0.08)' },
+                { yMin: 2.8, yMax: 4.5, color: 'rgba(234, 179, 8, 0.08)' },
+                { yMin: 4.5, yMax: 7.1, color: 'rgba(249, 115, 22, 0.08)' },
+                { yMin: 7.1, yMax: 999, color: 'rgba(239, 68, 68, 0.08)' }
+            ],
+            (val) => val >= 7.1 ? '#ef4444' : val >= 4.5 ? '#f97316' : val >= 2.8 ? '#eab308' : '#10b981',
+            10
+        );
+
+        construirGrafico(
+            'chartTemp', 
+            historialArray.map(h => h.temp ?? 0), 
+            'Temp (°C)', '#f97316', 
+            [
+                { yMin: 0,  yMax: 65,  color: 'rgba(16, 185, 129, 0.08)' },
+                { yMin: 65, yMax: 80,  color: 'rgba(249, 115, 22, 0.08)' },
+                { yMin: 80, yMax: 999, color: 'rgba(239, 68, 68, 0.08)' }
+            ],
+            (val) => val >= 80 ? '#ef4444' : val >= 65 ? '#f97316' : '#10b981',
+            100
+        );
+
+        construirGrafico(
+            'chartFC', 
+            historialArray.map(h => h.fc ?? 0), 
+            'FC+', '#eab308', 
+            [
+                { yMin: 0,   yMax: 3.0, color: 'rgba(16, 185, 129, 0.08)' },
+                { yMin: 3.0, yMax: 5.0, color: 'rgba(249, 115, 22, 0.08)' },
+                { yMin: 5.0, yMax: 999, color: 'rgba(239, 68, 68, 0.08)' }
+            ],
+            (val) => val >= 5.0 ? '#ef4444' : val >= 3.0 ? '#f97316' : '#10b981',
+            10
+        );
+    }, 50);
 
     const cerrar = () => { modal.style.display = 'none'; btnCerrar.removeEventListener('click', cerrar); };
     btnCerrar.addEventListener('click', cerrar);
@@ -389,14 +587,9 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
     let spotsHTML = '';
     const spotsObj = eq.spots || {};
     let spotsArray = Object.keys(spotsObj).map(k => ({ idInterno: k, ...spotsObj[k] }));
-    const plantilla = obtenerPlantilla(eq.tipo_equipo);
 
-    spotsArray.sort((a, b) => {
-        let iA = plantilla ? plantilla.findIndex(p => p.punto === a.punto) : -1;
-        let iB = plantilla ? plantilla.findIndex(p => p.punto === b.punto) : -1;
-        if (iA === -1) iA = 9999; if (iB === -1) iB = 9999;
-        return (iA !== iB) ? iA - iB : (a.punto || '').localeCompare(b.punto || '', undefined, {numeric: true});
-    });
+    // Aplicar orden cinemático natural
+    spotsArray = ordenarSpotsArray(spotsArray);
 
     if (spotsArray.length === 0) {
         spotsHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); font-size:0.8rem;">No hay puntos configurados.</td></tr>';
@@ -427,7 +620,7 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
         docsKeys.forEach(k => {
             const d = docsObj[k];
             docsHTML += `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-glass); padding-bottom: 15px; position: sticky; top: -20px; background: var(--bg-card); z-index: 10; padding-top: 20px; margin-top: -20px; margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px; border-radius: 8px 8px 0 0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">                    <a href="${d.url}" target="_blank" style="color: var(--primary-blue); text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:80%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-glass); padding-bottom: 15px; position: sticky; top: -20px; background: var(--bg-card); z-index: 10; padding-top: 20px; margin-top: -20px; margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px; border-radius: 8px 8px 0 0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">                <a href="${d.url}" target="_blank" style="color: var(--primary-blue); text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:80%;">
                         <span class="material-symbols-outlined" style="font-size: 1.1rem;">description</span> ${d.nombre}
                     </a>
                     <button class="btn-icon btn-eliminar-doc" data-doc="${k}" title="Quitar" style="color: var(--iso-zona-d); background: transparent; border: none; cursor: pointer;">
@@ -463,7 +656,6 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
     contenedor.innerHTML = `
         <div class="panel-industrial" style="animation: fadeIn 0.3s ease; display: flex; flex-direction: column; height: 100%; max-height: calc(100vh - 120px); padding: 0;">
             
-            <!-- BARRA DE HERRAMIENTAS (SIEMPRE VISIBLE) -->
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding: 20px; background: var(--bg-card); border-radius: 8px 8px 0 0; position: sticky; top: 0; z-index: 50; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
                 <div>
                     <h3 style="color: var(--text-main); margin: 0;">${tituloPanel}</h3>
@@ -478,10 +670,8 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
                 </div>
             </div>
 
-            <!-- CONTENIDO DESLIZABLE (MAPA Y COLUMNAS) -->
             <div style="padding: 20px; overflow-y: auto; flex-grow: 1;">
                 
-                <!-- MAPA GIGANTE -->
                 <div style="background: var(--bg-input); padding: 20px; border-radius: 8px; border: 1px solid var(--border-glass); margin-bottom: 20px;">
                     <label style="font-size: 1rem; color: var(--primary-blue); font-weight: 600; display: flex; align-items: center; margin-bottom: 10px;">
                         <span class="material-symbols-outlined" style="font-size: 1.3rem; margin-right: 5px;">pin_drop</span> Asignar Posición GPS del Equipo
@@ -502,10 +692,8 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
                     </div>
                 </div>
 
-                <!-- LAS 3 COLUMNAS -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 20px;">
                     
-                    <!-- COL 1: DATOS BASE -->
                     <div style="background: var(--bg-input); padding: 20px; border-radius: 8px; border: 1px solid var(--border-glass);">
                         <h4 style="margin-bottom: 15px; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; margin-top: 0;"><span class="material-symbols-outlined" style="color: var(--primary-blue); font-size:1.1rem;">info</span> Datos Base</h4>
                         <div style="margin-bottom: 12px;">
@@ -535,7 +723,6 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
                         </div>
                     </div>
 
-                    <!-- COL 2: DATA ROOM -->
                     <div style="background: var(--bg-input); padding: 20px; border-radius: 8px; border: 1px solid var(--border-glass); display: flex; flex-direction: column;">
                         <h4 style="margin-bottom: 15px; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; margin-top: 0;"><span class="material-symbols-outlined" style="color: #eab308; font-size:1.1rem;">folder_open</span> Data Room</h4>
                         <div style="margin-bottom: 15px;">
@@ -558,7 +745,6 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
                         </div>
                     </div>
 
-                    <!-- COL 3: MATRIZ CBM -->
                     <div style="background: var(--bg-input); padding: 20px; border-radius: 8px; border: 1px solid var(--border-glass);">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                             <h4 style="font-size: 0.9rem; display: flex; align-items: center; gap: 5px; margin-top: 0;"><span class="material-symbols-outlined" style="color: var(--iso-zona-a); font-size:1.1rem;">sensors</span> Matriz CBM</h4>
@@ -585,9 +771,6 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
         </div>
     `;
 
-    // ---------------------------------------------------------
-    // INICIALIZACIÓN DEL MAPA GIGANTE CON ZOOM DIGITAL EXTREMO
-    // ---------------------------------------------------------
     if (miniMapaInstancia) miniMapaInstancia.remove();
 
     const latInicial = eq.latitud ? parseFloat(eq.latitud) : -28.290846;
@@ -596,18 +779,17 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
 
     miniMapaInstancia = L.map('mini-mapa-config', {
         minZoom: 14, 
-        maxZoom: 21 // 🚀 TRUCO: Permite un zoom brutal escalando la imagen digitalmente
+        maxZoom: 21 
     }).setView([latInicial, lngInicial], zoomInicial);
     
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Esri', 
-        maxNativeZoom: 17, // Límite real de las fotos satelitales en el desierto para que no salga gris
-        maxZoom: 21        // Hace zoom a la fuerza usando la misma foto (efecto lupa)
+        maxNativeZoom: 17, 
+        maxZoom: 21        
     }).addTo(miniMapaInstancia);
 
     let pinConfigurador = null;
     
-    // Si ya tenía coordenadas, dibujamos un pin vistoso
     if (eq.latitud && eq.longitud) {
         const pinIcon = L.divIcon({
             className: 'custom-pin',
@@ -638,10 +820,8 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
 
     setTimeout(() => { miniMapaInstancia.invalidateSize(); }, 300);
 
-    // --- EVENTOS MODO CONFIGURACIÓN ---
     if (!esNuevo) document.getElementById('btn-modo-inspeccion').addEventListener('click', () => renderizarExpediente(idFirebase, contenedor.id, false));
 
-    // EVENTOS REFACTORIZADOS CON UI.CONFIRMAR Y UI.MOSTRARTOAST
     document.getElementById('btn-cerrar-expediente').addEventListener('click', async () => {
         const confirmado = await UI.confirmar("¿Estás seguro de salir? Los cambios no guardados se perderán.", "Cerrar Configuración");
         if(confirmado){
@@ -808,4 +988,136 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
             }
         });
     });
+}
+
+// ---------------------------------------------------------
+// 6. VISTA: INFORME DIARIO DE RUTA CBM (RESUMEN TABULAR SAP)
+// ---------------------------------------------------------
+export function mostrarResumenDiarioSAP(eq) {
+    const spots = eq.spots || {};
+    let spotsArray = Object.keys(spots).map(k => spots[k]);
+
+    // Aplicar orden cinemático natural para el reporte PDF
+    spotsArray = ordenarSpotsArray(spotsArray);
+
+    let tablaHtml = `
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; margin-top: 15px;">
+            <thead>
+                <tr style="background-color: #0f172a; color: white;">
+                    <th style="padding: 10px; border: 1px solid #cbd5e1; width: 10%;">Punto</th>
+                    <th style="padding: 10px; border: 1px solid #cbd5e1; width: 35%;">Componente</th>
+                    <th style="padding: 10px; border: 1px solid #cbd5e1; width: 15%;">RMS (mm/s)</th>
+                    <th style="padding: 10px; border: 1px solid #cbd5e1; width: 15%;">Temp (°C)</th>
+                    <th style="padding: 10px; border: 1px solid #cbd5e1; width: 10%;">FC+</th>
+                    <th style="padding: 10px; border: 1px solid #cbd5e1; width: 15%; text-align: center;">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    let totalPuntos = 0;
+    let criticos = 0;
+    let alertas = 0;
+
+    spotsArray.forEach(s => {
+        totalPuntos++;
+        
+        const rms = parseFloat(s.rms || 0);
+        const temp = parseFloat(s.temp || 0);
+        const fc = parseFloat(s.fc || 0);
+
+        const rmsText = rms > 0 ? rms.toFixed(2) : '-';
+        const tempText = temp > 0 ? temp.toFixed(1) : '-';
+        const fcText = fc > 0 ? fc.toFixed(2) : '-';
+
+        let estado = '<span style="color: #10b981; font-weight: bold;">Normal</span>';
+        let bgRow = '#ffffff';
+
+        // Evaluar severidad ISO
+        if (rms >= 7.1 || temp >= 80 || fc >= 5.0) {
+            estado = '<span style="color: #ef4444; font-weight: bold;">Crítico</span>';
+            bgRow = '#fef2f2';
+            criticos++;
+        } else if (rms >= 4.5 || temp >= 65 || fc >= 3.0) {
+            estado = '<span style="color: #f97316; font-weight: bold;">Alerta</span>';
+            bgRow = '#fffbeb';
+            alertas++;
+        }
+
+        tablaHtml += `
+            <tr style="background-color: ${bgRow}; border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold; color: #0f172a;">${s.punto || ''}</td>
+                <td style="padding: 10px; border: 1px solid #cbd5e1; color: #334155;">${s.componente || ''}</td>
+                <td style="padding: 10px; border: 1px solid #cbd5e1; color: #0f172a; font-weight: 600;">${rmsText}</td>
+                <td style="padding: 10px; border: 1px solid #cbd5e1; color: #0f172a; font-weight: 600;">${tempText}</td>
+                <td style="padding: 10px; border: 1px solid #cbd5e1; color: #0f172a; font-weight: 600;">${fcText}</td>
+                <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: center;">${estado}</td>
+            </tr>
+        `;
+    });
+
+    tablaHtml += `</tbody></table>`;
+
+    let modalResumen = document.getElementById('modal-resumen-diario-sap');
+    if (!modalResumen) {
+        modalResumen = document.createElement('div');
+        modalResumen.id = 'modal-resumen-diario-sap';
+        modalResumen.style.cssText = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 99999; display: flex; justify-content: center; align-items: center;";
+        document.body.appendChild(modalResumen);
+    }
+
+    modalResumen.innerHTML = `
+        <style>
+            @media print {
+                body * { visibility: hidden; }
+                #contenedor-impresion-diaria, #contenedor-impresion-diaria * { visibility: visible; }
+                #contenedor-impresion-diaria { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none; border-radius: 0; }
+                #btn-cerrar-diario, #btn-imprimir-diario, .footer-botones { display: none !important; }
+            }
+        </style>
+        <div id="contenedor-impresion-diaria" style="background: #f8fafc; color: #1e293b; border-radius: 12px; width: 950px; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.6); overflow: hidden;">
+            
+            <!-- Cabecera Corporativa CPF -->
+            <div style="background: #0f172a; color: white; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <div style="background: white; padding: 4px 8px; border-radius: 6px; display: flex; align-items: center; justify-content: center; height: 50px;">
+                        <img src="assets/img/logo-cpf.png" alt="CPF Logo" style="height: 100%; object-fit: contain;" onerror="this.outerHTML='<span style=\\'font-weight: 900; color: #0f172a; font-size: 1.2rem;\\'>CPF</span>'">
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.1rem; color: #38bdf8;">Informe Diario de Ruta CBM</h3>
+                        <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: #94a3b8;">Mina Los Colorados (CMP) | Activo: ${eq.tag} - ${eq.nombre}</p>
+                    </div>
+                </div>
+                <button type="button" id="btn-cerrar-diario" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 1.4rem;"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            
+            <!-- Cuerpo / Tabla -->
+            <div style="padding: 25px 30px; overflow-y: auto; flex-grow: 1;">
+                <div style="margin-bottom: 20px; background: white; padding: 12px 15px; border-radius: 6px; border: 1px solid #cbd5e1; display: flex; justify-content: space-between; font-size: 0.85rem;">
+                    <span><b>Área:</b> ${eq.area || 'Planta Principal'}</span>
+                    <span><b>Fecha de Toma:</b> ${new Date().toLocaleDateString()}</span>
+                    <span><b>Puntos Medidos:</b> ${totalPuntos}</span>
+                    <span style="color: #ef4444; font-weight: bold;">Críticos: ${criticos}</span>
+                    <span style="color: #f97316; font-weight: bold;">Alertas: ${alertas}</span>
+                </div>
+
+                <h4 style="color: #0f172a; font-size: 0.95rem; border-bottom: 2px solid #38bdf8; padding-bottom: 5px; margin-top: 0;">📋 Detalle de Mediciones en Terreno</h4>
+                ${totalPuntos > 0 ? tablaHtml : '<p style="text-align: center; color: #64748b; padding: 20px;">No hay mediciones registradas en la ruta actual.</p>'}
+                
+                <div style="margin-top: 20px; padding: 15px; background: #f1f5f9; border-radius: 6px; font-size: 0.75rem; color: #475569; line-height: 1.4;">
+                    <strong>Nota Técnica:</strong> Los estados de severidad se calculan en base a la norma ISO 20816-3 y estándares de confiabilidad (Crítico: RMS ≥ 7.1 mm/s | Temp ≥ 80°C | FC+ ≥ 5.0). Para un desglose frecuencial detallado y recomendaciones de mantenimiento, refiérase al <b>Informe Espectral</b> de este equipo.
+                </div>
+            </div>
+
+            <!-- Pie con botones -->
+            <div class="footer-botones" style="padding: 12px 30px; border-top: 1px solid #cbd5e1; text-align: right; background: #e2e8f0;">
+                <button type="button" id="btn-imprimir-diario" style="background: #0284c7; color: white; border: none; padding: 8px 20px; font-weight: bold; border-radius: 4px; cursor: pointer;">
+                    <span class="material-symbols-outlined" style="font-size: 1.1rem; vertical-align: middle; margin-right: 4px;">print</span> Generar PDF SAP
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('btn-cerrar-diario').addEventListener('click', () => modalResumen.remove());
+    document.getElementById('btn-imprimir-diario').addEventListener('click', () => window.print());
 }
