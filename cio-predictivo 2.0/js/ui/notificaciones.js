@@ -5,8 +5,8 @@
 const UI = {
     /**
      * Muestra una notificación tipo Toast en la esquina inferior derecha.
-     * @param {string} mensaje - El texto a mostrar.
-     * @param {string} tipo - 'exito', 'error' o 'alerta' (por defecto 'exito').
+     * @param {string} mensaje El texto a mostrar.
+     * @param {string} tipo 'exito', 'error' o 'alerta' (por defecto 'exito').
      */
     mostrarToast: (mensaje, tipo = 'exito') => {
         const container = document.getElementById('toast-container');
@@ -40,9 +40,9 @@ const UI = {
     /**
      * Muestra un modal de confirmación con la estética del sistema.
      * Reemplaza a window.confirm().
-     * @param {string} mensaje - El texto de la pregunta.
-     * @param {string} titulo - (Opcional) Título del modal.
-     * @returns {Promise<boolean>} - Promesa que se resuelve con true o false.
+     * @param {string} mensaje El texto de la pregunta (soporta HTML).
+     * @param {string} titulo (Opcional) Título del modal.
+     * @returns {Promise<boolean>} Promesa que se resuelve con true o false.
      */
     confirmar: (mensaje, titulo = 'Confirmar Acción') => {
         return new Promise((resolve) => {
@@ -61,7 +61,8 @@ const UI = {
 
             // Configurar textos
             tituloEl.textContent = titulo;
-            mensajeEl.textContent = mensaje;
+            // 🐛 SOLUCIÓN AL BUG-005: Usar innerHTML para interpretar etiquetas <br> y <b>
+            mensajeEl.innerHTML = mensaje; 
 
             // Mostrar Modal
             modal.classList.remove('oculto');
