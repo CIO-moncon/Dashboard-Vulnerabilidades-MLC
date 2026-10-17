@@ -1,5 +1,5 @@
 // ==========================================
-// MÓDULO UI: PROGRAMA SEMANAL (PMS), AUDITORÍA SAP PM Y EXPORTADOR HTML / PDF CORPORATIVO (CON SINCRONIZACIÓN EN VIVO)
+// MÓDULO UI: PROGRAMA SEMANAL (PMS), AUDITORÍA SAP PM Y ACTIVIDADES EMERGENTES
 // ==========================================
 import { db } from '../core/firebase-config.js';
 import { renderizarExpediente } from './expediente.js';
@@ -41,7 +41,7 @@ export async function renderizarModuloPMS(contenedorId = 'espacio-trabajo-dinami
     contenedor.innerHTML = `
         <div style="padding: 60px; text-align: center; color: var(--primary-blue);">
             <span class="material-symbols-outlined" style="animation: spin 1s linear infinite; font-size: 40px;">autorenew</span>
-            <p style="margin-top: 10px; color: var(--text-muted);">Cargando Auditoría SAP y respaldos históricos...</p>
+            <p style="margin-top: 10px; color: var(--text-muted);">Cargando Auditoría SAP y Actividades Emergentes...</p>
         </div>
     `;
 
@@ -55,6 +55,8 @@ export async function renderizarModuloPMS(contenedorId = 'espacio-trabajo-dinami
         const activosMap = snapActivos.exists() ? snapActivos.val() : {};
         const pmsData = snapPMS.exists() ? snapPMS.val() : null;
         const ordenes = pmsData && pmsData.ordenes ? Object.values(pmsData.ordenes) : [];
+        const emergentesMap = pmsData && pmsData.actividades_emergentes ? pmsData.actividades_emergentes : {};
+        const listaEmergentes = Object.values(emergentesMap);
 
         const semanasGuardadas = snapHistorialGlobal.exists() ? Object.keys(snapHistorialGlobal.val()).sort().reverse() : [semanaActiva];
         if (!semanasGuardadas.includes(semanaActiva)) semanasGuardadas.unshift(semanaActiva);
@@ -82,17 +84,17 @@ export async function renderizarModuloPMS(contenedorId = 'espacio-trabajo-dinami
         });
 
         contenedor.innerHTML = `
-            <div class="panel-industrial" style="animation: fadeIn 0.3s ease; padding: 20px; display: flex; flex-direction: column; gap: 14px; height: calc(100vh - 90px); box-sizing: border-box;">
+            <div class="panel-industrial" style="animation: fadeIn 0.3s ease; padding: 20px; display: flex; flex-direction: column; gap: 14px; height: calc(100vh - 90px); box-sizing: border-box; overflow-y: auto;">
                 
                 <!-- CABECERA DEL MÓDULO -->
                 <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.75); padding: 14px 20px; border-radius: 12px; border: 1px solid var(--border-glass); flex-wrap: wrap; gap: 12px; flex-shrink: 0;">
                     <div>
                         <h2 style="color: white; font-size: 1.3rem; margin: 0 0 2px 0; display: flex; align-items: center; gap: 8px;">
                             <span class="material-symbols-outlined" style="color: #34d399; font-size: 1.6rem;">calendar_month</span>
-                            Auditoría de Programa Semanal (PMS) — SAP PM
+                            Auditoría de Programa Semanal (PMS) & Emergencias
                         </h2>
                         <p style="color: var(--text-muted); margin: 0; font-size: 0.78rem;">
-                            Respaldos históricos, control de Notificaciones, CTEC y adjuntos de SAP
+                            Respaldos SAP, notificaciones, CTEC y actividades imprevistas independientes
                         </p>
                     </div>
 
@@ -104,14 +106,12 @@ export async function renderizarModuloPMS(contenedorId = 'espacio-trabajo-dinami
                             </select>
                         </div>
 
-                        ${total > 0 ? `
-                            <button type="button" id="btn-exportar-pdf-pms" class="btn-topbar" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); font-weight: 700; padding: 6px 12px; font-size: 0.8rem;" title="Generar Informe PDF Corporativo">
-                                <span class="material-symbols-outlined" style="font-size: 1rem;">picture_as_pdf</span> PDF Resumen
-                            </button>
-                        ` : ''}
+                        <button type="button" id="btn-exportar-pdf-pms" class="btn-topbar" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); font-weight: 700; padding: 6px 12px; font-size: 0.8rem;" title="Generar Informe PDF Corporativo Legible">
+                            <span class="material-symbols-outlined" style="font-size: 1rem;">picture_as_pdf</span> Descargar PDF
+                        </button>
 
                         <input type="file" id="input-excel-pms" accept=".xlsx,.xls,.csv" style="display: none;">
-                        <button type="button" id="btn-importar-excel-pms" class="btn-topbar" style="background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.45); font-weight: 700; padding: 6px 12px; font-size: 0.8rem;">
+                        <button type="button" id="btn-importar-excel-pms" class="btn-topbar" style="background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.45); font-weight: 700; padding: 6px 12px; font-size: 0.8rem;" title="Importar EXPORT.XLSX de SAP sin perder tus emergencias">
                             <span class="material-symbols-outlined" style="font-size: 1rem;">upload_file</span> Subir EXPORT.XLSX
                         </button>
 
@@ -164,7 +164,22 @@ export async function renderizarModuloPMS(contenedorId = 'espacio-trabajo-dinami
                     </div>
                 </div>
 
-                <!-- BARRA DE FILTROS Y REINICIO SEGURO -->
+                <!-- SECCIÓN DE ACTIVIDADES EMERGENTES -->
+                <div style="background: rgba(15, 23, 42, 0.65); border: 1px solid var(--border-glass); border-left: 4px solid #f87171; padding: 14px 18px; border-radius: 10px; flex-shrink: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h3 style="margin: 0; color: #f87171; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                            ⚡ Actividades Emergentes / Imprevistos en Terreno (${listaEmergentes.length})
+                        </h3>
+                        <button type="button" id="btn-abrir-modal-emergente" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                            <span class="material-symbols-outlined" style="font-size: 0.95rem;">add</span> Registrar Emergencia
+                        </button>
+                    </div>
+                    <div id="contenedor-tabla-emergentes-pms" style="max-height: 180px; overflow-y: auto;">
+                        ${renderizarTablaEmergentesMini(listaEmergentes, semanaActiva)}
+                    </div>
+                </div>
+
+                <!-- BARRA DE FILTROS -->
                 <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; background: rgba(15, 23, 42, 0.5); padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border-glass); flex-shrink: 0;">
                     <div style="display: flex; align-items: center; gap: 10px; flex-grow: 1;">
                         <span class="material-symbols-outlined" style="color: var(--text-muted); font-size: 1.1rem;">filter_alt</span>
@@ -182,19 +197,73 @@ export async function renderizarModuloPMS(contenedorId = 'espacio-trabajo-dinami
 
                     ${total > 0 ? `
                         <button type="button" id="btn-limpiar-pms" style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                            <span class="material-symbols-outlined" style="font-size: 0.95rem;">lock_reset</span> Borrar Respaldo Actual
+                            <span class="material-symbols-outlined" style="font-size: 0.95rem;">lock_reset</span> Borrar Respaldo ${semanaActiva}
                         </button>
                     ` : ''}
                 </div>
 
-                <!-- CONTENEDOR DE LA TABLA -->
+                <!-- CONTENEDOR DE LA TABLA PRINCIPAL PMS -->
                 <div style="background: rgba(15, 23, 42, 0.75); border: 1px solid var(--border-glass); border-radius: 12px; overflow: hidden; flex-grow: 1; display: flex; flex-direction: column;">
                     ${ renderizarContenidoTablaPMS(ordenes, activosMap) }
                 </div>
             </div>
+
+            <!-- MODAL CREAR EMERGENCIA -->
+            <div id="modal-crear-emergencia" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 999999; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+                <div style="background: #0f172a; border: 1px solid var(--border-glass); width: 90%; max-width: 480px; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.7);">
+                    <div style="padding: 16px 20px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="margin: 0; color: white; font-size: 1rem; display: flex; align-items: center; gap: 6px;">⚡ Registrar Actividad Emergente</h3>
+                        <button type="button" id="btn-cerrar-modal-em" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; font-weight: bold;">✕</button>
+                    </div>
+                    <div style="padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+                        <div>
+                            <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Fecha de la Actividad / Hallazgo</label>
+                            <input type="date" id="em-fecha" value="${new Date().toISOString().split('T')[0]}" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-glass); background: var(--bg-input); color: white; outline: none; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 4px;">TAG Equipo</label>
+                            <input type="text" id="em-tag" placeholder="Ej: MH2013" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-glass); background: var(--bg-input); color: white; outline: none; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Descripción del Trabajo / Hallazgo</label>
+                            <textarea id="em-desc" rows="3" placeholder="Detalle de la actividad imprevista..." style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-glass); background: var(--bg-input); color: white; outline: none; box-sizing: border-box; resize: none;"></textarea>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 4px;">N° OM o Aviso (Opcional)</label>
+                            <input type="text" id="em-om" placeholder="Ej: 31568316" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-glass); background: var(--bg-input); color: white; outline: none; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Turno / Responsable</label>
+                            <input type="text" id="em-turno" placeholder="Ej: Turno A / Elecmon" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-glass); background: var(--bg-input); color: white; outline: none; box-sizing: border-box;">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Notificado SAP</label>
+                                <select id="em-notif" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-glass); background: var(--bg-input); color: white; outline: none;">
+                                    <option value="NO">❌ NO</option>
+                                    <option value="SI">✔ SÍ</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Cierre CTEC</label>
+                                <select id="em-teco" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-glass); background: var(--bg-input); color: white; outline: none;">
+                                    <option value="NO">❌ NO</option>
+                                    <option value="SI">✔ SÍ</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="padding: 12px 20px; background: rgba(15, 23, 42, 0.95); border-top: 1px solid var(--border-glass); display: flex; justify-content: flex-end; gap: 10px;">
+                        <button type="button" id="btn-cancelar-modal-em" style="background: #334155; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">Cancelar</button>
+                        <button type="button" id="btn-guardar-emergencia" style="background: #ef4444; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem;">Guardar Emergencia</button>
+                    </div>
+                </div>
+            </div>
         `;
 
-        // Eventos
+        // ==========================================
+        // CONFIGURACIÓN DE EVENTOS
+        // ==========================================
         const selectSemanaHist = document.getElementById('select-semana-historica');
         if (selectSemanaHist) {
             selectSemanaHist.addEventListener('change', (e) => {
@@ -202,10 +271,82 @@ export async function renderizarModuloPMS(contenedorId = 'espacio-trabajo-dinami
             });
         }
 
+        const modalEm = document.getElementById('modal-crear-emergencia');
+        document.getElementById('btn-abrir-modal-emergente')?.addEventListener('click', () => { if (modalEm) modalEm.style.display = 'flex'; });
+        document.getElementById('btn-cerrar-modal-em')?.addEventListener('click', () => { if (modalEm) modalEm.style.display = 'none'; });
+        document.getElementById('btn-cancelar-modal-em')?.addEventListener('click', () => { if (modalEm) modalEm.style.display = 'none'; });
+
+        document.getElementById('btn-guardar-emergencia')?.addEventListener('click', async () => {
+            const fechaInput = document.getElementById('em-fecha').value;
+            const tag = document.getElementById('em-tag').value.trim();
+            const descripcion = document.getElementById('em-desc').value.trim();
+            const om = document.getElementById('em-om').value.trim();
+            const turno = document.getElementById('em-turno').value.trim();
+            const notificadaSAP = document.getElementById('em-notif').value;
+            const tecoSAP = document.getElementById('em-teco').value;
+
+            if (!tag || !descripcion || !fechaInput) {
+                if (window.UI && UI.mostrarToast) UI.mostrarToast("Debe ingresar Fecha, TAG y Descripción.", "error");
+                else alert("Debe ingresar Fecha, TAG y Descripción.");
+                return;
+            }
+
+            const idKey = 'EMG-' + Date.now();
+            const payload = {
+                idKey,
+                fecha: fechaInput,
+                tag,
+                descripcion,
+                om: om || 'S/N',
+                turno: turno || 'General',
+                estadoEjecucion: notificadaSAP === 'SI' ? 'EJECUTADO' : 'PENDIENTE',
+                notificadaSAP,
+                tecoSAP,
+                observacionAuditor: 'Actividad emergente en terreno',
+                fechaCreacion: new Date().toISOString()
+            };
+
+            try {
+                await db.ref(`historial_informes/pms_semanal/${semanaActiva}/actividades_emergentes/${idKey}`).set(payload);
+                if (modalEm) modalEm.style.display = 'none';
+                document.getElementById('em-tag').value = '';
+                document.getElementById('em-desc').value = '';
+                document.getElementById('em-om').value = '';
+                document.getElementById('em-turno').value = '';
+                if (window.UI && UI.mostrarToast) UI.mostrarToast("⚡ Emergencia registrada correctamente", "exito");
+                renderizarModuloPMS(contenedorId, semanaActiva);
+            } catch (err) {
+                console.error("Error guardando emergencia:", err);
+            }
+        });
+
+        // AUTOGUARDADO EN TIEMPO REAL PARA EMERGENTES
+        contenedor.querySelectorAll('.select-notif-em, .select-teco-em').forEach(elemento => {
+            elemento.addEventListener('change', async (e) => {
+                const fila = e.target.closest('.fila-emergente-pms');
+                if (!fila) return;
+                const emKey = fila.getAttribute('data-key');
+                const notifVal = fila.querySelector('.select-notif-em').value;
+                const tecoVal = fila.querySelector('.select-teco-em').value;
+
+                try {
+                    await db.ref(`historial_informes/pms_semanal/${semanaActiva}/actividades_emergentes/${emKey}`).update({
+                        notificadaSAP: notifVal,
+                        tecoSAP: tecoVal,
+                        estadoEjecucion: notifVal === 'SI' ? 'EJECUTADO' : 'PENDIENTE',
+                        ultimaActualizacion: new Date().toISOString()
+                    });
+                    if (window.UI && UI.mostrarToast) UI.mostrarToast("💾 Emergencia actualizada", "exito");
+                } catch (err) {
+                    console.error("Error actualizando emergencia:", err);
+                }
+            });
+        });
+
+        // Botón Exportar a PDF Legible con jsPDF & autoTable
         const btnExportPDF = document.getElementById('btn-exportar-pdf-pms');
         if (btnExportPDF) {
             btnExportPDF.addEventListener('click', () => {
-                // Sincronizar datos directamente de la UI en vivo antes de abrir el modal PDF
                 const filas = contenedor.querySelectorAll('.fila-orden-pms');
                 filas.forEach(fila => {
                     const ordenKey = fila.getAttribute('data-key');
@@ -218,7 +359,7 @@ export async function renderizarModuloPMS(contenedorId = 'espacio-trabajo-dinami
                     }
                 });
 
-                mostrarResumenPMSModal(semanaActiva, ordenes, { porcCumplimiento, total, ejecutadas, pendientes, porcNotif, notificadasCount, porcTeco, tecoCount });
+                exportarPDFLegibleCorp(semanaActiva, ordenes, listaEmergentes, { porcCumplimiento, total, ejecutadas, pendientes, porcNotif, notificadasCount, porcTeco, tecoCount });
             });
         }
 
@@ -299,7 +440,7 @@ export async function renderizarModuloPMS(contenedorId = 'espacio-trabajo-dinami
             });
         });
 
-        // REINICIO / BORRADO SEGURO
+        // REINICIO / BORRADO SEGURO CON MODAL CORPORATIVO (Sin usar confirm() nativo)
         const btnLimpiar = document.getElementById('btn-limpiar-pms');
         if (btnLimpiar) {
             btnLimpiar.addEventListener('click', async () => {
@@ -323,8 +464,8 @@ export async function renderizarModuloPMS(contenedorId = 'espacio-trabajo-dinami
                         <input type="text" id="input-confirmar-borrar" placeholder="Escribe BORRAR aquí..." style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: white; font-size: 0.9rem; outline: none; box-sizing: border-box; margin-bottom: 20px; text-align: center; font-weight: bold; letter-spacing: 1px;">
                         
                         <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                            <button id="btn-cancelar-reinicio" style="background: transparent; color: #94a3b8; border: 1px solid #475569; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">Cancelar</button>
-                            <button id="btn-ejecutar-reinicio" disabled style="background: #475569; color: #94a3b8; border: none; padding: 8px 16px; border-radius: 6px; cursor: not-allowed; font-weight: bold; font-size: 0.85rem;">Sí, Eliminar Respaldo</button>
+                            <button type="button" id="btn-cancelar-reinicio" style="background: transparent; color: #94a3b8; border: 1px solid #475569; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">Cancelar</button>
+                            <button type="button" id="btn-ejecutar-reinicio" disabled style="background: #475569; color: #94a3b8; border: none; padding: 8px 16px; border-radius: 6px; cursor: not-allowed; font-weight: bold; font-size: 0.85rem;">Sí, Eliminar Respaldo</button>
                         </div>
                     </div>
                 `;
@@ -362,6 +503,95 @@ export async function renderizarModuloPMS(contenedorId = 'espacio-trabajo-dinami
         contenedor.innerHTML = `<div style="padding: 40px; text-align: center; color: #ef4444;">Error al cargar: ${error.message}</div>`;
     }
 }
+
+function renderizarTablaEmergentesMini(lista, semanaActiva) {
+    if (!lista || lista.length === 0) {
+        return `<p style="color: var(--text-muted); font-size: 0.8rem; margin: 0; font-style: italic;">No hay actividades emergentes registradas para este periodo.</p>`;
+    }
+
+    let rows = '';
+    lista.forEach((em) => {
+        const fechaFormateada = formatearFechaExcel(em.fecha) || em.fecha || '-';
+        const notif = em.notificadaSAP || 'NO';
+        const teco = em.tecoSAP || 'NO';
+
+        rows += `
+            <tr class="fila-emergente-pms" data-key="${em.idKey}" style="border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 0.78rem;">
+                <td style="padding: 6px 8px; color: #cbd5e1; font-weight: 600; white-space: nowrap;">${fechaFormateada}</td>
+                <td style="padding: 6px 8px; font-family: monospace; font-weight: bold; color: #f87171;">${em.tag}</td>
+                <td style="padding: 6px 8px; color: #e2e8f0;">${em.descripcion}</td>
+                <td style="padding: 6px 8px; color: #cbd5e1; font-family: monospace;">${em.om}</td>
+                <td style="padding: 6px 8px; color: #cbd5e1;">${em.turno}</td>
+                <td style="padding: 6px 8px; text-align: center;">
+                    <select class="select-notif-em" style="background: var(--bg-input); color: ${notif === 'SI' ? '#a855f7' : '#94a3b8'}; border: 1px solid var(--border-glass); padding: 3px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; outline: none; cursor: pointer;">
+                        <option value="NO" ${notif === 'NO' ? 'selected' : ''}>❌ NO</option>
+                        <option value="SI" ${notif === 'SI' ? 'selected' : ''}>✔ SÍ</option>
+                    </select>
+                </td>
+                <td style="padding: 6px 8px; text-align: center;">
+                    <select class="select-teco-em" style="background: var(--bg-input); color: teco === 'SI' ? '#10b981' : '#94a3b8'}; border: 1px solid var(--border-glass); padding: 3px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; outline: none; cursor: pointer;">
+                        <option value="NO" ${teco === 'NO' ? 'selected' : ''}>❌ NO</option>
+                        <option value="SI" ${teco === 'SI' ? 'selected' : ''}>✔ SÍ</option>
+                    </select>
+                </td>
+                <td style="padding: 6px 8px; text-align: center;">
+                    <button type="button" onclick="window.eliminarEmergentePMS('${em.idKey}', '${semanaActiva}')" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">Eliminar</button>
+                </td>
+            </tr>
+        `;
+    });
+
+    return `
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="color: #94a3b8; font-size: 0.7rem; border-bottom: 1px solid var(--border-glass);">
+                    <th style="padding: 6px 8px;">Fecha</th>
+                    <th style="padding: 6px 8px;">TAG</th>
+                    <th style="padding: 6px 8px;">Descripción del Imprevisto</th>
+                    <th style="padding: 6px 8px;">OM</th>
+                    <th style="padding: 6px 8px;">Turno</th>
+                    <th style="padding: 6px 8px; text-align: center;">Notif. SAP</th>
+                    <th style="padding: 6px 8px; text-align: center;">CTEC</th>
+                    <th style="padding: 6px 8px; text-align: center;">Acción</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>
+    `;
+}
+
+window.eliminarEmergentePMS = async function(idKey, semanaActiva) {
+    // MODAL CORPORATIVO DE CONFIRMACIÓN (En lugar de confirm() nativo)
+    const modalId = 'modal-confirm-borrar-emg';
+    let modalC = document.getElementById(modalId);
+    if (modalC) modalC.remove();
+
+    modalC = document.createElement('div');
+    modalC.id = modalId;
+    modalC.style.cssText = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999999; display: flex; justify-content: center; align-items: center; font-family: sans-serif;";
+    
+    modalC.innerHTML = `
+        <div style="background: #0f172a; border: 1px solid var(--border-glass); border-radius: 12px; width: 400px; max-width: 90%; padding: 25px; color: #f8fafc; box-shadow: 0 25px 50px rgba(0,0,0,0.8);">
+            <h3 style="margin: 0 0 10px 0; color: #f87171; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                <span class="material-symbols-outlined">warning</span> Eliminar Actividad
+            </h3>
+            <p style="color: #94a3b8; font-size: 0.88rem; margin-bottom: 20px;">¿Estás seguro de eliminar esta actividad emergente del registro?</p>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" id="btn-no-emg" style="background: transparent; color: #94a3b8; border: 1px solid #475569; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Cancelar</button>
+                <button type="button" id="btn-si-emg" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer;">Sí, Eliminar</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modalC);
+
+    document.getElementById('btn-no-emg').addEventListener('click', () => modalC.remove());
+    document.getElementById('btn-si-emg').addEventListener('click', async () => {
+        await db.ref(`historial_informes/pms_semanal/${semanaActiva}/actividades_emergentes/${idKey}`).remove();
+        if (window.UI && UI.mostrarToast) UI.mostrarToast("Actividad emergente eliminada.", "exito");
+        modalC.remove();
+        renderizarModuloPMS(undefined, semanaActiva);
+    });
+};
 
 function actualizarKPIsEnVivo(contenedor) {
     const filas = contenedor.querySelectorAll('.fila-orden-pms');
@@ -456,7 +686,6 @@ function renderizarContenidoTablaPMS(ordenes, activosMap) {
                 <td style="padding: 10px 12px;">${badgeCatastro}</td>
                 <td style="padding: 10px 12px; color: #cbd5e1; max-width: 200px;" title="${item.descripcion}">${item.descripcion}</td>
                 
-                <!-- ESTADO REAL -->
                 <td style="padding: 10px 12px;">
                     <select class="select-estado-pms" style="background: var(--bg-input); color: white; border: 1px solid var(--border-glass); padding: 5px 6px; border-radius: 6px; font-size: 0.75rem; outline: none; cursor: pointer; width: 100%;">
                         <option value="PENDIENTE" ${est === 'PENDIENTE' ? 'selected' : ''}>⏳ Pendiente</option>
@@ -467,7 +696,6 @@ function renderizarContenidoTablaPMS(ordenes, activosMap) {
                     </select>
                 </td>
 
-                <!-- NOTIFICADA SAP -->
                 <td style="padding: 10px 12px; text-align: center;">
                     <select class="select-notif-pms" style="background: var(--bg-input); color: ${notif === 'SI' ? '#a855f7' : '#94a3b8'}; border: 1px solid var(--border-glass); padding: 5px; border-radius: 6px; font-size: 0.75rem; outline: none; cursor: pointer; font-weight: bold;">
                         <option value="NO" ${notif === 'NO' ? 'selected' : ''}>❌ NO</option>
@@ -475,7 +703,6 @@ function renderizarContenidoTablaPMS(ordenes, activosMap) {
                     </select>
                 </td>
 
-                <!-- CTEC (CIERRE TÉCNICO) -->
                 <td style="padding: 10px 12px; text-align: center;">
                     <select class="select-teco-pms" style="background: var(--bg-input); color: ${teco === 'SI' ? '#10b981' : '#94a3b8'}; border: 1px solid var(--border-glass); padding: 5px; border-radius: 6px; font-size: 0.75rem; outline: none; cursor: pointer; font-weight: bold;">
                         <option value="NO" ${teco === 'NO' ? 'selected' : ''}>❌ NO</option>
@@ -483,12 +710,10 @@ function renderizarContenidoTablaPMS(ordenes, activosMap) {
                     </select>
                 </td>
 
-                <!-- ADJUNTOS SAP -->
                 <td style="padding: 10px 12px; text-align: center; color: ${cantAdjuntos > 0 ? '#38bdf8' : 'var(--text-muted)'}; font-weight: bold; font-size: 0.8rem;" title="Archivos adjuntos en SAP">
                     📎 ${cantAdjuntos}
                 </td>
 
-                <!-- OBSERVACIÓN -->
                 <td style="padding: 10px 12px;">
                     <input type="text" class="input-obs-pms" value="${item.observacionAuditor || ''}" placeholder="Motivo o nota..." style="background: var(--bg-input); color: white; border: 1px solid var(--border-glass); padding: 5px 8px; border-radius: 6px; font-size: 0.75rem; width: 100%; outline: none; box-sizing: border-box;">
                 </td>
@@ -515,16 +740,14 @@ function renderizarContenidoTablaPMS(ordenes, activosMap) {
                         <th style="padding: 10px 12px; min-width: 180px;">Observación / Justificación</th>
                     </tr>
                 </thead>
-                <tbody>
-                    ${filasHTML}
-                </tbody>
+                <tbody>${filasHTML}</tbody>
             </table>
         </div>
     `;
 }
 
 // =========================================================
-// LECTOR EXPORT.XLSX (NOMENCLATURA PMS)
+// LECTOR EXPORT.XLSX (CON PRESERVACIÓN DE EMERGENTES)
 // =========================================================
 async function procesarArchivoExcelSAP(file, semanaActiva, activosMap, contenedorId) {
     if (!window.XLSX) return;
@@ -538,6 +761,12 @@ async function procesarArchivoExcelSAP(file, semanaActiva, activosMap, contenedo
             const filasRaw = window.XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
             if (!filasRaw || filasRaw.length === 0) return;
+
+            const snapExistente = await db.ref(`historial_informes/pms_semanal/${semanaActiva}`).once('value');
+            let emergentesPrevias = {};
+            if (snapExistente.exists() && snapExistente.val().actividades_emergentes) {
+                emergentesPrevias = snapExistente.val().actividades_emergentes;
+            }
 
             const ordenesProcesadas = {};
             let contador = 0;
@@ -598,10 +827,11 @@ async function procesarArchivoExcelSAP(file, semanaActiva, activosMap, contenedo
                 fechaCarga: new Date().toISOString(),
                 nombreArchivo: file.name,
                 totalOrdenes: contador,
-                ordenes: ordenesProcesadas
+                ordenes: ordenesProcesadas,
+                actividades_emergentes: emergentesPrevias
             });
 
-            if (window.UI && UI.mostrarToast) UI.mostrarToast(`¡${contador} órdenes respaldadas para ${semanaActiva}!`, "exito");
+            if (window.UI && UI.mostrarToast) UI.mostrarToast(`¡${contador} órdenes respaldadas para ${semanaActiva} (Emergencias intactas)!`, "exito");
             renderizarModuloPMS(contenedorId, semanaActiva);
 
         } catch (err) {
@@ -613,106 +843,96 @@ async function procesarArchivoExcelSAP(file, semanaActiva, activosMap, contenedo
 }
 
 // =========================================================
-// VISOR MODAL DE PDF CORPORATIVO (CON SINCRONIZACIÓN EN VIVO DE OBSERVACIONES)
+// EXPORTADOR A PDF LEGIBLE CON jspdf & autoTable (Soluciona el bloqueo al imprimir)
 // =========================================================
-function mostrarResumenPMSModal(semanaActiva, ordenes, kpis) {
-    let tablaHtml = `
-        <table style="width: 100%; border-collapse: collapse; font-size: 0.72rem; text-align: left; margin-top: 15px; table-layout: fixed;">
-            <thead>
-                <tr style="background-color: #0f172a; color: white;">
-                    <th style="padding: 8px 4px; border: 1px solid #cbd5e1; width: 4%; text-align: center;">#</th>
-                    <th style="padding: 8px 6px; border: 1px solid #cbd5e1; width: 10%;">Fecha</th>
-                    <th style="padding: 8px 6px; border: 1px solid #cbd5e1; width: 7%;">Área</th>
-                    <th style="padding: 8px 6px; border: 1px solid #cbd5e1; width: 15%;">Equipo</th>
-                    <th style="padding: 8px 6px; border: 1px solid #cbd5e1; width: 11%;">OM</th>
-                    <th style="padding: 8px 6px; border: 1px solid #cbd5e1; width: 13%;">Estado</th>
-                    <th style="padding: 8px 4px; border: 1px solid #cbd5e1; width: 5%; text-align: center;">Notif</th>
-                    <th style="padding: 8px 4px; border: 1px solid #cbd5e1; width: 5%; text-align: center;">CTEC</th>
-                    <th style="padding: 8px 4px; border: 1px solid #cbd5e1; width: 4%; text-align: center;">Adj</th>
-                    <th style="padding: 8px 8px; border: 1px solid #cbd5e1; width: 26%;">Observación / Justificación</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-
-    ordenes.forEach((o, index) => {
-        const bgRow = index % 2 === 0 ? '#ffffff' : '#f8fafc';
-        const obsTexto = (o.observacionAuditor && o.observacionAuditor.trim() !== '') ? o.observacionAuditor : '-';
-        tablaHtml += `
-            <tr style="background-color: ${bgRow}; border-bottom: 1px solid #e2e8f0;">
-                <td style="padding: 7px 4px; border: 1px solid #cbd5e1; text-align: center; color: #64748b; font-weight: bold;">${index + 1}</td>
-                <td style="padding: 7px 6px; border: 1px solid #cbd5e1; color: #334155; white-space: nowrap;">${formatearFechaExcel(o.fechaProg)}</td>
-                <td style="padding: 7px 6px; border: 1px solid #cbd5e1; color: #0f172a; font-weight: bold;">${o.area || ''}</td>
-                <td style="padding: 7px 6px; border: 1px solid #cbd5e1; color: #0284c7; font-family: monospace; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${o.tag || ''}">${o.tag || ''}</td>
-                <td style="padding: 7px 6px; border: 1px solid #cbd5e1; color: #0f172a; font-family: monospace; font-weight: bold;">${o.orden || ''}</td>
-                <td style="padding: 7px 6px; border: 1px solid #cbd5e1; color: #334155;">${o.estadoEjecucion || ''}</td>
-                <td style="padding: 7px 4px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: ${o.notificadaSAP === 'SI' ? '#7c3aed' : '#64748b'};">${o.notificadaSAP || 'NO'}</td>
-                <td style="padding: 7px 4px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: ${o.tecoSAP === 'SI' ? '#059669' : '#64748b'};">${o.tecoSAP || 'NO'}</td>
-                <td style="padding: 7px 4px; border: 1px solid #cbd5e1; text-align: center; color: #0284c7; font-weight: bold;">${o.adjuntosSAP || 0}</td>
-                <td style="padding: 7px 8px; border: 1px solid #cbd5e1; color: #475569; word-break: break-word;">${obsTexto}</td>
-            </tr>
-        `;
-    });
-
-    tablaHtml += `</tbody></table>`;
-
-    let modalResumen = document.getElementById('modal-resumen-pms-sap');
-    if (!modalResumen) {
-        modalResumen = document.createElement('div');
-        modalResumen.id = 'modal-resumen-pms-sap';
-        modalResumen.style.cssText = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 99999; display: flex; justify-content: center; align-items: center;";
-        document.body.appendChild(modalResumen);
+async function exportarPDFLegibleCorp(semanaActiva, ordenes, listaEmergentes, kpis) {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert("Librería jsPDF no cargada.");
+        return;
     }
 
-    modalResumen.innerHTML = `
-        <style>
-            @media print {
-                @page { size: landscape; margin: 10mm; }
-                body * { visibility: hidden; }
-                #contenedor-impresion-pms, #contenedor-impresion-pms * { visibility: visible; }
-                #contenedor-impresion-pms { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none; border-radius: 0; max-height: none !important; }
-                #btn-cerrar-pms-modal, #btn-imprimir-pms-pdf, .footer-botones { display: none !important; }
-                table { font-size: 0.65rem !important; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+    // Cabecera del documento
+    doc.setFont("Helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
+    doc.text("CIO Predictivo - Informe de Auditoría Programa Semanal (PMS) & Emergencias", 14, 12);
+    
+    doc.setFont("Helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Mina Los Colorados (CMP) | Período: ${semanaActiva} | Emitido: ${new Date().toLocaleDateString()}`, 14, 18);
+
+    // Resumen de KPIs
+    doc.setFontSize(8.5);
+    doc.setTextColor(30, 41, 59);
+    doc.text(`Cumplimiento Terreno: ${kpis.porcCumplimiento}% (${kpis.ejecutadas}/${kpis.total})   |   Pendientes: ${kpis.pendientes}   |   Notificadas SAP: ${kpis.porcNotif}% (${kpis.notificadasCount}/${kpis.total})   |   Cierre CTEC: ${kpis.porcTeco}% (${kpis.tecoCount}/${kpis.total})   |   Emergencias: ${listaEmergentes.length}`, 14, 24);
+
+    let bodyData = [];
+
+    ordenes.forEach((o, idx) => {
+        bodyData.push([
+            idx + 1,
+            formatearFechaExcel(o.fechaProg),
+            o.area || '',
+            o.tag || '',
+            o.orden || '',
+            o.estadoEjecucion || '',
+            o.notificadaSAP || 'NO',
+            o.tecoSAP || 'NO',
+            o.adjuntosSAP || 0,
+            o.observacionAuditor || '-'
+        ]);
+    });
+
+    if (listaEmergentes.length > 0) {
+        bodyData.push(['---', '---', '---', '---', '---', '---', '---', '---', '---', '---']);
+        listaEmergentes.forEach((em, idxEm) => {
+            bodyData.push([
+                `EMG-${idxEm + 1}`,
+                formatearFechaExcel(em.fecha) || em.fecha || 'Terreno',
+                'EMG',
+                em.tag,
+                em.om,
+                em.estadoEjecucion || 'PENDIENTE',
+                em.notificadaSAP || 'NO',
+                em.tecoSAP || 'NO',
+                '0',
+                `[${em.turno}] ${em.descripcion}`
+            ]);
+        });
+    }
+
+    doc.autoTable({
+        startY: 28,
+        head: [['#', 'Fecha', 'Área', 'Equipo', 'OM', 'Estado', 'Notif', 'CTEC', 'Adj', 'Observación / Justificación']],
+        body: bodyData,
+        styles: {
+            font: 'helvetica',
+            fontSize: 8,
+            cellPadding: 3,
+            textColor: [30, 41, 59]
+        },
+        headStyles: {
+            fillColor: [15, 23, 42],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 8.5
+        },
+        didParseCell: function (data) {
+            if (data.section === 'body' && String(data.row.raw[0]).includes('EMG')) {
+                data.cell.styles.fillColor = [254, 226, 226];
+                data.cell.styles.textColor = [185, 28, 28];
+                data.cell.styles.fontStyle = 'bold';
             }
-        </style>
-        <div id="contenedor-impresion-pms" style="background: #ffffff; color: #1e293b; border-radius: 12px; width: 1200px; max-height: 94vh; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.6); overflow: hidden;">
-            
-            <!-- Cabecera Corporativa CPF -->
-            <div style="background: #0f172a; color: white; padding: 18px 28px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
-                <div style="display: flex; align-items: center; gap: 20px;">
-                    <div style="background: white; padding: 6px 12px; border-radius: 6px; display: flex; align-items: center; justify-content: center; height: 40px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-                        <img src="./assets/img/logo-cpf.png" alt="CPF Logo" style="height: 28px; width: auto; display: block; object-fit: contain;" onerror="this.outerHTML='<span style=\\'font-weight: 900; color: #0f172a; font-size: 1.2rem;\\'>CPF</span>'">
-                    </div>
-                    <div>
-                        <h3 style="margin: 0; font-size: 1.05rem; color: #38bdf8;">Informe de Auditoría Programa Semanal (PMS)</h3>
-                        <p style="margin: 2px 0 0 0; font-size: 0.72rem; color: #94a3b8;">Mina Los Colorados (CMP) | Período: ${semanaActiva}</p>
-                    </div>
-                </div>
-                <button type="button" id="btn-cerrar-pms-modal" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 1.4rem;"><span class="material-symbols-outlined">close</span></button>
-            </div>
-            
-            <!-- Cuerpo con Fondo Blanco, KPIs y Tabla -->
-            <div style="padding: 20px 28px; overflow-y: auto; flex-grow: 1; background: #ffffff;">
-                <div style="margin-bottom: 15px; background: #f8fafc; padding: 10px 16px; border-radius: 6px; border: 1px solid #cbd5e1; display: flex; justify-content: space-between; font-size: 0.8rem; color: #334155;">
-                    <span><b>Cumplimiento Terreno:</b> <span style="color: #0284c7; font-weight: bold;">${kpis.porcCumplimiento}% (${kpis.ejecutadas}/${kpis.total})</span></span>
-                    <span><b>Pendientes:</b> <span style="color: #d97706; font-weight: bold;">${kpis.pendientes}</span></span>
-                    <span><b>Notificadas SAP:</b> <span style="color: #7c3aed; font-weight: bold;">${kpis.porcNotif}% (${kpis.notificadasCount}/${kpis.total})</span></span>
-                    <span><b>Cierre CTEC:</b> <span style="color: #059669; font-weight: bold;">${kpis.porcTeco}% (${kpis.tecoCount}/${kpis.total})</span></span>
-                </div>
+        },
+        margin: { top: 26, right: 14, bottom: 15, left: 14 }
+    });
 
-                <h4 style="color: #0f172a; font-size: 0.9rem; border-bottom: 2px solid #38bdf8; padding-bottom: 4px; margin-top: 0;">📋 Detalle de Órdenes y Justificaciones SAP</h4>
-                ${ordenes.length > 0 ? tablaHtml : '<p style="text-align: center; color: #64748b; padding: 20px;">No hay órdenes registradas.</p>'}
-            </div>
-
-            <!-- Pie con botón de impresión -->
-            <div class="footer-botones" style="padding: 10px 28px; border-top: 1px solid #cbd5e1; text-align: right; background: #e2e8f0; flex-shrink: 0;">
-                <button type="button" id="btn-imprimir-pms-pdf" style="background: #0284c7; color: white; border: none; padding: 7px 18px; font-weight: bold; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem;">
-                    <span class="material-symbols-outlined" style="font-size: 1.1rem;">print</span> Imprimir / Guardar PDF
-                </button>
-            </div>
-        </div>
-    `;
-
-    document.getElementById('btn-cerrar-pms-modal').addEventListener('click', () => modalResumen.remove());
-    document.getElementById('btn-imprimir-pms-pdf').addEventListener('click', () => window.print());
+    doc.save(`Auditoria_PMS_${semanaActiva}_${new Date().toISOString().split('T')[0]}.pdf`);
+    if (typeof UI !== 'undefined' && UI.mostrarToast) {
+        UI.mostrarToast("PDF corporativo generado y descargado con éxito.", "exito");
+    }
 }
