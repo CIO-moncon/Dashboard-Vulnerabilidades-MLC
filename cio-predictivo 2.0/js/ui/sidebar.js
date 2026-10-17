@@ -4,9 +4,12 @@
 import { db } from '../core/firebase-config.js';
 
 let datosGlobalesEquipos = {}; 
+let areaSeleccionadaActual = 'TODOS';
+let textoBusquedaActual = '';
 
 export function inicializarBarraLateral() {
     escutarEquiposFirebase();
+    configurarBuscadorGlobal();
 }
 
 function escutarEquiposFirebase() {
@@ -20,15 +23,54 @@ function escutarEquiposFirebase() {
         }
 
         datosGlobalesEquipos = snapshot.val();
-        renderizarVistaAreas(listaCatastro);
+        
+        if (textoBusquedaActual.length > 0) {
+            renderizarVistaBusqueda(listaCatastro, textoBusquedaActual);
+        } else if (areaSeleccionadaActual !== 'TODOS') {
+            const areasObj = procesarAgrupacionAreas();
+            if (areasObj[areaSeleccionadaActual]) {
+                renderizarVistaEquiposArea(listaCatastro, areasObj[areaSeleccionadaActual]);
+            } else {
+                renderizarVistaAreas(listaCatastro);
+            }
+        } else {
+            renderizarVistaAreas(listaCatastro);
+        }
     });
 }
 
-// --- NIVEL 1: VISTA DE ÁREAS (CON COLORES PREDOMINANTES SEGÚN CRITICIDAD) ---
-export function renderizarVistaAreas(contenedor) {
-    contenedor.innerHTML = '';
-    
-    // 1. Agrupar y contar equipos por estado en cada Área
+function configurarBuscadorGlobal() {
+    const inputBuscador = document.getElementById('buscador-tags');
+    if (!inputBuscador) return;
+
+    inputBuscador.addEventListener('input', (e) => {
+        textoBusquedaActual = e.target.value.trim().toLowerCase();
+        const listaCatastro = document.getElementById('lista-catastro');
+        if (!listaCatastro) return;
+
+        if (textoBusquedaActual.length > 0) {
+            renderizarVistaBusqueda(listaCatastro, textoBusquedaActual);
+            if (typeof window.filtrarMapaPorAreaOSearch === 'function') {
+                window.filtrarMapaPorAreaOSearch('SEARCH', textoBusquedaActual);
+            }
+        } else {
+            if (areaSeleccionadaActual !== 'TODOS') {
+                const areasObj = procesarAgrupacionAreas();
+                renderizarVistaEquiposArea(listaCatastro, areasObj[areaSeleccionadaActual]);
+                if (typeof window.filtrarMapaPorAreaOSearch === 'function') {
+                    window.filtrarMapaPorAreaOSearch('AREA', areaSeleccionadaActual);
+                }
+            } else {
+                renderizarVistaAreas(listaCatastro);
+                if (typeof window.filtrarMapaPorAreaOSearch === 'function') {
+                    window.filtrarMapaPorAreaOSearch('TODOS', '');
+                }
+            }
+        }
+    });
+}
+
+function procesarAgrupacionAreas() {
     const areasObj = {};
     Object.keys(datosGlobalesEquipos).forEach(id => {
         const eq = datosGlobalesEquipos[id];
@@ -56,7 +98,6 @@ export function renderizarVistaAreas(contenedor) {
         }
     });
 
-    // 2. Calcular Salud y Porcentaje de Fallas
     const UMBRAL_ROJO = 15;    
     const UMBRAL_NARANJA = 25; 
 
@@ -67,32 +108,44 @@ export function renderizarVistaAreas(contenedor) {
         area.saludGlobal = Math.round(100 - pctProblemas); 
         area.pctFallas = pctProblemas; 
 
-        // Definir el estado predominante en base al impacto real de la zona
         if (pctRojo >= UMBRAL_ROJO || area.countRojo > 0) {
-            area.estadoCritico = 'rojo'; // Si hay rojos relevantes, domina el rojo
+            area.estadoCritico = 'rojo';
         } else if (pctProblemas >= UMBRAL_NARANJA || area.countNaranja > 0) {
-            area.estadoCritico = 'naranja'; // Si hay advertencias, domina el naranja/salmón
+            area.estadoCritico = 'naranja';
         } else {
             area.estadoCritico = 'verde';
         }
     });
 
-    // 3. ORDENAR ÁREAS: Del mayor porcentaje de fallas al menor
-    const areasArray = Object.values(areasObj).sort((a, b) => {
-        return b.pctFallas - a.pctFallas; 
-    });
+    return areasObj;
+}
 
-    // 4. Dibujar las tarjetas de Área aplicando el color predominante exacto
+// --- NIVEL 1: VISTA DE ÁREAS ---
+export function renderizarVistaAreas(contenedor) {
+    contenedor.innerHTML = '';
+    areaSeleccionadaActual = 'TODOS';
+
+    if (typeof window.filtrarMapaPorAreaOSearch === 'function') {
+        window.filtrarMapaPorAreaOSearch('TODOS', '');
+    }
+
+    const areasObj = procesarAgrupacionAreas();
+    const areasArray = Object.values(areasObj).sort((a, b) => b.pctFallas - a.pctFallas);
+
+    if (areasArray.length === 0) {
+        contenedor.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:20px 0;">No hay áreas registradas.</p>';
+        return;
+    }
+
     areasArray.forEach(area => {
         let statusClass = 'status-ok';
         let dotColor = 'var(--iso-zona-a)';
         
-        // El color de la tarjeta responde directamente al nivel crítico predominante
         if (area.estadoCritico === 'rojo') {
             statusClass = 'status-danger';
             dotColor = 'var(--iso-zona-d)';
         } else if (area.estadoCritico === 'naranja') {
-            statusClass = 'status-warning'; // Asegura el tono naranja/salmón característico
+            statusClass = 'status-warning';
             dotColor = 'var(--iso-zona-c)';
         }
 
@@ -111,16 +164,20 @@ export function renderizarVistaAreas(contenedor) {
         contenedor.insertAdjacentHTML('beforeend', cardHTML);
     });
 
-    // Listener para entrar a la vista de equipos de esa área
     document.querySelectorAll('.area-nav-item').forEach(item => {
         item.addEventListener('click', (e) => {
             const nombreArea = e.currentTarget.getAttribute('data-area');
+            areaSeleccionadaActual = nombreArea;
             renderizarVistaEquiposArea(contenedor, areasObj[nombreArea]);
+
+            if (typeof window.filtrarMapaPorAreaOSearch === 'function') {
+                window.filtrarMapaPorAreaOSearch('AREA', nombreArea);
+            }
         });
     });
 }
 
-// --- NIVEL 2: VISTA DE EQUIPOS POR ÁREA (TAMBIÉN CON RANKING DE CRITICIDAD) ---
+// --- NIVEL 2: VISTA DE EQUIPOS POR ÁREA ---
 function renderizarVistaEquiposArea(contenedor, areaData) {
     contenedor.innerHTML = '';
     
@@ -131,7 +188,6 @@ function renderizarVistaEquiposArea(contenedor, areaData) {
         <h4 style="color:var(--text-muted); margin-bottom:10px; font-size:0.8rem; padding-left:5px;">Equipos en ${areaData.nombre}</h4>
     `;
 
-    // Ordenar equipos dentro del área: Más críticos arriba
     const equiposOrdenados = areaData.equipos.sort((a, b) => {
         const severidadA = (a.severidad || a.estado || 'verde').toLowerCase();
         const severidadB = (b.severidad || b.estado || 'verde').toLowerCase();
@@ -173,45 +229,77 @@ function renderizarVistaEquiposArea(contenedor, areaData) {
     });
 
     document.getElementById('btn-volver-areas').addEventListener('click', () => {
+        areaSeleccionadaActual = 'TODOS';
         renderizarVistaAreas(contenedor);
+        if (typeof window.filtrarMapaPorAreaOSearch === 'function') {
+            window.filtrarMapaPorAreaOSearch('TODOS', '');
+        }
+    });
+}
+
+// --- VISTA DE BÚSQUEDA GLOBAL ---
+function renderizarVistaBusqueda(contenedor, texto) {
+    contenedor.innerHTML = `
+        <button id="btn-volver-areas-search" style="background:transparent; border:none; color:var(--primary-blue); font-size:0.8rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:5px; margin-bottom:10px;">
+            <span class="material-symbols-outlined" style="font-size:1.2rem;">arrow_back</span> Volver a Áreas
+        </button>
+        <h4 style="color:var(--text-muted); margin-bottom:10px; font-size:0.8rem; padding-left:5px;">Resultados para: "${texto}"</h4>
+    `;
+
+    const resultados = Object.entries(datosGlobalesEquipos).filter(([idKey, eq]) => {
+        const tag = (eq.tag || '').toLowerCase();
+        const nombre = (eq.nombre || '').toLowerCase();
+        const idNorm = idKey.toLowerCase();
+        return tag.includes(texto) || nombre.includes(texto) || idNorm.includes(texto);
+    });
+
+    if (resultados.length === 0) {
+        contenedor.insertAdjacentHTML('beforeend', '<p style="color:var(--text-muted); text-align:center; padding:20px; font-size:0.8rem;">No se encontraron equipos.</p>');
+    } else {
+        resultados.forEach(([idFirebase, eq]) => {
+            const severidad = (eq.severidad || eq.estado || 'verde').toLowerCase();
+            let dotColor = severidad === 'rojo' || severidad === 'critico' ? 'var(--iso-zona-d)' : (severidad === 'naranja' || severidad === 'amarillo' ? 'var(--iso-zona-c)' : 'var(--iso-zona-a)');
+            
+            const cardHTML = `
+                <div class="area-card-v2 status-ok item-navegable" data-target="${idFirebase}" style="margin-bottom:8px;">
+                    <span class="material-symbols-outlined icon">precision_manufacturing</span>
+                    <div class="info">
+                        <h4>${eq.tag || idFirebase}</h4>
+                        <p><span class="dot" style="background: ${dotColor};"></span> <span style="color: ${dotColor};">${eq.area || 'Sin Área'}</span></p>
+                    </div>
+                </div>
+            `;
+            contenedor.insertAdjacentHTML('beforeend', cardHTML);
+        });
+    }
+
+    document.getElementById('btn-volver-areas-search').addEventListener('click', () => {
+        const inputBuscador = document.getElementById('buscador-tags');
+        if (inputBuscador) inputBuscador.value = '';
+        textoBusquedaActual = '';
+        areaSeleccionadaActual = 'TODOS';
+        renderizarVistaAreas(contenedor);
+        if (typeof window.filtrarMapaPorAreaOSearch === 'function') {
+            window.filtrarMapaPorAreaOSearch('TODOS', '');
+        }
     });
 }
 
 // --- GESTIÓN DE ALERTAS DESDE FIREBASE ---
 export function cargarAlertasTerreno() {
-    const btnTabAlertas = document.querySelector('[data-tab="alertas"]') || document.getElementById('tab-alertas') || document.querySelector('.fa-bell')?.closest('button');
-    // Escuchamos la pestaña o nodo de alertas en Firebase
     db.ref('activos_criticos').on('value', (snapshot) => {
         if (!snapshot.exists()) return;
         const equipos = snapshot.val();
         let contadorCriticos = 0;
-        let htmlAlertas = '<div style="padding: 15px;"><h4 style="color:var(--text-muted); font-size:0.8rem; margin-bottom:10px;">REGISTRO DE ALERTAS ACTIVAS</h4>';
 
-        Object.entries(equipos).forEach(([id, eq]) => {
+        Object.entries(equipos).forEach(([, eq]) => {
             const sev = (eq.severidad || eq.estado || 'verde').toLowerCase();
             if (sev === 'rojo' || sev === 'critico' || sev === 'naranja') {
                 contadorCriticos++;
-                const colorBorde = sev === 'rojo' ? 'var(--iso-zona-d)' : 'var(--iso-zona-c)';
-                htmlAlertas += `
-                    <div class="item-navegable" data-target="${id}" style="background: rgba(0,0,0,0.3); border-left: 4px solid ${colorBorde}; padding: 10px; border-radius: 4px; margin-bottom: 8px; cursor: pointer;">
-                        <div style="font-weight: bold; font-size: 0.85rem; color: white;">${eq.tag || id}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">${eq.nombre || 'Sin descripción'}</div>
-                        <div style="font-size: 0.7rem; color: ${colorBorde}; margin-top: 4px; text-transform: uppercase; font-weight: bold;">${sev === 'rojo' ? 'Alarma Crítica' : 'Alarma Restringida'}</div>
-                    </div>
-                `;
             }
         });
 
-        if (contadorCriticos === 0) {
-            htmlAlertas += '<p style="color: var(--text-muted); text-align: center; font-size: 0.85rem; padding: 20px;">No hay alertas activas en la operación.</p>';
-        }
-        htmlAlertas += '</div>';
-
-        // Actualizar contador visual de la pestaña de alertas si existe el badge
         const badgeAlertas = document.querySelector('.badge-alertas');
         if (badgeAlertas) badgeAlertas.textContent = contadorCriticos;
-
-        // Si el usuario hace clic en la pestaña de alertas, inyectamos este HTML en el contenedor lateral
-        window._htmlAlertasCache = htmlAlertas;
     });
 }

@@ -1,14 +1,13 @@
 // ==========================================
-// MÓDULO UI: EXPEDIENTE (INSPECCIÓN, CONFIGURACIÓN, DATA ROOM Y MAPAS)
+// MÓDULO UI: EXPEDIENTE (INSPECCIÓN, CONFIGURACIÓN, DATA ROOM Y MAPAS 3D)
 // ==========================================
 import { db } from '../core/firebase-config.js';
 import { generarPDFExpediente } from '../core/reportes.js';
 import { renderizarModuloAnalisis } from './analisis.js'; 
 
-let chartsInstancias = []; // Arreglo global para almacenar las instancias de Chart.js
+let chartsInstancias = []; 
 let miniMapaInstancia = null;
 
-// --- DICCIONARIO DE PLANTILLAS CBM ---
 const motorGen = [ { punto: 'M1', comp: 'Motor NDE (Lado Libre)' }, { punto: 'M2', comp: 'Motor DE (Lado Carga)' } ];
 
 const pChancador = [ ...motorGen, { punto: 'C1', comp: 'Contraeje NDE' }, { punto: 'C2', comp: 'Contraeje DE' } ];
@@ -88,16 +87,13 @@ function obtenerPlantilla(tipoStr) {
     return null;
 }
 
-// ---------------------------------------------------------
-// ORDENADOR CINEMÁTICO NATURAL (TREN DE POTENCIA)
-// ---------------------------------------------------------
 function obtenerPesoOrdenSpot(puntoNombre) {
     const p = (puntoNombre || '').toUpperCase().trim();
     let grupo = 50; 
-    if (p.startsWith('M')) grupo = 10;       // 1° Motores (M1, M2...)
-    else if (p.startsWith('G')) grupo = 20;  // 2° Reductores (G1...G10)
-    else if (p.startsWith('D') || p.startsWith('R') || p.startsWith('E') || p.startsWith('C')) grupo = 30; // 3° Descansos / Contraejes
-    else if (p.startsWith('PL')) grupo = 40; // 4° Poleas (PL1_LI, PL1_LD...)
+    if (p.startsWith('M')) grupo = 10;       
+    else if (p.startsWith('G')) grupo = 20;  
+    else if (p.startsWith('D') || p.startsWith('R') || p.startsWith('E') || p.startsWith('C')) grupo = 30; 
+    else if (p.startsWith('PL')) grupo = 40; 
 
     const matchNum = p.match(/\d+/);
     const numero = matchNum ? parseInt(matchNum[0], 10) : 999;
@@ -121,15 +117,18 @@ function ordenarSpotsArray(spotsArray) {
     });
 }
 
-// ---------------------------------------------------------
-// 2. RENDERIZADO DEL EXPEDIENTE
-// ---------------------------------------------------------
 export function renderizarExpediente(idFirebase, contenedorId, forzarConfig = false) {
     const contenedor = document.getElementById(contenedorId);
     if (!contenedor) return;
 
+    if (miniMapaInstancia) {
+        miniMapaInstancia.remove();
+        miniMapaInstancia = null;
+        window.miniMapaInstancia = null;
+    }
+
     if (idFirebase === 'NUEVO') {
-        const eqVacio = { tag: '', nombre: '', tipo_equipo: '', area: '', severidad: 'verde', estado: 'verde', spots: {}, latitud: '', longitud: '' };
+        const eqVacio = { tag: '', nombre: '', tipo_equipo: '', area: '', nivel: 'Nivel 1', severidad: 'verde', estado: 'verde', spots: {}, latitud: '', longitud: '' };
         construirPanelConfiguracion(`eq_${Date.now()}`, eqVacio, contenedor, true);
         return;
     }
@@ -147,15 +146,11 @@ export function renderizarExpediente(idFirebase, contenedorId, forzarConfig = fa
     });
 }
 
-// ---------------------------------------------------------
-// 3. VISTA DE INSPECCIÓN (OPERADOR)
-// ---------------------------------------------------------
 function construirPanelInspeccion(idFirebase, eq, contenedor) {
     let spotsHTML = '';
     const spotsObj = eq.spots || {};
     let spotsArray = Object.keys(spotsObj).map(k => ({ idInterno: k, ...spotsObj[k] }));
 
-    // Aplicar orden cinemático natural
     spotsArray = ordenarSpotsArray(spotsArray);
 
     if (spotsArray.length === 0) {
@@ -224,6 +219,8 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
         miniaturaHeader = `<div style="width: 55px; height: 55px; border-radius: 6px; background: rgba(0,0,0,0.2); border: 1px dashed rgba(255,255,255,0.2); display: flex; justify-content: center; align-items: center;"><span class="material-symbols-outlined" style="color: var(--text-muted);">image</span></div>`;
     }
 
+    const nivelActivo = eq.nivel || 'Nivel 1';
+
     contenedor.innerHTML = `
         <div class="panel-industrial" style="animation: fadeIn 0.3s ease; display: flex; flex-direction: column; height: 100%; max-height: calc(100vh - 120px); padding: 0;">
             
@@ -231,11 +228,19 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
                 <div style="display: flex; gap: 15px; align-items: center;">
                     ${miniaturaHeader}
                     <div>
-                        <h3 style="color: var(--primary-blue); margin: 0;">Inspección CBM: ${eq.tag}</h3>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <h3 style="color: var(--primary-blue); margin: 0;">Inspección CBM: ${eq.tag}</h3>
+                            <span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.35);">${nivelActivo}</span>
+                        </div>
                         <p style="font-size: 0.8rem; color: var(--text-muted); margin: 5px 0 0 0;">${eq.nombre} | ${eq.area}</p>
                     </div>
                 </div>
                 <div style="display: flex; gap: 10px;">
+                    ${eq.latitud && eq.longitud ? `
+                    <button id="btn-ubicar-3d-expediente" class="btn-topbar" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border-color: rgba(56, 189, 248, 0.35);" title="Enfocar equipo en el Mapa 3D">
+                        <span class="material-symbols-outlined">my_location</span> Ver en Mapa 3D
+                    </button>` : ''}
+
                     <button id="btn-modo-analisis" class="btn-topbar" style="background: rgba(56, 189, 248, 0.1); color: var(--primary-blue); border-color: rgba(56, 189, 248, 0.3);">
                         <span class="material-symbols-outlined">psychology</span> Análisis Experto
                     </button>
@@ -252,7 +257,9 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
                 </div>
             </div>
 
-            <div style="padding: 20px; overflow-y: auto; flex-grow: 1;">
+            <div style="padding: 20px; overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; gap: 20px;">
+                <div id="contenedor-alertas-activo" style="display: none; background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 15px;"></div>
+
                 <div style="background: var(--bg-input); padding: 20px; border-radius: 8px; border: 1px solid var(--border-glass);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                         <h4 style="color: var(--text-main); font-size: 1rem; display: flex; align-items: center; gap: 5px; margin: 0;">
@@ -290,6 +297,13 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
             </div>
         </div>
     `;
+
+    cargarAlertasTerrenoDelEquipo(eq.tag);
+
+    const btnUbicar3D = document.getElementById('btn-ubicar-3d-expediente');
+    if (btnUbicar3D && window.ubicarEnMapaDesdeAlerta) {
+        btnUbicar3D.addEventListener('click', () => window.ubicarEnMapaDesdeAlerta(eq.tag));
+    }
 
     document.getElementById('btn-modo-config').addEventListener('click', () => renderizarExpediente(idFirebase, contenedor.id, true));
     
@@ -412,7 +426,6 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
         }
     });
 
-    // FEEDBACK VISUAL EN TIEMPO REAL (COLORES)
     document.querySelectorAll('.input-lectura-hoy').forEach(input => {
         input.addEventListener('input', function() {
             const val = parseFloat(this.value.trim());
@@ -459,9 +472,59 @@ function construirPanelInspeccion(idFirebase, eq, contenedor) {
     });
 }
 
-// ---------------------------------------------------------
-// 4. FUNCIONALIDAD DEL MODAL Y GRÁFICOS (CHART.JS MÚLTIPLES)
-// ---------------------------------------------------------
+function cargarAlertasTerrenoDelEquipo(tagEquipo) {
+    if (!tagEquipo) return;
+    const tagLimpio = tagEquipo.trim().toUpperCase();
+
+    db.ref('alertas_terreno').once('value', snap => {
+        const divAlertas = document.getElementById('contenedor-alertas-activo');
+        if (!divAlertas || !snap.exists()) return;
+
+        const todas = snap.val();
+        const coincidencias = Object.entries(todas)
+            .filter(([, al]) => al.tag && al.tag.trim().toUpperCase() === tagLimpio)
+            .reverse();
+
+        if (coincidencias.length === 0) {
+            divAlertas.style.display = 'none';
+            return;
+        }
+
+        divAlertas.style.display = 'block';
+        let itemsHTML = '';
+        coincidencias.forEach(([, al]) => {
+            const fecha = al.timestamp ? new Date(al.timestamp).toLocaleString() : 'Sin fecha';
+            let colorSev = '#10b981';
+            if (al.severidad === 'Rojo') colorSev = '#ef4444';
+            else if (al.severidad === 'Naranja') colorSev = '#f97316';
+            else if (al.severidad === 'Amarillo') colorSev = '#eab308';
+
+            itemsHTML += `
+                <div style="background: rgba(15, 23, 42, 0.75); border: 1px solid var(--border-glass); border-left: 4px solid ${colorSev}; padding: 10px 14px; border-radius: 6px; display: flex; gap: 12px; align-items: center;">
+                    ${al.fotoBase64 ? `<img src="${al.fotoBase64}" onclick="window.open('${al.fotoBase64}')" style="width: 55px; height: 55px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid var(--border-glass);" title="Ampliar evidencia">` : ''}
+                    <div style="flex: 1;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.78rem;">
+                            <strong style="color: #38bdf8;">Componente: ${al.componente || 'General'} (${al.severidad || 'Normal'})</strong>
+                            <span style="color: var(--text-muted);">${fecha}</span>
+                        </div>
+                        <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: #e2e8f0;">${al.detalle}</p>
+                    </div>
+                </div>
+            `;
+        });
+
+        divAlertas.innerHTML = `
+            <h4 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #f87171; display: flex; align-items: center; gap: 6px;">
+                <span class="material-symbols-outlined" style="font-size: 1.1rem;">warning</span>
+                Reportes de Terreno Recientes para ${tagEquipo} (${coincidencias.length})
+            </h4>
+            <div style="display: flex; flex-direction: column; gap: 8px; max-height: 190px; overflow-y: auto;">
+                ${itemsHTML}
+            </div>
+        `;
+    });
+}
+
 function abrirModalTendencia(puntoNombre, historialObj) {
     const modal = document.getElementById('modal-tendencia');
     const titulo = document.getElementById('modal-titulo-punto');
@@ -580,15 +643,11 @@ function abrirModalTendencia(puntoNombre, historialObj) {
     btnCerrar.addEventListener('click', cerrar);
 }
 
-// ---------------------------------------------------------
-// 5. VISTA DE CONFIGURACIÓN (CON MAPA GIGANTE PARA PINES)
-// ---------------------------------------------------------
 function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
     let spotsHTML = '';
     const spotsObj = eq.spots || {};
     let spotsArray = Object.keys(spotsObj).map(k => ({ idInterno: k, ...spotsObj[k] }));
 
-    // Aplicar orden cinemático natural
     spotsArray = ordenarSpotsArray(spotsArray);
 
     if (spotsArray.length === 0) {
@@ -615,13 +674,14 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
     const docsKeys = Object.keys(docsObj);
     
     if (docsKeys.length === 0) {
-        docsHTML = '<p style="color: var(--text-muted); font-size: 0.8rem; text-align: center; margin-top: 10px;">No hay documentos. Puedes enlazar infinitos PDFs o Excels de Drive aquí.</p>';
+        docsHTML = '<p style="color: var(--text-muted); font-size: 0.8rem; text-align: center; margin-top: 10px;">No hay documentos. Sube tus PDFs de manuales o planos técnicos directamente aquí.</p>';
     } else {
         docsKeys.forEach(k => {
             const d = docsObj[k];
             docsHTML += `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-glass); padding-bottom: 15px; position: sticky; top: -20px; background: var(--bg-card); z-index: 10; padding-top: 20px; margin-top: -20px; margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px; border-radius: 8px 8px 0 0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">                <a href="${d.url}" target="_blank" style="color: var(--primary-blue); text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:80%;">
-                        <span class="material-symbols-outlined" style="font-size: 1.1rem;">description</span> ${d.nombre}
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--border-glass); padding-bottom: 8px; gap: 8px;">
+                    <a href="${d.url}" target="_blank" download="${d.nombre}" style="color: var(--primary-blue); text-decoration: none; font-size: 0.82rem; display: flex; align-items: center; gap: 6px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:80%;" title="Descargar / Ver PDF">
+                        <span class="material-symbols-outlined" style="font-size: 1.1rem; color: #ef4444;">picture_as_pdf</span> ${d.nombre}
                     </a>
                     <button class="btn-icon btn-eliminar-doc" data-doc="${k}" title="Quitar" style="color: var(--iso-zona-d); background: transparent; border: none; cursor: pointer;">
                         <span class="material-symbols-outlined" style="font-size: 1.1rem;">close</span>
@@ -651,7 +711,19 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
     }
 
     const sev = (eq.severidad || eq.estado || 'verde').toLowerCase();
+    const nivelActual = eq.nivel || 'Nivel 1';
+    const nivelesOpciones = ['Nivel 1', 'Nivel 2', 'Nivel 3', 'Nivel -1', 'Nivel -2'];
     const tituloPanel = esNuevo ? '✨ Creación de Nuevo Equipo' : `⚙️ Configuración: ${eq.tag || idFirebase}`;
+
+    const generarChipsNivelHTML = (claseExtra) => nivelesOpciones.map(niv => {
+        const activo = nivelActual === niv;
+        return `
+            <button type="button" class="chip-selector-nivel ${claseExtra}" data-nivel-val="${niv}"
+                style="flex: 1; min-width: 70px; padding: 7px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s; border: 1px solid ${activo ? '#38bdf8' : 'rgba(255,255,255,0.15)'}; background: ${activo ? '#38bdf8' : 'rgba(15, 23, 42, 0.8)'}; color: ${activo ? '#0f172a' : '#e2e8f0'};">
+                ${niv}
+            </button>
+        `;
+    }).join('');
 
     contenedor.innerHTML = `
         <div class="panel-industrial" style="animation: fadeIn 0.3s ease; display: flex; flex-direction: column; height: 100%; max-height: calc(100vh - 120px); padding: 0;">
@@ -659,7 +731,7 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding: 20px; background: var(--bg-card); border-radius: 8px 8px 0 0; position: sticky; top: 0; z-index: 50; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
                 <div>
                     <h3 style="color: var(--text-main); margin: 0;">${tituloPanel}</h3>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin: 5px 0 0 0;">Edición de parámetros, matriz CBM y Ubicación Satelital.</p>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin: 5px 0 0 0;">Edición de parámetros, Nivel/Piso, matriz CBM y Ubicación Satelital 3D.</p>
                 </div>
                 <div style="display: flex; gap: 10px;">
                     ${!esNuevo ? `<button id="btn-modo-inspeccion" class="btn-topbar" style="background: rgba(255, 255, 255, 0.05); color: var(--text-main); border-color: rgba(255, 255, 255, 0.1);"><span class="material-symbols-outlined">speed</span> Inspección</button>` : ''}
@@ -673,12 +745,24 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
             <div style="padding: 20px; overflow-y: auto; flex-grow: 1;">
                 
                 <div style="background: var(--bg-input); padding: 20px; border-radius: 8px; border: 1px solid var(--border-glass); margin-bottom: 20px;">
-                    <label style="font-size: 1rem; color: var(--primary-blue); font-weight: 600; display: flex; align-items: center; margin-bottom: 10px;">
-                        <span class="material-symbols-outlined" style="font-size: 1.3rem; margin-right: 5px;">pin_drop</span> Asignar Posición GPS del Equipo
-                    </label>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">Acércate al máximo y haz clic en el punto exacto de la planta para anclar el pin de la máquina.</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+                        <label style="font-size: 1rem; color: var(--primary-blue); font-weight: 600; display: flex; align-items: center;">
+                            <span class="material-symbols-outlined" style="font-size: 1.3rem; margin-right: 5px;">pin_drop</span> Asignar Posición GPS y Nivel del Equipo
+                        </label>
+                        
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Piso / Nivel:</span>
+                            <div style="display: flex; gap: 6px;">
+                                ${generarChipsNivelHTML('chip-mapa')}
+                            </div>
+                            <button type="button" id="btn-mini-3d" style="margin-left: 6px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 7px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+                                Alternar Vista 2D / 3D
+                            </button>
+                        </div>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">Haz clic en el punto exacto del galpón para fijar el pin o <b>arrástralo con el mouse</b> para ajustar su posición.</p>
                     
-                    <div id="mini-mapa-config" style="height: 500px; width: 100%; border-radius: 8px; border: 1px solid var(--border-glass); margin-bottom: 15px; z-index: 1;"></div>
+                    <div id="mini-mapa-config" style="height: 460px; width: 100%; border-radius: 8px; border: 1px solid var(--border-glass); margin-bottom: 15px; position: relative; z-index: 1;"></div>
                     
                     <div style="display: flex; gap: 15px;">
                         <div style="flex: 1;">
@@ -698,50 +782,68 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
                         <h4 style="margin-bottom: 15px; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; margin-top: 0;"><span class="material-symbols-outlined" style="color: var(--primary-blue); font-size:1.1rem;">info</span> Datos Base</h4>
                         <div style="margin-bottom: 12px;">
                             <label style="font-size: 0.75rem; color: var(--text-muted);">TAG</label>
-                            <input type="text" id="edit-tag" value="${eq.tag || ''}" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-glass); background: var(--bg-card); color: white; outline:none;" ${esNuevo ? 'placeholder="Obligatorio"' : ''}>
+                            <input type="text" id="edit-tag" value="${eq.tag || ''}" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-glass); background: #0f172a; color: white; outline:none;" ${esNuevo ? 'placeholder="Obligatorio"' : ''}>
                         </div>
                         <div style="margin-bottom: 12px;">
                             <label style="font-size: 0.75rem; color: var(--text-muted);">Descripción</label>
-                            <input type="text" id="edit-nombre" value="${eq.nombre || ''}" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-glass); background: var(--bg-card); color: white; outline:none;">
+                            <input type="text" id="edit-nombre" value="${eq.nombre || ''}" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-glass); background: #0f172a; color: white; outline:none;">
                         </div>
                         <div style="margin-bottom: 12px;">
                             <label style="font-size: 0.75rem; color: var(--text-muted);">Tipo Máquina</label>
-                            <input type="text" id="edit-tipo" value="${eq.tipo_equipo || ''}" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-glass); background: var(--bg-card); color: white; outline:none;">
+                            <input type="text" id="edit-tipo" value="${eq.tipo_equipo || ''}" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-glass); background: #0f172a; color: white; outline:none;">
                         </div>
                         <div style="margin-bottom: 12px;">
-                            <label style="font-size: 0.75rem; color: var(--text-muted);">Ubicación</label>
-                            <input type="text" id="edit-area" value="${eq.area || ''}" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-glass); background: var(--bg-card); color: white; outline:none;">
+                            <label style="font-size: 0.75rem; color: var(--text-muted);">Ubicación / Área</label>
+                            <input type="text" id="edit-area" value="${eq.area || ''}" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-glass); background: #0f172a; color: white; outline:none;">
                         </div>
+                        
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 0.75rem; color: #38bdf8; font-weight: 700; display: block; margin-bottom: 6px;">Nivel / Piso en Planta</label>
+                            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
+                                ${generarChipsNivelHTML('chip-form')}
+                            </div>
+                            <select id="edit-nivel" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-glass); background-color: #0f172a; color: #ffffff; outline:none; cursor: pointer;">
+                                <option value="Nivel 1" style="background-color: #0f172a; color: #ffffff;" ${nivelActual==='Nivel 1'?'selected':''}>Nivel 1 (Piso Planta)</option>
+                                <option value="Nivel 2" style="background-color: #0f172a; color: #ffffff;" ${nivelActual==='Nivel 2'?'selected':''}>Nivel 2 (Entreplanta)</option>
+                                <option value="Nivel 3" style="background-color: #0f172a; color: #ffffff;" ${nivelActual==='Nivel 3'?'selected':''}>Nivel 3 (Superior)</option>
+                                <option value="Nivel -1" style="background-color: #0f172a; color: #ffffff;" ${nivelActual==='Nivel -1'?'selected':''}>Nivel -1 (Subterráneo 1)</option>
+                                <option value="Nivel -2" style="background-color: #0f172a; color: #ffffff;" ${nivelActual==='Nivel -2'?'selected':''}>Nivel -2 (Subterráneo 2)</option>
+                            </select>
+                        </div>
+
                         <div>
                             <label style="font-size: 0.75rem; color: var(--text-muted);">Estado Inicial</label>
-                            <select id="edit-severidad" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-glass); background: var(--bg-card); color: white; outline:none; cursor: pointer;">
-                                <option value="verde" ${sev==='verde'?'selected':''}>Verde</option>
-                                <option value="amarillo" ${sev==='amarillo'?'selected':''}>Amarillo</option>
-                                <option value="naranja" ${sev==='naranja'?'selected':''}>Naranja</option>
-                                <option value="rojo" ${(sev==='rojo'||sev==='critico')?'selected':''}>Rojo</option>
+                            <select id="edit-severidad" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-glass); background-color: #0f172a; color: #ffffff; outline:none; cursor: pointer;">
+                                <option value="verde" style="background-color: #0f172a; color: #ffffff;" ${sev==='verde'?'selected':''}>Verde</option>
+                                <option value="amarillo" style="background-color: #0f172a; color: #ffffff;" ${sev==='amarillo'?'selected':''}>Amarillo</option>
+                                <option value="naranja" style="background-color: #0f172a; color: #ffffff;" ${sev==='naranja'?'selected':''}>Naranja</option>
+                                <option value="rojo" style="background-color: #0f172a; color: #ffffff;" ${(sev==='rojo'||sev==='critico')?'selected':''}>Rojo</option>
                             </select>
                         </div>
                     </div>
 
                     <div style="background: var(--bg-input); padding: 20px; border-radius: 8px; border: 1px solid var(--border-glass); display: flex; flex-direction: column;">
-                        <h4 style="margin-bottom: 15px; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; margin-top: 0;"><span class="material-symbols-outlined" style="color: #eab308; font-size:1.1rem;">folder_open</span> Data Room</h4>
+                        <h4 style="margin-bottom: 15px; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; margin-top: 0;"><span class="material-symbols-outlined" style="color: #eab308; font-size:1.1rem;">folder_open</span> Data Room (Manuales y Planos)</h4>
+                        
                         <div style="margin-bottom: 15px;">
                             <label style="font-size: 0.75rem; color: var(--text-muted); display:block; margin-bottom: 4px;">Galería Fotográfica</label>
                             <input type="file" id="upload-foto-equipo" accept="image/*" style="display: none;">
-                            <button id="btn-subir-foto" class="btn-topbar" style="width: 100%; background: rgba(56, 189, 248, 0.1); color: var(--primary-blue); border: 1px dashed rgba(56, 189, 248, 0.4); justify-content: center;">
+                            <button type="button" id="btn-subir-foto" class="btn-topbar" style="width: 100%; background: rgba(56, 189, 248, 0.1); color: var(--primary-blue); border: 1px dashed rgba(56, 189, 248, 0.4); justify-content: center;">
                                 <span class="material-symbols-outlined" style="font-size: 1.1rem;">add_a_photo</span> Añadir Foto a Galería
                             </button>
                             <div style="margin-top: 10px;">${galeriaHTML}</div>
                         </div>
+
                         <hr style="border: none; border-top: 1px dashed rgba(255,255,255,0.1); margin: 5px 0 15px 0;">
+
                         <div>
-                            <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 8px;">Links a PDFs / Excel</label>
-                            <div style="max-height: 100px; overflow-y: auto; margin-bottom: 10px;">${docsHTML}</div>
-                            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                                <input type="text" id="nuevo-doc-nombre" placeholder="Nombre" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid var(--border-glass); background: var(--bg-card); color: white; font-size:0.75rem; outline:none;">
-                                <input type="text" id="nuevo-doc-url" placeholder="URL..." style="width: calc(100% - 70px); padding: 6px; border-radius: 4px; border: 1px solid var(--border-glass); background: var(--bg-card); color: white; font-size:0.75rem; outline:none;">
-                                <button id="btn-add-doc" style="width: 60px; background: rgba(56, 189, 248, 0.1); color: var(--primary-blue); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px; cursor: pointer; font-size:0.75rem;">Añadir</button>
-                            </div>
+                            <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 6px;">Documentos PDF Locales (Todo a la mano)</label>
+                            <input type="file" id="upload-pdf-local" accept=".pdf" style="display: none;">
+                            <button type="button" id="btn-subir-pdf" onclick="document.getElementById('upload-pdf-local').click()" class="btn-topbar" style="width: 100%; background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px dashed rgba(239, 68, 68, 0.4); justify-content: center; margin-bottom: 12px;">
+                                <span class="material-symbols-outlined" style="font-size: 1.1rem;">upload_file</span> Subir PDF al Sistema
+                            </button>
+                            
+                            <div style="max-height: 140px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px;">${docsHTML}</div>
                         </div>
                     </div>
 
@@ -771,54 +873,151 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
         </div>
     `;
 
-    if (miniMapaInstancia) miniMapaInstancia.remove();
+    const extraerDatosFormularioActual = () => {
+        return {
+            tag: document.getElementById('edit-tag')?.value || eq.tag || '',
+            nombre: document.getElementById('edit-nombre')?.value || eq.nombre || '',
+            tipo_equipo: document.getElementById('edit-tipo')?.value || eq.tipo_equipo || '',
+            area: document.getElementById('edit-area')?.value || eq.area || '',
+            nivel: document.getElementById('edit-nivel')?.value || eq.nivel || 'Nivel 1',
+            severidad: document.getElementById('edit-severidad')?.value || eq.severidad || 'verde',
+            estado: document.getElementById('edit-severidad')?.value || eq.estado || 'verde',
+            latitud: document.getElementById('edit-lat')?.value || eq.latitud || null,
+            longitud: document.getElementById('edit-lng')?.value || eq.longitud || null,
+            spots: eq.spots || {},
+            dataRoom: eq.dataRoom || {},
+            galeria: eq.galeria || {}
+        };
+    };
 
-    const latInicial = eq.latitud ? parseFloat(eq.latitud) : -28.290846;
-    const lngInicial = eq.longitud ? parseFloat(eq.longitud) : -70.813030;
-    const zoomInicial = eq.latitud ? 19 : 16; 
+    const selectNivel = document.getElementById('edit-nivel');
+    const actualizarSeleccionNivel = (nuevoNivel) => {
+        if (selectNivel) selectNivel.value = nuevoNivel;
+        eq.nivel = nuevoNivel;
 
-    miniMapaInstancia = L.map('mini-mapa-config', {
-        minZoom: 14, 
-        maxZoom: 21 
-    }).setView([latInicial, lngInicial], zoomInicial);
-    
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Esri', 
-        maxNativeZoom: 17, 
-        maxZoom: 21        
-    }).addTo(miniMapaInstancia);
-
-    let pinConfigurador = null;
-    
-    if (eq.latitud && eq.longitud) {
-        const pinIcon = L.divIcon({
-            className: 'custom-pin',
-            html: `<div style="background-color: #38bdf8; width: 24px; height: 24px; border-radius: 50%; border: 4px solid white; box-shadow: 0 0 15px rgba(0,0,0,0.8);"></div>`,
-            iconSize: [24, 24], iconAnchor: [12, 12]
+        document.querySelectorAll('.chip-selector-nivel').forEach(btn => {
+            const esActivo = btn.getAttribute('data-nivel-val') === nuevoNivel;
+            btn.style.background = esActivo ? '#38bdf8' : 'rgba(15, 23, 42, 0.8)';
+            btn.style.color = esActivo ? '#0f172a' : '#e2e8f0';
+            btn.style.borderColor = esActivo ? '#38bdf8' : 'rgba(255,255,255,0.15)';
         });
-        pinConfigurador = L.marker([latInicial, lngInicial], { icon: pinIcon }).addTo(miniMapaInstancia);
-    }
 
-    miniMapaInstancia.on('click', function(e) {
-        const nuevaLat = e.latlng.lat.toFixed(6);
-        const nuevaLng = e.latlng.lng.toFixed(6);
-        
-        document.getElementById('edit-lat').value = nuevaLat;
-        document.getElementById('edit-lng').value = nuevaLng;
-        
-        if (pinConfigurador) {
-            pinConfigurador.setLatLng(e.latlng);
-        } else {
-            const pinIcon = L.divIcon({
-                className: 'custom-pin',
-                html: `<div style="background-color: #38bdf8; width: 24px; height: 24px; border-radius: 50%; border: 4px solid white; box-shadow: 0 0 15px rgba(0,0,0,0.8);"></div>`,
-                iconSize: [24, 24], iconAnchor: [12, 12]
-            });
-            pinConfigurador = L.marker(e.latlng, { icon: pinIcon }).addTo(miniMapaInstancia);
+        const badgePin = document.getElementById('badge-pin-nivel-config');
+        if (badgePin) {
+            badgePin.textContent = `${document.getElementById('edit-tag').value || 'PIN'} (${nuevoNivel})`;
         }
+    };
+
+    document.querySelectorAll('.chip-selector-nivel').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const valorElegido = e.currentTarget.getAttribute('data-nivel-val');
+            actualizarSeleccionNivel(valorElegido);
+        });
     });
 
-    setTimeout(() => { miniMapaInstancia.invalidateSize(); }, 300);
+    if (selectNivel) {
+        selectNivel.addEventListener('change', (e) => {
+            actualizarSeleccionNivel(e.target.value);
+        });
+    }
+
+    const contenedorMapaConfig = document.getElementById('mini-mapa-config');
+    if (contenedorMapaConfig) {
+        // Corrección de coordenadas iniciales: aseguramos orden [lng, lat]
+        const latInicial = eq.latitud ? parseFloat(eq.latitud) : -28.290846;
+        const lngInicial = eq.longitud ? parseFloat(eq.longitud) : -70.813030;
+        const zoomInicial = eq.latitud ? 18.5 : 15.8;
+
+        miniMapaInstancia = new maplibregl.Map({
+            container: 'mini-mapa-config',
+            style: {
+                version: 8,
+                sources: {
+                    'esri-sat-config': {
+                        type: 'raster',
+                        tiles: [
+                            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+                        ],
+                        tileSize: 256,
+                        maxzoom: 17
+                    }
+                },
+                layers: [
+                    {
+                        id: 'esri-sat-layer',
+                        type: 'raster',
+                        source: 'esri-sat-config',
+                        minzoom: 0,
+                        maxzoom: 22
+                    }
+                ]
+            },
+            center: [lngInicial, latInicial], // [Lng, Lat]
+            zoom: zoomInicial,
+            pitch: 0,
+            bearing: 0,
+            minZoom: 13,
+            maxZoom: 21
+        });
+
+        miniMapaInstancia.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+        window.miniMapaInstancia = miniMapaInstancia;
+
+        let pinConfigurador = null;
+
+        const crearOActualizarPin = (lng, lat) => {
+            document.getElementById('edit-lat').value = Number(lat).toFixed(6);
+            document.getElementById('edit-lng').value = Number(lng).toFixed(6);
+
+            if (pinConfigurador) {
+                pinConfigurador.setLngLat([lng, lat]);
+            } else {
+                const nivElegido = document.getElementById('edit-nivel')?.value || 'Nivel 1';
+                const tagElegido = document.getElementById('edit-tag')?.value || 'PIN';
+                const elPin = document.createElement('div');
+                elPin.style.cssText = 'display: flex; flex-direction: column; align-items: center; cursor: grab;';
+                elPin.innerHTML = `
+                    <div id="badge-pin-nivel-config" style="background: rgba(15, 23, 42, 0.92); color: #38bdf8; font-size: 0.7rem; font-weight: 700; font-family: monospace; padding: 2px 7px; border-radius: 4px; border: 1px solid #38bdf8; margin-bottom: 4px; white-space: nowrap;">
+                        ${tagElegido} (${nivElegido})
+                    </div>
+                    <div style="background-color: #38bdf8; width: 26px; height: 26px; border-radius: 50%; border: 4px solid white; box-shadow: 0 0 15px rgba(0,0,0,0.9);"></div>
+                `;
+                pinConfigurador = new maplibregl.Marker({ element: elPin, draggable: true, anchor: 'bottom' })
+                    .setLngLat([lng, lat])
+                    .addTo(miniMapaInstancia);
+
+                pinConfigurador.on('dragend', () => {
+                    const pos = pinConfigurador.getLngLat();
+                    document.getElementById('edit-lat').value = pos.lat.toFixed(6);
+                    document.getElementById('edit-lng').value = pos.lng.toFixed(6);
+                });
+            }
+        };
+
+        if (eq.latitud && eq.longitud) {
+            crearOActualizarPin(lngInicial, latInicial);
+        }
+
+        miniMapaInstancia.on('click', (e) => {
+            crearOActualizarPin(e.lngLat.lng, e.lngLat.lat);
+        });
+
+        const btnMini3D = document.getElementById('btn-mini-3d');
+        if (btnMini3D) {
+            btnMini3D.addEventListener('click', () => {
+                const pitchActual = miniMapaInstancia.getPitch();
+                miniMapaInstancia.easeTo({
+                    pitch: pitchActual > 10 ? 0 : 60,
+                    bearing: pitchActual > 10 ? 0 : -15,
+                    duration: 700
+                });
+            });
+        }
+
+        setTimeout(() => {
+            if (miniMapaInstancia) miniMapaInstancia.resize();
+        }, 250);
+    }
 
     if (!esNuevo) document.getElementById('btn-modo-inspeccion').addEventListener('click', () => renderizarExpediente(idFirebase, contenedor.id, false));
 
@@ -830,9 +1029,10 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
     });
 
     document.getElementById('btn-cargar-plantilla').addEventListener('click', async () => {
-        const tipoStr = document.getElementById('edit-tipo').value;
+        const datosActuales = extraerDatosFormularioActual();
+        const tipoStr = datosActuales.tipo_equipo;
         const plantillaSeleccionada = obtenerPlantilla(tipoStr);
-        if (!plantillaSeleccionada) return UI.mostrarToast(`No detecté plantilla para: "${tipoStr}".`, "error");
+        if (!plantillaSeleccionada) return UI.mostrarToast(`No detecté plantilla para el tipo: "${tipoStr}".`, "error");
         
         const puntosExistentes = spotsArray.map(s => s.punto);
         const puntosFaltantes = plantillaSeleccionada.filter(spot => !puntosExistentes.includes(spot.punto));
@@ -842,8 +1042,15 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
         if(confirmado) {
             const updates = {};
             puntosFaltantes.forEach((spot, i) => { updates[`spot_auto_${Date.now()}_${i}`] = { punto: spot.punto, componente: spot.comp, rms: 0.00 }; });
-            if (esNuevo) { Object.assign(eq.spots || (eq.spots = {}), updates); construirPanelConfiguracion(idFirebase, eq, contenedor, true); } 
-            else { await db.ref(`activos_criticos/${idFirebase}/spots`).update(updates); renderizarExpediente(idFirebase, contenedor.id, true); }
+            
+            Object.assign(datosActuales.spots, updates);
+
+            if (esNuevo) {
+                construirPanelConfiguracion(idFirebase, datosActuales, contenedor, true);
+            } else {
+                await db.ref(`activos_criticos/${idFirebase}/spots`).update(updates);
+                renderizarExpediente(idFirebase, contenedor.id, true);
+            }
             UI.mostrarToast("Plantilla cargada correctamente.", "exito");
         }
     });
@@ -877,11 +1084,12 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
 
                 const base64Comprimida = canvas.toDataURL('image/jpeg', 0.7);
                 const fotoId = `foto_${Date.now()}`;
+                const datosActuales = extraerDatosFormularioActual();
 
                 if (esNuevo) {
-                    eq.galeria = eq.galeria || {};
-                    eq.galeria[fotoId] = base64Comprimida;
-                    construirPanelConfiguracion(idFirebase, eq, contenedor, true);
+                    datosActuales.galeria = datosActuales.galeria || {};
+                    datosActuales.galeria[fotoId] = base64Comprimida;
+                    construirPanelConfiguracion(idFirebase, datosActuales, contenedor, true);
                 } else {
                     db.ref(`activos_criticos/${idFirebase}/galeria/${fotoId}`).set(base64Comprimida).then(() => {
                         renderizarExpediente(idFirebase, contenedor.id, true);
@@ -893,15 +1101,55 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
         reader.readAsDataURL(file);
     });
 
+    const inputPdfLocal = document.getElementById('upload-pdf-local');
+    if (inputPdfLocal) {
+        inputPdfLocal.addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (file.type !== 'application/pdf') {
+                return UI.mostrarToast("Por favor selecciona un archivo en formato PDF.", "error");
+            }
+
+            if (file.size > 15 * 1024 * 1024) {
+                return UI.mostrarToast("El PDF es demasiado pesado (>15MB). Comprímelo un poco antes de subirlo.", "alerta");
+            }
+
+            UI.mostrarToast("Cargando PDF al Data Room...", "advertencia");
+
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                const base64Pdf = event.target.result;
+                const nombreDoc = file.name;
+                const docKey = `doc_${Date.now()}`;
+                const nuevoDoc = { nombre: nombreDoc, url: base64Pdf };
+                const datosActuales = extraerDatosFormularioActual();
+
+                if (esNuevo) {
+                    datosActuales.dataRoom = datosActuales.dataRoom || {};
+                    datosActuales.dataRoom[docKey] = nuevoDoc;
+                    construirPanelConfiguracion(idFirebase, datosActuales, contenedor, true);
+                } else {
+                    await db.ref(`activos_criticos/${idFirebase}/dataRoom/${docKey}`).set(nuevoDoc);
+                    renderizarExpediente(idFirebase, contenedor.id, true);
+                }
+                UI.mostrarToast("¡PDF guardado exitosamente en el Data Room!", "exito");
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
     document.querySelectorAll('.btn-eliminar-foto').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const confirmado = await UI.confirmar("¿Eliminar esta foto permanentemente?", "Eliminar Fotografía");
             if(!confirmado) return;
 
             const fKey = e.currentTarget.getAttribute('data-foto');
+            const datosActuales = extraerDatosFormularioActual();
+
             if (esNuevo) {
-                delete eq.galeria[fKey];
-                construirPanelConfiguracion(idFirebase, eq, contenedor, true);
+                delete datosActuales.galeria[fKey];
+                construirPanelConfiguracion(idFirebase, datosActuales, contenedor, true);
             } else {
                 await db.ref(`activos_criticos/${idFirebase}/galeria/${fKey}`).remove();
                 renderizarExpediente(idFirebase, contenedor.id, true);
@@ -911,38 +1159,32 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
     });
 
     document.getElementById('btn-guardar-equipo').addEventListener('click', async () => {
-        const tagValue = document.getElementById('edit-tag').value.trim();
-        if (!tagValue) return UI.mostrarToast("El TAG es obligatorio.", "error");
+        const datosActuales = extraerDatosFormularioActual();
+        if (!datosActuales.tag) return UI.mostrarToast("El TAG es obligatorio.", "error");
 
         const nuevosDatos = {
-            tag: tagValue, nombre: document.getElementById('edit-nombre').value,
-            tipo_equipo: document.getElementById('edit-tipo').value, area: document.getElementById('edit-area').value,
-            severidad: document.getElementById('edit-severidad').value, estado: document.getElementById('edit-severidad').value,
-            latitud: document.getElementById('edit-lat').value || null, 
-            longitud: document.getElementById('edit-lng').value || null,
+            tag: datosActuales.tag,
+            nombre: datosActuales.nombre,
+            tipo_equipo: datosActuales.tipo_equipo,
+            area: datosActuales.area,
+            nivel: datosActuales.nivel,
+            severidad: datosActuales.severidad,
+            estado: datosActuales.severidad,
+            latitud: datosActuales.latitud || null, 
+            longitud: datosActuales.longitud || null,
             ultimaEdicion: Date.now()
         };
 
-        const idFinal = esNuevo ? tagValue.toUpperCase().replace(/\s+/g, '_') : idFirebase;
+        const idFinal = esNuevo ? datosActuales.tag.toUpperCase().replace(/\s+/g, '_') : idFirebase;
         await db.ref(`activos_criticos/${idFinal}`).update(nuevosDatos);
         
         if (esNuevo) {
-            if (eq.spots) await db.ref(`activos_criticos/${idFinal}/spots`).update(eq.spots);
-            if (eq.dataRoom) await db.ref(`activos_criticos/${idFinal}/dataRoom`).update(eq.dataRoom);
-            if (eq.galeria) await db.ref(`activos_criticos/${idFinal}/galeria`).update(eq.galeria);
+            if (datosActuales.spots) await db.ref(`activos_criticos/${idFinal}/spots`).update(datosActuales.spots);
+            if (datosActuales.dataRoom) await db.ref(`activos_criticos/${idFinal}/dataRoom`).update(datosActuales.dataRoom);
+            if (datosActuales.galeria) await db.ref(`activos_criticos/${idFinal}/galeria`).update(datosActuales.galeria);
         }
         UI.mostrarToast("Configuración guardada exitosamente.", "exito");
         renderizarExpediente(idFinal, contenedor.id, false);
-    });
-
-    document.getElementById('btn-add-doc').addEventListener('click', async () => {
-        const docNombre = document.getElementById('nuevo-doc-nombre').value.trim();
-        const docUrl = document.getElementById('nuevo-doc-url').value.trim();
-        if (!docNombre || !docUrl) return;
-        const nuevoDoc = { nombre: docNombre, url: docUrl };
-        if (esNuevo) { eq.dataRoom = eq.dataRoom || {}; eq.dataRoom[`doc_${Date.now()}`] = nuevoDoc; construirPanelConfiguracion(idFirebase, eq, contenedor, true); } 
-        else { await db.ref(`activos_criticos/${idFirebase}/dataRoom/doc_${Date.now()}`).set(nuevoDoc); renderizarExpediente(idFirebase, contenedor.id, true); }
-        UI.mostrarToast("Documento añadido.", "exito");
     });
 
     document.querySelectorAll('.btn-eliminar-doc').forEach(btn => {
@@ -951,8 +1193,15 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
             if (!confirmado) return;
 
             const docKey = e.currentTarget.getAttribute('data-doc');
-            if (esNuevo) { delete eq.dataRoom[docKey]; construirPanelConfiguracion(idFirebase, eq, contenedor, true); } 
-            else { await db.ref(`activos_criticos/${idFirebase}/dataRoom/${docKey}`).remove(); renderizarExpediente(idFirebase, contenedor.id, true); }
+            const datosActuales = extraerDatosFormularioActual();
+
+            if (esNuevo) { 
+                delete datosActuales.dataRoom[docKey]; 
+                construirPanelConfiguracion(idFirebase, datosActuales, contenedor, true); 
+            } else { 
+                await db.ref(`activos_criticos/${idFirebase}/dataRoom/${docKey}`).remove(); 
+                renderizarExpediente(idFirebase, contenedor.id, true); 
+            }
             UI.mostrarToast("Documento eliminado.", "exito");
         });
     });
@@ -961,9 +1210,19 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
         const punto = document.getElementById('nuevo-spot-punto').value.trim();
         const comp = document.getElementById('nuevo-spot-comp').value.trim();
         if (!punto || !comp) return;
+
         const nuevoPunto = { punto: punto, componente: comp, rms: 0.00 };
-        if (esNuevo) { eq.spots = eq.spots || {}; eq.spots[`spot_manual_${Date.now()}`] = nuevoPunto; construirPanelConfiguracion(idFirebase, eq, contenedor, true); } 
-        else { await db.ref(`activos_criticos/${idFirebase}/spots/spot_manual_${Date.now()}` ).set(nuevoPunto); renderizarExpediente(idFirebase, contenedor.id, true); }
+        const datosActuales = extraerDatosFormularioActual();
+        const spotKey = `spot_manual_${Date.now()}`;
+
+        if (esNuevo) { 
+            datosActuales.spots = datosActuales.spots || {}; 
+            datosActuales.spots[spotKey] = nuevoPunto; 
+            construirPanelConfiguracion(idFirebase, datosActuales, contenedor, true); 
+        } else { 
+            await db.ref(`activos_criticos/${idFirebase}/spots/${spotKey}`).set(nuevoPunto); 
+            renderizarExpediente(idFirebase, contenedor.id, true); 
+        }
         UI.mostrarToast("Punto añadido.", "exito");
     });
 
@@ -982,22 +1241,26 @@ function construirPanelConfiguracion(idFirebase, eq, contenedor, esNuevo) {
             const confirmado = await UI.confirmar(mensaje, "Eliminar Punto");
 
             if (confirmado) {
-                if (esNuevo) { keysAEliminar.forEach(k => delete eq.spots[k]); construirPanelConfiguracion(idFirebase, eq, contenedor, true); } 
-                else { const up = {}; keysAEliminar.forEach(k => up[k] = null); await db.ref(`activos_criticos/${idFirebase}/spots`).update(up); renderizarExpediente(idFirebase, contenedor.id, true); }
+                const datosActuales = extraerDatosFormularioActual();
+                if (esNuevo) { 
+                    keysAEliminar.forEach(k => delete datosActuales.spots[k]); 
+                    construirPanelConfiguracion(idFirebase, datosActuales, contenedor, true); 
+                } else { 
+                    const up = {}; 
+                    keysAEliminar.forEach(k => up[k] = null); 
+                    await db.ref(`activos_criticos/${idFirebase}/spots`).update(up); 
+                    renderizarExpediente(idFirebase, contenedor.id, true); 
+                }
                 UI.mostrarToast("Punto(s) eliminado(s).", "exito");
             }
         });
     });
 }
 
-// ---------------------------------------------------------
-// 6. VISTA: INFORME DIARIO DE RUTA CBM (RESUMEN TABULAR SAP)
-// ---------------------------------------------------------
 export function mostrarResumenDiarioSAP(eq) {
     const spots = eq.spots || {};
     let spotsArray = Object.keys(spots).map(k => spots[k]);
 
-    // Aplicar orden cinemático natural para el reporte PDF
     spotsArray = ordenarSpotsArray(spotsArray);
 
     let tablaHtml = `
@@ -1033,7 +1296,6 @@ export function mostrarResumenDiarioSAP(eq) {
         let estado = '<span style="color: #10b981; font-weight: bold;">Normal</span>';
         let bgRow = '#ffffff';
 
-        // Evaluar severidad ISO
         if (rms >= 7.1 || temp >= 80 || fc >= 5.0) {
             estado = '<span style="color: #ef4444; font-weight: bold;">Crítico</span>';
             bgRow = '#fef2f2';
@@ -1077,7 +1339,6 @@ export function mostrarResumenDiarioSAP(eq) {
         </style>
         <div id="contenedor-impresion-diaria" style="background: #f8fafc; color: #1e293b; border-radius: 12px; width: 950px; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.6); overflow: hidden;">
             
-            <!-- Cabecera Corporativa CPF -->
             <div style="background: #0f172a; color: white; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center;">
                 <div style="display: flex; align-items: center; gap: 20px;">
                     <div style="background: white; padding: 4px 8px; border-radius: 6px; display: flex; align-items: center; justify-content: center; height: 50px;">
@@ -1091,10 +1352,9 @@ export function mostrarResumenDiarioSAP(eq) {
                 <button type="button" id="btn-cerrar-diario" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 1.4rem;"><span class="material-symbols-outlined">close</span></button>
             </div>
             
-            <!-- Cuerpo / Tabla -->
             <div style="padding: 25px 30px; overflow-y: auto; flex-grow: 1;">
                 <div style="margin-bottom: 20px; background: white; padding: 12px 15px; border-radius: 6px; border: 1px solid #cbd5e1; display: flex; justify-content: space-between; font-size: 0.85rem;">
-                    <span><b>Área:</b> ${eq.area || 'Planta Principal'}</span>
+                    <span><b>Área:</b> ${eq.area || 'Planta Principal'} (${eq.nivel || 'Nivel 1'})</span>
                     <span><b>Fecha de Toma:</b> ${new Date().toLocaleDateString()}</span>
                     <span><b>Puntos Medidos:</b> ${totalPuntos}</span>
                     <span style="color: #ef4444; font-weight: bold;">Críticos: ${criticos}</span>
@@ -1109,7 +1369,6 @@ export function mostrarResumenDiarioSAP(eq) {
                 </div>
             </div>
 
-            <!-- Pie con botones -->
             <div class="footer-botones" style="padding: 12px 30px; border-top: 1px solid #cbd5e1; text-align: right; background: #e2e8f0;">
                 <button type="button" id="btn-imprimir-diario" style="background: #0284c7; color: white; border: none; padding: 8px 20px; font-weight: bold; border-radius: 4px; cursor: pointer;">
                     <span class="material-symbols-outlined" style="font-size: 1.1rem; vertical-align: middle; margin-right: 4px;">print</span> Generar PDF SAP

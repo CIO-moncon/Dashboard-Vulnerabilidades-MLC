@@ -26,9 +26,49 @@
 
     <link rel="stylesheet" href="./css/main.css">
 
-   <!-- Librerías para Mapa Satelital (Leaflet) -->
+    <!-- Motor Geoespacial 3D: MapLibre GL JS -->
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+
+    <!-- Leaflet (Respaldo de compatibilidad para módulos secundarios) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Estilos industriales para Popups y Controles de MapLibre -->
+    <style>
+        .maplibregl-popup-content {
+            background: rgba(15, 23, 42, 0.95) !important;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            border-radius: 10px !important;
+            padding: 14px !important;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7) !important;
+            color: #f8fafc;
+        }
+        .maplibregl-popup-tip {
+            border-top-color: rgba(15, 23, 42, 0.95) !important;
+            border-bottom-color: rgba(15, 23, 42, 0.95) !important;
+        }
+        .maplibregl-popup-close-button {
+            color: #94a3b8 !important;
+            font-size: 16px !important;
+            padding: 4px 8px !important;
+        }
+        .maplibregl-ctrl-group {
+            background: rgba(15, 23, 42, 0.9) !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            border-radius: 8px !important;
+            overflow: hidden;
+        }
+        .maplibregl-ctrl-group button {
+            filter: invert(1) brightness(1.8);
+        }
+        @keyframes pulsePinRojo {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.85); }
+            70% { box-shadow: 0 0 0 14px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+    </style>
 </head>
 <body>
 
@@ -135,6 +175,9 @@
                         </div>
                     </div>
 
+                    <button id="btn-volver-dashboard" class="btn-topbar" style="display: none;">
+                        <span class="material-symbols-outlined">map</span> Mapa Planta
+                    </button>
                     <button id="btn-modulo-pms" class="btn-topbar" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);">
                         <span class="material-symbols-outlined">calendar_month</span> Programa Semanal (PMS)
                     </button>
