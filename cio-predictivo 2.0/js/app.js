@@ -1036,3 +1036,74 @@ const dibujarPinesEnMapa = () => {
 
 window.renderizarMapaPlanta = renderizarMapaPlanta;
 window.dibujarPinesEnMapa = dibujarPinesEnMapa;
+
+// ============================================================================
+// VISOR DE PDF INTEGRADO GLOBAL (CIO PREDICTIVO 2.0)
+// ============================================================================
+window.abrirVisorPDFDesdeBase64 = (base64Data, nombreArchivo = 'documento.pdf') => {
+    let modal = document.getElementById('modal-visor-pdf');
+    
+    // Si el modal no existe en el DOM, lo creamos dinámicamente con Glassmorphism
+    if (!modal) {
+        const div = document.createElement('div');
+        div.innerHTML = `
+            <div id="modal-visor-pdf" class="modal-overlay oculto" role="dialog" aria-modal="true" aria-hidden="true" style="position: fixed; inset: 0; z-index: 99999; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);">
+                <div class="modal-box glass-panel" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 24px 60px rgba(0,0,0,0.7); border-radius: 14px; width: 95%; max-width: 1100px; height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
+                    <header style="background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid rgba(255,255,255,0.1); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span class="material-symbols-outlined" style="color: #38bdf8; font-size: 1.4rem;">picture_as_pdf</span>
+                            <h3 id="modal-pdf-titulo" style="margin: 0; color: white; font-size: 1rem; font-weight: 700;">Visor Documental CBM</h3>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <a id="btn-pdf-descargar" href="#" download class="btn-secundario" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); padding: 6px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                                <span class="material-symbols-outlined" style="font-size: 1rem;">download</span> Descargar
+                            </a>
+                            <button type="button" onclick="window.cerrarVisorPDF()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px;">&times;</button>
+                        </div>
+                    </header>
+                    <div style="flex: 1; background: #1e293b; position: relative; overflow: hidden;">
+                        <iframe id="iframe-visor-pdf" src="" style="width: 100%; height: 100%; border: none; background: #0f172a;" title="Visor PDF"></iframe>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(div.firstElementChild);
+        modal = document.getElementById('modal-visor-pdf');
+    }
+
+    const iframe = document.getElementById('iframe-visor-pdf');
+    const btnDescargar = document.getElementById('btn-pdf-descargar');
+    const titulo = document.getElementById('modal-pdf-titulo');
+
+    // Convertir Base64 a Blob URL para renderizado fluido en iframe
+    const byteCharacters = atob(base64Data.split(',')[1] || base64Data);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'application/pdf' });
+    const blobUrl = URL.createObjectURL(blob);
+
+    iframe.src = blobUrl;
+    if (titulo) titulo.textContent = `Visualizando: ${nombreArchivo}`;
+    if (btnDescargar) {
+        btnDescargar.href = blobUrl;
+        btnDescargar.download = nombreArchivo;
+    }
+
+    modal.style.display = 'flex';
+    modal.classList.remove('oculto');
+};
+
+window.cerrarVisorPDF = () => {
+    const modal = document.getElementById('modal-visor-pdf');
+    const iframe = document.getElementById('iframe-visor-pdf');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.add('oculto');
+    }
+    if (iframe) {
+        iframe.src = '';
+    }
+};

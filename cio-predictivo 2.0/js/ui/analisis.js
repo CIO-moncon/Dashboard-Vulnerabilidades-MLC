@@ -2,6 +2,7 @@
 // MÓDULO UI: JS/UI/ANALISIS.JS
 // CIO PREDICTIVO 2.0 — Estudio de Diagnóstico Experto CBM por Componentes
 // Análisis Segmentado: Motor Eléctrico, Reductor de Velocidad y Poleas a Demanda
+// Con Visor Interno Interactivo de PDF (Iframe Preview + Descarga Directa)
 // ============================================================================
 
 import { auth, db } from '../core/firebase-config.js';
@@ -10,7 +11,8 @@ import {
     dibujarPiePaginaCorporativo,
     resolverPaletaSeveridadISO,
     obtenerSemanaISO,
-    formatearFechaNomenclatura
+    formatearFechaNomenclatura,
+    abrirVisorPDFInterno
 } from '../core/pdf-plantilla.js';
 
 let instanciaChartActual = null;
@@ -583,8 +585,8 @@ export const abrirModalAnalisisExperto = async (idFirebase) => {
                             id="btn-exportar-pdf-espectral-oficial"
                             onclick="window.descargarInformeEspectralCompletoPDF()"
                             style="background: #0284c7; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.8rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);">
-                        <span class="material-symbols-outlined" style="font-size: 1.1rem;" aria-hidden="true">picture_as_pdf</span>
-                        <span>Generar Informe Espectral PDF</span>
+                        <span class="material-symbols-outlined" style="font-size: 1.1rem;" aria-hidden="true">visibility</span>
+                        <span>Ver Informe Espectral (PDF)</span>
                     </button>
                 </div>
             </footer>
@@ -685,7 +687,7 @@ const renderizarVistaComponenteActivo = () => {
                                     Temp: <span style="color: #e2e8f0;">${t > 0 ? `${t.toFixed(1)} °C` : '--'}</span>
                                 </div>
                             </div>
-                            <span style="background: ${bgTag}; color: ${cText}; border: 1px solid ${cText}; font-size: 0.65rem; font-weight: 900; padding: 2px 6px; border-radius: 4px;">
+                            <span style="background: ${bgTag}; color: ${cText}; border: 1px solid${cText}; font-size: 0.65rem; font-weight: 900; padding: 2px 6px; border-radius: 4px;">
                                 ${r >= 7.1 ? 'CRÍTICO' : (r >= 4.5 ? 'ALERTA' : 'NORMAL')}
                             </span>
                         </div>
@@ -896,7 +898,10 @@ window.guardarAnalisisExpertoEnFirebase = async () => {
     }
 };
 
-// Generador de Informe Espectral Oficial en PDF (Con Sello en Cabecera)
+// ----------------------------------------------------------------------------
+// GENERADOR OFICIAL DEL INFORME ESPECTRAL CBM EN PDF (CON VISOR INTERNO)
+// Nomenclatura: TAG_informe_espectral_Sxx_(dd-mm-aaaa).pdf
+// ----------------------------------------------------------------------------
 window.descargarInformeEspectralCompletoPDF = async () => {
     const { jsPDF } = window.jspdf || {};
     if (!jsPDF) {
@@ -905,7 +910,7 @@ window.descargarInformeEspectralCompletoPDF = async () => {
     }
 
     if (typeof UI !== 'undefined' && UI.mostrarToast) {
-        UI.mostrarToast('Generando Informe Espectral Oficial por Componente...', 'info');
+        UI.mostrarToast('Generando vista previa del Informe Espectral CBM...', 'info');
     }
 
     const { tag, nombreEquipo, area, nivel, motor, reductor, poleas } = analisisModularMemoria;
@@ -1155,14 +1160,12 @@ window.descargarInformeEspectralCompletoPDF = async () => {
         margenX
     });
 
-    doc.save(nombreArchivoPDF);
-
-    if (typeof UI !== 'undefined' && UI.mostrarToast) {
-        UI.mostrarToast(`✅ Informe Espectral emitido: ${nombreArchivoPDF}`, 'exito');
-    }
+    // Apertura en Visor Interno Interactivo
+    abrirVisorPDFInterno(doc, nombreArchivoPDF);
 };
 
 export default {
     abrirGraficoTendencia,
-    abrirModalAnalisisExperto
+    abrirModalAnalisisExperto,
+    abrirVisorPDFInterno
 };

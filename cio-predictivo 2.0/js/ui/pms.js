@@ -1,19 +1,18 @@
 // ============================================================================
 // MÓDULO UI: JS/UI/PMS.JS
-// CIO PREDICTIVO 2.0 — Auditoría PMS, Control de Espectrales y Reporte PDF SAP
+// CIO PREDICTIVO 2.0 — Auditoría PMS, Control Espectral, KPIs, Emergencias en PDF y Visor
 // ============================================================================
 
 import { auth, db } from '../core/firebase-config.js';
 import {
     dibujarCabeceraCorporativa,
     dibujarPiePaginaCorporativo,
+    dibujarPortadaGerencialMensual,
     obtenerSemanaISO,
-    formatearFechaNomenclatura
+    formatearFechaNomenclatura,
+    abrirVisorPDFInterno
 } from '../core/pdf-plantilla.js';
 
-// ----------------------------------------------------------------------------
-// ESTADO INTERNO DEL MÓDULO PMS
-// ----------------------------------------------------------------------------
 let semanaSeleccionada = null; 
 let usuarioCambioSemana = false; 
 let listaSemanasDisponibles = [];
@@ -28,16 +27,12 @@ let filtroEspectralesEstado = 'PENDIENTES';
 let filtroEspectralesFecha = 'TODAS';
 let debounceGuardado = {};
 
-// Variables globales para limpiar los listeners
 let refSemanasActiva = null;
 let refEspectralesActiva = null;
 
 const dbPMS = db.ref('historial_informes/pms_semanal');
 const dbEspectrales = db.ref('control_informes_espectrales');
 
-// ----------------------------------------------------------------------------
-// UTILIDADES PURAS Y UI MODAL INDUSTRIAL 
-// ----------------------------------------------------------------------------
 const escaparHTML = (texto = '') =>
     String(texto || '')
         .replace(/&/g, '&amp;')
@@ -45,6 +40,16 @@ const escaparHTML = (texto = '') =>
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+
+const formatearFechaDDMMAAAA = (fechaStr = '') => {
+    if (!fechaStr) return '-';
+    const str = String(fechaStr).trim();
+    const matchYMD = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+    if (matchYMD) {
+        return `${matchYMD[3].padStart(2, '0')}-${matchYMD[2].padStart(2, '0')}-${matchYMD[1]}`;
+    }
+    return str;
+};
 
 const mostrarModalIndustrial = ({ titulo, icono, colorBase, htmlCuerpo, textoConfirmar = 'Aceptar', textoCancelar = 'Cancelar', mostrarCancelar = true }) => {
     return new Promise((resolve) => {
@@ -64,20 +69,13 @@ const mostrarModalIndustrial = ({ titulo, icono, colorBase, htmlCuerpo, textoCon
                     ${htmlCuerpo}
                 </div>
                 <footer style="padding: 14px 20px; background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: flex-end; gap: 10px;">
-                    ${mostrarCancelar ? `<button id="btn-cancel-${idModal}" style="background: transparent; color: #94a3b8; border: 1px solid rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background 0.2s;">${textoCancelar}</button>` : ''}
-                    <button id="btn-ok-${idModal}" style="background: rgb(${colorBase}); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 10px rgba(${colorBase}, 0.3); transition: transform 0.1s;">${textoConfirmar}</button>
+                    ${mostrarCancelar ? `<button id="btn-cancel-${idModal}" style="background: transparent; color: #94a3b8; border: 1px solid rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">${textoCancelar}</button>` : ''}
+                    <button id="btn-ok-${idModal}" style="background: rgb(${colorBase}); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 10px rgba(${colorBase}, 0.3);">${textoConfirmar}</button>
                 </footer>
             </div>
         `;
 
         document.body.appendChild(overlay);
-
-        if (!document.getElementById('style-modal-anim')) {
-            const style = document.createElement('style');
-            style.id = 'style-modal-anim';
-            style.innerHTML = `@keyframes slideUp { to { transform: translateY(0); } } @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }`;
-            document.head.appendChild(style);
-        }
 
         const cerrar = (valor) => {
             overlay.style.opacity = '0';
@@ -102,11 +100,7 @@ const mostrarModalIndustrial = ({ titulo, icono, colorBase, htmlCuerpo, textoCon
     });
 };
 
-// ----------------------------------------------------------------------------
-// RENDERIZADO PRINCIPAL DEL CONTENEDOR PMS
-// ----------------------------------------------------------------------------
 export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico') => {
-    // Al montar la pantalla reseteamos los controladores de semana
     semanaSeleccionada = null; 
     usuarioCambioSemana = false; 
 
@@ -116,7 +110,6 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico') =
     contenedor.innerHTML = `
         <section class="seccion-pms-industrial" style="padding: 1.25rem; height: 100%; overflow-y: auto; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; animation: fadeIn 0.25s ease;">
             
-            <!-- ENCABEZADO Y CONTROLES SUPERIORES -->
             <header style="background: rgba(15, 23, 42, 0.9); border: 1px solid var(--border-glass, rgba(255,255,255,0.1)); border-radius: 12px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
                 <div>
                     <h2 style="margin: 0 0 4px 0; color: #ffffff; font-size: 1.2rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
@@ -136,9 +129,14 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico') =
                         </select>
                     </div>
 
-                    <button type="button" onclick="window.descargarReportePDF_PMS()" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 7px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                        <span class="material-symbols-outlined" style="font-size: 1rem;" aria-hidden="true">picture_as_pdf</span>
-                        Descargar PDF
+                    <button type="button" onclick="window.descargarReportePDF_PMS()" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 7px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 1rem;" aria-hidden="true">visibility</span>
+                        Ver Informe Semanal
+                    </button>
+
+                    <button type="button" onclick="window.descargarDossierGerencialMensual()" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); padding: 7px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 1rem;" aria-hidden="true">description</span>
+                        Ver Dossier Mensual
                     </button>
 
                     <button type="button" onclick="document.getElementById('input-excel-pms').click()" style="background: #0284c7; color: white; border: none; padding: 7px 14px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);">
@@ -154,16 +152,14 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico') =
                 </div>
             </header>
 
-            <!-- KPIS GENERALES PMS -->
-            <div id="pms-kpis-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;"></div>
+            <div id="pms-kpis-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;"></div>
 
-            <!-- SECCIÓN: CONTROL DE INFORMES ESPECTRALES -->
             <section style="background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                     <div>
                         <h3 style="margin: 0; font-size: 1rem; color: #f87171; font-weight: 800; display: flex; align-items: center; gap: 8px;">
                             <span class="material-symbols-outlined" style="color: #ef4444;" aria-hidden="true">assignment_late</span>
-                            Control de Informes Espectrales Requeridos (RMS &ge; 7.1 mm/s en Motor o Reductor)
+                            Control de Informes Espectrales Requeridos
                         </h3>
                         <p style="margin: 3px 0 0 0; font-size: 0.75rem; color: var(--text-muted, #94a3b8);">
                             Generados automáticamente desde las rutas de terreno. Usa el switch para confirmar la subida del informe a SAP.
@@ -195,7 +191,6 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico') =
                 <div id="pms-tabla-espectrales-container" style="overflow-x: auto; border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;"></div>
             </section>
 
-            <!-- SECCIÓN: ACTIVIDADES EMERGENTES / IMPREVISTOS EN TERRENO -->
             <section style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-glass, rgba(255,255,255,0.1)); border-radius: 12px; padding: 14px 18px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <h3 style="margin: 0; font-size: 0.95rem; color: #f59e0b; font-weight: 800; display: flex; align-items: center; gap: 8px;">
@@ -210,7 +205,6 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico') =
                 <div id="pms-tabla-emergencias-container" style="overflow-x: auto;"></div>
             </section>
 
-            <!-- SECCIÓN: ÓRDENES SAP PM -->
             <section style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-glass, rgba(255,255,255,0.1)); border-radius: 12px; padding: 14px 18px; display: flex; flex-direction: column; gap: 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                     <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 280px;">
@@ -260,9 +254,6 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico') =
     inicializarListenersPMS();
 };
 
-// ----------------------------------------------------------------------------
-// SINCRONIZACIÓN Y ESCUCHA EN FIREBASE
-// ----------------------------------------------------------------------------
 const inicializarListenersPMS = () => {
     dbPMS.off('value'); 
 
@@ -273,24 +264,15 @@ const inicializarListenersPMS = () => {
         if (llaves.length === 0) {
             listaSemanasDisponibles = ['2026-W42'];
         } else {
-            // ORDENAMIENTO BLINDADO PARA FORMATOS AÑO-SEMANA (Ej: 2026-W43 vs 2026-W42)
             listaSemanasDisponibles = llaves.sort((a, b) => {
-                // Extraer los dígitos que van después de la 'W' o el último número del string
                 const getNum = (str) => {
                     const parts = str.split('W');
                     if (parts.length > 1) return parseInt(parts[1], 10) || 0;
                     return parseInt(String(str).replace(/\D/g, ''), 10) || 0;
                 };
-                return getNum(b) - getNum(getNum(a) < 0 ? 0 : b) - getNum(a); // Orden descendente real
+                return getNum(b) - getNum(a);
             });
         }
-
-        // Corrección limpia del orden descendente:
-        listaSemanasDisponibles.sort((a, b) => {
-            const numA = parseInt(a.split('W')[1] || a.replace(/\D/g, ''), 10) || 0;
-            const numB = parseInt(b.split('W')[1] || b.replace(/\D/g, ''), 10) || 0;
-            return numB - numA;
-        });
 
         const semanaMasAlta = listaSemanasDisponibles[0];
 
@@ -314,7 +296,6 @@ const actualizarSelectorSemanas = () => {
     if (lblBorrar) lblBorrar.textContent = semanaSeleccionada;
 
     sel.innerHTML = listaSemanasDisponibles.map((sem, idx) => {
-        // Al estar ordenados de mayor a menor, el [0] siempre es el número más alto y por tanto el Activo
         const esMasReciente = (idx === 0);
         const labelText = esMasReciente ? `🟢 Semana Activa: ${sem}` : `📁 Respaldo: ${sem}`;
         return `<option value="${sem}" ${sem === semanaSeleccionada ? 'selected' : ''}>${labelText}</option>`;
@@ -355,7 +336,7 @@ const escucharInformesEspectrales = () => {
 };
 
 window.cambiarPeriodoPMS = (nuevaSemana) => {
-    usuarioCambioSemana = true; // Activa bandera para que Firebase no sobrescriba la selección
+    usuarioCambioSemana = true; 
     semanaSeleccionada = nuevaSemana;
     const lblBorrar = document.getElementById('pms-lbl-semana-borrar');
     if (lblBorrar) lblBorrar.textContent = semanaSeleccionada;
@@ -363,9 +344,6 @@ window.cambiarPeriodoPMS = (nuevaSemana) => {
     escucharInformesEspectrales();
 };
 
-// ----------------------------------------------------------------------------
-// RENDERIZADO DE TABLA DE INFORMES ESPECTRALES CON SWITCH DE CONTROL
-// ----------------------------------------------------------------------------
 const actualizarSelectFechasEspectrales = () => {
     const selFecha = document.getElementById('pms-filtro-fecha-espectral');
     if (!selFecha) return;
@@ -384,9 +362,7 @@ const actualizarSelectFechasEspectrales = () => {
         ${fechasArr.map((f) => `<option value="${f}">${f}</option>`).join('')}
     `;
 
-    if (fechasArr.includes(optPrevias)) {
-        selFecha.value = optPrevias;
-    }
+    if (fechasArr.includes(optPrevias)) selFecha.value = optPrevias;
 };
 
 const renderizarTablaEspectrales = () => {
@@ -413,13 +389,8 @@ const renderizarTablaEspectrales = () => {
     const filtrados = items.filter(([, esp]) => {
         const coincideFecha = filtroEspectralesFecha === 'TODAS' || esp.fechaCorta === filtroEspectralesFecha;
         let coincideEstado = true;
-
-        if (filtroEspectralesEstado === 'PENDIENTES') {
-            coincideEstado = esp.estado !== 'Emitido';
-        } else if (filtroEspectralesEstado === 'EMITIDOS') {
-            coincideEstado = esp.estado === 'Emitido';
-        }
-
+        if (filtroEspectralesEstado === 'PENDIENTES') coincideEstado = esp.estado !== 'Emitido';
+        else if (filtroEspectralesEstado === 'EMITIDOS') coincideEstado = esp.estado === 'Emitido';
         return coincideFecha && coincideEstado;
     });
 
@@ -455,7 +426,7 @@ const renderizarTablaEspectrales = () => {
                     return `
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); background: ${esEmitido ? 'rgba(0, 230, 118, 0.02)' : 'rgba(239, 68, 68, 0.04)'}; transition: background 0.15s ease;">
                             <td style="padding: 8px; text-align: center; color: var(--text-muted);">${idx + 1}</td>
-                            <td style="padding: 8px; font-family: monospace; white-space: nowrap;">${escaparHTML(esp.fechaDeteccion || esp.fechaCorta || 'Hoy')}</td>
+                            <td style="padding: 8px; font-family: monospace; white-space: nowrap;">${escaparHTML(formatearFechaDDMMAAAA(esp.fechaDeteccion || esp.fechaCorta))}</td>
                             
                             <td style="padding: 8px;">
                                 <div style="font-weight: 800; color: #ffffff; font-family: monospace;">${escaparHTML(esp.tag || 'TAG')}</div>
@@ -506,12 +477,8 @@ const renderizarTablaEspectrales = () => {
     `;
 };
 
-// ----------------------------------------------------------------------------
-// ACCIONES DEL SWITCH Y FILTROS ESPECTRALES
-// ----------------------------------------------------------------------------
 window.alternarSwitchEspectral = async (semanaKey, idRegistro, estadoActual) => {
     const nuevoEstado = estadoActual === 'Emitido' ? 'Pendiente' : 'Emitido';
-
     try {
         await dbEspectrales.child(semanaKey).child(idRegistro).update({
             estado: nuevoEstado,
@@ -520,11 +487,7 @@ window.alternarSwitchEspectral = async (semanaKey, idRegistro, estadoActual) => 
         });
 
         if (typeof UI !== 'undefined' && UI.mostrarToast) {
-            if (nuevoEstado === 'Emitido') {
-                UI.mostrarToast('✅ Informe Espectral marcado como Realizado y Subido a SAP.', 'exito');
-            } else {
-                UI.mostrarToast('⏳ Informe reactivado como Pendiente.', 'alerta');
-            }
+            UI.mostrarToast(nuevoEstado === 'Emitido' ? '✅ Informe Espectral marcado como Realizado y Subido a SAP.' : '⏳ Informe reactivado como Pendiente.', 'exito');
         }
     } catch (err) {
         console.error('Error al alternar estado del informe espectral:', err);
@@ -544,7 +507,6 @@ window.autoGuardarAvisoSapEspectral = (semanaKey, idRegistro, valor) => {
 
 window.filtrarEspectralesPorEstado = (estado) => {
     filtroEspectralesEstado = estado;
-
     const btnPendientes = document.getElementById('btn-filtro-esp-pendientes');
     const btnEmitidos = document.getElementById('btn-filtro-esp-emitidos');
     const btnTodos = document.getElementById('btn-filtro-esp-todos');
@@ -561,7 +523,6 @@ window.filtrarEspectralesPorEstado = (estado) => {
         btnTodos.style.background = estado === 'TODOS' ? '#38bdf8' : 'transparent';
         btnTodos.style.color = estado === 'TODOS' ? '#0f172a' : '#94a3b8';
     }
-
     renderizarTablaEspectrales();
 };
 
@@ -570,12 +531,11 @@ window.filtrarEspectralesPorFecha = (fecha) => {
     renderizarTablaEspectrales();
 };
 
-// ----------------------------------------------------------------------------
-// CÁLCULO DE KPIS GENERALES PMS
-// ----------------------------------------------------------------------------
 const renderizarKPIsYTablas = () => {
     const ordenesArray = Object.values(datosSemanaActual.ordenes || {});
     const totalProgramadas = ordenesArray.length;
+    const emergentesArray = Object.values(datosSemanaActual.actividades_emergentes || {});
+    const totalEmergentes = emergentesArray.length;
 
     let ejecutadas = 0;
     let notifSAP = 0;
@@ -588,10 +548,17 @@ const renderizarKPIsYTablas = () => {
         if (o.ctec === true || String(o.ctec) === 'true') ctecCerradas++;
     });
 
+    emergentesArray.forEach((em) => {
+        if (em.notifSap === true || String(em.notifSap) === 'true') notifSAP++;
+        if (em.ctec === true || String(em.ctec) === 'true') ctecCerradas++;
+    });
+
+    const totalTrabajosGlobal = totalProgramadas + totalEmergentes;
+    const totalEjecutadasGlobal = ejecutadas + totalEmergentes;
     const pendientes = totalProgramadas - ejecutadas;
     const pctCumplimiento = totalProgramadas > 0 ? Math.round((ejecutadas / totalProgramadas) * 100) : 0;
-    const pctNotif = totalProgramadas > 0 ? Math.round((notifSAP / totalProgramadas) * 100) : 0;
-    const pctCtec = totalProgramadas > 0 ? Math.round((ctecCerradas / totalProgramadas) * 100) : 0;
+    const pctNotif = totalTrabajosGlobal > 0 ? Math.round((notifSAP / totalTrabajosGlobal) * 100) : 0;
+    const pctCtec = totalTrabajosGlobal > 0 ? Math.round((ctecCerradas / totalTrabajosGlobal) * 100) : 0;
 
     const kpisContainer = document.getElementById('pms-kpis-container');
     if (kpisContainer) {
@@ -611,10 +578,16 @@ const renderizarKPIsYTablas = () => {
                 <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 11px; display: block;">Órdenes de Trabajo SAP PM</span>
             </div>
 
-            <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 10px; padding: 12px 16px;">
-                <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Pendientes Medición</span>
-                <div style="font-size: 1.8rem; font-weight: 900; color: #eab308; margin: 4px 0;">${pendientes}</div>
-                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 11px; display: block;">${pendientes === 0 ? 'Sin atrasos en ruta' : 'En proceso de ejecución'}</span>
+            <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 12px 16px;">
+                <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Actividades Emergentes</span>
+                <div style="font-size: 1.8rem; font-weight: 900; color: #fbbf24; margin: 4px 0;">${totalEmergentes}</div>
+                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 11px; display: block;">Imprevistos en terreno</span>
+            </div>
+
+            <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; padding: 12px 16px;">
+                <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Ejecución Total vs Pendientes</span>
+                <div style="font-size: 1.5rem; font-weight: 900; color: #60a5fa; margin: 4px 0;">${totalEjecutadasGlobal} / ${pendientes}</div>
+                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;">Realizadas (Prog+Emerg) vs No hechas</span>
             </div>
 
             <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; padding: 12px 16px;">
@@ -623,7 +596,7 @@ const renderizarKPIsYTablas = () => {
                 <div style="background: rgba(255,255,255,0.1); border-radius: 4px; height: 5px; overflow: hidden; margin-top: 6px;">
                     <div style="background: #c084fc; width: ${pctNotif}%; height: 100%;"></div>
                 </div>
-                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;">${notifSAP} de ${totalProgramadas} OMs</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;">Notificaciones globales</span>
             </div>
 
             <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(45, 212, 191, 0.3); border-radius: 10px; padding: 12px 16px;">
@@ -632,7 +605,7 @@ const renderizarKPIsYTablas = () => {
                 <div style="background: rgba(255,255,255,0.1); border-radius: 4px; height: 5px; overflow: hidden; margin-top: 6px;">
                     <div style="background: #2dd4bf; width: ${pctCtec}%; height: 100%;"></div>
                 </div>
-                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;">${ctecCerradas} de ${totalProgramadas} cerradas</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;">Cierres técnicos globales</span>
             </div>
         `;
     }
@@ -641,9 +614,6 @@ const renderizarKPIsYTablas = () => {
     renderizarTablaEmergencias();
 };
 
-// ----------------------------------------------------------------------------
-// TABLA DE ÓRDENES Y TABLA DE EMERGENCIAS
-// ----------------------------------------------------------------------------
 const renderizarTablaOrdenes = () => {
     const tbody = document.getElementById('pms-tabla-ordenes-body');
     if (!tbody) return;
@@ -664,13 +634,7 @@ const renderizarTablaOrdenes = () => {
     });
 
     if (filtradas.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="12" style="padding: 2rem; text-align: center; color: var(--text-muted);">
-                    No se encontraron órdenes registradas para los filtros aplicados.
-                </td>
-            </tr>
-        `;
+        tbody.innerHTML = `<tr><td colspan="12" style="padding: 2rem; text-align: center; color: var(--text-muted);">No se encontraron órdenes para los filtros aplicados.</td></tr>`;
         return;
     }
 
@@ -682,7 +646,7 @@ const renderizarTablaOrdenes = () => {
         return `
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
                 <td style="padding: 8px 10px; text-align: center; color: var(--text-muted);">${idx + 1}</td>
-                <td style="padding: 8px 10px; font-family: monospace; white-space: nowrap;">${escaparHTML(ord.fecha || '13/10/2026')}</td>
+                <td style="padding: 8px 10px; font-family: monospace; white-space: nowrap;">${escaparHTML(formatearFechaDDMMAAAA(ord.fecha || '13/10/2026'))}</td>
                 <td style="padding: 8px 10px; font-weight: 700; color: #38bdf8;">${escaparHTML(ord.area || 'AR54')}</td>
                 
                 <td style="padding: 8px 10px;">
@@ -693,7 +657,6 @@ const renderizarTablaOrdenes = () => {
                 </td>
 
                 <td style="padding: 8px 10px; font-family: monospace; font-weight: 700; color: #cbd5e1;">${escaparHTML(ord.numero || idKey)}</td>
-                
                 <td style="padding: 8px 10px; text-align: center;">
                     <span style="background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.12); padding: 2px 6px; border-radius: 4px; font-size: 0.68rem;">
                         ${escaparHTML(ord.cruce || 'No Catastrado')}
@@ -713,13 +676,13 @@ const renderizarTablaOrdenes = () => {
                 </td>
 
                 <td style="padding: 8px 10px; text-align: center;">
-                    <button type="button" onclick="window.actualizarCampoOrden('${idKey}', 'notifSap', ${!esNotif})" style="background: ${esNotif ? 'rgba(0, 230, 118, 0.15)' : 'rgba(239, 68, 68, 0.15)'}; color: ${esNotif ? '#00e676' : '#f87171'}; border: 1px solid ${esNotif ? 'rgba(0, 230, 118, 0.4)' : 'rgba(239, 68, 68, 0.4)'}; padding: 3px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 800; cursor: pointer; transition: all 0.15s ease;">
+                    <button type="button" onclick="window.actualizarCampoOrden('${idKey}', 'notifSap',${!esNotif})" style="background: ${esNotif ? 'rgba(0, 230, 118, 0.15)' : 'rgba(239, 68, 68, 0.15)'}; color: ${esNotif ? '#00e676' : '#f87171'}; border: 1px solid ${esNotif ? 'rgba(0, 230, 118, 0.4)' : 'rgba(239, 68, 68, 0.4)'}; padding: 3px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 800; cursor: pointer; transition: all 0.15s ease;">
                         ${esNotif ? '✓ SÍ' : '✕ NO'}
                     </button>
                 </td>
 
                 <td style="padding: 8px 10px; text-align: center;">
-                    <button type="button" onclick="window.actualizarCampoOrden('${idKey}', 'ctec', ${!esCtec})" style="background: ${esCtec ? 'rgba(45, 212, 191, 0.15)' : 'rgba(255, 255, 255, 0.05)'}; color: ${esCtec ? '#2dd4bf' : '#94a3b8'}; border: 1px solid ${esCtec ? 'rgba(45, 212, 191, 0.4)' : 'rgba(255, 255, 255, 0.15)'}; padding: 3px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 800; cursor: pointer; transition: all 0.15s ease;">
+                    <button type="button" onclick="window.actualizarCampoOrden('${idKey}', 'ctec',${!esCtec})" style="background: ${esCtec ? 'rgba(45, 212, 191, 0.15)' : 'rgba(255, 255, 255, 0.05)'}; color: ${esCtec ? '#2dd4bf' : '#94a3b8'}; border: 1px solid ${esCtec ? 'rgba(45, 212, 191, 0.4)' : 'rgba(255, 255, 255, 0.15)'}; padding: 3px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 800; cursor: pointer; transition: all 0.15s ease;">
                         ${esCtec ? '✓ SÍ' : '✕ NO'}
                     </button>
                 </td>
@@ -746,11 +709,7 @@ const renderizarTablaEmergencias = () => {
     if (badgeTotal) badgeTotal.textContent = String(items.length);
 
     if (items.length === 0) {
-        cont.innerHTML = `
-            <div style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.8rem;">
-                No se han registrado actividades emergentes o imprevistos en esta semana.
-            </div>
-        `;
+        cont.innerHTML = `<div style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.8rem;">No se han registrado actividades emergentes o imprevistos en esta semana.</div>`;
         return;
     }
 
@@ -775,24 +734,20 @@ const renderizarTablaEmergencias = () => {
 
                     return `
                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
-                        <td style="padding: 8px 6px; font-family: monospace; white-space: nowrap;">${escaparHTML(em.fecha || '2026-10-17')}</td>
+                        <td style="padding: 8px 6px; font-family: monospace; white-space: nowrap;">${escaparHTML(formatearFechaDDMMAAAA(em.fecha || '2026-10-17'))}</td>
                         <td style="padding: 8px 6px; font-weight: 700; color: #f87171; font-family: monospace;">${escaparHTML(em.tag || 'MH3323')}</td>
                         <td style="padding: 8px 6px; color: #e2e8f0; line-height: 1.3;">${escaparHTML(em.descripcion || 'Sin descripción')}</td>
                         <td style="padding: 8px 6px; font-family: monospace; color: #cbd5e1;">${escaparHTML(em.om || 'S/N')}</td>
                         <td style="padding: 8px 6px; color: var(--text-muted);">${escaparHTML(em.turno || 'CPF')}</td>
                         
                         <td style="padding: 8px 6px; text-align: center;">
-                            <button type="button" 
-                                    onclick="window.actualizarCampoEmergencia('${key}', 'notifSap',${!esNotif})" 
-                                    style="background: ${esNotif ? 'rgba(0, 230, 118, 0.15)' : 'rgba(239, 68, 68, 0.15)'}; color: ${esNotif ? '#00e676' : '#f87171'}; border: 1px solid ${esNotif ? 'rgba(0, 230, 118, 0.4)' : 'rgba(239, 68, 68, 0.4)'}; padding: 3px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
+                            <button type="button" onclick="window.actualizarCampoEmergencia('${key}', 'notifSap',${!esNotif})" style="background: ${esNotif ? 'rgba(0, 230, 118, 0.15)' : 'rgba(239, 68, 68, 0.15)'}; color: ${esNotif ? '#00e676' : '#f87171'}; border: 1px solid ${esNotif ? 'rgba(0, 230, 118, 0.4)' : 'rgba(239, 68, 68, 0.4)'}; padding: 3px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
                                 ${esNotif ? '✓ SÍ' : '✕ NO'}
                             </button>
                         </td>
 
                         <td style="padding: 8px 6px; text-align: center;">
-                            <button type="button" 
-                                    onclick="window.actualizarCampoEmergencia('${key}', 'ctec',${!esCtec})" 
-                                    style="background: ${esCtec ? 'rgba(45, 212, 191, 0.15)' : 'rgba(255, 255, 255, 0.05)'}; color: ${esCtec ? '#2dd4bf' : '#94a3b8'}; border: 1px solid ${esCtec ? 'rgba(45, 212, 191, 0.4)' : 'rgba(255, 255, 255, 0.15)'}; padding: 3px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
+                            <button type="button" onclick="window.actualizarCampoEmergencia('${key}', 'ctec',${!esCtec})" style="background: ${esCtec ? 'rgba(45, 212, 191, 0.15)' : 'rgba(255, 255, 255, 0.05)'}; color: ${esCtec ? '#2dd4bf' : '#94a3b8'}; border: 1px solid ${esCtec ? 'rgba(45, 212, 191, 0.4)' : 'rgba(255, 255, 255, 0.15)'}; padding: 3px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
                                 ${esCtec ? '✓ SÍ' : '✕ NO'}
                             </button>
                         </td>
@@ -810,9 +765,6 @@ const renderizarTablaEmergencias = () => {
     `;
 };
 
-// ----------------------------------------------------------------------------
-// INTERACCIÓN Y PERSISTENCIA (Modales Integrados)
-// ----------------------------------------------------------------------------
 window.actualizarCampoOrden = async (idOrden, campo, valor) => {
     try {
         await dbPMS.child(semanaSeleccionada).child('ordenes').child(idOrden).child(campo).set(valor);
@@ -957,14 +909,6 @@ window.procesarArchivoExcelPMS = (event) => {
 
             if (typeof UI !== 'undefined' && UI.mostrarToast) {
                 UI.mostrarToast(`✅ ¡Semana ${nuevaSemanaId} cargada con éxito!`, 'exito');
-            } else {
-                await mostrarModalIndustrial({
-                    titulo: 'Éxito',
-                    icono: 'check_circle',
-                    colorBase: '0, 230, 118',
-                    htmlCuerpo: `¡La semana <strong>${nuevaSemanaId}</strong> se ha cargado correctamente en la base de datos!`,
-                    mostrarCancelar: false
-                });
             }
 
             usuarioCambioSemana = true; 
@@ -1028,25 +972,18 @@ window.abrirModalNuevaEmergencia = async () => {
     }
 };
 
-// ----------------------------------------------------------------------------
-// REPORTE AUDITABLE PDF DIARIO
-// ----------------------------------------------------------------------------
+// ============================================================================
+// REPORTE PDF INFORME SEMANAL (INCLUYE ODS + ACTIVIDADES EMERGENTES EN TABLA)
+// ============================================================================
 window.descargarReportePDF_PMS = async () => {
     const { jsPDF } = window.jspdf || {};
     if (!jsPDF) {
-        await mostrarModalIndustrial({
-            titulo: 'Cargando Motor PDF',
-            icono: 'hourglass_top',
-            colorBase: '56, 189, 248',
-            htmlCuerpo: 'El motor de generación de PDF aún se está cargando. Por favor, espere un par de segundos e intente nuevamente.',
-            mostrarCancelar: false,
-            textoConfirmar: 'Entendido'
-        });
+        alert('Cargando librería de PDF. Intente nuevamente en unos instantes.');
         return;
     }
 
     if (typeof UI !== 'undefined' && UI.mostrarToast) {
-        UI.mostrarToast('Generando reporte diario de auditoría PMS...', 'info');
+        UI.mostrarToast('Generando vista previa del Informe Semanal...', 'info');
     }
 
     const fechaActual = new Date();
@@ -1056,10 +993,13 @@ window.descargarReportePDF_PMS = async () => {
     semCodigo = semCodigo.replace('PMS', 'S');
     if (!semCodigo.startsWith('S')) semCodigo = `S${semCodigo}`;
 
-    const nombreArchivoPDF = `auditoria_${semCodigo}_(${fechaImpresion}).pdf`;
+    const nombreArchivoPDF = `informe_semanal_${semCodigo}_(${fechaImpresion}).pdf`;
 
     const ordenes = Object.values(datosSemanaActual.ordenes || {});
     const totalProgramadas = ordenes.length;
+    const emergentesArray = Object.values(datosSemanaActual.actividades_emergentes || {});
+    const totalEmergentes = emergentesArray.length;
+
     let ejecutadas = 0;
     let notifSAP = 0;
     let ctecCerradas = 0;
@@ -1071,10 +1011,17 @@ window.descargarReportePDF_PMS = async () => {
         if (o.ctec === true || String(o.ctec) === 'true') ctecCerradas++;
     });
 
+    emergentesArray.forEach((em) => {
+        if (em.notifSap === true || String(em.notifSap) === 'true') notifSAP++;
+        if (em.ctec === true || String(em.ctec) === 'true') ctecCerradas++;
+    });
+
+    const totalTrabajosGlobal = totalProgramadas + totalEmergentes;
+    const totalEjecutadasGlobal = ejecutadas + totalEmergentes;
     const pendientes = totalProgramadas - ejecutadas;
     const pctCumplimiento = totalProgramadas > 0 ? Math.round((ejecutadas / totalProgramadas) * 100) : 0;
-    const pctNotif = totalProgramadas > 0 ? Math.round((notifSAP / totalProgramadas) * 100) : 0;
-    const pctCtec = totalProgramadas > 0 ? Math.round((ctecCerradas / totalProgramadas) * 100) : 0;
+    const pctNotif = totalTrabajosGlobal > 0 ? Math.round((notifSAP / totalTrabajosGlobal) * 100) : 0;
+    const pctCtec = totalTrabajosGlobal > 0 ? Math.round((ctecCerradas / totalTrabajosGlobal) * 100) : 0;
 
     const doc = new jsPDF({
         orientation: 'landscape',
@@ -1089,83 +1036,46 @@ window.descargarReportePDF_PMS = async () => {
 
     const dibujarCabecera = async () => {
         await dibujarCabeceraCorporativa(doc, {
-            titulo: `AUDITORÍA DE PROGRAMA SEMANAL & TRAZABILIDAD CBM — ${semCodigo}`,
-            subtitulo: 'Planta Mina Los Colorados (CMP) | CPF Ingeniería Ltda. | Respaldo Oficial Auditoría SAP PM',
-            referencia: `Control Diario de Órdenes | Emisión: ${fechaImpresion} a las ${fechaActual.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+            titulo: `INFORME SEMANAL DE SEGUIMIENTO CBM — ${semCodigo}`,
+            subtitulo: 'Planta Mina Los Colorados (CMP) | CPF Ingeniería Ltda. | Respaldo Operativo SAP PM',
+            referencia: `Control Semanal | Emisión: ${fechaImpresion} a las ${fechaActual.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
             margenX
         });
     };
 
-    // 1. Cabecera inicial corporativa
     await dibujarCabecera();
 
-    // 2. BLOQUE DE TARJETAS KPIS
     let posY = 32;
-    const anchoCard = (anchoContenido - (4 * 3.5)) / 5;
+    const anchoCard = (anchoContenido - (5 * 3.0)) / 6;
     const altoCard = 18;
 
     const listaKpisPDF = [
-        {
-            titulo: 'CUMPLIMIENTO TERRENO',
-            valor: `${pctCumplimiento}%`,
-            sub: `${ejecutadas} de ${totalProgramadas} OMs`,
-            color: [22, 163, 74],
-            bg: [240, 253, 244],
-            border: [34, 197, 94]
-        },
-        {
-            titulo: 'TOTAL PROGRAMADO',
-            valor: `${totalProgramadas}`,
-            sub: 'Órdenes de Trabajo',
-            color: [2, 132, 199],
-            bg: [240, 249, 255],
-            border: [56, 189, 248]
-        },
-        {
-            titulo: 'PENDIENTES MEDICIÓN',
-            valor: `${pendientes}`,
-            sub: pendientes === 0 ? 'Sin atrasos en ruta' : 'En proceso de ruta',
-            color: [202, 138, 4],
-            bg: [254, 252, 232],
-            border: [234, 179, 8]
-        },
-        {
-            titulo: 'NOTIFICADAS SAP (%)',
-            valor: `${pctNotif}%`,
-            sub: `${notifSAP} de ${totalProgramadas} OMs`,
-            color: [147, 51, 234],
-            bg: [250, 245, 255],
-            border: [192, 132, 252]
-        },
-        {
-            titulo: 'CIERRE TÉCNICO CTEC',
-            valor: `${pctCtec}%`,
-            sub: `${ctecCerradas} de ${totalProgramadas} cerradas`,
-            color: [13, 148, 136],
-            bg: [240, 253, 250],
-            border: [45, 212, 191]
-        }
+        { titulo: 'CUMPLIMIENTO', valor: `${pctCumplimiento}%`, sub: `${ejecutadas} de ${totalProgramadas} OMs`, color: [22, 163, 74], bg: [240, 253, 244], border: [34, 197, 94] },
+        { titulo: 'PROGRAMADAS', valor: `${totalProgramadas}`, sub: 'Trabajos SAP PM', color: [2, 132, 199], bg: [240, 249, 255], border: [56, 189, 248] },
+        { titulo: 'EMERGENTES', valor: `${totalEmergentes}`, sub: 'Imprevistos terreno', color: [245, 158, 11], bg: [254, 252, 232], border: [245, 158, 11] },
+        { titulo: 'HECHAS / NO HECHAS', valor: `${totalEjecutadasGlobal} / ${pendientes}`, sub: 'Prog+Emerg vs Pend.', color: [59, 130, 246], bg: [239, 246, 255], border: [59, 130, 246] },
+        { titulo: 'NOTIFICADAS SAP', valor: `${pctNotif}%`, sub: 'Globales', color: [147, 51, 234], bg: [250, 245, 255], border: [192, 132, 252] },
+        { titulo: 'CIERRE CTEC', valor: `${pctCtec}%`, sub: 'Globales', color: [13, 148, 136], bg: [240, 253, 250], border: [45, 212, 191] }
     ];
 
     listaKpisPDF.forEach((k, idx) => {
-        const xCard = margenX + (idx * (anchoCard + 3.5));
-
+        const xCard = margenX + (idx * (anchoCard + 3.0));
         doc.setFillColor(...k.bg);
         doc.setDrawColor(...k.border);
         doc.setLineWidth(0.4);
         doc.roundedRect(xCard, posY, anchoCard, altoCard, 2, 2, 'FD');
 
-        doc.setFontSize(6.8);
+        doc.setFontSize(6.5);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(71, 85, 105);
         doc.text(k.titulo, xCard + (anchoCard / 2), posY + 4.5, { align: 'center' });
 
-        doc.setFontSize(13);
+        doc.setFontSize(11.5);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...k.color);
         doc.text(k.valor, xCard + (anchoCard / 2), posY + 11.5, { align: 'center' });
 
-        doc.setFontSize(6.5);
+        doc.setFontSize(6.2);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(100, 116, 139);
         doc.text(k.sub, xCard + (anchoCard / 2), posY + 15.5, { align: 'center' });
@@ -1173,7 +1083,6 @@ window.descargarReportePDF_PMS = async () => {
 
     posY += altoCard + 7;
 
-    // 3. ENCABEZADO DE TABLA
     const colWidths = {
         num: 8,
         fecha: 22,
@@ -1186,10 +1095,17 @@ window.descargarReportePDF_PMS = async () => {
         obs: 93
     };
 
-    const dibujarEncabezadoTabla = (yTop) => {
+    const dibujarEncabezadoTabla = (yTop, tituloTabla = '1. Órdenes de Trabajo del Programa Semanal (PMS):') => {
+        if (yTop > 32) {
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(15, 23, 42);
+            doc.text(tituloTabla, margenX, yTop);
+            yTop += 3.5;
+        }
+
         doc.setFillColor(30, 41, 59);
         doc.rect(margenX, yTop, anchoContenido, 7.5, 'F');
-
         doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(255, 255, 255);
@@ -1204,12 +1120,17 @@ window.descargarReportePDF_PMS = async () => {
         doc.text('NOTIF. SAP', curX + 1, yTop + 5); curX += colWidths.notif;
         doc.text('CTEC', curX + 2, yTop + 5); curX += colWidths.ctec;
         doc.text('OBSERVACIÓN / JUSTIFICACIÓN', curX + 2, yTop + 5);
+        return yTop + 7.5;
     };
 
-    dibujarEncabezadoTabla(posY);
-    posY += 7.5;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(15, 23, 42);
+    doc.text('1. Órdenes de Trabajo del Programa Semanal (PMS):', margenX, posY);
+    posY += 3.5;
 
-    // 4. FILAS CON ALTO DINÁMICO
+    posY = dibujarEncabezadoTabla(posY, '');
+
     if (ordenes.length === 0) {
         doc.setFillColor(255, 255, 255);
         doc.setDrawColor(226, 232, 240);
@@ -1217,10 +1138,11 @@ window.descargarReportePDF_PMS = async () => {
         doc.setFontSize(9);
         doc.setTextColor(100, 116, 139);
         doc.text('No hay órdenes registradas en este periodo semanal.', margenX + 85, posY + 7.5);
+        posY += 15;
     } else {
         for (let idx = 0; idx < ordenes.length; idx++) {
             const o = ordenes[idx];
-            const fechaTxt = String(o.fecha || '-');
+            const fechaTxt = formatearFechaDDMMAAAA(o.fecha || '-');
             const areaTxt = String(o.area || '-');
             const tagTxt = String(o.tag || o.equipo || '-');
             const omTxt = String(o.numero || '-');
@@ -1241,8 +1163,7 @@ window.descargarReportePDF_PMS = async () => {
                 doc.addPage();
                 await dibujarCabecera();
                 posY = 32;
-                dibujarEncabezadoTabla(posY);
-                posY += 7.5;
+                posY = dibujarEncabezadoTabla(posY, '1. Órdenes de Trabajo del Programa Semanal (PMS) (Continuación):');
             }
 
             if (idx % 2 === 0) {
@@ -1308,20 +1229,202 @@ window.descargarReportePDF_PMS = async () => {
         }
     }
 
-    // 5. PIE DE PÁGINA CORPORATIVO REUTILIZABLE
+    // ========================================================================
+    // SECCIÓN 2: ACTIVIDADES EMERGENTES / IMPREVISTOS EN TERRENO EN EL PDF
+    // ========================================================================
+    posY += 6;
+    if (posY > altoPagina - 35) {
+        doc.addPage();
+        await dibujarCabecera();
+        posY = 32;
+    }
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(245, 158, 11);
+    doc.text(`2. Actividades Emergentes / Imprevistos en Terreno (${totalEmergentes}):`, margenX, posY);
+    posY += 3.5;
+
+    const colWidthsEm = {
+        num: 8,
+        fecha: 24,
+        tag: 36,
+        desc: 95,
+        om: 28,
+        notif: 18,
+        ctec: 17
+    };
+
+    const dibujarEncabezadoEmergentes = (yTop) => {
+        doc.setFillColor(180, 83, 9);
+        doc.rect(margenX, yTop, anchoContenido, 7.5, 'F');
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(255, 255, 255);
+
+        let curX = margenX;
+        doc.text('#', curX + 2, yTop + 5); curX += colWidthsEm.num;
+        doc.text('FECHA', curX + 2, yTop + 5); curX += colWidthsEm.fecha;
+        doc.text('TAG', curX + 2, yTop + 5); curX += colWidthsEm.tag;
+        doc.text('DESCRIPCIÓN DEL IMPREVISTO', curX + 2, yTop + 5); curX += colWidthsEm.desc;
+        doc.text('OM / AVISO', curX + 2, yTop + 5); curX += colWidthsEm.om;
+        doc.text('NOTIF.', curX + 1, yTop + 5); curX += colWidthsEm.notif;
+        doc.text('CTEC', curX + 2, yTop + 5);
+    };
+
+    dibujarEncabezadoEmergentes(posY);
+    posY += 7.5;
+
+    if (totalEmergentes === 0) {
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(226, 232, 240);
+        doc.rect(margenX, posY, anchoContenido, 10, 'FD');
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text('No se registraron actividades emergentes en este periodo semanal.', margenX + 65, posY + 6.5);
+        posY += 14;
+    } else {
+        for (let idx = 0; idx < emergentesArray.length; idx++) {
+            const em = emergentesArray[idx];
+            const fechaEm = formatearFechaDDMMAAAA(em.fecha || '-');
+            const tagEm = String(em.tag || '-');
+            const descEm = String(em.descripcion || '-').trim();
+            const omEm = String(em.om || 'S/N');
+            const notifEm = (em.notifSap === true || String(em.notifSap) === 'true') ? 'SÍ' : 'NO';
+            const ctecEm = (em.ctec === true || String(em.ctec) === 'true') ? 'SÍ' : 'NO';
+
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            const lineasDesc = doc.splitTextToSize(descEm, colWidthsEm.desc - 4);
+            const altoFilaEm = Math.max(7.5, (lineasDesc.length * 4.0) + 3.0);
+
+            if (posY + altoFilaEm > altoPagina - 16) {
+                doc.addPage();
+                await dibujarCabecera();
+                posY = 32;
+                dibujarEncabezadoEmergentes(posY);
+                posY += 7.5;
+            }
+
+            if (idx % 2 === 0) {
+                doc.setFillColor(254, 252, 232);
+                doc.rect(margenX, posY, anchoContenido, altoFilaEm, 'F');
+            }
+
+            doc.setDrawColor(226, 232, 240);
+            doc.setLineWidth(0.3);
+            doc.line(margenX, posY + altoFilaEm, margenX + anchoContenido, posY + altoFilaEm);
+
+            let xPos = margenX;
+            doc.setFontSize(8);
+            doc.setTextColor(100, 116, 139);
+            doc.text(String(idx + 1), xPos + 2, posY + 5);
+            xPos += colWidthsEm.num;
+
+            doc.setTextColor(51, 65, 85);
+            doc.text(fechaEm, xPos + 2, posY + 5);
+            xPos += colWidthsEm.fecha;
+
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(185, 28, 28);
+            doc.text(tagEm, xPos + 2, posY + 5);
+            xPos += colWidthsEm.tag;
+
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(15, 23, 42);
+            doc.text(lineasDesc, xPos + 2, posY + 5);
+            xPos += colWidthsEm.desc;
+
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(71, 85, 105);
+            doc.text(omEm, xPos + 2, posY + 5);
+            xPos += colWidthsEm.om;
+
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(notifEm === 'SÍ' ? 22 : 153, notifEm === 'SÍ' ? 163 : 27, notifEm === 'SÍ' ? 74 : 27);
+            doc.text(notifEm, xPos + 4, posY + 5);
+            xPos += colWidthsEm.notif;
+
+            doc.setTextColor(ctecEm === 'SÍ' ? 13 : 100, ctecEm === 'SÍ' ? 148 : 116, ctecEm === 'SÍ' ? 136 : 139);
+            doc.text(ctecEm, xPos + 4, posY + 5);
+
+            posY += altoFilaEm;
+        }
+    }
+
     dibujarPiePaginaCorporativo(doc, {
         fechaImpresion,
-        textoCentro: `Documento de Control Diario | Fecha: ${fechaImpresion}`,
+        textoCentro: `Informe Semanal CBM & Emergencias | Fecha: ${fechaImpresion}`,
         margenX
     });
 
-    doc.save(nombreArchivoPDF);
+    abrirVisorPDFInterno(doc, nombreArchivoPDF);
+};
+
+window.descargarDossierGerencialMensual = async () => {
+    const { jsPDF } = window.jspdf || {};
+    if (!jsPDF) {
+        alert('Cargando librería de PDF. Intente nuevamente en unos instantes.');
+        return;
+    }
 
     if (typeof UI !== 'undefined' && UI.mostrarToast) {
-        UI.mostrarToast(`✅ PDF emitido: ${nombreArchivoPDF}`, 'exito');
+        UI.mostrarToast('Generando vista previa del Dossier Mensual...', 'info');
     }
+
+    const fechaActual = new Date();
+    const fechaImpresion = formatearFechaNomenclatura(fechaActual);
+    const mesAnioTexto = fechaActual.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
+    const nombreArchivoPDF = `Dossier_Gerencial_Confiabilidad_Mina_Los_Colorados_(${fechaImpresion}).pdf`;
+
+    const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+    });
+
+    const margenX = 14;
+
+    await dibujarPortadaGerencialMensual(doc, {
+        mesAnio: mesAnioTexto,
+        superintendencia: 'Superintendencia de Mantenimiento Planta',
+        faena: 'Planta Mina Los Colorados (CMP)'
+    });
+
+    doc.addPage();
+    
+    await dibujarCabeceraCorporativa(doc, {
+        titulo: 'RESUMEN EJECUTIVO DE CONFIABILIDAD Y FLOTA CBM',
+        subtitulo: `Consolidado Mensual — ${mesAnioTexto} | Planta Mina Los Colorados`,
+        referencia: 'Indicadores Clave de Desempeño (KPIs) y Balance de Criticidad ISO 20816-3',
+        margenX
+    });
+
+    let posY = 36;
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(15, 23, 42);
+    doc.text('1. Indicadores Globales de Gestión del Mes:', margenX, posY);
+
+    posY += 8;
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(71, 85, 105);
+    const resumenTexto = `Durante el periodo de ${mesAnioTexto}, la gestión predictiva en Planta Mina Los Colorados mantuvo la continuidad operacional mediante el monitoreo continuo de vibraciones y termografía infrarroja. Las principales atenciones se concentraron en los trenes de potencia de correas transportadoras y molinos principales, logrando mitigar desvíos en Zona D antes de incurrir en detenciones no programadas.`;
+    
+    const lineasResumen = doc.splitTextToSize(resumenTexto, 182);
+    doc.text(lineasResumen, margenX, posY);
+
+    dibujarPiePaginaCorporativo(doc, {
+        fechaImpresion,
+        textoCentro: `Dossier Gerencial Mensual | Período: ${mesAnioTexto}`,
+        margenX
+    });
+
+    abrirVisorPDFInterno(doc, nombreArchivoPDF);
 };
 
 export default {
-    renderizarModuloPMS
+    renderizarModuloPMS,
+    abrirVisorPDFInterno
 };

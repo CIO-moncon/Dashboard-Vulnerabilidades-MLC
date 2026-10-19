@@ -1,6 +1,7 @@
 // ============================================================================
 // MÓDULO UI: JS/UI/EXPEDIENTE.JS
 // CIO PREDICTIVO 2.0 — Secuencia Cinemática, Reactividad y Reporte Diario SAP
+// Con Visor Interno Interactivo (Iframe Preview + Descarga)
 // ============================================================================
 
 import { auth, db } from '../core/firebase-config.js';
@@ -10,7 +11,8 @@ import {
     dibujarPiePaginaCorporativo,
     resolverPaletaSeveridadISO,
     obtenerSemanaISO,
-    formatearFechaNomenclatura
+    formatearFechaNomenclatura,
+    abrirVisorPDFInterno
 } from '../core/pdf-plantilla.js';
 
 window.abrirGraficoTendencia = abrirGraficoTendencia;
@@ -19,7 +21,9 @@ window.abrirModalAnalisisExperto = abrirModalAnalisisExperto;
 let equipoActual = null;
 let idEquipoActual = null;
 
-// Inyección de estilos de severidad con alta prioridad (!important)
+// ----------------------------------------------------------------------------
+// INYECCIÓN DE ESTILOS DE SEVERIDAD REACTIVOS (!IMPORTANT)
+// ----------------------------------------------------------------------------
 const inyectarEstilosSeveridad = () => {
     if (document.getElementById('cbm-estilos-dinamicos-severidad')) return;
     const style = document.createElement('style');
@@ -58,7 +62,9 @@ const inyectarEstilosSeveridad = () => {
 };
 inyectarEstilosSeveridad();
 
-// Algoritmo cinemático real del tren motriz
+// ----------------------------------------------------------------------------
+// ALGORITMO CINEMÁTICO REAL: M -> A -> G -> E -> PL -> CH -> T
+// ----------------------------------------------------------------------------
 const clasificarPuntoCinematico = (puntoRaw = '') => {
     const p = String(puntoRaw || '').toUpperCase().trim();
     const match = p.match(/^([A-Z]+)(\d+)?(?:[_\-\s]?([A-Z0-9]+))?$/i);
@@ -141,7 +147,9 @@ const esMismoDia = (fechaStr, fechaRef = new Date()) => {
            str.includes(`${yRef}-${mStr}-${dStr}`);
 };
 
-// Evaluación y color en tiempo real
+// ----------------------------------------------------------------------------
+// EVALUACIÓN NORMATIVA Y ESTILOS DINÁMICOS EN VIVO
+// ----------------------------------------------------------------------------
 window.evaluarInputEnVivo = (inputEl, tipo) => {
     if (!inputEl) return;
     const v = parseFloat(inputEl.value);
@@ -257,7 +265,9 @@ const resolverColorTexto = (tipo, valor) => {
     return '#94a3b8';
 };
 
-// Renderizado del Expediente Técnico
+// ----------------------------------------------------------------------------
+// RENDERIZADO DEL EXPEDIENTE TÉCNICO
+// ----------------------------------------------------------------------------
 export const renderizarExpediente = async (idFirebase, idContenedor = 'espacio-trabajo-dinamico') => {
     const contenedor = document.getElementById(idContenedor);
     if (!contenedor) return;
@@ -359,8 +369,8 @@ export const renderizarExpediente = async (idFirebase, idContenedor = 'espacio-t
                         <span>Configurar Máquina</span>
                     </button>
 
-                    <button type="button" onclick="window.descargarPDFEquipo('${idFirebase}')" title="Generar Resumen CBM para SAP PM" style="background: rgba(0, 230, 118, 0.18); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.45); padding: 8px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                        <span class="material-symbols-outlined" style="font-size: 1.1rem;" aria-hidden="true">picture_as_pdf</span>
+                    <button type="button" onclick="window.descargarPDFEquipo('${idFirebase}')" title="Vista Previa y Resumen CBM para SAP PM" style="background: rgba(0, 230, 118, 0.18); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.45); padding: 8px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 1.1rem;" aria-hidden="true">visibility</span>
                         <span>PDF Diario</span>
                     </button>
 
@@ -500,7 +510,9 @@ export const renderizarExpediente = async (idFirebase, idContenedor = 'espacio-t
     }
 };
 
-// Guardado inmutable y disparo hacia control de informes espectrales
+// ----------------------------------------------------------------------------
+// GUARDADO INMUTABLE Y DISPARO DE INFORME ESPECTRAL EN FIREBASE
+// ----------------------------------------------------------------------------
 window.guardarMedicionesRuta = async (idFirebase) => {
     const btn = document.getElementById('btn-guardar-ruta-cbm');
     const inputFecha = document.getElementById('fecha-ruta-terreno');
@@ -644,7 +656,10 @@ window.guardarMedicionesRuta = async (idFirebase) => {
     }
 };
 
-// Generador de PDF Diario del Activo
+// ----------------------------------------------------------------------------
+// GENERADOR DE PDF DIARIO CON VISOR INTERNO INTERACTIVO
+// Nomenclatura: TAG_Sxx_(dd-mm-aaaa)_resumen.pdf
+// ----------------------------------------------------------------------------
 window.descargarPDFEquipo = async (idFirebase) => {
     const { jsPDF } = window.jspdf || {};
     if (!jsPDF) {
@@ -653,7 +668,7 @@ window.descargarPDFEquipo = async (idFirebase) => {
     }
 
     if (typeof UI !== 'undefined' && UI.mostrarToast) {
-        UI.mostrarToast('Generando reporte técnico del día para SAP...', 'info');
+        UI.mostrarToast('Generando vista previa del reporte diario para SAP...', 'info');
     }
 
     let eq = (window.datosGlobalesEquipos && window.datosGlobalesEquipos[idFirebase]) || {};
@@ -695,7 +710,7 @@ window.descargarPDFEquipo = async (idFirebase) => {
         }));
     }
 
-    // Filtrar estrictamente solo las mediciones del día actual
+    // Filtrar estrictamente solo las mediciones del día de la impresión
     const mapaPuntosDelDia = new Map();
 
     spotsArray.forEach((s) => {
@@ -774,7 +789,7 @@ window.descargarPDFEquipo = async (idFirebase) => {
     const altoPagina = doc.internal.pageSize.getHeight();
     const anchoContenido = anchoPagina - (margenX * 2);
 
-    // 1. CABECERA CORPORATIVA CON EL SELLO EN LA ESQUINA SUPERIOR DERECHA
+    // 1. CABECERA CORPORATIVA CON SELLO EN LA ESQUINA SUPERIOR DERECHA
     await dibujarCabeceraCorporativa(doc, {
         titulo: 'REPORTE DIARIO DE CONDICIÓN MECÁNICA — CBM',
         subtitulo: 'Planta Mina Los Colorados (CMP) | CPF Ingeniería Ltda.',
@@ -784,7 +799,7 @@ window.descargarPDFEquipo = async (idFirebase) => {
         margenX
     });
 
-    // 2. FICHA TÉCNICA DEL ACTIVO (DESPEJADA Y SIN SUPERPOSICIONES)
+    // 2. FICHA TÉCNICA DEL ACTIVO (100% DESPEJADA)
     let posY = 34;
     doc.setFillColor(248, 250, 252);
     doc.setDrawColor(226, 232, 240);
@@ -1114,14 +1129,13 @@ window.descargarPDFEquipo = async (idFirebase) => {
         margenX
     });
 
-    doc.save(nombreArchivoPDF);
-
-    if (typeof UI !== 'undefined' && UI.mostrarToast) {
-        UI.mostrarToast(`✅ PDF emitido: ${nombreArchivoPDF}`, 'exito');
-    }
+    // 6. APERTURA EN VISOR INTERNO INTERACTIVO
+    abrirVisorPDFInterno(doc, nombreArchivoPDF);
 };
 
-// Modal de configuración de la máquina
+// ----------------------------------------------------------------------------
+// MODAL: CONFIGURAR MÁQUINA
+// ----------------------------------------------------------------------------
 window.abrirModalConfigurarMaquina = async (idFirebase) => {
     const modalId = 'modal-configurar-maquina-cbm';
     document.getElementById(modalId)?.remove();

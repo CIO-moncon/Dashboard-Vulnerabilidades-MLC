@@ -299,8 +299,31 @@
         </div>
     </div>
 
+    <!-- MODAL VISOR DE PDF INTEGRADO (NUEVO) -->
+    <div id="modal-visor-pdf" class="modal-overlay oculto" role="dialog" aria-modal="true" aria-labelledby="modal-pdf-titulo" aria-hidden="true" style="position: fixed; inset: 0; z-index: 99999; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);">
+        <div class="modal-box glass-panel" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 24px 60px rgba(0,0,0,0.7); border-radius: 14px; width: 95%; max-width: 1100px; height: 90vh; display: flex; flex-direction: column; overflow: hidden; animation: slideUp 0.3s forwards ease;">
+            
+            <header style="background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid rgba(255,255,255,0.1); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="material-symbols-outlined" style="color: #38bdf8; font-size: 1.4rem;" aria-hidden="true">picture_as_pdf</span>
+                    <h3 id="modal-pdf-titulo" style="margin: 0; color: white; font-size: 1rem; font-weight: 700;">Visor Documental CBM</h3>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <a id="btn-pdf-descargar" href="#" download class="btn-secundario" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); padding: 6px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                        <span class="material-symbols-outlined" style="font-size: 1rem;" aria-hidden="true">download</span> Descargar
+                    </a>
+                    <button type="button" onclick="window.cerrarVisorPDF()" class="btn-cerrar-modal" style="background: transparent; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px;" aria-hidden="true">&times;</button>
+                </div>
+            </header>
+
+            <div style="flex: 1; background: #1e293b; position: relative; overflow: hidden; display: flex; flex-direction: column;">
+                <iframe id="iframe-visor-pdf" src="" style="width: 100%; height: 100%; border: none; background: #0f172a;" title="Visor PDF"></iframe>
+            </div>
+        </div>
+    </div>
+
     <!-- ===================================================================== -->
-    <!-- 4. SCRIPTS                                                            -->
+    <!-- 4. SCRIPTS (CON CACHE BUSTING ?v=2026)                                 -->
     <!-- ===================================================================== -->
     <script type="module" src="./js/ui/notificaciones.js?v=2026"></script>
     <script type="module" src="./js/app.js?v=2026"></script>
