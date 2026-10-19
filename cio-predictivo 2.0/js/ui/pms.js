@@ -14,7 +14,8 @@ import {
 // ----------------------------------------------------------------------------
 // ESTADO INTERNO DEL MÓDULO PMS
 // ----------------------------------------------------------------------------
-let semanaSeleccionada = 'PMS42';
+let semanaSeleccionada = null; 
+let usuarioCambioSemana = false; 
 let listaSemanasDisponibles = [];
 let datosSemanaActual = {
     ordenes: {},
@@ -23,15 +24,19 @@ let datosSemanaActual = {
 let datosEspectralesSemana = {};
 let filtroTexto = '';
 let filtroEstado = 'TODOS';
-let filtroEspectralesEstado = 'PENDIENTES'; // 'TODOS' | 'PENDIENTES' | 'EMITIDOS'
+let filtroEspectralesEstado = 'PENDIENTES'; 
 let filtroEspectralesFecha = 'TODAS';
 let debounceGuardado = {};
+
+// Variables globales para limpiar los listeners
+let refSemanasActiva = null;
+let refEspectralesActiva = null;
 
 const dbPMS = db.ref('historial_informes/pms_semanal');
 const dbEspectrales = db.ref('control_informes_espectrales');
 
 // ----------------------------------------------------------------------------
-// UTILIDADES PURAS
+// UTILIDADES PURAS Y UI MODAL INDUSTRIAL 
 // ----------------------------------------------------------------------------
 const escaparHTML = (texto = '') =>
     String(texto || '')
@@ -41,10 +46,70 @@ const escaparHTML = (texto = '') =>
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
 
+const mostrarModalIndustrial = ({ titulo, icono, colorBase, htmlCuerpo, textoConfirmar = 'Aceptar', textoCancelar = 'Cancelar', mostrarCancelar = true }) => {
+    return new Promise((resolve) => {
+        const idModal = 'modal-dinamico-' + Date.now();
+        const overlay = document.createElement('div');
+        overlay.id = idModal;
+        overlay.className = 'modal-overlay';
+        overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 9999; animation: fadeIn 0.2s ease;';
+
+        overlay.innerHTML = `
+            <div class="modal-box glass-panel" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 24px 40px rgba(0,0,0,0.5); border-radius: 12px; width: 100%; max-width: 420px; overflow: hidden; transform: translateY(20px); animation: slideUp 0.3s forwards ease;">
+                <header style="background: rgba(${colorBase}, 0.15); border-bottom: 1px solid rgba(${colorBase}, 0.3); padding: 16px 20px; display: flex; align-items: center; gap: 10px;">
+                    <span class="material-symbols-outlined" style="color: rgb(${colorBase}); font-size: 1.5rem;" aria-hidden="true">${icono}</span>
+                    <h3 style="margin: 0; color: white; font-size: 1.1rem; font-weight: 700;">${titulo}</h3>
+                </header>
+                <div style="padding: 20px; color: #e2e8f0; font-size: 0.85rem; line-height: 1.5;">
+                    ${htmlCuerpo}
+                </div>
+                <footer style="padding: 14px 20px; background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: flex-end; gap: 10px;">
+                    ${mostrarCancelar ? `<button id="btn-cancel-${idModal}" style="background: transparent; color: #94a3b8; border: 1px solid rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background 0.2s;">${textoCancelar}</button>` : ''}
+                    <button id="btn-ok-${idModal}" style="background: rgb(${colorBase}); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 10px rgba(${colorBase}, 0.3); transition: transform 0.1s;">${textoConfirmar}</button>
+                </footer>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        if (!document.getElementById('style-modal-anim')) {
+            const style = document.createElement('style');
+            style.id = 'style-modal-anim';
+            style.innerHTML = `@keyframes slideUp { to { transform: translateY(0); } } @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }`;
+            document.head.appendChild(style);
+        }
+
+        const cerrar = (valor) => {
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.remove(), 200);
+            resolve(valor);
+        };
+
+        const btnOk = document.getElementById(`btn-ok-${idModal}`);
+        if (btnOk) btnOk.onclick = () => {
+            const formInputs = overlay.querySelectorAll('input, select, textarea');
+            if (formInputs.length > 0) {
+                const data = {};
+                formInputs.forEach(inp => data[inp.name] = inp.value);
+                cerrar(data);
+            } else {
+                cerrar(true);
+            }
+        };
+
+        const btnCancel = document.getElementById(`btn-cancel-${idModal}`);
+        if (btnCancel) btnCancel.onclick = () => cerrar(false);
+    });
+};
+
 // ----------------------------------------------------------------------------
 // RENDERIZADO PRINCIPAL DEL CONTENEDOR PMS
 // ----------------------------------------------------------------------------
 export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico') => {
+    // Al montar la pantalla reseteamos los controladores de semana
+    semanaSeleccionada = null; 
+    usuarioCambioSemana = false; 
+
     const contenedor = document.getElementById(idContenedor);
     if (!contenedor) return;
 
@@ -67,7 +132,7 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico') =
                     <div style="display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.4); padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
                         <span style="font-size: 0.75rem; color: #38bdf8; font-weight: 700;">PERIODO:</span>
                         <select id="pms-selector-periodo" onchange="window.cambiarPeriodoPMS(this.value)" style="background: #0f172a; color: #ffffff; border: 1px solid rgba(255,255,255,0.2); padding: 5px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; outline: none; cursor: pointer;">
-                            <option value="PMS42">Respaldo: PMS42 (Activa)</option>
+                            <option value="">Cargando semanas...</option>
                         </select>
                     </div>
 
@@ -163,7 +228,7 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico') =
 
                     <button type="button" onclick="window.eliminarRespaldoSemanaActual()" style="background: transparent; border: none; color: #ef4444; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
                         <span class="material-symbols-outlined" style="font-size: 1rem;" aria-hidden="true">delete</span>
-                        Borrar Respaldo <span id="pms-lbl-semana-borrar">PMS42</span>
+                        Borrar Respaldo <span id="pms-lbl-semana-borrar">Actual</span>
                     </button>
                 </div>
 
@@ -199,23 +264,46 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico') =
 // SINCRONIZACIÓN Y ESCUCHA EN FIREBASE
 // ----------------------------------------------------------------------------
 const inicializarListenersPMS = () => {
+    dbPMS.off('value'); 
+
     dbPMS.on('value', (snapshot) => {
         const val = snapshot.val() || {};
-        listaSemanasDisponibles = Object.keys(val).sort().reverse();
+        const llaves = Object.keys(val);
 
-        if (listaSemanasDisponibles.length === 0) {
-            listaSemanasDisponibles = ['PMS42'];
+        if (llaves.length === 0) {
+            listaSemanasDisponibles = ['2026-W42'];
+        } else {
+            // ORDENAMIENTO BLINDADO PARA FORMATOS AÑO-SEMANA (Ej: 2026-W43 vs 2026-W42)
+            listaSemanasDisponibles = llaves.sort((a, b) => {
+                // Extraer los dígitos que van después de la 'W' o el último número del string
+                const getNum = (str) => {
+                    const parts = str.split('W');
+                    if (parts.length > 1) return parseInt(parts[1], 10) || 0;
+                    return parseInt(String(str).replace(/\D/g, ''), 10) || 0;
+                };
+                return getNum(b) - getNum(getNum(a) < 0 ? 0 : b) - getNum(a); // Orden descendente real
+            });
         }
 
-        if (!listaSemanasDisponibles.includes(semanaSeleccionada)) {
-            semanaSeleccionada = listaSemanasDisponibles[0];
+        // Corrección limpia del orden descendente:
+        listaSemanasDisponibles.sort((a, b) => {
+            const numA = parseInt(a.split('W')[1] || a.replace(/\D/g, ''), 10) || 0;
+            const numB = parseInt(b.split('W')[1] || b.replace(/\D/g, ''), 10) || 0;
+            return numB - numA;
+        });
+
+        const semanaMasAlta = listaSemanasDisponibles[0];
+
+        if (!usuarioCambioSemana || !semanaSeleccionada || !listaSemanasDisponibles.includes(semanaSeleccionada)) {
+            if (semanaSeleccionada !== semanaMasAlta) {
+                semanaSeleccionada = semanaMasAlta;
+                cargarDatosSemana(semanaSeleccionada);
+                escucharInformesEspectrales();
+            }
         }
 
         actualizarSelectorSemanas();
-        cargarDatosSemana(semanaSeleccionada);
     });
-
-    escucharInformesEspectrales();
 };
 
 const actualizarSelectorSemanas = () => {
@@ -225,35 +313,49 @@ const actualizarSelectorSemanas = () => {
 
     if (lblBorrar) lblBorrar.textContent = semanaSeleccionada;
 
-    sel.innerHTML = listaSemanasDisponibles.map((sem, idx) => `
-        <option value="${sem}" ${sem === semanaSeleccionada ? 'selected' : ''}>
-            ${idx === 0 ? '🟢 ' : '📁 '}Respaldo: ${sem} ${idx === 0 ? '(Semana Activa)' : ''}
-        </option>
-    `).join('');
+    sel.innerHTML = listaSemanasDisponibles.map((sem, idx) => {
+        // Al estar ordenados de mayor a menor, el [0] siempre es el número más alto y por tanto el Activo
+        const esMasReciente = (idx === 0);
+        const labelText = esMasReciente ? `🟢 Semana Activa: ${sem}` : `📁 Respaldo: ${sem}`;
+        return `<option value="${sem}" ${sem === semanaSeleccionada ? 'selected' : ''}>${labelText}</option>`;
+    }).join('');
 };
 
 const cargarDatosSemana = (nombreSemana) => {
+    if (refSemanasActiva) dbPMS.child(refSemanasActiva).off('value');
+    refSemanasActiva = nombreSemana;
+
     dbPMS.child(nombreSemana).on('value', (snap) => {
         const data = snap.val() || {};
         datosSemanaActual = {
             ordenes: data.ordenes || {},
             actividades_emergentes: data.actividades_emergentes || {}
         };
-        renderizarKPIsYTablas();
+        
+        if (semanaSeleccionada === nombreSemana) {
+            renderizarKPIsYTablas();
+        }
     });
 };
 
 const escucharInformesEspectrales = () => {
+    if (!semanaSeleccionada) return;
     const semanaNorm = semanaSeleccionada.replace('PMS', 'S');
+    
+    if (refEspectralesActiva) dbEspectrales.child(refEspectralesActiva).off('value');
+    refEspectralesActiva = semanaNorm;
 
     dbEspectrales.child(semanaNorm).on('value', (snap) => {
         datosEspectralesSemana = snap.val() || {};
-        actualizarSelectFechasEspectrales();
-        renderizarTablaEspectrales();
+        if (semanaSeleccionada.replace('PMS', 'S') === semanaNorm) {
+            actualizarSelectFechasEspectrales();
+            renderizarTablaEspectrales();
+        }
     });
 };
 
 window.cambiarPeriodoPMS = (nuevaSemana) => {
+    usuarioCambioSemana = true; // Activa bandera para que Firebase no sobrescriba la selección
     semanaSeleccionada = nuevaSemana;
     const lblBorrar = document.getElementById('pms-lbl-semana-borrar');
     if (lblBorrar) lblBorrar.textContent = semanaSeleccionada;
@@ -709,7 +811,7 @@ const renderizarTablaEmergencias = () => {
 };
 
 // ----------------------------------------------------------------------------
-// INTERACCIÓN Y PERSISTENCIA
+// INTERACCIÓN Y PERSISTENCIA (Modales Integrados)
 // ----------------------------------------------------------------------------
 window.actualizarCampoOrden = async (idOrden, campo, valor) => {
     try {
@@ -745,14 +847,31 @@ window.filtrarOrdenesEstado = (estado) => {
 };
 
 window.eliminarEmergencia = async (key) => {
-    if (confirm('¿Eliminar esta actividad emergente?')) {
+    const confirmacion = await mostrarModalIndustrial({
+        titulo: 'Eliminar Registro',
+        icono: 'delete',
+        colorBase: '239, 68, 68',
+        htmlCuerpo: '¿Estás seguro de que deseas eliminar esta actividad emergente? Esta acción no se puede deshacer.',
+        textoConfirmar: 'Eliminar'
+    });
+
+    if (confirmacion) {
         await dbPMS.child(semanaSeleccionada).child('actividades_emergentes').child(key).remove();
     }
 };
 
 window.eliminarRespaldoSemanaActual = async () => {
-    if (confirm(`¿Estás seguro de eliminar completamente el respaldo ${semanaSeleccionada}? Esta acción no se puede deshacer.`)) {
+    const confirmacion = await mostrarModalIndustrial({
+        titulo: 'Borrar Respaldo Semanal',
+        icono: 'warning',
+        colorBase: '239, 68, 68',
+        htmlCuerpo: `¿Estás seguro de eliminar <strong>completamente</strong> el respaldo <strong>${semanaSeleccionada}</strong>?<br><br>Se borrarán todas las OMs y emergencias. Esta acción no se puede deshacer.`,
+        textoConfirmar: 'Sí, Borrar Semana'
+    });
+
+    if (confirmacion) {
         await dbPMS.child(semanaSeleccionada).remove();
+        usuarioCambioSemana = false; 
         semanaSeleccionada = listaSemanasDisponibles.find((s) => s !== semanaSeleccionada) || 'PMS42';
         window.cambiarPeriodoPMS(semanaSeleccionada);
     }
@@ -771,7 +890,13 @@ window.procesarArchivoExcelPMS = (event) => {
             const jsonData = XLSX.utils.sheet_to_json(firstSheet);
 
             if (jsonData.length === 0) {
-                alert('El archivo Excel no contiene filas de datos.');
+                await mostrarModalIndustrial({
+                    titulo: 'Error de Lectura',
+                    icono: 'error',
+                    colorBase: '239, 68, 68',
+                    htmlCuerpo: 'El archivo Excel subido no contiene filas de datos válidas.',
+                    mostrarCancelar: false
+                });
                 return;
             }
 
@@ -788,16 +913,21 @@ window.procesarArchivoExcelPMS = (event) => {
                 }
             }
 
-            const confirmarSemana = prompt(
-                `📊 Archivo analizado (${jsonData.length} órdenes).\n` +
-                `Semana detectada: ${semanaDetectada}.\n\n` +
-                `Ingresa el identificador de semana a crear o actualizar:`,
-                semanaDetectada
-            );
+            const modalResult = await mostrarModalIndustrial({
+                titulo: 'Confirmar Carga de OMs',
+                icono: 'upload_file',
+                colorBase: '2, 132, 199',
+                htmlCuerpo: `
+                    <p style="margin-bottom: 8px;">📊 Archivo analizado correctamente con <strong>${jsonData.length}</strong> órdenes.</p>
+                    <p style="margin-bottom: 12px;">Semana detectada automáticamente:</p>
+                    <input type="text" name="semana" value="${semanaDetectada}" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 1rem; text-align: center; outline: none; box-sizing: border-box;">
+                `,
+                textoConfirmar: 'Cargar Archivo'
+            });
 
-            if (!confirmarSemana) return;
+            if (!modalResult || !modalResult.semana) return; 
 
-            const nuevaSemanaId = confirmarSemana.trim().toUpperCase();
+            const nuevaSemanaId = modalResult.semana.trim().toUpperCase();
             const nuevasOrdenes = {};
 
             jsonData.forEach((row, i) => {
@@ -810,8 +940,8 @@ window.procesarArchivoExcelPMS = (event) => {
                     tag: String(row.TAG || row.Tag || row.Equipo || 'SIN-TAG'),
                     actividad: String(row.Texto || row.Operación || row.Actividad || 'Inspección CBM'),
                     cruce: 'No Catastrado',
-                    estadoReal: 'Ejecutado',
-                    notifSap: true,
+                    estadoReal: 'Pendiente', 
+                    notifSap: false,         
                     ctec: false,
                     adjuntos: 0,
                     observacion: ''
@@ -825,11 +955,29 @@ window.procesarArchivoExcelPMS = (event) => {
                 actividades_emergentes: {}
             });
 
-            alert(`✅ ¡Semana ${nuevaSemanaId} cargada con éxito!`);
+            if (typeof UI !== 'undefined' && UI.mostrarToast) {
+                UI.mostrarToast(`✅ ¡Semana ${nuevaSemanaId} cargada con éxito!`, 'exito');
+            } else {
+                await mostrarModalIndustrial({
+                    titulo: 'Éxito',
+                    icono: 'check_circle',
+                    colorBase: '0, 230, 118',
+                    htmlCuerpo: `¡La semana <strong>${nuevaSemanaId}</strong> se ha cargado correctamente en la base de datos!`,
+                    mostrarCancelar: false
+                });
+            }
+
+            usuarioCambioSemana = true; 
             window.cambiarPeriodoPMS(nuevaSemanaId);
         } catch (err) {
             console.error('[PMS] Error procesando Excel:', err);
-            alert('Error al leer el archivo Excel.');
+            await mostrarModalIndustrial({
+                titulo: 'Error de Procesamiento',
+                icono: 'error',
+                colorBase: '239, 68, 68',
+                htmlCuerpo: 'Ocurrió un error al intentar leer el archivo Excel. Asegúrese de que tenga el formato correcto.',
+                mostrarCancelar: false
+            });
         } finally {
             event.target.value = '';
         }
@@ -838,33 +986,62 @@ window.procesarArchivoExcelPMS = (event) => {
     reader.readAsArrayBuffer(file);
 };
 
-window.abrirModalNuevaEmergencia = () => {
-    const tag = prompt('Ingrese el TAG del equipo con imprevisto (Ej: MH3323):');
-    if (!tag) return;
-    const desc = prompt('Descripción del imprevisto técnico:');
-    if (!desc) return;
-    const om = prompt('Número de OM provisional o aviso SAP (opcional):') || 'S/N';
+window.abrirModalNuevaEmergencia = async () => {
+    const formResult = await mostrarModalIndustrial({
+        titulo: 'Registrar Imprevisto / Emergencia',
+        icono: 'bolt',
+        colorBase: '245, 158, 11',
+        htmlCuerpo: `
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div>
+                    <label style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 4px;">TAG del Equipo (Obligatorio)</label>
+                    <input type="text" name="tag" placeholder="Ej: MH3323" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 10px; border-radius: 6px; box-sizing: border-box; outline: none; font-family: monospace;">
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 4px;">Descripción del Imprevisto (Obligatorio)</label>
+                    <textarea name="desc" placeholder="Detalle la falla, hallazgo o emergencia técnica..." rows="3" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 10px; border-radius: 6px; box-sizing: border-box; resize: none; outline: none;"></textarea>
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 4px;">N° OM o Aviso SAP (Opcional)</label>
+                    <input type="text" name="om" placeholder="Ej: 31662428 o dejar vacío" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 10px; border-radius: 6px; box-sizing: border-box; outline: none; font-family: monospace;">
+                </div>
+            </div>
+        `,
+        textoConfirmar: 'Registrar Emergencia'
+    });
+
+    if (!formResult || !formResult.tag || !formResult.desc) return;
 
     const nuevaRef = dbPMS.child(semanaSeleccionada).child('actividades_emergentes').push();
     nuevaRef.set({
-        tag: tag.trim().toUpperCase(),
-        descripcion: desc.trim(),
-        om: om.trim(),
+        tag: formResult.tag.trim().toUpperCase(),
+        descripcion: formResult.desc.trim(),
+        om: formResult.om.trim() || 'S/N',
         fecha: new Date().toISOString().split('T')[0],
         turno: 'CPF',
         notifSap: false,
         ctec: false
     });
+
+    if (typeof UI !== 'undefined' && UI.mostrarToast) {
+        UI.mostrarToast('Actividad emergente registrada', 'exito');
+    }
 };
 
 // ----------------------------------------------------------------------------
-// REPORTE AUDITABLE PDF DIARIO (CENTRALIZADO CON PDF-PLANTILLA.JS)
-// Nomenclatura solicitada: auditoria_Sxx_(dd-mm-aaaa).pdf
+// REPORTE AUDITABLE PDF DIARIO
 // ----------------------------------------------------------------------------
 window.descargarReportePDF_PMS = async () => {
     const { jsPDF } = window.jspdf || {};
     if (!jsPDF) {
-        alert('Cargando librería de PDF. Intente nuevamente en unos instantes.');
+        await mostrarModalIndustrial({
+            titulo: 'Cargando Motor PDF',
+            icono: 'hourglass_top',
+            colorBase: '56, 189, 248',
+            htmlCuerpo: 'El motor de generación de PDF aún se está cargando. Por favor, espere un par de segundos e intente nuevamente.',
+            mostrarCancelar: false,
+            textoConfirmar: 'Entendido'
+        });
         return;
     }
 
