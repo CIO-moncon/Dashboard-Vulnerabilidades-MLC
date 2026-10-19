@@ -1,17 +1,110 @@
+/* ============================================================================
+   SISTEMA DE DISEÑO INDUSTRIAL: VARIABLES.CSS
+   CIO PREDICTIVO 2.0 — Tokens de Color, Severidad ISO 20816-3 y Glassmorphism
+   ============================================================================ */
+
 :root {
+    /* ------------------------------------------------------------------------
+       1. FONDOS INDUSTRIALES (DARK THEME & GLASSMORPHISM)
+       ------------------------------------------------------------------------ */
     --bg-dark: #0d1117;
-    --bg-card: #161b22;
+    --bg-dark-deep: #090a0f;
+    --bg-card: rgba(22, 27, 34, 0.82);
+    --bg-card-solid: #161b22;
     --bg-input: #010409;
+    --bg-input-elevated: #1a2234;
+    --bg-surface-glass: rgba(15, 23, 42, 0.75);
+
+    /* Bordes con transparencia vítrea */
     --border-glass: rgba(255, 255, 255, 0.12);
-    
+    --border-glass-light: rgba(255, 255, 255, 0.06);
+    --border-glass-active: rgba(56, 189, 248, 0.4);
+
+    /* ------------------------------------------------------------------------
+       2. TIPOGRAFÍA Y ESCALAS DE TEXTO
+       ------------------------------------------------------------------------ */
+    --font-main: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'Roboto Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
     --text-main: #f8fafc;
+    --text-secondary: #cbd5e1;
     --text-muted: #94a3b8;
-    
+    --text-dimmed: #64748b;
+
+    /* ------------------------------------------------------------------------
+       3. COLORES DE IDENTIDAD Y MARCA (CPF / CMP)
+       ------------------------------------------------------------------------ */
     --primary-blue: #38bdf8;
     --primary-hover: #0284c7;
+    --primary-active: #0369a1;
+    --primary-blue-bg: rgba(56, 189, 248, 0.12);
+    --primary-blue-border: rgba(56, 189, 248, 0.35);
 
-    --iso-zona-a: #10b981;
+    /* ------------------------------------------------------------------------
+       4. SEVERIDAD NORMATIVA ISO 20816-3 (VIBRACIÓN & CONFIABILIDAD CBM)
+       ------------------------------------------------------------------------ */
+    /* Zona A: Condición Excelente / Buena */
+    :root {
+    /* Verde vivo de alta fidelidad industrial sobre ortofotos */
+    --iso-zona-a: #00e676; 
+    --iso-zona-a-bg: rgba(0, 230, 118, 0.15);
+    --iso-zona-a-border: rgba(0, 230, 118, 0.45);
+}
+
+    /* Zona B: Condición Aceptable / Monitoreo Regular */
     --iso-zona-b: #84cc16;
+    --iso-zona-b-bg: rgba(132, 204, 22, 0.15);
+    --iso-zona-b-border: rgba(132, 204, 22, 0.4);
+
+    /* Zona C: Alerta / Operación Restringida / Mantenimiento Programado */
     --iso-zona-c: #f59e0b;
+    --iso-zona-c-bg: rgba(245, 158, 11, 0.15);
+    --iso-zona-c-border: rgba(245, 158, 11, 0.4);
+
+    /* Zona D: Crítico / Peligro / Daño Inminente */
     --iso-zona-d: #ef4444;
+    --iso-zona-d-bg: rgba(239, 68, 68, 0.2);
+    --iso-zona-d-border: rgba(239, 68, 68, 0.45);
+    --iso-zona-d-glow: rgba(239, 68, 68, 0.65);
+
+    /* ------------------------------------------------------------------------
+       5. ESTADOS Y PROCESOS SAP PM / TERRENO
+       ------------------------------------------------------------------------ */
+    --status-ejecutado: #10b981;
+    --status-pendiente: #eab308;
+    --status-detenido: #ef4444;
+    --status-reprogramado: #60a5fa;
+    --status-notificado: #c084fc;
+
+    /* ------------------------------------------------------------------------
+       6. GEOMETRÍA, SOMBRAS Y RADIOS
+       ------------------------------------------------------------------------ */
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-full: 9999px;
+
+    --shadow-subtle: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
+    --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
+
+    /* ------------------------------------------------------------------------
+       7. ESCALA CANÓNICA DE CAPAS (Z-INDEX)
+       ------------------------------------------------------------------------ */
+    --z-map-canvas: 1;
+    --z-map-controls: 10;
+    --z-sticky-bar: 20;
+    --z-topbar: 50;
+    --z-modal-backdrop: 1000;
+    --z-modal-content: 1010;
+    --z-toast-notification: 9999;
+
+    /* ------------------------------------------------------------------------
+       8. ANIMACIONES Y TRANSICIONES SUAVES
+       ------------------------------------------------------------------------ */
+    --transition-fast: 0.15s ease-out;
+    --transition-normal: 0.25s ease-out;
+    --transition-slow: 0.4s ease-out;
 }

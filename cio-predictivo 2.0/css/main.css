@@ -1,153 +1,519 @@
+/* ============================================================================
+   HOJA DE ESTILOS PRINCIPAL: MAIN.CSS
+   CIO PREDICTIVO 2.0 — Estándar CSS Grid, Flexbox Responsivo, GPU y Accesibilidad
+   ============================================================================ */
+
 @import url('./variables.css');
 
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-body { background-color: var(--bg-dark); color: var(--text-main); height: 100vh; overflow: hidden; }
+/* ----------------------------------------------------------------------------
+   1. RESET UNIVERSAL Y VARIABLES DE RESPALDO
+   ---------------------------------------------------------------------------- */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
 
-.fullscreen-view { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
-.app-layout { display: flex; width: 100vw; height: 100vh; }
+:root {
+    /* Variables de respaldo en caso de retardo en carga de variables.css */
+    --bg-dark: #090a0f;
+    --bg-card: rgba(15, 23, 42, 0.75);
+    --bg-input: #1a2234;
+    --border-glass: rgba(148, 163, 184, 0.15);
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --primary-blue: #38bdf8;
+    
+    /* Normas de Severidad CBM (ISO 20816-3) */
+    --iso-zona-a: #10b981; /* Buena */
+    --iso-zona-b: #84cc16; /* Aceptable */
+    --iso-zona-c: #f59e0b; /* Alerta */
+    --iso-zona-d: #ef4444; /* Crítica */
+}
+
+html, body {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh; /* Altura dinámica que descuenta barras de navegación en móviles */
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Clases de control de visibilidad global */
 .activa { display: flex !important; }
-.oculta { display: none !important; }
+.oculta, .oculto { display: none !important; }
 
-/* Login Industrial */
-.login-card { background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: 12px; width: 420px; padding: 40px 30px; text-align: center; }
-.login-header .logo-icon { font-size: 48px; color: var(--primary-blue); margin-bottom: 10px; }
-.login-header h2 { font-weight: 800; font-size: 1.5rem; }
-.login-header p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 25px; }
-.input-group { display: flex; align-items: center; background: var(--bg-input); border: 1px solid var(--border-glass); border-radius: 8px; margin-bottom: 15px; padding: 0 12px; }
-.input-group span { color: var(--text-muted); font-size: 18px; }
-.input-group input { background: transparent; border: none; color: white; padding: 12px; width: 100%; outline: none; font-size: 0.9rem; }
-.btn-accion { width: 100%; background: var(--primary-blue); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; margin-top: 10px; }
-.btn-accion:hover { background: var(--text-main); }
-.legal-footer { font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-top: 15px; }
+/* ----------------------------------------------------------------------------
+   2. ESTRUCTURA Y LAYOUT PRINCIPAL (FLEXBOX / GRID)
+   ---------------------------------------------------------------------------- */
+.fullscreen-view {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-/* Layout Principal */
-.sidebar-principal { width: 280px; background: var(--bg-card); border-right: 1px solid var(--border-glass); display: flex; flex-direction: column; padding: 20px; }
-.sidebar-principal .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.1rem; color: var(--primary-blue); margin-bottom: 20px; }
-.user-profile { display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--border-glass); padding-top: 15px; }
-.user-profile .avatar { width: 36px; height: 36px; background: var(--primary-blue); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; }
-.user-profile .info { flex: 1; display: flex; flex-direction: column; }
-.user-profile .info .name { font-size: 0.85rem; font-weight: 700; }
-.user-profile .info .role { font-size: 0.7rem; color: var(--primary-blue); text-transform: uppercase; font-weight: 700; }
-.btn-icon { background: transparent; border: none; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
-.btn-icon:hover { color: var(--iso-zona-d); }
+.app-layout {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+}
 
-#contenido-principal { flex: 1; display: flex; flex-direction: column; background: var(--bg-dark); }
-.topbar { padding: 15px 30px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); }
-.topbar-actions { display: flex; gap: 10px; align-items: center; }
-.btn-topbar { background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: var(--primary-blue); padding: 8px 14px; border-radius: 6px; font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
-.btn-topbar:hover { background: var(--primary-blue); color: #000; }
-.workspace { padding: 25px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-.panel-industrial { background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: 10px; padding: 20px; }
+#contenido-principal {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-dark);
+    min-width: 0; /* Previene desbordamiento en Flexbox */
+    height: 100%;
+    overflow: hidden;
+}
 
-/* Tarjetas Inteligentes (Topbar) */
-.smart-cards-container { display: flex; gap: 12px; align-items: center; margin-right: 15px; }
-.smart-card { background: var(--bg-input); border: 1px solid var(--border-glass); padding: 6px 12px; border-radius: 6px; display: flex; flex-direction: column; font-size: 0.7rem; color: var(--text-muted); }
-.smart-card .val { font-size: 0.85rem; font-weight: 700; color: var(--primary-blue); }
+.workspace {
+    padding: clamp(15px, 2vw, 25px);
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    contain: content;
+}
 
-/* Gemelo Digital HMI Container */
-.hmi-view-container { position: relative; width: 100%; height: 320px; background: linear-gradient(135deg, #010409 0%, #161b22 100%); border: 1px solid var(--border-glass); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; box-shadow: inset 0 0 40px rgba(0,0,0,0.8); margin-bottom: 20px; }
-.hmi-grid-bg { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 30px 30px; z-index: 1; }
-.hmi-overlay-content { position: relative; z-index: 5; display: flex; justify-content: space-between; align-items: flex-end; }
-.hmi-badge-equipo { background: rgba(0,0,0,0.8); border: 1px solid var(--border-glass); padding: 10px 16px; border-radius: 8px; backdrop-filter: blur(5px); }
-.hmi-badge-equipo h4 { font-size: 0.9rem; color: var(--primary-blue); }
-.hmi-badge-equipo p { font-size: 0.75rem; color: var(--text-muted); }
+.panel-industrial {
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    border-radius: 10px;
+    padding: clamp(15px, 2vw, 20px);
+    backdrop-filter: blur(8px);
+}
 
-/* Tabla de Severidad Dinámica */
-.tabla-cbm { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
-.tabla-cbm th, .tabla-cbm td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-glass); }
-.tabla-cbm th { color: var(--text-muted); font-weight: 600; background: var(--bg-input); }
-.tag-estado { padding: 4px 10px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; text-align: center; display: inline-block; }
-.zona-a { background: rgba(16, 185, 129, 0.1); color: var(--iso-zona-a); border: 1px solid rgba(16, 185, 129, 0.3); }
-.zona-b { background: rgba(132, 204, 22, 0.1); color: var(--iso-zona-b); border: 1px solid rgba(132, 204, 22, 0.3); }
-.zona-c { background: rgba(245, 158, 11, 0.1); color: var(--iso-zona-c); border: 1px solid rgba(245, 158, 11, 0.3); }
-.zona-d { background: rgba(239, 68, 68, 0.1); color: var(--iso-zona-d); border: 1px solid rgba(239, 68, 68, 0.3); }
+/* ----------------------------------------------------------------------------
+   3. SIDEBAR PRINCIPAL Y NAVEGACIÓN
+   ---------------------------------------------------------------------------- */
+.sidebar-principal {
+    width: 280px;
+    background: var(--bg-card);
+    border-right: 1px solid var(--border-glass);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    z-index: 20;
+    transition: transform 0.25s ease, width 0.25s ease;
+}
 
-/* Minigráficos (Sparklines) */
-.sparkline-mock { display: inline-block; border-bottom: 2px solid var(--primary-blue); position: relative; }
+.sidebar-principal .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--primary-blue);
+    margin-bottom: 20px;
+}
 
-/* NUEVA BARRA LATERAL (TABS Y ÁREAS) */
-.sidebar-tabs { display: flex; border-bottom: 1px solid var(--border-glass); margin-bottom: 15px; }
-.tab-btn { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 10px 0; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; border-bottom: 2px solid transparent; }
-.tab-btn.active { color: var(--primary-blue); border-bottom: 2px solid var(--primary-blue); }
-.badge-alerta { background: var(--iso-zona-d); color: white; font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 10px; }
+.sidebar-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-glass);
+    margin-bottom: 15px;
+}
 
-.sidebar-search { display: flex; align-items: center; background: var(--bg-input); border: 1px solid var(--border-glass); border-radius: 8px; padding: 8px 12px; margin-bottom: 15px; }
-.sidebar-search input { background: transparent; border: none; color: var(--text-main); width: 100%; outline: none; font-size: 0.85rem; margin-left: 8px; }
-.sidebar-search .material-symbols-outlined { color: var(--text-muted); font-size: 1.1rem; }
+.tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 10px 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: color 0.18s ease, border-color 0.18s ease;
+    border-bottom: 2px solid transparent;
+}
 
-.area-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 5px; }
+.tab-btn.active, .tab-btn:hover {
+    color: var(--primary-blue);
+    border-bottom-color: var(--primary-blue);
+}
+
+.sidebar-search {
+    display: flex;
+    align-items: center;
+    background: var(--bg-input);
+    border: 1px solid var(--border-glass);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 15px;
+}
+
+.sidebar-search input {
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    width: 100%;
+    outline: none;
+    font-size: 0.85rem;
+    margin-left: 8px;
+}
+
+.sidebar-search .material-symbols-outlined {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+}
+
+.area-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 4px;
+}
+
 .area-list::-webkit-scrollbar { width: 4px; }
-.area-list::-webkit-scrollbar-thumb { background: var(--border-glass); border-radius: 10px; }
+.area-list::-webkit-scrollbar-thumb {
+    background: var(--border-glass);
+    border-radius: 10px;
+}
 
-.area-card-v2 { background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: 8px; padding: 12px; display: flex; align-items: center; cursor: pointer; transition: 0.2s; }
-.area-card-v2:hover { background: rgba(255, 255, 255, 0.05); }
-.area-card-v2.status-danger { border-left: 4px solid var(--iso-zona-d); }
-.area-card-v2.status-warning { border-left: 4px solid var(--iso-zona-c); } /* NUEVO */
-.area-card-v2.status-ok { border-left: 4px solid var(--iso-zona-a); }
+.area-card-v2 {
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
 
-.area-card-v2 .icon { color: var(--text-muted); margin-right: 12px; font-size: 1.2rem; }
+.area-card-v2:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateX(2px);
+}
+
+.area-card-v2.status-danger  { border-left: 4px solid var(--iso-zona-d); }
+.area-card-v2.status-warning { border-left: 4px solid var(--iso-zona-c); }
+.area-card-v2.status-ok      { border-left: 4px solid var(--iso-zona-a); }
+
+.area-card-v2 .icon {
+    color: var(--text-muted);
+    margin-right: 12px;
+    font-size: 1.2rem;
+}
+
 .area-card-v2 .info { flex: 1; }
 .area-card-v2 .info h4 { font-size: 0.85rem; color: var(--text-main); margin-bottom: 4px; }
 .area-card-v2 .info p { font-size: 0.75rem; display: flex; align-items: center; gap: 6px; font-weight: 600; }
 .dot { width: 6px; height: 6px; border-radius: 50%; }
 
-.area-card-v2 .badge-count { background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: var(--primary-blue); padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 4px; }
-
-/* --- CORRECCIÓN DEFINITIVA MAPA PANTALLA COMPLETA --- */
-body.modo-kiosko-activo {
-    overflow: hidden !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #000 !important;
+.area-card-v2 .badge-count {
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: var(--primary-blue);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
-body.modo-kiosko-activo .dashboard-grid {
-    display: block !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-top: 1px solid var(--border-glass);
+    padding-top: 15px;
+    margin-top: auto;
 }
 
-body.modo-kiosko-activo .panel-mapa,
-body.modo-kiosko-activo #espacio-trabajo-dinamico {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    z-index: 99999 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-    border: none !important;
-    background: #000 !important;
+.user-profile .avatar {
+    width: 36px;
+    height: 36px;
+    background: var(--primary-blue);
+    color: #0f172a;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.85rem;
 }
 
-/* Forzar que el contenedor específico de Leaflet cubra toda la pantalla */
-body.modo-kiosko-activo #mapa-satelital {
-    width: 100vw !important;
-    height: 100vh !important;
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
+.user-profile .info { flex: 1; display: flex; flex-direction: column; }
+.user-profile .info .name { font-size: 0.85rem; font-weight: 700; }
+.user-profile .info .role { font-size: 0.7rem; color: var(--primary-blue); text-transform: uppercase; font-weight: 700; }
+
+/* ----------------------------------------------------------------------------
+   4. TOPBAR Y TARJETAS INTELIGENTES
+   ---------------------------------------------------------------------------- */
+.topbar {
+    padding: 12px clamp(15px, 2.5vw, 30px);
+    border-bottom: 1px solid var(--border-glass);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    backdrop-filter: blur(8px);
+    gap: 15px;
+    flex-wrap: wrap;
+    z-index: 10;
 }
 
-/* ========================================= */
-/* FASE 7: GEMELO DIGITAL (DIAGRAMA CINEMÁTICO) */
-/* ========================================= */
+.topbar-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.smart-cards-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.smart-card {
+    background: var(--bg-input);
+    border: 1px solid var(--border-glass);
+    padding: 6px 12px;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.smart-card .val {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary-blue);
+}
+
+/* ----------------------------------------------------------------------------
+   5. BOTONES Y CONTROLES CONSOLIDADOS (DRY)
+   ---------------------------------------------------------------------------- */
+.btn-accion, .btn-primario, .btn-secundario, .btn-peligro, .btn-topbar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.15s ease;
+    text-decoration: none;
+    outline: none;
+}
+
+.btn-accion:focus-visible, 
+.btn-primario:focus-visible, 
+.btn-secundario:focus-visible, 
+.btn-topbar:focus-visible {
+    outline: 2px solid var(--primary-blue);
+    outline-offset: 2px;
+}
+
+.btn-accion {
+    width: 100%;
+    background: var(--primary-blue);
+    color: #0f172a;
+    border: none;
+    padding: 12px;
+    font-size: 1rem;
+    margin-top: 10px;
+}
+.btn-accion:hover { background: var(--text-main); }
+
+.btn-primario {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    padding: 9px 18px;
+    font-size: 0.85rem;
+}
+.btn-primario:hover { background-color: #1d4ed8; }
+
+.btn-secundario {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    border: 1px solid var(--border-glass);
+    padding: 9px 18px;
+    font-size: 0.85rem;
+}
+.btn-secundario:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: white;
+}
+
+.btn-peligro {
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+}
+.btn-peligro:hover { background: #b02a37; }
+
+.btn-topbar {
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: var(--primary-blue);
+    padding: 7px 14px;
+    font-size: 0.8rem;
+}
+.btn-topbar:hover {
+    background: var(--primary-blue);
+    color: #0f172a;
+}
+
+.btn-icon {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.18s ease;
+}
+.btn-icon:hover { color: var(--iso-zona-d); }
+
+/* ----------------------------------------------------------------------------
+   6. VISTA LOGIN INDUSTRIAL
+   ---------------------------------------------------------------------------- */
+.login-bg-minero {
+    position: relative;
+    background-image: linear-gradient(rgba(9, 10, 15, 0.88), rgba(9, 10, 15, 0.92)), 
+                      url('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/15/8856/11545');
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 1.5rem;
+}
+
+.login-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 420px;
+    padding: 35px 28px;
+    text-align: center;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+}
+
+.login-header .logo-icon {
+    font-size: 48px;
+    color: var(--primary-blue);
+    margin-bottom: 10px;
+}
+.login-header h2 { font-weight: 800; font-size: 1.45rem; }
+.login-header p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 25px; }
+
+.input-group {
+    display: flex;
+    align-items: center;
+    background: var(--bg-input);
+    border: 1px solid var(--border-glass);
+    border-radius: 8px;
+    margin-bottom: 15px;
+    padding: 0 12px;
+    transition: border-color 0.18s ease;
+}
+.input-group:focus-within {
+    border-color: var(--primary-blue);
+}
+.input-group span { color: var(--text-muted); font-size: 18px; }
+.input-group input {
+    background: transparent;
+    border: none;
+    color: white;
+    padding: 12px;
+    width: 100%;
+    outline: none;
+    font-size: 0.9rem;
+}
+
+.legal-footer { font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-top: 15px; }
+
+/* ----------------------------------------------------------------------------
+   7. GEMELO DIGITAL HMI Y DIAGRAMA CINEMÁTICO
+   ---------------------------------------------------------------------------- */
+.hmi-view-container {
+    position: relative;
+    width: 100%;
+    height: 320px;
+    background: linear-gradient(135deg, #010409 0%, #161b22 100%);
+    border: 1px solid var(--border-glass);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 20px;
+    box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8);
+    margin-bottom: 20px;
+}
+
+.hmi-grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
+                      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 30px 30px;
+    z-index: 1;
+}
+
+.hmi-overlay-content {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.hmi-badge-equipo {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid var(--border-glass);
+    padding: 10px 16px;
+    border-radius: 8px;
+    backdrop-filter: blur(5px);
+}
+.hmi-badge-equipo h4 { font-size: 0.9rem; color: var(--primary-blue); }
+.hmi-badge-equipo p { font-size: 0.75rem; color: var(--text-muted); }
+
 .diagrama-tren-motriz {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0;
     width: 100%;
     height: 100%;
     position: absolute;
-    top: 0;
-    left: 0;
+    inset: 0;
     z-index: 2;
+    overflow-x: auto;
 }
 
 .bloque-maquina {
@@ -157,11 +523,10 @@ body.modo-kiosko-activo #mapa-satelital {
     padding: 15px 25px;
     text-align: center;
     position: relative;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    transition: 0.3s ease;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    transition: transform 0.25s ease, border-color 0.25s ease;
 }
 
-/* Puntos de monitoreo M1, M2, G1, etc. */
 .punto-medicion {
     position: absolute;
     background: var(--text-muted);
@@ -183,7 +548,6 @@ body.modo-kiosko-activo #mapa-satelital {
 .bloque-maquina h4 { font-size: 0.85rem; color: var(--text-main); margin-bottom: 5px; }
 .bloque-maquina p { font-size: 0.7rem; color: var(--text-muted); }
 
-/* Ejes y Acoples */
 .eje-acople {
     width: 60px;
     height: 12px;
@@ -193,7 +557,7 @@ body.modo-kiosko-activo #mapa-satelital {
     position: relative;
 }
 
-/* Efectos de Color por Severidad ISO */
+/* Efectos ISO normativos en gemelo digital */
 .bloque-maquina.iso-a { border-color: var(--iso-zona-a); box-shadow: 0 0 20px rgba(16, 185, 129, 0.2); }
 .bloque-maquina.iso-a .punto-medicion { background: var(--iso-zona-a); }
 
@@ -203,211 +567,89 @@ body.modo-kiosko-activo #mapa-satelital {
 .bloque-maquina.iso-c { border-color: var(--iso-zona-c); box-shadow: 0 0 20px rgba(245, 158, 11, 0.2); }
 .bloque-maquina.iso-c .punto-medicion { background: var(--iso-zona-c); color: white; }
 
-.bloque-maquina.iso-d { border-color: var(--iso-zona-d); box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); animation: latido 1.5s infinite; }
+.bloque-maquina.iso-d {
+    border-color: var(--iso-zona-d);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+    animation: latido 1.5s infinite;
+}
 .bloque-maquina.iso-d .punto-medicion { background: var(--iso-zona-d); color: white; }
 
-@keyframes latido {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.02); box-shadow: 0 0 30px rgba(239, 68, 68, 0.6); }
-    100% { transform: scale(1); }
+/* ----------------------------------------------------------------------------
+   8. TABLAS DE SEVERIDAD DINÁMICA Y BADGES ISO
+   ---------------------------------------------------------------------------- */
+.tabla-cbm {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    font-size: 0.85rem;
 }
 
-@keyframes spin { 100% { transform: rotate(360deg); } }
-
-/* Animación para el Dashboard de Planta (Equipos en Rojo) */
-@keyframes pulse {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.2); opacity: 0.7; }
-    100% { transform: scale(1); opacity: 1; }
+.tabla-cbm th, .tabla-cbm td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-glass);
 }
 
-/* ========================================== */
-/* ESTILOS DE TOASTS Y MODAL DE CONFIRMACIÓN  */
-/* ========================================== */
-
-/* --- Contenedor de Toasts --- */
-.toast-container {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    pointer-events: none; /* Para que los clics pasen a través del contenedor si no hay toast */
-}
-
-/* Diseño del Toast individual */
-.toast {
-    background: rgba(30, 30, 35, 0.9);
-    border-left: 4px solid var(--color-primario, #007bff);
-    color: #fff;
-    padding: 15px 20px;
-    border-radius: 4px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(5px);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 14px;
-    pointer-events: auto;
-    animation: slideInRight 0.3s ease-out forwards;
-    opacity: 0;
-    transition: opacity 0.3s ease, transform 0.3s ease;
-    min-width: 250px;
-}
-
-.toast.exito { border-left-color: #28a745; }
-.toast.error { border-left-color: #dc3545; }
-.toast.alerta { border-left-color: #ffc107; }
-
-/* Animación Toast */
-@keyframes slideInRight {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-}
-
-/* --- Overlay del Modal --- */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(5px); /* Efecto Glassmorphism */
-    z-index: 10000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    opacity: 1;
-    transition: opacity 0.3s ease;
-}
-
-.modal-overlay.oculto {
-    display: none;
-    opacity: 0;
-}
-
-/* --- Caja del Modal --- */
-.modal-box.glass-panel {
-    background: var(--bg-input, rgba(40, 42, 54, 0.85));
-    border: 1px solid var(--border-glass, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    width: 90%;
-    max-width: 400px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-    color: #fff;
-    font-family: inherit;
-    overflow: hidden;
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    background: rgba(0, 0, 0, 0.2);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.modal-header h3 {
-    margin: 0;
-    font-size: 16px;
+.tabla-cbm th {
+    color: var(--text-muted);
     font-weight: 600;
+    background: var(--bg-input);
 }
 
-.btn-cerrar-modal {
-    background: none;
-    border: none;
-    color: #aaa;
-    font-size: 20px;
-    cursor: pointer;
-    transition: color 0.2s;
-}
-
-.btn-cerrar-modal:hover { color: #fff; }
-
-.modal-body {
-    padding: 20px;
-    font-size: 14px;
-    color: #ccc;
-    line-height: 1.5;
-}
-
-.modal-footer {
-    padding: 15px 20px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    background: rgba(0, 0, 0, 0.1);
-}
-
-/* Botones del Modal */
-.btn-secundario, .btn-peligro {
-    padding: 8px 16px;
+.tag-estado {
+    padding: 4px 10px;
     border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background 0.2s;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-align: center;
+    display: inline-block;
 }
 
-.btn-secundario {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+.zona-a { background: rgba(16, 185, 129, 0.12); color: var(--iso-zona-a); border: 1px solid rgba(16, 185, 129, 0.35); }
+.zona-b { background: rgba(132, 204, 22, 0.12);  color: var(--iso-zona-b); border: 1px solid rgba(132, 204, 22, 0.35); }
+.zona-c { background: rgba(245, 158, 11, 0.12); color: var(--iso-zona-c); border: 1px solid rgba(245, 158, 11, 0.35); }
+.zona-d { background: rgba(239, 68, 68, 0.12);  color: var(--iso-zona-d); border: 1px solid rgba(239, 68, 68, 0.35); }
+
+.badge-alerta {
+    background: var(--iso-zona-d);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 10px;
 }
 
-.btn-secundario:hover { background: rgba(255, 255, 255, 0.2); }
-
-.btn-peligro {
-    background: #dc3545;
-    color: #fff;
-}
-
-.btn-peligro:hover { background: #c82333; }
-
-/* Estilo para el fondo de pantalla de inicio (Login) con planta minera sutil */
-.login-bg-minero {
+.sparkline-mock {
+    display: inline-block;
+    border-bottom: 2px solid var(--primary-blue);
     position: relative;
-    background-image: linear-gradient(rgba(9, 10, 15, 0.85), rgba(9, 10, 15, 0.90)), 
-                      url('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/15/8856/11545'); /* Textura satelital / industrial sutil */
-    background-size: cover;
-    background-position: center;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
 }
 
-
-
-/* Estado Kiosko Activo */
-body.modo-kiosko-activo #kiosko .kiosko-icono {
-    font-family: 'Material Symbols Outlined';
-}
-
-/* --- Estilos para el Expediente y Rutas de Terreno --- */
-
+/* ----------------------------------------------------------------------------
+   9. EXPEDIENTE Y FORMULARIOS TÉCNICOS (GRID RESPONSIVO)
+   ---------------------------------------------------------------------------- */
 #panel-ingreso-lecturas {
-    background-color: #1a2234; /* Fondo tarjeta oscura */
-    border: 1px solid #2a344a;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-glass);
     border-radius: 8px;
-    padding: 20px;
+    padding: clamp(15px, 2vw, 20px);
     color: #e2e8f0;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .cabecera-panel {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #2a344a;
+    border-bottom: 1px solid var(--border-glass);
     padding-bottom: 15px;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .badge-faena {
-    background-color: #3b82f6;
+    background-color: #2563eb;
     color: white;
     padding: 4px 10px;
     border-radius: 12px;
@@ -415,25 +657,23 @@ body.modo-kiosko-activo #kiosko .kiosko-icono {
     font-weight: bold;
 }
 
-/* Agrupación de técnicas predictivas */
 .grupo-predictivo {
-    border: 1px solid #3f4b63;
+    border: 1px solid rgba(148, 163, 184, 0.2);
     border-radius: 6px;
     padding: 15px;
     margin-bottom: 20px;
-    background-color: #090a0f; /* Fondo más oscuro para contraste */
+    background-color: rgba(9, 10, 15, 0.6);
 }
 
 .grupo-predictivo legend {
     font-weight: 600;
-    color: #60a5fa; /* Azul técnico */
+    color: var(--primary-blue);
     padding: 0 8px;
 }
 
-/* Layout de los inputs */
 .fila-inputs {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
     gap: 15px;
 }
 
@@ -443,67 +683,622 @@ body.modo-kiosko-activo #kiosko .kiosko-icono {
 }
 
 .input-control label {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     margin-bottom: 5px;
-    color: #94a3b8;
+    color: var(--text-muted);
 }
 
-.input-control input {
-    background-color: #1a2234;
-    border: 1px solid #3f4b63;
+.input-control input, 
+.input-control select, 
+.input-control textarea {
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-glass);
     color: #fff;
     padding: 10px;
-    border-radius: 4px;
-    transition: border-color 0.2s;
-}
-
-.input-control input:focus {
+    border-radius: 6px;
+    transition: border-color 0.18s ease;
     outline: none;
-    border-color: #3b82f6;
 }
 
-/* Botones y Alertas */
+.input-control input:focus,
+.input-control select:focus,
+.input-control textarea:focus {
+    border-color: var(--primary-blue);
+}
+
 .acciones-formulario {
     display: flex;
-    gap: 15px;
+    gap: 12px;
     margin-top: 20px;
+    flex-wrap: wrap;
 }
 
-.btn-primario {
-    background-color: #2563eb;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.btn-primario:hover { background-color: #1d4ed8; }
-
-.btn-secundario {
-    background-color: transparent;
-    color: #94a3b8;
-    border: 1px solid #3f4b63;
-    padding: 10px 20px;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.btn-secundario:hover {
-    background-color: #3f4b63;
-    color: white;
-}
-
-/* Clases dinámicas para las alertas de JS */
+/* Alertas de retroalimentación */
 .alerta-mensaje {
     margin-top: 15px;
-    padding: 10px;
-    border-radius: 4px;
-    font-size: 0.9rem;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.alerta-error { background-color: rgba(220, 38, 38, 0.18); border: 1px solid var(--iso-zona-d); color: #f87171; }
+.alerta-advertencia { background-color: rgba(217, 119, 6, 0.18); border: 1px solid var(--iso-zona-c); color: #fbbf24; }
+.alerta-exito { background-color: rgba(22, 163, 74, 0.18); border: 1px solid var(--iso-zona-a); color: #4ade80; }
+
+/* ----------------------------------------------------------------------------
+   10. MODAL DE CONFIRMACIÓN Y TOASTS ACCESIBLES
+   ---------------------------------------------------------------------------- */
+.toast-container {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
 }
 
-.alerta-error { background-color: rgba(220, 38, 38, 0.2); border: 1px solid #dc2626; color: #f87171; }
-.alerta-advertencia { background-color: rgba(217, 119, 6, 0.2); border: 1px solid #d97706; color: #fbbf24; }
-.alerta-exito { background-color: rgba(22, 163, 74, 0.2); border: 1px solid #16a34a; color: #4ade80; }
-.oculto { display: none; }
+.toast {
+    background: rgba(15, 23, 42, 0.94);
+    border-left: 4px solid var(--primary-blue);
+    color: #fff;
+    padding: 14px 18px;
+    border-radius: 6px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    font-size: 14px;
+    pointer-events: auto;
+    animation: slideInRight 0.25s ease-out forwards;
+    min-width: 260px;
+    max-width: 90vw;
+}
+
+.toast.exito  { border-left-color: var(--iso-zona-a); }
+.toast.error  { border-left-color: var(--iso-zona-d); }
+.toast.alerta { border-left-color: var(--iso-zona-c); }
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    transition: opacity 0.25s ease;
+}
+
+.modal-box.glass-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    border-radius: 10px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85);
+    color: #fff;
+    overflow: hidden;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid var(--border-glass);
+}
+.modal-header h3 { margin: 0; font-size: 1rem; font-weight: 600; }
+
+.btn-cerrar-modal {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 20px;
+    cursor: pointer;
+    transition: color 0.18s ease;
+}
+.btn-cerrar-modal:hover { color: #fff; }
+
+.modal-body {
+    padding: 18px;
+    font-size: 0.9rem;
+    color: #cbd5e1;
+    line-height: 1.5;
+}
+
+.modal-footer {
+    padding: 12px 18px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid var(--border-glass);
+}
+
+/* ----------------------------------------------------------------------------
+   11. MODO KIOSKO INDUSTRIAL PANTALLA COMPLETA
+   ---------------------------------------------------------------------------- */
+body.modo-kiosko-activo {
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #000 !important;
+}
+
+body.modo-kiosko-activo .dashboard-grid {
+    display: block !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+body.modo-kiosko-activo .panel-mapa,
+body.modo-kiosko-activo #espacio-trabajo-dinamico {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    z-index: 99999 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    background: #000 !important;
+}
+
+body.modo-kiosko-activo #mapa-satelital {
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    position: absolute !important;
+    inset: 0 !important;
+}
+
+body.modo-kiosko-activo #kiosko .kiosko-icono {
+    font-family: 'Material Symbols Outlined';
+}
+
+/* ----------------------------------------------------------------------------
+   12. ANIMACIONES CONSOLIDADAS Y OPTIMIZADAS (GPU)
+   ---------------------------------------------------------------------------- */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes latido {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.02); box-shadow: 0 0 30px rgba(239, 68, 68, 0.6); }
+    100% { transform: scale(1); }
+}
+
+@keyframes pulse {
+    0%   { transform: scale(1); opacity: 1; }
+    50%  { transform: scale(1.15); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ============================================================================
+   PULSOS GRADUADOS POR CRITICIDAD CBM (MAPLIBRE COMPATIBLE)
+   ============================================================================ */
+
+/* 1. CRÍTICO (ROJO / ZONA D): Rápido, enérgico y expansivo */
+@keyframes pulsePinRojo {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.9), 0 3px 10px rgba(0, 0, 0, 0.8);
+    }
+    70% {
+        box-shadow: 0 0 0 14px rgba(239, 68, 68, 0), 0 3px 10px rgba(0, 0, 0, 0.8);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0), 0 3px 10px rgba(0, 0, 0, 0.8);
+    }
+}
+
+/* 2. ALERTA (SALMÓN / NARANJA / ZONA C): Cadencia media preventiva */
+@keyframes pulsePinSalmon {
+    0% {
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.85), 0 3px 10px rgba(0, 0, 0, 0.8);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(249, 115, 22, 0), 0 3px 10px rgba(0, 0, 0, 0.8);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0), 0 3px 10px rgba(0, 0, 0, 0.8);
+    }
+}
+
+/* 3. SEGUIMIENTO (AMARILLO / ZONA B): Lento, suave y de baja perturbación */
+@keyframes pulsePinAmarillo {
+    0% {
+        box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.75), 0 3px 10px rgba(0, 0, 0, 0.8);
+    }
+    70% {
+        box-shadow: 0 0 0 7px rgba(234, 179, 8, 0), 0 3px 10px rgba(0, 0, 0, 0.8);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(234, 179, 8, 0), 0 3px 10px rgba(0, 0, 0, 0.8);
+    }
+}
+
+/* ----------------------------------------------------------------------------
+   13. MEDIA QUERIES RESPONSIVAS (MOBILE-FIRST ADAPTIVE)
+   ---------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+    .sidebar-principal {
+        width: 240px;
+        padding: 15px;
+    }
+    .topbar {
+        padding: 10px 15px;
+    }
+}
+
+@media (max-width: 768px) {
+    .app-layout {
+        flex-direction: column;
+    }
+    .sidebar-principal {
+        width: 100%;
+        max-height: 200px;
+        border-right: none;
+        border-bottom: 1px solid var(--border-glass);
+    }
+    .topbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .topbar-actions {
+        justify-content: flex-end;
+    }
+    .smart-cards-container {
+        justify-content: flex-start;
+    }
+    .toast-container {
+        right: 15px;
+        bottom: 15px;
+        left: 15px;
+    }
+    .toast {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+/* Respeto estricto para usuarios con reducción de movimiento */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ============================================================================
+   SISTEMA DE ALARMAS ANIMADAS INDUSTRIALES (NEÓN CBM & RADAR)
+   ============================================================================ */
+
+/* Tarjeta de Alerta Dinámica con Glassmorphism */
+.alerta-card-moderna {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%);
+    border: 1px solid var(--border-glass);
+    border-radius: 10px;
+    padding: 1rem 1.15rem;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.alerta-card-moderna:hover {
+    transform: translateY(-2px);
+    border-color: rgba(56, 189, 248, 0.45);
+}
+
+/* Alarma Crítica (Zona D / Rojo): Respiración Neón */
+.alerta-card-moderna.critica {
+    border-left: 5px solid #ef4444;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
+    animation: criticoGlow 2.2s infinite ease-in-out;
+}
+
+/* Alarma Moderada (Zona C / Naranja) */
+.alerta-card-moderna.alerta {
+    border-left: 5px solid #f97316;
+    box-shadow: 0 0 12px rgba(249, 115, 22, 0.12);
+}
+
+/* Indicador Radar (Punto de alerta pulsante) */
+.radar-box {
+    position: relative;
+    width: 14px;
+    height: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.radar-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    z-index: 2;
+}
+
+.radar-wave {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    opacity: 0.8;
+    animation: radarRipple 1.8s infinite ease-out;
+    z-index: 1;
+}
+
+/* Badge con Ping en vivo en la barra lateral */
+.badge-alerta.pulsante {
+    position: relative;
+    animation: badgePulse 1.6s infinite ease-in-out;
+}
+
+/* Keyframes optimizados en GPU */
+@keyframes criticoGlow {
+    0%, 100% {
+        box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+        border-left-color: #ef4444;
+    }
+    50% {
+        box-shadow: 0 0 24px rgba(239, 68, 68, 0.55);
+        border-left-color: #f87171;
+    }
+}
+
+@keyframes radarRipple {
+    0% {
+        transform: scale(0.8);
+        opacity: 0.9;
+    }
+    100% {
+        transform: scale(2.6);
+        opacity: 0;
+    }
+}
+
+@keyframes badgePulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+    }
+    50% {
+        transform: scale(1.08);
+        box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+    }
+}
+
+/* ============================================================================
+   CAMPOS DE FORMULARIO INDUSTRIAL Y BLINDAJE CONTRA AUTOFILL BLANCO
+   ============================================================================ */
+.campo-formulario {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 12px;
+}
+
+.campo-formulario label {
+    font-size: 0.78rem;
+    color: var(--text-muted, #94a3b8);
+    font-weight: 600;
+}
+
+.campo-formulario input,
+.campo-formulario select,
+.campo-formulario textarea,
+.panel-industrial input[type="text"],
+.panel-industrial input[type="number"],
+.panel-industrial select,
+.panel-industrial textarea {
+    width: 100%;
+    background: #0f172a !important;
+    border: 1px solid var(--border-glass, rgba(255, 255, 255, 0.15)) !important;
+    color: #ffffff !important;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.campo-formulario input:focus,
+.campo-formulario select:focus,
+.campo-formulario textarea:focus {
+    border-color: var(--primary-blue, #38bdf8) !important;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.25);
+}
+
+.campo-formulario select option,
+.panel-industrial select option {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+}
+
+/* Evitar que el autocompletado del navegador imponga fondo blanco */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+    -webkit-text-fill-color: #ffffff !important;
+    -webkit-box-shadow: 0 0 0px 1000px #0f172a inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ============================================================================
+   MODAL DE CONFIRMACIÓN INDUSTRIAL (SALA DE CONTROL CBM)
+   ============================================================================ */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    background: rgba(3, 7, 18, 0.82);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    transition: opacity 0.2s ease;
+}
+
+.modal-overlay.oculto {
+    display: none !important;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.modal-box.glass-panel {
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.92) 100%);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.85), 0 0 25px rgba(56, 189, 248, 0.12);
+    color: #ffffff;
+    overflow: hidden;
+    animation: modalPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    background: rgba(0, 0, 0, 0.35);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-cerrar-modal {
+    background: transparent;
+    border: none;
+    color: var(--text-muted, #94a3b8);
+    font-size: 1.25rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.btn-cerrar-modal:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.modal-body {
+    padding: 20px 18px;
+    font-size: 0.88rem;
+    color: #cbd5e1;
+    line-height: 1.5;
+}
+
+.modal-footer {
+    padding: 12px 18px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.25);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+@keyframes modalPopIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* ============================================================================
+   BOTÓN FLOTANTE PARA SALIR DEL MODO KIOSKO
+   ============================================================================ */
+.btn-salir-kiosko-flotante {
+    display: none;
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    z-index: 100005 !important; /* Por encima del mapa fullscreen */
+    background: rgba(15, 23, 42, 0.9);
+    color: #f8fafc;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7), 0 0 15px rgba(239, 68, 68, 0.25);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: transform 0.15s ease, background 0.15s ease;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-salir-kiosko-flotante:hover {
+    background: #ef4444;
+    color: #ffffff;
+    transform: scale(1.05);
+}
+
+/* Se vuelve visible únicamente cuando el modo kiosko está activo */
+body.modo-kiosko-activo .btn-salir-kiosko-flotante {
+    display: inline-flex !important;
+}
+
+.btn-logout:hover {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    border-color: #ef4444 !important;
+    transform: scale(1.05);
+}

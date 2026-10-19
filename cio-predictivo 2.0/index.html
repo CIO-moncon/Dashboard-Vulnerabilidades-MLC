@@ -3,274 +3,316 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>CIO Predictivo 2.0 - CPF Ingeniería | CMP Mina Los Colorados</title>
-    
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
-    
-    <!-- Librería de Gráficos Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta name="description" content="Plataforma de Mantenimiento Predictivo CBM — Mina Los Colorados (CMP) | CPF Ingeniería">
+    <title>CIO Predictivo 2.0 — Mina Los Colorados</title>
 
-    <!-- Librerías de Google Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <!-- Configuración PWA y Favicon -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" href="./assets/img/logo-cpf.png" type="image/png">
+    <link rel="apple-touch-icon" href="./assets/img/logo-cpf.png">
+    <meta name="theme-color" content="#0d1117">
 
-    <!-- Librerías para Generación de PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <!-- Tipografías e Iconografía Industrial -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0" rel="stylesheet">
 
-    <!-- Librería SheetJS (Excel / CSV para Programa Semanal SAP PM) -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
+    <!-- Hojas de Estilo del Sistema de Diseño -->
+    <link rel="stylesheet" href="./css/variables.css">
     <link rel="stylesheet" href="./css/main.css">
 
-    <!-- Motor Geoespacial 3D: MapLibre GL JS -->
-    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
-    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <!-- MapLibre GL JS (Motor Geoespacial 3D y Relieve DEM) -->
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css">
+    <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
 
-    <!-- Leaflet (Respaldo de compatibilidad para módulos secundarios) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Librerías Analíticas y Motor de Reportes -->
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.basic.min.js"></script>
 
-    <!-- Estilos industriales para Popups y Controles de MapLibre -->
+    <!-- Google Firebase SDK (Compat v8.10.1) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+    <!-- BLINDAJE ESTRUCTURAL INLINE CONTRA DESBORDES DE LAYOUT -->
     <style>
-        .maplibregl-popup-content {
-            background: rgba(15, 23, 42, 0.95) !important;
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(56, 189, 248, 0.35);
-            border-radius: 10px !important;
-            padding: 14px !important;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7) !important;
-            color: #f8fafc;
-        }
-        .maplibregl-popup-tip {
-            border-top-color: rgba(15, 23, 42, 0.95) !important;
-            border-bottom-color: rgba(15, 23, 42, 0.95) !important;
-        }
-        .maplibregl-popup-close-button {
-            color: #94a3b8 !important;
-            font-size: 16px !important;
-            padding: 4px 8px !important;
-        }
-        .maplibregl-ctrl-group {
-            background: rgba(15, 23, 42, 0.9) !important;
-            border: 1px solid rgba(255, 255, 255, 0.15) !important;
-            border-radius: 8px !important;
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
             overflow: hidden;
+            background-color: var(--bg-dark, #0d1117);
+            font-family: 'Inter', system-ui, sans-serif;
         }
-        .maplibregl-ctrl-group button {
-            filter: invert(1) brightness(1.8);
+
+        .oculta, .oculto {
+            display: none !important;
         }
-        @keyframes pulsePinRojo {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.85); }
-            70% { box-shadow: 0 0 0 14px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+
+        .vista-app {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            height: 100dvh !important;
+            overflow: hidden !important;
+            position: relative;
+        }
+
+        .sidebar-principal {
+            width: 310px !important;
+            min-width: 300px !important;
+            max-width: 330px !important;
+            height: 100% !important;
+            flex-shrink: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            border-right: 1px solid var(--border-glass, rgba(255, 255, 255, 0.12));
+            background: rgba(15, 23, 42, 0.95);
+            z-index: 20;
+        }
+
+        .sidebar-content {
+            flex: 1 1 0% !important;
+            overflow-y: auto !important;
+            min-height: 0 !important;
+        }
+
+        .main-wrapper {
+            flex: 1 1 0% !important;
+            min-width: 0 !important; /* Evita que el contenedor caiga debajo del sidebar */
+            height: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+            background: #090a0f;
+            position: relative;
+        }
+
+        .topbar {
+            flex-shrink: 0 !important;
+            width: 100% !important;
+            box-sizing: border-box;
+        }
+
+        .workspace-container {
+            flex: 1 1 0% !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+            position: relative;
         }
     </style>
 </head>
 <body>
 
-<!-- MÓDULO LOGIN -->
-<main id="vista-login" class="fullscreen-view activa" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: radial-gradient(circle at 50% 30%, #1a2234 0%, #090a0f 75%); display: flex; justify-content: center; align-items: center; z-index: 9999;">
-    
-    <div class="login-card glass-panel" style="background: rgba(20, 24, 33, 0.9); border: 1px solid rgba(255,255,255,0.08); padding: 40px; border-radius: 16px; width: 90%; max-width: 850px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); display: flex; gap: 40px; align-items: center; box-sizing: border-box;">
-        
-        <!-- Columna Izquierda: Logo y Títulos -->
-        <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-            <div style="background: white; padding: 10px 18px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-                <img src="./assets/img/logo-cpf.png" alt="Logo CPF Ingeniería" style="width: 130px; height: auto; display: block;">
-            </div>
-            <h2 style="color: white; font-size: 1.6rem; margin: 0 0 8px 0; font-weight: 700; letter-spacing: 0.5px;">CIO Predictivo 2.0</h2>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Mina Los Colorados (CMP)</p>
-        </div>
-        
-        <!-- Columna Derecha: Formulario de Acceso -->
-        <div style="flex: 1; display: flex; flex-direction: column; gap: 15px; border-left: 1px solid rgba(255,255,255,0.08); padding-left: 40px;">
-            <div>
-                <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Correo Electrónico</label>
-                <input type="email" id="login-email" placeholder="analista@cpf.cl" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(12, 14, 22, 0.85); color: white; outline: none; font-size: 0.9rem; box-sizing: border-box;">
-            </div>
-            <div>
-                <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Contraseña</label>
-                <input type="password" id="login-pass" placeholder="••••••••" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(12, 14, 22, 0.85); color: white; outline: none; font-size: 0.9rem; box-sizing: border-box;">
-            </div>
-            
-            <button id="btn-ingresar" class="btn-primary" style="width: 100%; margin-top: 5px; padding: 12px; border-radius: 8px; background: #38bdf8; color: #0f172a; font-weight: 700; border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 0.95rem;">
-                Autenticar <span class="material-symbols-outlined" style="font-size: 1.1rem;">login</span>
-            </button>
-            
-            <p id="login-error" style="color: #ef4444; font-size: 0.8rem; margin: 0; text-align: center;"></p>
-            
-            <div style="text-align: center; margin-top: 10px; font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;">
-                <p style="margin: 0 0 2px 0;">© 2026 CPF Ingeniería. Desarrollado para CMP.</p>
-                <p style="margin: 0; color: #38bdf8; font-weight: 500;">Plataforma creada por Francisco Leiva</p>
-            </div>
-        </div>
-
-    </div>
-</main>
-
-    <!-- MÓDULO APP PRINCIPAL -->
-    <section id="vista-app" class="app-layout oculta">
-        
-        <!-- Barra Lateral -->
-        <aside class="sidebar-principal">
-            <div class="sidebar-header" style="text-align: center; padding: 20px 10px; border-bottom: 1px solid var(--border-glass);">
-                <div style="text-align: center; padding: 20px 10px; border-bottom: 1px solid #1f2937; background-color: #030712;">
-                    <div style="background: rgba(255, 255, 255, 0.95); padding: 6px; border-radius: 8px; display: inline-block; margin-bottom: 10px; width: 110px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);">
-                        <img src="./assets/img/logo-cpf.png" alt="Logo CPF Ingeniería" style="width: 100%; height: auto; display: block; object-fit: contain;">
-                    </div>
-                    <div style="color: #f3f4f6; font-weight: 700; font-size: 14px; letter-spacing: 0.025em;">CIO Predictivo</div>
+    <!-- ===================================================================== -->
+    <!-- 1. VISTA DE AUTENTICACIÓN (LOGIN)                                     -->
+    <!-- ===================================================================== -->
+    <section id="vista-login" class="vista-login oculta" role="region" aria-label="Pantalla de Autenticación" style="position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; background: #090a0f;">
+        <div class="login-card glass-panel" style="width: 100%; max-width: 400px; padding: 2rem; background: rgba(15, 23, 42, 0.95); border: 1px solid var(--border-glass); border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);">
+            <header style="text-align: center; margin-bottom: 1.5rem;">
+                <div style="background: #ffffff; padding: 6px 14px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">
+                    <img src="./assets/img/logo-cpf.png" alt="Logotipo CPF Ingeniería" style="height: 32px; width: auto; object-fit: contain;">
                 </div>
-            </div>
-            
-            <!-- PESTAÑAS (Catastro y Alertas de Terreno) -->
-            <div class="sidebar-tabs">
-                <button class="tab-btn active" id="btn-tab-catastro">
-                    <span class="material-symbols-outlined" style="font-size: 1.1rem;">format_list_bulleted</span> Catastro
-                </button>
-                <button class="tab-btn" id="btn-tab-alertas" onclick="window.abrirModalAlertasTerreno()">
-                    <span class="material-symbols-outlined" style="font-size: 1.1rem;">warning</span> Alertas 
-                    <span class="badge-alerta" id="badgeAlertasTerreno">0</span>
-                </button>
-            </div>
-
-            <div class="sidebar-search">
-                <span class="material-symbols-outlined">search</span>
-                <input type="text" id="buscador-tags" placeholder="Buscar equipo o TAG...">
-            </div>
-
-            <div class="area-list" id="lista-catastro"></div>
-            <div class="area-list oculta" id="lista-alertas"></div>
-            
-            <!-- PERFIL DE USUARIO -->
-            <div style="margin-top: auto;">
-                <div class="user-profile">
-                    <div class="avatar" id="avatar-iniciales">FL</div>
-                    <div class="info">
-                        <span class="name" id="perfil-nombre">Usuario</span>
-                        <span class="role" id="perfil-rol">Rol</span>
-                    </div>
-                    <button id="btn-salir" class="btn-icon">
-                        <span class="material-symbols-outlined">logout</span>
-                    </button>
-                </div>
-                <div style="text-align: center; font-size: 0.65rem; color: var(--text-muted); margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-glass);">
-                    Creado por <span style="color: var(--text-main); font-weight: 600;">Francisco Leiva</span>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Contenedor Principal -->
-        <main id="contenido-principal">
-            <header class="topbar">
-                <h2>Dashboard CBM - Mina Los Colorados</h2>
-                <div class="topbar-actions">
-                    <div class="smart-cards-container">
-                        <div class="smart-card">
-                            <span>FAENA</span>
-                            <span class="val">Mina Los Colorados</span>
-                        </div>
-                    </div>
-
-                    <button id="btn-volver-dashboard" class="btn-topbar" style="display: none;">
-                        <span class="material-symbols-outlined">map</span> Mapa Planta
-                    </button>
-                    <button id="btn-modulo-pms" class="btn-topbar" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);">
-                        <span class="material-symbols-outlined">calendar_month</span> Programa Semanal (PMS)
-                    </button>
-                    <button id="btn-crear-equipo" class="btn-topbar">
-                        <span class="material-symbols-outlined">add_circle</span> Crear Equipo
-                    </button>
-                    <button id="btn-crear-usuario" class="btn-topbar">
-                        <span class="material-symbols-outlined">person_add</span> Crear Usuario
-                    </button>
-                    <button id="kiosko" class="btn-kiosko" style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); padding: 8px 14px; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">
-                        <span class="material-symbols-outlined">fullscreen</span> 
-                        <span>Kiosko</span>
-                    </button>
-                </div>
+                <h1 style="color: #ffffff; font-size: 1.25rem; font-weight: 800; margin: 0 0 4px 0;">CIO Predictivo 2.0</h1>
+                <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0;">Planta Mina Los Colorados (CMP)</p>
             </header>
-            
-            <div class="workspace" id="espacio-trabajo-dinamico">
-                <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; text-align: center; color: var(--primary-blue);">
-                    <span class="material-symbols-outlined" style="animation: spin 1s linear infinite; font-size: 48px;">autorenew</span>
-                    <p style="margin-top: 15px; color: var(--text-muted); font-size: 0.9rem;">Cargando Dashboard CBM...</p>
+
+            <form onsubmit="event.preventDefault();" style="display: flex; flex-direction: column; gap: 14px;">
+                <div class="campo-formulario">
+                    <label for="login-email">Correo Electrónico Corporativo</label>
+                    <input type="email" id="login-email" placeholder="usuario@cpf.cl" autocomplete="username" required>
                 </div>
-            </div>
-        </main>
+
+                <div class="campo-formulario">
+                    <label for="login-pass">Contraseña</label>
+                    <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" required>
+                </div>
+
+                <div id="login-error" style="color: #ef4444; font-size: 0.8rem; font-weight: 600; min-height: 1.2rem; text-align: center;" role="alert"></div>
+
+                <button type="submit" id="btn-ingresar" class="btn-primario" style="margin-top: 6px; width: 100%; justify-content: center; padding: 11px;">
+                    <span>Autenticar</span>
+                    <span class="material-symbols-outlined" aria-hidden="true">login</span>
+                </button>
+            </form>
+        </div>
     </section>
 
-    <!-- MODAL DE TENDENCIAS CBM -->
-    <div id="modal-tendencia" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center;">
-        <div style="background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: 12px; width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 25px; border-bottom: 1px solid var(--border-glass); background: var(--bg-card); border-radius: 12px 12px 0 0;">
-                <h3 id="modal-titulo-punto" style="color: var(--primary-blue); font-size: 1.1rem; margin: 0;">Tendencias Históricas</h3>
-                <button id="btn-cerrar-modal" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; display: flex; align-items: center;">
-                    <span class="material-symbols-outlined">close</span>
+    <!-- ===================================================================== -->
+    <!-- 2. VISTA PRINCIPAL DEL SISTEMA (DASHBOARD)                            -->
+    <!-- ===================================================================== -->
+    <div id="vista-app" class="vista-app">
+
+        <!-- BARRA LATERAL (SIDEBAR) -->
+        <aside class="sidebar-principal" role="navigation" aria-label="Navegación de activos y alertas">
+            <header class="sidebar-header" style="flex-shrink: 0; padding: 14px 16px;">
+                <div class="sidebar-brand" style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                    <div style="background: #ffffff; padding: 4px 8px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                        <img src="./assets/img/logo-cpf.png" alt="CPF Ingeniería" style="height: 22px; width: auto;">
+                    </div>
+                    <div>
+                        <h2 style="font-size: 0.95rem; margin: 0; color: #ffffff; font-weight: 800; line-height: 1.1;">CIO Predictivo</h2>
+                        <span style="font-size: 0.68rem; color: var(--primary-blue); font-weight: 700; text-transform: uppercase;">Mina Los Colorados</span>
+                    </div>
+                </div>
+
+                <nav class="sidebar-tabs" aria-label="Vistas del menú lateral" style="display: flex; gap: 6px; margin-bottom: 10px;">
+                    <button type="button" id="tab-catastro" class="tab-btn active" style="flex: 1;" onclick="window.cambiarPestanaSidebar?.('catastro')">
+                        <span class="material-symbols-outlined" aria-hidden="true">list_alt</span>
+                        <span>Catastro</span>
+                    </button>
+                    <button type="button" id="tab-alertas" class="tab-btn" style="flex: 1;" onclick="window.abrirModalAlertasTerreno?.()">
+                        <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+                        <span>Alertas</span>
+                        <span id="badgeAlertasTerreno" class="badge-alerta" aria-label="Alertas pendientes">0</span>
+                    </button>
+                </nav>
+
+                <div class="sidebar-search">
+                    <span class="material-symbols-outlined search-icon" aria-hidden="true">search</span>
+                    <input type="search" id="input-busqueda-sidebar" placeholder="Buscar equipo o TAG..." aria-label="Buscar equipo en catastro">
+                </div>
+            </header>
+
+            <!-- Lista de Equipos por Área -->
+            <section id="contenedor-areas-sidebar" class="sidebar-content" role="region" aria-label="Lista de equipos por área" aria-live="polite">
+                <!-- Se pobla dinámicamente -->
+            </section>
+
+            <!-- Pie de Sidebar: Perfil de Usuario y Sesión -->
+            <footer class="sidebar-footer" style="flex-shrink: 0; padding: 12px 14px; border-top: 1px solid var(--border-glass, rgba(255, 255, 255, 0.12)); background: rgba(15, 23, 42, 0.95); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <div class="user-profile" style="display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1;">
+                    <!-- Avatar Circular con Gradiente -->
+                    <div id="avatar-iniciales" class="user-avatar" aria-hidden="true" style="width: 38px; height: 38px; min-width: 38px; border-radius: 50%; background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%); color: #ffffff; font-weight: 800; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); text-transform: uppercase;">
+                        FL
+                    </div>
+                    <!-- Identificación y Rol Técnico -->
+                    <div class="user-info" style="display: flex; flex-direction: column; min-width: 0; overflow: hidden;">
+                        <span id="perfil-nombre" class="user-name" style="font-size: 0.82rem; font-weight: 700; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: capitalize; line-height: 1.2;">
+                            Francisco Leiva
+                        </span>
+                        <span id="perfil-rol" class="user-role" style="font-size: 0.7rem; color: #38bdf8; font-weight: 600; line-height: 1.2; margin-top: 2px;">
+                            Analista CBM
+                        </span>
+                    </div>
+                </div>
+                <!-- Botón Desconectar / Salir -->
+                <button type="button" id="btn-salir" class="btn-logout" title="Cerrar Sesión Segura" aria-label="Cerrar sesión" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #f87171; border-radius: 8px; width: 36px; height: 36px; min-width: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.18s ease; flex-shrink: 0; padding: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 1.2rem;" aria-hidden="true">logout</span>
                 </button>
-            </div>
+            </footer>
+        </aside>
+
+        <!-- CONTENEDOR PRINCIPAL: TOPBAR Y MAPA/EXPEDIENTE -->
+        <main class="main-wrapper">
             
-            <div style="padding: 20px 25px; overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; gap: 20px;">
-                <div style="background: var(--bg-input); padding: 15px; border-radius: 8px; border: 1px solid var(--border-glass);">
-                    <h4 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #38bdf8;">Velocidad Global RMS (ISO 20816-3)</h4>
-                    <div style="position: relative; height: 180px; width: 100%;"><canvas id="chartRMS"></canvas></div>
+            <!-- TOPBAR INDUSTRIAL -->
+            <header class="topbar" role="banner">
+                <div class="topbar-left">
+                    <h1 class="topbar-title">Dashboard CBM — Mina Los Colorados</h1>
+                    <div class="topbar-faena-badge">
+                        <span style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase;">Faena</span>
+                        <strong>Mina Los Colorados</strong>
+                    </div>
                 </div>
-                <div style="background: var(--bg-input); padding: 15px; border-radius: 8px; border: 1px solid var(--border-glass);">
-                    <h4 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #f97316;">Temperatura (°C)</h4>
-                    <div style="position: relative; height: 180px; width: 100%;"><canvas id="chartTemp"></canvas></div>
-                </div>
-                <div style="background: var(--bg-input); padding: 15px; border-radius: 8px; border: 1px solid var(--border-glass);">
-                    <h4 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #eab308;">Factor de Cresta (FC+)</h4>
-                    <div style="position: relative; height: 180px; width: 100%;"><canvas id="chartFC"></canvas></div>
-                </div>
-            </div>
-        </div>
+
+                <nav class="topbar-actions" aria-label="Acciones globales del sistema">
+                    <button type="button" id="btn-modulo-pms" class="btn-topbar pms-btn" title="Auditoría y Planilla Semanal SAP PM">
+                        <span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>
+                        <span>Programa Semanal (PMS)</span>
+                    </button>
+
+                    <button type="button" id="btn-crear-equipo" class="btn-topbar" title="Configurar Nuevo Activo Crítico">
+                        <span class="material-symbols-outlined" aria-hidden="true">add_circle</span>
+                        <span>Crear Equipo</span>
+                    </button>
+
+                    <button type="button" id="btn-crear-usuario" class="btn-topbar" title="Registrar Usuario en Sistema">
+                        <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+                        <span>Crear Usuario</span>
+                    </button>
+
+                    <button type="button" id="kiosko" class="btn-topbar" aria-pressed="false" title="Modo Pantalla Completa Sala de Control">
+                        <span class="material-symbols-outlined" aria-hidden="true">fullscreen</span>
+                        <span>Kiosko</span>
+                    </button>
+                </nav>
+            </header>
+
+            <!-- ESPACIO DE TRABAJO DINÁMICO (MAPA 3D / EXPEDIENTE) -->
+            <section id="espacio-trabajo-dinamico" class="workspace-container" role="main" aria-label="Área de trabajo interactiva">
+                <!-- Se pobla dinámicamente -->
+            </section>
+        </main>
     </div>
 
-    <!-- SCRIPT PRINCIPAL -->
-    <script type="module" src="./js/app.js"></script>
-    <script src="./js/ui/notificaciones.js"></script>
-    <script src="./js/core/auth.js"></script>
+    <!-- ===================================================================== -->
+    <!-- 3. MODALES Y NOTIFICACIONES                                           -->
+    <!-- ===================================================================== -->
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
-    <!-- TOASTS Y MODALES UI -->
-    <div id="toast-container" class="toast-container"></div>
-
-    <div id="modal-confirmacion" class="modal-overlay oculto">
+    <!-- MODAL DE CONFIRMACIÓN -->
+    <div id="modal-confirmacion" class="modal-overlay oculto" role="dialog" aria-modal="true" aria-labelledby="modal-confirmacion-titulo" aria-hidden="true">
         <div class="modal-box glass-panel">
-            <div class="modal-header">
+            <header class="modal-header">
                 <h3 id="modal-confirmacion-titulo">Confirmar Acción</h3>
-                <button class="btn-cerrar-modal" id="btn-cerrar-confirmacion">&times;</button>
+                <button type="button" id="btn-cerrar-confirmacion" class="btn-cerrar-modal" aria-label="Cerrar">&times;</button>
+            </header>
+            <div id="modal-confirmacion-mensaje" class="modal-body">
+                ¿Estás seguro de ejecutar esta acción en la plataforma?
             </div>
-            <div class="modal-body">
-                <p id="modal-confirmacion-mensaje">¿Estás seguro de que deseas realizar esta acción?</p>
-            </div>
-            <div class="modal-footer">
-                <button id="btn-cancelar-confirmacion" class="btn-secundario">Cancelar</button>
-                <button id="btn-aceptar-confirmacion" class="btn-peligro">Confirmar</button>
-            </div>
+            <footer class="modal-footer">
+                <button type="button" id="btn-cancelar-confirmacion" class="btn-secundario">Cancelar</button>
+                <button type="button" id="btn-aceptar-confirmacion" class="btn-primario">Confirmar</button>
+            </footer>
         </div>
     </div>
 
-    <!-- MODAL DE BANDEJA DE ALERTAS DE TERRENO -->
-    <div id="modal-alertas-terreno" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
-        <div style="background: #0f172a; border: 1px solid var(--border-glass); width: 90%; max-width: 800px; max-height: 85vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-            <div style="padding: 16px 20px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="margin: 0; color: white; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
-                    🚨 Bandeja de Alertas y Reportes de Terreno
-                </h2>
-                <button onclick="document.getElementById('modal-alertas-terreno').style.display='none'" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; font-weight: bold;">✕</button>
+    <!-- MODAL DE BANDEJA DE ALERTAS -->
+    <div id="modal-alertas-terreno" class="modal-overlay oculto" role="dialog" aria-modal="true" aria-labelledby="modal-alertas-titulo" aria-hidden="true">
+        <div class="modal-box glass-panel" style="max-width: 780px; width: 95%; max-height: 88vh; display: flex; flex-direction: column;">
+            <header class="modal-header">
+                <h3 id="modal-alertas-titulo" style="margin: 0; color: #ffffff; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="color: #ef4444;" aria-hidden="true">warning</span>
+                    Bandeja de Alertas y Reportes de Terreno
+                </h3>
+                <button type="button" class="btn-cerrar-modal" onclick="document.getElementById('modal-alertas-terreno').style.display='none'; document.getElementById('modal-alertas-terreno').classList.add('oculto');" aria-label="Cerrar">&times;</button>
+            </header>
+
+            <div class="modal-body" id="lista-alertas-terreno-container" style="overflow-y: auto; flex: 1; padding: 18px; min-height: 140px;">
+                <!-- Tarjetas inyectadas dinámicamente -->
             </div>
 
-            <div id="lista-alertas-terreno-container" style="padding: 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 12px;"></div>
-
-            <div style="padding: 12px 20px; background: rgba(15, 23, 42, 0.95); border-top: 1px solid var(--border-glass); text-align: right;">
-                <button onclick="document.getElementById('modal-alertas-terreno').style.display='none'" style="background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold;">Cerrar</button>
-            </div>
+            <footer class="modal-footer">
+                <button type="button" class="btn-secundario" onclick="document.getElementById('modal-alertas-terreno').style.display='none'; document.getElementById('modal-alertas-terreno').classList.add('oculto');">Cerrar</button>
+            </footer>
         </div>
     </div>
 
+    <!-- ===================================================================== -->
+    <!-- 4. SCRIPTS                                                            -->
+    <!-- ===================================================================== -->
+    <script type="module" src="./js/ui/notificaciones.js"></script>
+    <script type="module" src="./js/app.js"></script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((reg) => console.log('✅ Service Worker activo para Mina Los Colorados. Ámbito:', reg.scope))
+                    .catch((err) => console.warn('⚠️ No se pudo registrar Service Worker:', err));
+            });
+        }
+    </script>
 </body>
 </html>

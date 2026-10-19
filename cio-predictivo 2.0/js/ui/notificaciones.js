@@ -1,50 +1,55 @@
-// ==========================================
-// MÓDULO DE NOTIFICACIONES Y MODALES (UI)
-// ==========================================
+// ============================================================================
+// MÓDULO UI: NOTIFICACIONES TOAST Y MODAL INDUSTRIAL ACCESIBLE
+// CIO PREDICTIVO 2.0 — Estándar ES6+, Glassmorphism, WAI-ARIA y Soporte Dual
+// ============================================================================
 
 const UI = {
     /**
-     * Muestra una notificación tipo Toast en la esquina inferior derecha.
-     * @param {string} mensaje El texto a mostrar.
-     * @param {string} tipo 'exito', 'error' o 'alerta' (por defecto 'exito').
+     * Muestra una notificación flotante tipo Toast en la esquina inferior derecha.
      */
-    mostrarToast: (mensaje, tipo = 'exito') => {
+    mostrarToast: (mensaje = '', tipo = 'exito') => {
         const container = document.getElementById('toast-container');
         if (!container) return;
 
+        const tipoNorm = ['exito', 'error', 'alerta', 'info'].includes(tipo) ? tipo : 'exito';
         const toast = document.createElement('div');
-        toast.className = `toast ${tipo}`;
-        
-        // Iconos basados en Material Symbols que ya tienes integrados
+        toast.className = `toast ${tipoNorm}`;
+        toast.setAttribute('role', tipoNorm === 'error' ? 'alert' : 'status');
+        toast.setAttribute('aria-live', tipoNorm === 'error' ? 'assertive' : 'polite');
+        toast.title = 'Haz clic para descartar';
+
         let icono = 'check_circle';
-        if (tipo === 'error') icono = 'error';
-        if (tipo === 'alerta') icono = 'warning';
+        if (tipoNorm === 'error') icono = 'error';
+        else if (tipoNorm === 'alerta') icono = 'warning';
+        else if (tipoNorm === 'info') icono = 'info';
 
         toast.innerHTML = `
             <div style="display: flex; align-items: center; gap: 10px;">
-                <span class="material-symbols-outlined">${icono}</span>
-                <span>${mensaje}</span>
+                <span class="material-symbols-outlined" style="font-size: 1.25rem; flex-shrink: 0;" aria-hidden="true">${icono}</span>
+                <span style="flex: 1; line-height: 1.35;">${mensaje}</span>
             </div>
         `;
 
-        container.appendChild(toast);
-
-        // Eliminar el toast después de 3.5 segundos
-        setTimeout(() => {
+        const descartar = () => {
+            if (toast.dataset.descartando) return;
+            toast.dataset.descartando = 'true';
             toast.style.opacity = '0';
             toast.style.transform = 'translateX(100%)';
-            setTimeout(() => toast.remove(), 300); // Esperar que termine la animación
-        }, 3500);
+            setTimeout(() => toast.remove(), 250);
+        };
+
+        toast.addEventListener('click', descartar);
+        container.appendChild(toast);
+
+        const timerAutoCierre = setTimeout(descartar, 3800);
+        toast.addEventListener('mouseenter', () => clearTimeout(timerAutoCierre));
+        toast.addEventListener('mouseleave', () => setTimeout(descartar, 1800));
     },
 
     /**
-     * Muestra un modal de confirmación con la estética del sistema.
-     * Reemplaza a window.confirm().
-     * @param {string} mensaje El texto de la pregunta (soporta HTML).
-     * @param {string} titulo (Opcional) Título del modal.
-     * @returns {Promise<boolean>} Promesa que se resuelve con true o false.
+     * Modal industrial de confirmación que reemplaza por completo a window.confirm().
      */
-    confirmar: (mensaje, titulo = 'Confirmar Acción') => {
+    confirmar: (mensaje = '', titulo = 'Confirmar Acción') => {
         return new Promise((resolve) => {
             const modal = document.getElementById('modal-confirmacion');
             const tituloEl = document.getElementById('modal-confirmacion-titulo');
@@ -54,37 +59,73 @@ const UI = {
             const btnCerrar = document.getElementById('btn-cerrar-confirmacion');
 
             if (!modal) {
-                console.error("No se encontró el contenedor del modal en el HTML.");
-                resolve(false);
+                console.warn('[UI] No se encontró #modal-confirmacion en el DOM.');
+                resolve(true);
                 return;
             }
 
-            // Configurar textos
-            tituloEl.textContent = titulo;
-            // 🐛 SOLUCIÓN AL BUG-005: Usar innerHTML para interpretar etiquetas <br> y <b>
-            mensajeEl.innerHTML = mensaje; 
+            const elementoPrevio = document.activeElement;
 
-            // Mostrar Modal
+            if (tituloEl) tituloEl.textContent = titulo;
+            if (mensajeEl) mensajeEl.innerHTML = mensaje;
+
+            // Mostrar el modal eliminando la clase que lo oculta
             modal.classList.remove('oculto');
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
 
-            // Función para limpiar eventos y cerrar
-            const cerrarModal = (resultado) => {
+            const limpiarYResolver = (resultado) => {
                 modal.classList.add('oculto');
-                // Remover los event listeners para evitar ejecuciones múltiples en el futuro
-                btnAceptar.removeEventListener('click', onAceptar);
-                btnCancelar.removeEventListener('click', onCancelar);
-                btnCerrar.removeEventListener('click', onCancelar);
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+
+                btnAceptar?.removeEventListener('click', onAceptar);
+                btnCancelar?.removeEventListener('click', onCancelar);
+                btnCerrar?.removeEventListener('click', onCancelar);
+                document.removeEventListener('keydown', onKeyDown);
+                modal.removeEventListener('click', onBackdropClick);
+
+                if (elementoPrevio && typeof elementoPrevio.focus === 'function') {
+                    elementoPrevio.focus();
+                }
+
                 resolve(resultado);
             };
 
-            // Handlers
-            const onAceptar = () => cerrarModal(true);
-            const onCancelar = () => cerrarModal(false);
+            const onAceptar = () => limpiarYResolver(true);
+            const onCancelar = () => limpiarYResolver(false);
 
-            // Asignar eventos
-            btnAceptar.addEventListener('click', onAceptar);
-            btnCancelar.addEventListener('click', onCancelar);
-            btnCerrar.addEventListener('click', onCancelar);
+            const onKeyDown = (e) => {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    limpiarYResolver(false);
+                } else if (e.key === 'Enter' && document.activeElement === btnAceptar) {
+                    e.preventDefault();
+                    limpiarYResolver(true);
+                }
+            };
+
+            const onBackdropClick = (e) => {
+                if (e.target === modal) limpiarYResolver(false);
+            };
+
+            btnAceptar?.addEventListener('click', onAceptar);
+            btnCancelar?.addEventListener('click', onCancelar);
+            btnCerrar?.addEventListener('click', onCancelar);
+            document.addEventListener('keydown', onKeyDown);
+            modal.addEventListener('click', onBackdropClick);
+
+            setTimeout(() => {
+                (btnCancelar || btnAceptar)?.focus();
+            }, 50);
         });
     }
 };
+
+// Registro explícito en el objeto window para disponibilidad inmediata en todo el sistema
+if (typeof window !== 'undefined') {
+    window.UI = UI;
+}
+
+export default UI;
+export { UI };

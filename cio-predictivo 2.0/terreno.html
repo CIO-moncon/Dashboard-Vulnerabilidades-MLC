@@ -2,214 +2,479 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CIO Terreno - Mina Los Colorados (CMP)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="Aplicación PWA de Terreno para Inspección CBM — Mina Los Colorados | CPF Ingeniería">
+    <title>CIO Terreno — Mina Los Colorados (CMP)</title>
     
-    <!-- MANIFEST PWA -->
-    <link rel="manifest" href="manifest.json">
+    <!-- Configuración PWA y Manifiesto -->
+    <link rel="manifest" href="./manifest.json">
     <link rel="icon" href="./assets/img/logo-cpf.png" type="image/png">
     <link rel="apple-touch-icon" href="./assets/img/logo-cpf.png">
     <meta name="theme-color" content="#030712">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
-    <!-- FUENTES Y ICONOS -->
+    <!-- Tipografías e Iconos -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
     
-    <!-- LEAFLET MAPS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-    <!-- FUSE.JS PARA BÚSQUEDA DIFUSA LOCAL -->
-    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.basic.min.js"></script>
-
-    <!-- CSS UNIFICADO CON EL CIO -->
+    <!-- Hojas de Estilo en Carpeta CSS -->
     <link rel="stylesheet" href="./css/variables.css">
     <link rel="stylesheet" href="./css/main.css">
+
+    <!-- Leaflet Maps y Fuse.js -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.basic.min.js"></script>
+
+    <!-- Google Firebase Compat (v8.10.1) -->
+    <script defer src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
     <style>
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        :root {
+            --app-bar-h: 60px;
+            --bottom-nav-h: 60px;
+        }
+
+        body {
+            background-color: var(--bg-dark, #090a0f);
+            color: var(--text-main, #f8fafc);
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', system-ui, sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .contenedor-vistas-pwa {
+            flex: 1;
+            height: calc(100dvh - var(--app-bar-h) - var(--bottom-nav-h));
+            overflow-y: auto;
+            padding: clamp(12px, 3vw, 18px);
+            padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 12px));
+            box-sizing: border-box;
+            contain: content;
+        }
+
+        .wizard-step {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            animation: fadeInStep 0.22s ease-out;
+        }
+
+        @keyframes fadeInStep {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .campo-formulario {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .campo-formulario label {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94a3b8);
+            font-weight: 600;
+        }
+
+        .campo-formulario select,
+        .campo-formulario input,
+        .campo-formulario textarea {
+            background: #1a2234 !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            color: #ffffff !important;
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 0.92rem;
+            outline: none;
+            box-sizing: border-box;
+            min-height: 44px;
+        }
+
+        .grid-criticidad {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .btn-sev {
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid transparent;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            outline: none;
+        }
+
+        #sev_Verde    { background: rgba(0, 230, 118, 0.15); color: #00e676; border-color: #00e676; }
+        #sev_Amarillo { background: rgba(234, 179, 8, 0.15);  color: #facc15; border-color: #eab308; }
+        #sev_Naranja  { background: rgba(249, 115, 22, 0.15); color: #fb923c; border-color: #f97316; }
+        #sev_Rojo     { background: rgba(239, 68, 68, 0.25);  color: #f87171; border-color: #ef4444; border-width: 2px; }
+
+        .bottom-nav-pwa {
+            background: rgba(15, 23, 42, 0.96);
+            border-top: 1px solid var(--border-glass, rgba(255, 255, 255, 0.12));
+            height: var(--bottom-nav-h);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        .bottom-nav-pwa .nav-item {
+            background: transparent;
+            border: none;
+            color: var(--text-muted, #94a3b8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            cursor: pointer;
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 6px 12px;
+            min-width: 64px;
+            min-height: 48px;
+        }
+
+        .bottom-nav-pwa .nav-item.active {
+            color: var(--primary-blue, #38bdf8);
+        }
     </style>
 </head>
-<body style="background-color: var(--bg-dark); color: var(--text-main); height: 100vh; overflow: hidden; margin: 0; padding: 0; font-family: 'Inter', sans-serif;">
+<body>
 
-    <!-- NOTIFICACIONES FLOTANTES -->
-    <div class="toast-nav" id="toastNotificacion" style="display: none; position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: #0284c7; color: white; padding: 10px 20px; border-radius: 20px; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.5); font-size: 0.85rem; font-weight: 600;">Mensaje</div>
-    
-    <!-- MOTOR DE COMPRESIÓN DE FOTOS -->
-    <canvas id="resizeCanvas" style="display:none;"></canvas>
+    <!-- NOTIFICACIÓN TOAST -->
+    <aside id="toastNotificacion" 
+           role="status" 
+           aria-live="polite" 
+           aria-atomic="true"
+           style="display: none; position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: #0284c7; color: white; padding: 10px 20px; border-radius: 20px; z-index: 9999; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6); font-size: 0.85rem; font-weight: 600; text-align: center; max-width: 90vw;">
+        Mensaje
+    </aside>
 
-    <!-- BARRA SUPERIOR (APP BAR) -->
-    <header style="background: rgba(15, 23, 42, 0.9); border-bottom: 1px solid var(--border-glass); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; height: 60px; box-sizing: border-box; z-index: 100;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="background: white; padding: 4px 8px; border-radius: 6px; display: flex; align-items: center; justify-content: center; height: 32px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
-                <img src="./assets/img/logo-cpf.png" alt="CMP" style="height: 22px; object-fit: contain;">
+    <!-- HEADER DE TERRENO -->
+    <header style="background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-glass, rgba(255, 255, 255, 0.1)); padding: 0 16px; display: flex; justify-content: space-between; align-items: center; height: var(--app-bar-h); z-index: 100; backdrop-filter: blur(8px);">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="background: #ffffff; padding: 3px 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; height: 30px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);">
+                <img src="./assets/img/logo-cpf.png" alt="Logotipo CPF Ingeniería" style="height: 20px; width: auto; object-fit: contain;">
             </div>
-            <h1 style="font-size: 1.1rem; margin: 0; color: white; font-weight: 700;">CIO Terreno — Mina Los Colorados</h1>
+            <h1 style="font-size: 1rem; margin: 0; color: #ffffff; font-weight: 700;">
+                CIO Terreno — MLC
+            </h1>
         </div>
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <div id="indicadorSincronizando" style="display: none; align-items: center; gap: 6px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">
-                <span class="material-symbols-outlined" style="font-size: 1rem; animation: spin 1s linear infinite;">autorenew</span>
-                <span>Actualizando...</span>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <div id="indicadorSincronizando" 
+                 role="status" 
+                 aria-live="polite" 
+                 style="display: none; align-items: center; gap: 6px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 4px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 700;">
+                <span class="material-symbols-outlined" style="font-size: 0.95rem; animation: spin 1s linear infinite;" aria-hidden="true">autorenew</span>
+                <span>Sync...</span>
             </div>
 
-            <span id="badgeConexion" onclick="window.sincronizarBovedaOffline()" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; cursor: pointer;">🟢 ONLINE</span>
+            <button type="button" 
+                    id="badgeConexion" 
+                    onclick="window.sincronizarBovedaOffline()" 
+                    aria-label="Estado de conexión. Clic para sincronizar"
+                    style="background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.4); padding: 5px 10px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
+                🟢 ONLINE
+            </button>
             
-            <button type="button" onclick="window.salirATelefonoOSuperior()" style="background: rgba(255, 255, 255, 0.08); color: var(--text-main); border: 1px solid var(--border-glass); padding: 5px 10px; border-radius: 6px; font-size: 0.78rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit;">
-                <span class="material-symbols-outlined" style="font-size: 1rem;">restart_alt</span> Reiniciar
+            <button type="button" 
+                    onclick="window.salirATelefonoOSuperior()" 
+                    aria-label="Reiniciar formulario"
+                    style="background: rgba(255, 255, 255, 0.08); color: var(--text-main, #ffffff); border: 1px solid var(--border-glass, rgba(255, 255, 255, 0.15)); padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                <span class="material-symbols-outlined" style="font-size: 0.95rem;" aria-hidden="true">restart_alt</span>
+                <span>Reset</span>
             </button>
         </div>
     </header>
 
-    <!-- CONTENEDOR PRINCIPAL DE VISTAS -->
-    <main style="height: calc(100vh - 120px); overflow-y: auto; box-sizing: border-box; padding: 16px;">
+    <!-- CONTENEDOR DE VISTAS -->
+    <main class="contenedor-vistas-pwa" id="contenedor-principal-pwa">
         
-        <!-- VISTA 1: WIZARD DE REPORTES -->
-        <section id="vista-reporte" class="vista-activa" style="max-width: 600px; margin: 0 auto;">
-            <div class="wizard-step active" id="step-1" style="display: flex; flex-direction: column; gap: 14px;">
-                <h2 style="font-size: 1.15rem; color: #38bdf8; margin: 0 0 5px 0; display: flex; align-items: center; gap: 6px;">📍 Paso 1: Identificar Equipo</h2>
+        <!-- VISTA WIZARD -->
+        <section id="vista-reporte" role="region" aria-label="Formulario de reporte de terreno" style="max-width: 600px; margin: 0 auto;">
+            <form id="form-reporte-terreno" onsubmit="event.preventDefault();">
                 
-                <div style="display: flex; flex-direction: column; gap: 5px;">
-                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Faena Activa</label>
-                    <select id="fieldFaena" style="background: var(--bg-input); border: 1px solid var(--border-glass); color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; outline: none;">
-                        <option value="Planta, Mina los Colorados">Mina Los Colorados (MLC)</option>
-                    </select>
-                </div>
-
-                <div style="display: flex; flex-direction: column; gap: 5px;">
-                    <label style="font-size: 0.75rem; color: #38bdf8; font-weight: 700;">🔍 Búsqueda Rápida Local (Fuse.js)</label>
-                    <div style="position: relative;">
-                        <input type="text" id="buscador-fuse-local" placeholder="Escribe para buscar TAG o descripción instantánea..." oninput="window.filtrarEquiposFuse(this.value)" style="width: 100%; background: var(--bg-input); border: 1px solid var(--border-glass); color: white; padding: 10px 10px 10px 38px; border-radius: 8px; font-size: 0.9rem; outline: none; box-sizing: border-box;">
-                        <span class="material-symbols-outlined" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.2rem;">search</span>
+                <!-- PASO 1 -->
+                <div class="wizard-step" id="step-1" role="region" aria-label="Paso 1: Identificar Equipo">
+                    <h2 style="font-size: 1.15rem; color: #38bdf8; margin: 0 0 4px 0; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+                        Paso 1: Identificar Equipo
+                    </h2>
+                    
+                    <div class="campo-formulario">
+                        <label for="fieldFaena">Faena Operacional</label>
+                        <select id="fieldFaena" name="faena">
+                            <option value="Planta, Mina los Colorados">Mina Los Colorados (MLC)</option>
+                        </select>
                     </div>
+
+                    <div class="campo-formulario">
+                        <label for="buscador-fuse-local" style="color: #38bdf8;">
+                            🔍 Búsqueda Rápida Local (Fuse.js)
+                        </label>
+                        <div style="position: relative;">
+                            <input type="search" 
+                                   id="buscador-fuse-local" 
+                                   name="busqueda-rapida"
+                                   placeholder="Escribe TAG o nombre del equipo..." 
+                                   oninput="window.filtrarEquiposFuse(this.value)" 
+                                   style="padding-left: 40px; width: 100%;">
+                            <span class="material-symbols-outlined" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #94a3b8); font-size: 1.25rem; pointer-events: none;" aria-hidden="true">search</span>
+                        </div>
+                    </div>
+
+                    <div class="campo-formulario">
+                        <label for="fieldArea">Área Operacional</label>
+                        <select id="fieldArea" name="area" onchange="window.cargarEquiposPorArea()">
+                            <option value="">-- Selecciona el Área --</option>
+                        </select>
+                    </div>
+
+                    <div class="campo-formulario">
+                        <label for="fieldTagSelect">Equipo / TAG</label>
+                        <select id="fieldTagSelect" name="tag" onchange="window.seleccionarEquipoTag(this.value)" style="font-family: monospace;">
+                            <option value="">-- Selecciona el equipo --</option>
+                        </select>
+                    </div>
+
+                    <button type="button" 
+                            onclick="window.avanzarPaso(2)" 
+                            style="background: #0284c7; color: white; border: none; padding: 13px; border-radius: 8px; font-weight: 700; font-size: 0.92rem; cursor: pointer; margin-top: 8px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                        <span>Siguiente: Diagnóstico</span>
+                        <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+                    </button>
                 </div>
 
-                <div style="display: flex; flex-direction: column; gap: 5px;">
-                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Área Operacional</label>
-                    <select id="fieldArea" onchange="window.cargarEquiposPorArea()" style="background: var(--bg-input); border: 1px solid var(--border-glass); color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; outline: none;">
-                        <option value="">-- Selecciona el Área --</option>
-                    </select>
-                </div>
+                <!-- PASO 2 -->
+                <div class="wizard-step" id="step-2" role="region" aria-label="Paso 2: Diagnóstico Rápido" style="display: none;">
+                    <h2 style="font-size: 1.15rem; color: #38bdf8; margin: 0 0 4px 0; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" aria-hidden="true">settings</span>
+                        Paso 2: Diagnóstico Rápido
+                    </h2>
 
-                <div style="display: flex; flex-direction: column; gap: 5px;">
-                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Equipo / TAG</label>
-                    <select id="fieldTagSelect" onchange="window.seleccionarEquipoTag(this.value)" style="background: var(--bg-input); border: 1px solid var(--border-glass); color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; font-family: monospace; outline: none;">
-                        <option value="">-- Selecciona el equipo --</option>
-                    </select>
-                </div>
+                    <div class="campo-formulario">
+                        <label for="fieldSpot">Componente / Spot Afectado</label>
+                        <select id="fieldSpot" name="spot" onchange="window.actualizarHallazgosPorSpot(this.value)">
+                            <option value="Condición Global del Equipo">🌐 Condición Global (Todo el equipo)</option>
+                        </select>
+                    </div>
 
-                <button type="button" onclick="window.avanzarPaso(2)" style="background: #0284c7; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 6px;">Siguiente: Detalles ➡️</button>
-            </div>
+                    <div class="campo-formulario">
+                        <label id="label-chips-hallazgos">Marcadores Rápidos (Toca para seleccionar):</label>
+                        <div id="contenedor-chips-dinamicos" 
+                             role="group" 
+                             aria-labelledby="label-chips-hallazgos"
+                             style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;"></div>
+                    </div>
 
-            <!-- PASO 2 -->
-            <div class="wizard-step" id="step-2" style="display: none; flex-direction: column; gap: 14px;">
-                <h2 style="font-size: 1.15rem; color: #38bdf8; margin: 0 0 5px 0; display: flex; align-items: center; gap: 6px;">⚙️ Paso 2: Diagnóstico Rápido</h2>
-                <div style="display: flex; flex-direction: column; gap: 5px;">
-                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Componente / Spot Afectado</label>
-                    <select id="fieldSpot" onchange="window.actualizarHallazgosPorSpot(this.value)" style="background: var(--bg-input); border: 1px solid var(--border-glass); color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; outline: none;">
-                        <option value="Condición Global del Equipo">🌐 Condición Global (Todo el equipo / Estructura)</option>
-                    </select>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 5px;">
-                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Marcadores Rápidos (Toca para seleccionar)</label>
-                    <div id="contenedor-chips-dinamicos" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px;"></div>
-                </div>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button type="button" onclick="window.avanzarPaso(1)" style="flex: 1; background: rgba(255,255,255,0.08); color: white; border: 1px solid var(--border-glass); padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">⬅️ Volver</button>
-                    <button type="button" onclick="window.avanzarPaso(3)" style="flex: 1; background: #0284c7; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">Siguiente: Evidencia ➡️</button>
-                </div>
-            </div>
-
-            <!-- PASO 3 -->
-            <div class="wizard-step" id="step-3" style="display: none; flex-direction: column; gap: 14px;">
-                <h2 style="font-size: 1.15rem; color: #38bdf8; margin: 0 0 5px 0; display: flex; align-items: center; gap: 6px;">📸 Paso 3: Evidencia y Notas</h2>
-                <div style="display: flex; flex-direction: column; gap: 5px;">
-                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Notas del Técnico (Escribe o Dicta)</label>
-                    <div style="position: relative;">
-                        <textarea id="fieldDetalle" rows="4" placeholder="Ej: Perno cortado o fuga en sello..." style="width: 100%; background: var(--bg-input); border: 1px solid var(--border-glass); color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; outline: none; box-sizing: border-box; resize: none;"></textarea>
-                        <button type="button" id="btn-dictado" onclick="window.iniciarDictado()" style="position: absolute; right: 10px; bottom: 12px; background: transparent; border: none; color: #38bdf8; cursor: pointer; display: flex; align-items: center;" title="Dictar por voz">
-                            <span class="material-symbols-outlined" style="font-size: 1.5rem;">mic</span>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button type="button" 
+                                onclick="window.avanzarPaso(1)" 
+                                style="flex: 1; background: rgba(255, 255, 255, 0.08); color: white; border: 1px solid var(--border-glass, rgba(255, 255, 255, 0.15)); padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;">
+                            <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+                            <span>Volver</span>
+                        </button>
+                        <button type="button" 
+                                onclick="window.avanzarPaso(3)" 
+                                style="flex: 1; background: #0284c7; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;">
+                            <span>Siguiente: Evidencias</span>
+                            <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
                         </button>
                     </div>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 5px;">
-                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Captura Multimedia</label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                        <button type="button" onclick="document.getElementById('inputCamaraFoto').click()" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                            <span class="material-symbols-outlined">photo_camera</span> Tomar Foto
-                        </button>
-                        <button type="button" onclick="document.getElementById('inputCamaraVideo').click()" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                            <span class="material-symbols-outlined">videocam</span> Grabar Video
-                        </button>
-                    </div>
-                    <input type="file" id="inputCamaraFoto" accept="image/*" capture="environment" multiple style="display: none;" onchange="window.procesarYComprimirMedia(event)">
-                    <input type="file" id="inputCamaraVideo" accept="video/*" capture="environment" style="display: none;" onchange="window.procesarYComprimirMedia(event)">
-                    <div id="mediaGallery" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;"></div>
-                </div>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button type="button" onclick="window.avanzarPaso(2)" style="flex: 1; background: rgba(255,255,255,0.08); color: white; border: 1px solid var(--border-glass); padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">⬅️ Volver</button>
-                    <button type="button" onclick="window.avanzarPaso(4)" style="flex: 1; background: #0284c7; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">Siguiente: Prioridad ➡️</button>
-                </div>
-            </div>
 
-            <!-- PASO 4 -->
-            <div class="wizard-step" id="step-4" style="display: none; flex-direction: column; gap: 14px;">
-                <h2 style="font-size: 1.15rem; color: #38bdf8; margin: 0 0 5px 0; display: flex; align-items: center; gap: 6px;">🚨 Paso 4: Criticidad Final</h2>
-                <div style="display: flex; flex-direction: column; gap: 5px;">
-                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Nivel de Urgencia en Terreno</label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                        <div id="sev_Verde" onclick="window.selectSevFat('Verde')" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid #10b981; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; cursor: pointer;">🟢 Normal</div>
-                        <div id="sev_Amarillo" onclick="window.selectSevFat('Amarillo')" style="background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; cursor: pointer;">🟡 Seguimiento</div>
-                        <div id="sev_Naranja" onclick="window.selectSevFat('Naranja')" style="background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid #f97316; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; cursor: pointer;">🟠 Alerta</div>
-                        <div id="sev_Rojo" onclick="window.selectSevFat('Rojo')" style="background: rgba(239, 68, 68, 0.25); color: #f87171; border: 2px solid #ef4444; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; cursor: pointer;">🔴 CRÍTICO</div>
+                <!-- PASO 3 -->
+                <div class="wizard-step" id="step-3" role="region" aria-label="Paso 3: Evidencias y Notas" style="display: none;">
+                    <h2 style="font-size: 1.15rem; color: #38bdf8; margin: 0 0 4px 0; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" aria-hidden="true">photo_camera</span>
+                        Paso 3: Evidencias y Notas
+                    </h2>
+
+                    <div class="campo-formulario">
+                        <label for="fieldDetalle">Notas del Técnico (Escribe o Dicta):</label>
+                        <div style="position: relative;">
+                            <textarea id="fieldDetalle" 
+                                      name="detalle" 
+                                      rows="4" 
+                                      placeholder="Ej: Perno cortado, fuga por sello laberinto..." 
+                                      style="width: 100%; resize: vertical; padding-right: 44px;"></textarea>
+                            
+                            <button type="button" 
+                                    id="btn-dictado" 
+                                    onclick="window.iniciarDictado()" 
+                                    aria-label="Iniciar dictado por voz"
+                                    style="position: absolute; right: 10px; bottom: 12px; background: transparent; border: none; color: #38bdf8; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;">
+                                <span class="material-symbols-outlined" style="font-size: 1.6rem;" aria-hidden="true">mic</span>
+                            </button>
+                        </div>
                     </div>
-                    <input type="hidden" id="fieldSev" value="Rojo">
+
+                    <div class="campo-formulario">
+                        <label>Captura de Evidencias en Terreno</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <button type="button" 
+                                    onclick="document.getElementById('inputCamaraFoto').click()" 
+                                    style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 48px;">
+                                <span class="material-symbols-outlined" aria-hidden="true">photo_camera</span> 
+                                <span>Tomar Foto</span>
+                            </button>
+                            
+                            <button type="button" 
+                                    onclick="document.getElementById('inputCamaraVideo').click()" 
+                                    style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 48px;">
+                                <span class="material-symbols-outlined" aria-hidden="true">videocam</span> 
+                                <span>Grabar Video</span>
+                            </button>
+                        </div>
+
+                        <input type="file" id="inputCamaraFoto" accept="image/*" capture="environment" multiple style="display: none;" onchange="window.procesarYComprimirMedia(event)" aria-hidden="true">
+                        <input type="file" id="inputCamaraVideo" accept="video/*" capture="environment" style="display: none;" onchange="window.procesarYComprimirMedia(event)" aria-hidden="true">
+                        
+                        <div id="mediaGallery" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;" role="region" aria-label="Galería de fotos adjuntas"></div>
+                    </div>
+
+                    <!-- LÍNEA CORREGIDA: display: flex sin propiedades CSS rotas -->
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button type="button" 
+                                onclick="window.avanzarPaso(2)" 
+                                style="flex: 1; background: rgba(255, 255, 255, 0.08); color: white; border: 1px solid var(--border-glass, rgba(255, 255, 255, 0.15)); padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;">
+                            <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+                            <span>Volver</span>
+                        </button>
+                        <button type="button" 
+                                onclick="window.avanzarPaso(4)" 
+                                style="flex: 1; background: #0284c7; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;">
+                            <span>Siguiente: Severidad</span>
+                            <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+                        </button>
+                    </div>
                 </div>
-                <button type="button" id="btn-transmitir-final" onclick="window.enviarAlertaSegura()" style="background: #10b981; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 8px;">
-                    <span class="material-symbols-outlined">send</span> TRANSMITIR AL CIO
-                </button>
-                <button type="button" onclick="window.avanzarPaso(3)" style="background: rgba(255,255,255,0.08); color: white; border: 1px solid var(--border-glass); padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%;">⬅️ Revisar Evidencia</button>
-            </div>
+
+                <!-- PASO 4 -->
+                <div class="wizard-step" id="step-4" role="region" aria-label="Paso 4: Criticidad Final" style="display: none;">
+                    <h2 style="font-size: 1.15rem; color: #38bdf8; margin: 0 0 4px 0; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+                        Paso 4: Criticidad Final
+                    </h2>
+
+                    <div class="campo-formulario">
+                        <label id="label-severidad">Nivel de Urgencia en Terreno</label>
+                        <div class="grid-criticidad" role="radiogroup" aria-labelledby="label-severidad">
+                            <button type="button" class="btn-sev" id="sev_Verde" role="radio" aria-checked="false" onclick="window.selectSevFat('Verde')">
+                                🟢 Normal
+                            </button>
+                            <button type="button" class="btn-sev" id="sev_Amarillo" role="radio" aria-checked="false" onclick="window.selectSevFat('Amarillo')">
+                                🟡 Seguimiento
+                            </button>
+                            <button type="button" class="btn-sev" id="sev_Naranja" role="radio" aria-checked="false" onclick="window.selectSevFat('Naranja')">
+                                🟠 Alerta
+                            </button>
+                            <button type="button" class="btn-sev" id="sev_Rojo" role="radio" aria-checked="true" onclick="window.selectSevFat('Rojo')">
+                                🔴 CRÍTICO
+                            </button>
+                        </div>
+                        <input type="hidden" id="fieldSev" name="severidad" value="Rojo">
+                    </div>
+
+                    <button type="button" 
+                            id="btn-transmitir-final" 
+                            onclick="window.enviarAlertaSegura()" 
+                            style="background: #00e676; color: #0f172a; border: none; padding: 14px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 1rem; margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 8px; min-height: 50px;">
+                        <span class="material-symbols-outlined" aria-hidden="true">send</span>
+                        <span>TRANSMITIR AL CIO</span>
+                    </button>
+                    
+                    <button type="button" 
+                            onclick="window.avanzarPaso(3)" 
+                            style="background: rgba(255, 255, 255, 0.08); color: white; border: 1px solid var(--border-glass, rgba(255, 255, 255, 0.15)); padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 8px;">
+                        ⬅️ Revisar Evidencias
+                    </button>
+                </div>
+
+            </form>
         </section>
 
-        <!-- VISTA 2: MAPA GPS -->
-        <section id="vista-mapa" style="display: none; height: 100%; flex-direction: column;">
-            <div style="padding: 10px; background: rgba(15, 23, 42, 0.8);">
+        <!-- VISTA MAPA GPS -->
+        <section id="vista-mapa" role="region" aria-label="Mapa satelital de geolocalización" style="display: none; height: 100%; flex-direction: column; position: relative;">
+            <div style="padding: 10px 0;">
                 <div style="position: relative;">
-                    <span class="material-symbols-outlined" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted);">search</span>
-                    <input type="text" id="buscador-mapa-pwa" onkeyup="window.buscarEnMapaPWA(event)" placeholder="Buscar equipo (Ej. MH2401)..." style="width: 100%; background: var(--bg-input); border: 1px solid var(--border-glass); color: white; padding: 10px 10px 10px 38px; border-radius: 20px; outline: none; box-sizing: border-box;">
+                    <span class="material-symbols-outlined" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #94a3b8); pointer-events: none;" aria-hidden="true">search</span>
+                    <input type="search" 
+                           id="buscador-mapa-pwa" 
+                           onkeyup="window.buscarEnMapaPWA(event)" 
+                           placeholder="Buscar equipo por TAG (Ej. MH2401)..." 
+                           style="width: 100%; background: #1a2234; border: 1px solid rgba(255,255,255,0.15); color: white; padding: 12px 14px 12px 42px; border-radius: 24px; outline: none; box-sizing: border-box; font-size: 0.9rem;">
                 </div>
             </div>
-            <div id="mapa-gps-pwa" style="flex: 1; width: 100%; min-height: 400px; background: #111;"></div>
-            <button type="button" onclick="window.centrarEnMiUbicacion()" style="position: absolute; right: 20px; bottom: 80px; background: #38bdf8; color: #0f172a; border: none; width: 45px; height: 45px; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.5); cursor: pointer; z-index: 1000;">
-                <span class="material-symbols-outlined">my_location</span>
+
+            <div id="mapa-gps-pwa" role="application" style="flex: 1; width: 100%; min-height: 420px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); overflow: hidden; background: #0f172a;"></div>
+
+            <button type="button" 
+                    onclick="window.centrarEnMiUbicacion()" 
+                    style="position: absolute; right: 16px; bottom: 20px; background: #38bdf8; color: #0f172a; border: none; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6); cursor: pointer; z-index: 1000;">
+                <span class="material-symbols-outlined" style="font-size: 1.5rem;" aria-hidden="true">my_location</span>
             </button>
         </section>
+
     </main>
 
-    <!-- BARRA INFERIOR (BOTTOM NAV) -->
-    <nav style="background: rgba(15, 23, 42, 0.95); border-top: 1px solid var(--border-glass); height: 60px; display: flex; justify-content: space-around; align-items: center; position: fixed; bottom: 0; left: 0; width: 100%; box-sizing: border-box; z-index: 100;">
-        <button type="button" class="nav-item active" id="nav-btn-reporte" onclick="window.cambiarVistaPWA('reporte')" style="background: transparent; border: none; color: #38bdf8; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; font-size: 0.7rem;">
-            <span class="material-symbols-outlined">assignment</span>
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav-pwa" aria-label="Navegación principal de terreno">
+        <button type="button" class="nav-item active" id="nav-btn-reporte" onclick="window.cambiarVistaPWA('reporte')">
+            <span class="material-symbols-outlined" aria-hidden="true">assignment</span>
             <span>Reportar</span>
         </button>
-        <button type="button" class="nav-item" id="nav-btn-mapa" onclick="window.cambiarVistaPWA('mapa')" style="background: transparent; border: none; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; font-size: 0.7rem;">
-            <span class="material-symbols-outlined">map</span>
+
+        <button type="button" class="nav-item" id="nav-btn-mapa" onclick="window.cambiarVistaPWA('mapa')">
+            <span class="material-symbols-outlined" aria-hidden="true">map</span>
             <span>Mapa GPS</span>
         </button>
-        <button type="button" class="nav-item" id="nav-btn-sync" onclick="window.sincronizarBovedaOffline()" style="background: transparent; border: none; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; font-size: 0.7rem;">
-            <span class="material-symbols-outlined">cloud_sync</span>
-            <span>Pendientes <span id="contadorOffline" style="background: #ef4444; color: white; padding: 1px 5px; border-radius: 10px; font-size: 0.65rem;">0</span></span>
+
+        <button type="button" class="nav-item" id="nav-btn-sync" onclick="window.sincronizarBovedaOffline()">
+            <span class="material-symbols-outlined" aria-hidden="true">cloud_sync</span>
+            <span>Pendientes <span id="contadorOffline" style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.68rem; font-weight: 800;">0</span></span>
         </button>
     </nav>
 
-    <!-- SCRIPTS EXTERNOS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    
-    <!-- MÓDULOS SEPARADOS -->
+    <!-- SCRIPTS MODULARES ÚNICOS -->
     <script type="module" src="./js/terreno-core.js"></script>
     <script type="module" src="./js/terreno-ui.js"></script>
+
+    <!-- Registro del Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((reg) => console.log('✅ Service Worker activo para Mina Los Colorados. Ámbito:', reg.scope))
+                    .catch((err) => console.warn('⚠️ No se pudo registrar Service Worker:', err));
+            });
+        }
+    </script>
 </body>
 </html>

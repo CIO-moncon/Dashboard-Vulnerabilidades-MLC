@@ -1,0 +1,91 @@
+{
+  "rules": {
+    "activos_criticos": {
+      ".read": "auth != null",
+      ".indexOn": ["area", "severidad", "estado", "tag", "siteId", "nivel"],
+      "$equipoId": {
+        ".write": "auth != null && (!data.exists() || root.child('usuarios_cio').child(auth.uid).child('rol').val() == 'Administrador' || root.child('usuarios_cio').child(auth.uid).child('rol').val() == 'Supervisor Planta' || root.child('usuarios_cio').child(auth.uid).child('rol').val() == 'Analista CBM' || newData.hasChild('spots'))",
+        ".validate": "newData.hasChildren(['tag'])",
+        "tag": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60"
+        },
+        "latitud": {
+          ".validate": "newData.val() == null || (newData.isNumber() && newData.val() >= -90 && newData.val() <= 90) || newData.isString()"
+        },
+        "longitud": {
+          ".validate": "newData.val() == null || (newData.isNumber() && newData.val() >= -180 && newData.val() <= 180) || newData.isString()"
+        },
+        "severidad": {
+          ".validate": "newData.val() == null || (newData.isString() && (newData.val() == 'verde' || newData.val() == 'amarillo' || newData.val() == 'naranja' || newData.val() == 'rojo' || newData.val() == 'critico'))"
+        },
+        "spots": {
+          "$spotId": {
+            "rms": {
+              ".validate": "newData.val() == null || (newData.isNumber() && newData.val() >= 0) || newData.isString()"
+            },
+            "temp": {
+              ".validate": "newData.val() == null || newData.isNumber() || newData.isString()"
+            },
+            "fc": {
+              ".validate": "newData.val() == null || newData.isNumber() || newData.isString()"
+            }
+          }
+        }
+      }
+    },
+    "alertas_terreno": {
+      ".read": "auth != null",
+      ".indexOn": ["tag", "severidad", "timestamp", "estado"],
+      "$alertaId": {
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['tag', 'severidad', 'detalle', 'timestamp'])",
+        "tag": {
+          ".validate": "newData.isString() && newData.val().length > 0"
+        },
+        "severidad": {
+          ".validate": "newData.isString() && (newData.val() == 'Verde' || newData.val() == 'Amarillo' || newData.val() == 'Naranja' || newData.val() == 'Rojo' || newData.val() == 'verde' || newData.val() == 'amarillo' || newData.val() == 'naranja' || newData.val() == 'rojo')"
+        },
+        "timestamp": {
+          ".validate": "newData.isString() || newData.isNumber()"
+        }
+      }
+    },
+    "historial_informes": {
+      "pms_semanal": {
+        ".read": "auth != null",
+        ".indexOn": ["semana", "fechaCarga"],
+        "$semanaId": {
+          ".write": "auth != null && (root.child('usuarios_cio').child(auth.uid).child('rol').val() == 'Administrador' || root.child('usuarios_cio').child(auth.uid).child('rol').val() == 'Supervisor Planta' || root.child('usuarios_cio').child(auth.uid).child('rol').val() == 'Analista CBM' || !data.exists())",
+          "ordenes": {
+            "$ordenId": {
+              ".write": "auth != null"
+            }
+          },
+          "actividades_emergentes": {
+            "$emergenteId": {
+              ".write": "auth != null",
+              ".validate": "newData.hasChildren(['tag', 'descripcion', 'fecha'])"
+            }
+          }
+        }
+      }
+    },
+    "usuarios_cio": {
+      ".read": "auth != null",
+      ".indexOn": ["email", "rol", "activo"],
+      "$usuarioKey": {
+        ".write": "auth != null && (!data.exists() || root.child('usuarios_cio').child(auth.uid).child('rol').val() == 'Administrador' || !root.child('usuarios_cio').exists())",
+        ".validate": "newData.hasChildren(['nombre', 'email', 'rol'])",
+        "email": {
+          ".validate": "newData.isString() && newData.val().contains('@')"
+        },
+        "rol": {
+          ".validate": "newData.isString() && (newData.val() == 'Administrador' || newData.val() == 'Supervisor Planta' || newData.val() == 'Analista CBM' || newData.val() == 'Inspector Terreno')"
+        },
+        "activo": {
+          ".validate": "newData.isBoolean()"
+        }
+      }
+    }
+  }
+}
