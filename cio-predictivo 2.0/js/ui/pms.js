@@ -41,14 +41,56 @@ const escaparHTML = (texto = '') =>
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
 
-const formatearFechaDDMMAAAA = (fechaStr = '') => {
-    if (!fechaStr) return '-';
-    const str = String(fechaStr).trim();
+// CONVERSIÓN ROBUSTA DE FECHAS (SOPORTA NÚMEROS SERIALES DE EXCEL Y STRINGS)
+const formatearFechaDDMMAAAA = (fechaInput = '') => {
+    if (!fechaInput) return '-';
+    
+    // Si es un número serial de Excel (ej: 46317)
+    if (!isNaN(fechaInput) && Number(fechaInput) > 10000) {
+        const diasExcel = parseInt(fechaInput, 10);
+        const fechaEpoch = new Date(1899, 11, 30);
+        fechaEpoch.setDate(fechaEpoch.getDate() + diasExcel);
+        if (!isNaN(fechaEpoch.getTime())) {
+            const dd = String(fechaEpoch.getDate()).padStart(2, '0');
+            const mm = String(fechaEpoch.getMonth() + 1).padStart(2, '0');
+            const yyyy = fechaEpoch.getFullYear();
+            return `${dd}-${mm}-${yyyy}`;
+        }
+    }
+
+    const str = String(fechaInput).trim();
     const matchYMD = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
     if (matchYMD) {
         return `${matchYMD[3].padStart(2, '0')}-${matchYMD[2].padStart(2, '0')}-${matchYMD[1]}`;
     }
     return str;
+};
+
+// FUNCIÓN AUXILIAR PARA OBTENER OBJETO DATE VÁLIDO PARA ORDENAMIENTO
+const obtenerObjetoFecha = (fechaInput) => {
+    if (!fechaInput) return new Date(2099, 0, 1);
+    if (!isNaN(fechaInput) && Number(fechaInput) > 10000) {
+        const fechaEpoch = new Date(1899, 11, 30);
+        fechaEpoch.setDate(fechaEpoch.getDate() + parseInt(fechaInput, 10));
+        return fechaEpoch;
+    }
+    const str = String(fechaInput).trim();
+    const matchYMD = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+    if (matchYMD) {
+        return new Date(parseInt(matchYMD[1]), parseInt(matchYMD[2]) - 1, parseInt(matchYMD[3]));
+    }
+    const parsed = new Date(str);
+    return isNaN(parsed.getTime()) ? new Date(2099, 0, 1) : parsed;
+};
+
+// EXTRACCIÓN LIMPIA DEL ÁREA (EJ: "AR61") DESDE LA UBICACIÓN TÉCNICA DE SAP
+const extraerAreaLimpia = (ubicacionTecnica = '') => {
+    const str = String(ubicacionTecnica).trim();
+    const matchArea = str.match(/(AR\d+)/i);
+    if (matchArea) {
+        return matchArea[1].toUpperCase();
+    }
+    return str.split('-')[3] || str.substring(0, 10) || 'General';
 };
 
 const mostrarModalIndustrial = ({ titulo, icono, colorBase, htmlCuerpo, textoConfirmar = 'Aceptar', textoCancelar = 'Cancelar', mostrarCancelar = true }) => {
@@ -217,6 +259,8 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico') =
                             <option value="Ejecutado">Solo Ejecutados</option>
                             <option value="Pendiente">Solo Pendientes</option>
                             <option value="No Ejecutado">Solo No Ejecutados</option>
+                            <option value="Notificadas">Solo Notificadas SAP</option>
+                            <option value="CTEC">Solo Cierre Técnico (CTEC)</option>
                         </select>
                     </div>
 
@@ -240,7 +284,7 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico') =
                                 <th style="padding: 10px; min-width: 130px;">ESTADO REAL</th>
                                 <th style="padding: 10px; min-width: 80px; text-align: center;">NOTIF. SAP</th>
                                 <th style="padding: 10px; min-width: 75px; text-align: center;">CTEC</th>
-                                <th style="padding: 10px; min-width: 60px; text-align: center;">FOTOS</th>
+                                <th style="padding: 10px; min-width: 60px; text-align: center;">ARCHIVOS</th>
                                 <th style="padding: 10px; min-width: 190px;">OBSERVACIÓN / JUSTIFICACIÓN</th>
                             </tr>
                         </thead>
@@ -620,6 +664,13 @@ const renderizarTablaOrdenes = () => {
 
     const entries = Object.entries(datosSemanaActual.ordenes || {});
 
+    // ORDENAR CRONOLÓGICAMENTE DE FECHA MENOR A MAYOR (ASCENDENTE)
+    entries.sort(([, a], [, b]) => {
+        const fechaA = obtenerObjetoFecha(a.fecha);
+        const fechaB = obtenerObjetoFecha(b.fecha);
+        return fechaA - fechaB;
+    });
+
     const filtradas = entries.filter(([, ord]) => {
         if (!ord) return false;
         const textoBusqueda = filtroTexto.toLowerCase();
@@ -629,7 +680,13 @@ const renderizarTablaOrdenes = () => {
             String(ord.tag || '').toLowerCase().includes(textoBusqueda) ||
             String(ord.area || '').toLowerCase().includes(textoBusqueda);
 
-        const coincideEstado = filtroEstado === 'TODOS' || ord.estadoReal === filtroEstado;
+        let coincideEstado = true;
+        if (filtroEstado === 'Ejecutado') coincideEstado = ord.estadoReal === 'Ejecutado';
+        else if (filtroEstado === 'Pendiente') coincideEstado = ord.estadoReal === 'Pendiente';
+        else if (filtroEstado === 'No Ejecutado') coincideEstado = ord.estadoReal === 'No Ejecutado';
+        else if (filtroEstado === 'Notificadas') coincideEstado = ord.notifSap === true;
+        else if (filtroEstado === 'CTEC') coincideEstado = ord.ctec === true;
+
         return coincideTexto && coincideEstado;
     });
 
@@ -639,20 +696,21 @@ const renderizarTablaOrdenes = () => {
     }
 
     tbody.innerHTML = filtradas.map(([idKey, ord], idx) => {
-        const esNotif = ord.notifSap === true || String(ord.notifSap) === 'true';
-        const esCtec = ord.ctec === true || String(ord.ctec) === 'true';
-        const estadoReal = ord.estadoReal || 'Ejecutado';
+        const esNotif = ord.notifSap === true;
+        const esCtec = ord.ctec === true;
+        const estadoReal = ord.estadoReal || 'Pendiente';
+        const numAdjuntos = parseInt(ord.adjuntos || 0, 10);
 
         return `
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
                 <td style="padding: 8px 10px; text-align: center; color: var(--text-muted);">${idx + 1}</td>
-                <td style="padding: 8px 10px; font-family: monospace; white-space: nowrap;">${escaparHTML(formatearFechaDDMMAAAA(ord.fecha || '13/10/2026'))}</td>
+                <td style="padding: 8px 10px; font-family: monospace; white-space: nowrap;">${escaparHTML(formatearFechaDDMMAAAA(ord.fecha || ''))}</td>
                 <td style="padding: 8px 10px; font-weight: 700; color: #38bdf8;">${escaparHTML(ord.area || 'AR54')}</td>
                 
                 <td style="padding: 8px 10px;">
                     <div style="font-weight: 700; color: #ffffff; font-family: monospace;">${escaparHTML(ord.tag || ord.equipo || 'EQUIPO')}</div>
                     <div style="font-size: 0.68rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;">
-                        ${escaparHTML(ord.ubicacion || ord.equipo || '')}
+                        ${escaparHTML(ord.equipo || '')}
                     </div>
                 </td>
 
@@ -664,7 +722,7 @@ const renderizarTablaOrdenes = () => {
                 </td>
 
                 <td style="padding: 8px 10px; font-size: 0.74rem; color: #e2e8f0; max-width: 190px; line-height: 1.25;">
-                    ${escaparHTML(ord.actividad || 'Inspección Predictiva')}
+                    ${escaparHTML(ord.actividad || 'Inspección CBM')}
                 </td>
 
                 <td style="padding: 8px 10px;">
@@ -676,20 +734,20 @@ const renderizarTablaOrdenes = () => {
                 </td>
 
                 <td style="padding: 8px 10px; text-align: center;">
-                    <button type="button" onclick="window.actualizarCampoOrden('${idKey}', 'notifSap',${!esNotif})" style="background: ${esNotif ? 'rgba(0, 230, 118, 0.15)' : 'rgba(239, 68, 68, 0.15)'}; color: ${esNotif ? '#00e676' : '#f87171'}; border: 1px solid ${esNotif ? 'rgba(0, 230, 118, 0.4)' : 'rgba(239, 68, 68, 0.4)'}; padding: 3px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 800; cursor: pointer; transition: all 0.15s ease;">
+                    <button type="button" onclick="window.actualizarCampoOrden('${idKey}', 'notifSap', ${!esNotif})" style="background: ${esNotif ? 'rgba(0, 230, 118, 0.15)' : 'rgba(239, 68, 68, 0.15)'}; color: ${esNotif ? '#00e676' : '#f87171'}; border: 1px solid ${esNotif ? 'rgba(0, 230, 118, 0.4)' : 'rgba(239, 68, 68, 0.4)'}; padding: 3px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 800; cursor: pointer; transition: all 0.15s ease;">
                         ${esNotif ? '✓ SÍ' : '✕ NO'}
                     </button>
                 </td>
 
                 <td style="padding: 8px 10px; text-align: center;">
-                    <button type="button" onclick="window.actualizarCampoOrden('${idKey}', 'ctec',${!esCtec})" style="background: ${esCtec ? 'rgba(45, 212, 191, 0.15)' : 'rgba(255, 255, 255, 0.05)'}; color: ${esCtec ? '#2dd4bf' : '#94a3b8'}; border: 1px solid ${esCtec ? 'rgba(45, 212, 191, 0.4)' : 'rgba(255, 255, 255, 0.15)'}; padding: 3px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 800; cursor: pointer; transition: all 0.15s ease;">
+                    <button type="button" onclick="window.actualizarCampoOrden('${idKey}', 'ctec', ${!esCtec})" style="background: ${esCtec ? 'rgba(45, 212, 191, 0.15)' : 'rgba(255, 255, 255, 0.05)'}; color: ${esCtec ? '#2dd4bf' : '#94a3b8'}; border: 1px solid ${esCtec ? 'rgba(45, 212, 191, 0.4)' : 'rgba(255, 255, 255, 0.15)'}; padding: 3px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 800; cursor: pointer; transition: all 0.15s ease;">
                         ${esCtec ? '✓ SÍ' : '✕ NO'}
                     </button>
                 </td>
 
                 <td style="padding: 8px 10px; text-align: center; color: var(--text-muted); font-size: 0.75rem;">
                     <span class="material-symbols-outlined" style="font-size: 0.95rem; vertical-align: middle;" aria-hidden="true">attach_file</span>
-                    <span>${ord.adjuntos || 0}</span>
+                    <span style="font-weight: 700; color: ${numAdjuntos > 0 ? '#38bdf8' : 'inherit'};">${numAdjuntos}</span>
                 </td>
 
                 <td style="padding: 8px 10px;">
@@ -829,6 +887,9 @@ window.eliminarRespaldoSemanaActual = async () => {
     }
 };
 
+// ============================================================================
+// PROCESAMIENTO Y SINCRONIZACIÓN MAESTRA DESDE EXPORT.XLSX (SAP PM)
+// ============================================================================
 window.procesarArchivoExcelPMS = (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -852,74 +913,112 @@ window.procesarArchivoExcelPMS = (event) => {
                 return;
             }
 
-            let semanaDetectada = 'PMS43';
-            for (const fila of jsonData) {
-                const fechaRaw = fila.Fecha || fila.FECHA || fila['Fecha inicio'] || fila['Fecha extrema'];
-                if (fechaRaw) {
-                    const parsedDate = new Date(fechaRaw);
-                    if (!isNaN(parsedDate.getTime())) {
-                        const numSemana = obtenerSemanaISO(parsedDate);
-                        semanaDetectada = `PMS${numSemana}`;
-                        break;
-                    }
-                }
-            }
+            // Respetar la semana seleccionada actual
+            let semanaDetectada = semanaSeleccionada || 'PMS43';
 
             const modalResult = await mostrarModalIndustrial({
-                titulo: 'Confirmar Carga de OMs',
+                titulo: 'Confirmar Sincronización SAP',
                 icono: 'upload_file',
                 colorBase: '2, 132, 199',
                 htmlCuerpo: `
-                    <p style="margin-bottom: 8px;">📊 Archivo analizado correctamente con <strong>${jsonData.length}</strong> órdenes.</p>
-                    <p style="margin-bottom: 12px;">Semana detectada automáticamente:</p>
+                    <p style="margin-bottom: 8px;">📊 Archivo analizado con <strong>${jsonData.length}</strong> registros.</p>
+                    <p style="margin-bottom: 12px;">Periodo / Semana activa:</p>
                     <input type="text" name="semana" value="${semanaDetectada}" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 1rem; text-align: center; outline: none; box-sizing: border-box;">
                 `,
-                textoConfirmar: 'Cargar Archivo'
+                textoConfirmar: 'Sincronizar Estados'
             });
 
             if (!modalResult || !modalResult.semana) return; 
 
             const nuevaSemanaId = modalResult.semana.trim().toUpperCase();
-            const nuevasOrdenes = {};
+
+            // OBTENER DATOS EXISTENTES PARA PRESERVAR 100% LAS EMERGENCIAS Y JUSTIFICACIONES PREVIAS
+            const snapActual = await dbPMS.child(semanaSeleccionada || nuevaSemanaId).once('value');
+            const datosActuales = snapActual.val() || {};
+            
+            const snapExistente = await dbPMS.child(nuevaSemanaId).once('value');
+            const datosExistentes = snapExistente.val() || {};
+
+            const emergentesPrevias = datosExistentes.actividades_emergentes || datosActuales.actividades_emergentes || {};
+            const ordenesExistentes = datosExistentes.ordenes || datosActuales.ordenes || {};
+
+            const mapaLlavesPorOrden = {};
+            Object.entries(ordenesExistentes).forEach(([idFirebase, objOrden]) => {
+                if (objOrden.numero) {
+                    mapaLlavesPorOrden[String(objOrden.numero).trim()] = idFirebase;
+                }
+            });
+
+            const ordenesFusionadas = { ...ordenesExistentes };
 
             jsonData.forEach((row, i) => {
-                const idFila = `ORD_${String(row.Orden || row.OM || row['Nº orden'] || i + 1).replace(/\D/g, '')}`;
-                nuevasOrdenes[idFila] = {
-                    numero: String(row.Orden || row.OM || row['Nº orden'] || idFila),
-                    fecha: String(row.Fecha || row.FECHA || new Date().toLocaleDateString()),
-                    area: String(row.Area || row.Área || row['Ubicac.técnica']?.substring(0, 4) || 'General'),
-                    equipo: String(row.Equipo || row.TAG || row.Denominación || 'Equipo General'),
-                    tag: String(row.TAG || row.Tag || row.Equipo || 'SIN-TAG'),
-                    actividad: String(row.Texto || row.Operación || row.Actividad || 'Inspección CBM'),
-                    cruce: 'No Catastrado',
-                    estadoReal: 'Pendiente', 
-                    notifSap: false,         
-                    ctec: false,
-                    adjuntos: 0,
-                    observacion: ''
+                const numOm = String(row.Orden || row.OM || row['Nº orden'] || '').trim();
+                
+                let idFila = mapaLlavesPorOrden[numOm] || `ORD_${numOm || (i + 1)}`;
+                const ordenAntigua = ordenesExistentes[idFila] || {};
+
+                // --- EXTRACCIÓN Y EVALUACIÓN DIRECTA DE COLUMNAS SAP ---
+                const rawEstatus = String(row['Estado de sistema'] || row['Estatus del sistema'] || row['Status'] || '').toUpperCase();
+                
+                const esNotifSap = rawEstatus.includes('NOTI');
+                const esCtecSap = rawEstatus.includes('CTEC') || rawEstatus.includes('TECO') || rawEstatus.includes('CERR');
+
+                let estadoRealSugerido = ordenAntigua.estadoReal || 'Pendiente';
+                if (esNotifSap || esCtecSap || rawEstatus.includes('CERR')) {
+                    estadoRealSugerido = 'Ejecutado';
+                }
+
+                const cantAdjRaw = row['Cant Adj.'] !== undefined ? row['Cant Adj.'] : (row['Documentos'] !== undefined ? row['Documentos'] : 0);
+                const adjuntosFinal = parseInt(cantAdjRaw, 10) || (ordenAntigua.adjuntos || 0);
+
+                // PRESERVACIÓN ESTRICTA DE LA OBSERVACIÓN / JUSTIFICACIÓN DEL USUARIO:
+                // Se mantiene la justificación que el usuario haya escrito a mano. 
+                // Solo se actualiza si el usuario nunca escribió nada y la orden recién fue notificada en SAP.
+                let observacionFinal = ordenAntigua.observacion || '';
+                if (!observacionFinal && esNotifSap) {
+                    observacionFinal = rawEstatus; 
+                }
+
+                // Extracción limpia del área (ej: "AR61")
+                const areaSap = extraerAreaLimpia(row['Ubicación técnica'] || row['Ubicac.técnica'] || ordenAntigua.area || 'General');
+
+                ordenesFusionadas[idFila] = {
+                    numero: numOm || ordenAntigua.numero || String(i + 1),
+                    fecha: String(row['Fecha fin extrema'] || row['Fecha de inicio extrema'] || row.Fecha || ordenAntigua.fecha || new Date().toLocaleDateString()),
+                    area: areaSap,
+                    equipo: String(row['Denominación de objeto técnico'] || row.Equipo || row.TAG || ordenAntigua.equipo || 'Equipo General'),
+                    tag: String(row.Equipo || row.TAG || ordenAntigua.tag || 'SIN-TAG'),
+                    actividad: String(row['Texto de mensaje'] || row.Texto || row.Operación || ordenAntigua.actividad || 'Inspección CBM'),
+                    cruce: ordenAntigua.cruce || 'No Catastrado',
+                    estadoReal: estadoRealSugerido, 
+                    notifSap: esNotifSap,         
+                    ctec: esCtecSap,
+                    adjuntos: adjuntosFinal,
+                    observacion: observacionFinal
                 };
             });
 
+            // Guardado atómico preservando emergencias y justificaciones
             await dbPMS.child(nuevaSemanaId).set({
                 semana: nuevaSemanaId,
                 fechaCarga: new Date().toISOString(),
-                ordenes: nuevasOrdenes,
-                actividades_emergentes: {}
+                ordenes: ordenesFusionadas,
+                actividades_emergentes: emergentesPrevias 
             });
 
             if (typeof UI !== 'undefined' && UI.mostrarToast) {
-                UI.mostrarToast(`✅ ¡Semana ${nuevaSemanaId} cargada con éxito!`, 'exito');
+                UI.mostrarToast(`✅ ¡Sincronización SAP exitosa! Áreas limpias (ARXX), fechas, justificaciones y emergencias preservadas.`, 'exito');
             }
 
             usuarioCambioSemana = true; 
             window.cambiarPeriodoPMS(nuevaSemanaId);
         } catch (err) {
-            console.error('[PMS] Error procesando Excel:', err);
+            console.error('[PMS] Error procesando Excel de SAP:', err);
             await mostrarModalIndustrial({
                 titulo: 'Error de Procesamiento',
                 icono: 'error',
                 colorBase: '239, 68, 68',
-                htmlCuerpo: 'Ocurrió un error al intentar leer el archivo Excel. Asegúrese de que tenga el formato correcto.',
+                htmlCuerpo: 'Ocurrió un error al procesar el archivo exportado de SAP.',
                 mostrarCancelar: false
             });
         } finally {
@@ -973,7 +1072,7 @@ window.abrirModalNuevaEmergencia = async () => {
 };
 
 // ============================================================================
-// REPORTE PDF INFORME SEMANAL (INCLUYE ODS + ACTIVIDADES EMERGENTES EN TABLA)
+// REPORTE PDF INFORME SEMANAL
 // ============================================================================
 window.descargarReportePDF_PMS = async () => {
     const { jsPDF } = window.jspdf || {};
@@ -1229,9 +1328,6 @@ window.descargarReportePDF_PMS = async () => {
         }
     }
 
-    // ========================================================================
-    // SECCIÓN 2: ACTIVIDADES EMERGENTES / IMPREVISTOS EN TERRENO EN EL PDF
-    // ========================================================================
     posY += 6;
     if (posY > altoPagina - 35) {
         doc.addPage();
