@@ -1,6 +1,6 @@
 // ============================================================================
 // MÓDULO UI TERRENO: WIZARD, BUSCADOR FUSE.JS, EVIDENCIAS Y MAPA GPS
-// CIO PREDICTIVO 2.0 — Estándar ES6+, Leaflet LayerGroup y WAI-ARIA
+// CIO PREDICTIVO 2.0 — Estándar ES6+, Orden Cinemático y WAI-ARIA
 // ============================================================================
 
 import { activosRef, dbAlertas } from './terreno-core.js';
@@ -47,7 +47,7 @@ const HALLAZGOS_POR_TIPO = Object.freeze({
 });
 
 // ----------------------------------------------------------------------------
-// UTILIDADES PURAS
+// UTILIDADES PURAS Y ORDENAMIENTO CINEMÁTICO REAL
 // ----------------------------------------------------------------------------
 function escaparHTML(texto = '') {
     return String(texto)
@@ -58,8 +58,62 @@ function escaparHTML(texto = '') {
         .replace(/'/g, '&#39;');
 }
 
+const clasificarPuntoCinematico = (puntoRaw = '') => {
+    const p = String(puntoRaw || '').toUpperCase().trim();
+    const match = p.match(/^([A-Z]+)(\d+)?(?:[_\-\s]?([A-Z0-9]+))?$/i);
+
+    const prefijo = match && match[1] ? match[1].toUpperCase() : p;
+    const num = match && match[2] ? parseInt(match[2], 10) : 0;
+    const sufijo = match && match[3] ? match[3].toUpperCase() : '';
+
+    let peso = 99;
+    if (prefijo === 'M' || prefijo === 'MOT') peso = 10;
+    else if (prefijo === 'A' || prefijo === 'ACOP') peso = 20;
+    else if (prefijo === 'G' || prefijo === 'R' || prefijo === 'RED') peso = 30;
+    else if (prefijo === 'E' || prefijo === 'EJE') peso = 40;
+    else if (prefijo === 'PL' || prefijo === 'P' || prefijo === 'POL') peso = 50;
+    else if (prefijo === 'CH' || prefijo === 'CHUM' || prefijo === 'D' || prefijo === 'C') peso = 60;
+    else if (prefijo === 'T' || prefijo === 'TAM' || prefijo === 'B') peso = 70;
+
+    let pesoSufijo = 50;
+    if (sufijo.includes('LD') || sufijo.includes('DE') || sufijo.includes('CARGA')) pesoSufijo = 10;
+    if (sufijo.includes('LI') || sufijo.includes('NDE') || sufijo.includes('LIBRE')) pesoSufijo = 20;
+
+    return { punto: p, peso, num, pesoSufijo, sufijo };
+};
+
+const ordenarPuntosCinematicos = (a, b) => {
+    const puntoA = typeof a === 'string' ? a : (a.punto || a.id || '');
+    const puntoB = typeof b === 'string' ? b : (b.punto || b.id || '');
+    const infoA = clasificarPuntoCinematico(puntoA);
+    const infoB = clasificarPuntoCinematico(puntoB);
+    if (infoA.peso !== infoB.peso) return infoA.peso - infoB.peso;
+    if (infoA.num !== infoB.num) return infoA.num - infoB.num;
+    if (infoA.pesoSufijo !== infoB.pesoSufijo) return infoA.pesoSufijo - infoB.pesoSufijo;
+    return infoA.sufijo.localeCompare(infoB.sufijo);
+};
+
+const deducirNombreComponente = (puntoStr, nombreOriginal) => {
+    if (nombreOriginal && nombreOriginal !== 'Componente' && nombreOriginal !== 'Punto' && nombreOriginal.trim() !== '') {
+        return nombreOriginal;
+    }
+    const p = String(puntoStr || '').toUpperCase();
+    if (p === 'M1') return 'Motor NDE (Lado Libre)';
+    if (p === 'M2') return 'Motor DE (Lado Acople)';
+    if (p.startsWith('G') || p.startsWith('R')) {
+        const num = p.replace(/\D/g, '');
+        return `Reductor Etapa ${num || 'Principal'}`;
+    }
+    if (p.startsWith('PL') || p.startsWith('P')) {
+        const lado = p.includes('LD') ? 'Lado Derecho' : (p.includes('LI') ? 'Lado Izquierdo' : '');
+        return `Polea de Transmisión ${lado}`;
+    }
+    if (p.startsWith('CH') || p.startsWith('D')) return 'Chumacera / Descanso';
+    return nombreOriginal || p || 'Punto de Medición';
+};
+
 // ----------------------------------------------------------------------------
-// GESTIÓN DE ÁREAS Y EQUIPOS (DECLARACIÓN CON HOISTING PREVIO A LA CACHÉ)
+// GESTIÓN DE ÁREAS Y EQUIPOS
 // ----------------------------------------------------------------------------
 function cargarAreasPorFaena() {
     const catalogo = window.catalogoGlobal || [];
@@ -115,14 +169,25 @@ function poblarSpotsEquipo(componentsList = []) {
     let optionsHTML = '<option value="Condición Global del Equipo">🌐 Condición Global (Todo el equipo)</option>';
 
     if (componentsList && componentsList.length > 0) {
-        optionsHTML += componentsList.map((comp) => {
+        const puntosNormalizados = componentsList.map((comp, idx) => {
+            let puntoId = 'P' + (idx + 1);
             let nombreComp = 'Componente';
+
             if (typeof comp === 'string') {
-                nombreComp = comp;
+                puntoId = comp;
+                nombreComp = deducirNombreComponente(comp, '');
             } else if (typeof comp === 'object' && comp !== null) {
-                nombreComp = comp.name ?? comp.nombre ?? comp.descripcion ?? comp.tag_punto ?? comp.tag ?? comp.punto ?? 'Punto';
+                puntoId = comp.punto || comp.tag || comp.id || ('P' + (idx + 1));
+                const rawName = comp.componente || comp.name || comp.nombre || comp.descripcion || comp.tag_punto;
+                nombreComp = deducirNombreComponente(puntoId, rawName);
             }
-            return `<option value="${escaparHTML(nombreComp)}">⚙️ ${escaparHTML(nombreComp)}</option>`;
+            return { punto: puntoId, componente: nombreComp };
+        });
+
+        puntosNormalizados.sort(ordenarPuntosCinematicos);
+
+        optionsHTML += puntosNormalizados.map((item) => {
+            return `<option value="${escaparHTML(item.componente)}">⚙️ [${escaparHTML(item.punto)}] ${escaparHTML(item.componente)}</option>`;
         }).join('');
     }
 
@@ -160,9 +225,6 @@ function actualizarHallazgosPorSpot(spotName = '') {
     }
 }
 
-// ----------------------------------------------------------------------------
-// LECTURA SEGURA DE CACHÉ LOCAL AL INICIAR
-// ----------------------------------------------------------------------------
 function cargarDeCacheLocalInmediato() {
     const cached = localStorage.getItem(CACHE_CATASTRO_KEY);
     if (!cached) return;
@@ -176,21 +238,14 @@ function cargarDeCacheLocalInmediato() {
     }
 }
 
-// ----------------------------------------------------------------------------
-// EXPOSICIÓN AL ÁMBITO GLOBAL PARA CONTROLADORES HTML
-// ----------------------------------------------------------------------------
 window.cargarAreasPorFaena = cargarAreasPorFaena;
 window.cargarEquiposPorArea = cargarEquiposPorArea;
 window.seleccionarEquipoTag = seleccionarEquipoTag;
 window.poblarSpotsEquipo = poblarSpotsEquipo;
 window.actualizarHallazgosPorSpot = actualizarHallazgosPorSpot;
 
-// Ejecución controlada tras definir todas las dependencias
 cargarDeCacheLocalInmediato();
 
-// ----------------------------------------------------------------------------
-// SINCRONIZACIÓN EN TIEMPO REAL CON FIREBASE
-// ----------------------------------------------------------------------------
 if (activosRef) {
     window.mostrarIndicadorSync?.(true);
 
@@ -235,9 +290,6 @@ if (activosRef) {
     });
 }
 
-// ----------------------------------------------------------------------------
-// BÚSQUEDA DIFUSA LOCAL (FUSE.JS)
-// ----------------------------------------------------------------------------
 window.filtrarEquiposFuse = function(query) {
     clearTimeout(debounceFuseTimer);
     const busquedaLimpia = query?.trim() ?? '';
@@ -284,9 +336,6 @@ window.toggleChip = function(chipEl, fraseCompleta) {
     }
 };
 
-// ----------------------------------------------------------------------------
-// NAVEGACIÓN Y WIZARD
-// ----------------------------------------------------------------------------
 window.mostrarIndicadorSync = function(mostrar) {
     const indicador = document.getElementById('indicadorSincronizando');
     if (indicador) {
@@ -367,9 +416,6 @@ window.cambiarVistaPWA = function(vista) {
     }
 };
 
-// ----------------------------------------------------------------------------
-// RECONOCIMIENTO DE VOZ Y COMPRESIÓN DE EVIDENCIAS
-// ----------------------------------------------------------------------------
 window.iniciarDictado = function() {
     const cajaTexto = document.getElementById('fieldDetalle');
     const SpeechRecognition = window.SpeechRecognition ?? window.webkitSpeechRecognition;
@@ -475,9 +521,6 @@ function renderizarGaleria() {
     `).join('');
 }
 
-// ----------------------------------------------------------------------------
-// SEVERIDAD Y TRANSMISIÓN
-// ----------------------------------------------------------------------------
 window.selectSevFat = function(sev) {
     const inputSev = document.getElementById('fieldSev');
     if (inputSev) inputSev.value = sev;
@@ -520,24 +563,25 @@ window.enviarAlertaSegura = async function() {
         area: document.getElementById('fieldArea')?.value ?? 'General',
         tag: tagSelect,
         componente: spotFinal,
-        severidad: sev,
-        detalle: textoFinal,
+        severidadPreliminar: `Zona ${sev === 'Rojo' ? 'D' : (sev === 'Naranja' ? 'C' : (sev === 'Amarillo' ? 'B' : 'A'))} (${sev})`,
+        descripcion: textoFinal,
         fotoBase64: primerFoto ? primerFoto.data : '',
         evidencias: window.arregloEvidencias,
         timestamp: new Date().toISOString(),
-        estado: 'nuevo'
+        inspector: 'Inspector de Terreno PWA',
+        estado: 'Pendiente'
     };
 
     if (btnTransmitir) {
         btnTransmitir.disabled = true;
         btnTransmitir.innerHTML = `<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;" aria-hidden="true">sync</span> TRANSMITIENDO...`;
     }
-    window.mostrarNotificacion('⚡ Transmitiendo reporte de terreno...');
+    window.mostrarNotificacion('⚡ Transmitiendo hallazgo a Triage...');
 
     try {
         if (navigator.onLine && dbAlertas) {
             await dbAlertas.push(payload);
-            window.mostrarNotificacion('✅ Reporte entregado al CIO.');
+            window.mostrarNotificacion('✅ Hallazgo enviado a la Bandeja de Triage.');
         } else {
             await window.guardarEnBoveda?.(payload);
         }
@@ -571,9 +615,6 @@ function limpiarTrasEnvio(btn) {
     window.avanzarPaso(1);
 }
 
-// ----------------------------------------------------------------------------
-// MAPA GPS PWA (LEAFLET)
-// ----------------------------------------------------------------------------
 window.inicializarMapaPWA = function() {
     try {
         const divMapa = document.getElementById('mapa-gps-pwa');

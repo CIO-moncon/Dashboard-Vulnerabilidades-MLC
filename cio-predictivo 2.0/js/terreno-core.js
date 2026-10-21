@@ -3,9 +3,6 @@
 // CIO PREDICTIVO 2.0 — Estándar ES6+, Control de Concurrencia y Sincronización Segura
 // ============================================================================
 
-// ----------------------------------------------------------------------------
-// CONFIGURACIÓN E INICIALIZACIÓN DE FIREBASE (COMPATIBILIDAD INDUSTRIAL)
-// ----------------------------------------------------------------------------
 const firebaseConfig = Object.freeze({
     apiKey: "AIzaSyBd5MEZdMmgzBs1xCyeGYeKtQx5gJIeY3w",
     authDomain: "dashboard-vulnerabilidades-mlc.firebaseapp.com",
@@ -27,26 +24,19 @@ try {
         }
         db = firebase.database();
         activosRef = db.ref('activos_criticos'); 
-        dbAlertas = db.ref('alertas_terreno');
+        dbAlertas = db.ref('alertas_terreno'); // Ruta compartida con Triage
     }
 } catch (error) {
     console.error('Error al inicializar los servicios de Firebase en terreno-core:', error);
 }
 
-// ----------------------------------------------------------------------------
-// CONFIGURACIÓN DE BÓVEDA LOCAL (INDEXEDDB)
-// ----------------------------------------------------------------------------
 const DB_NAME = 'CIO_BovedaOffline';
 const DB_VERSION = 1;
 const STORE_NAME = 'reportes_pendientes';
 
 let dbLocal = null;
-let sincronizando = false; // Mutex anti-colisión para evitar duplicados en red lenta
+let sincronizando = false;
 
-/**
- * Conexión asíncrona segura a IndexedDB en modo Singleton
- * @returns {Promise<IDBDatabase>}
- */
 const abrirBovedaLocal = () =>
     new Promise((resolve, reject) => {
         if (dbLocal) {
@@ -70,22 +60,16 @@ const abrirBovedaLocal = () =>
 
         request.onsuccess = (e) => {
             dbLocal = e.target.result;
-            dbLocal.onclose = () => {
-                dbLocal = null;
-            };
+            dbLocal.onclose = () => { dbLocal = null; };
             resolve(dbLocal);
         };
 
         request.onerror = (e) => {
             dbLocal = null;
-            console.error('Error al abrir IndexedDB:', e.target.error);
             reject(e.target.error);
         };
     });
 
-/**
- * Inicialización de la bóveda local al arranque del script
- */
 const inicializarBoveda = async () => {
     try {
         await abrirBovedaLocal();
@@ -98,15 +82,6 @@ const inicializarBoveda = async () => {
     }
 };
 
-// ----------------------------------------------------------------------------
-// OPERACIONES DE ALMACENAMIENTO LOCAL Y SINCRONIZACIÓN
-// ----------------------------------------------------------------------------
-
-/**
- * Guarda un reporte en la bóveda IndexedDB cuando se pierde la conexión
- * @param {object} payload
- * @returns {Promise<boolean>}
- */
 window.guardarEnBoveda = async (payload = {}) => {
     try {
         const base = await abrirBovedaLocal();
@@ -120,7 +95,6 @@ window.guardarEnBoveda = async (payload = {}) => {
             const tx = base.transaction(STORE_NAME, 'readwrite');
             const store = tx.objectStore(STORE_NAME);
             const req = store.add(registro);
-
             req.onsuccess = () => resolve(true);
             req.onerror = (e) => reject(e.target.error);
         });
@@ -135,11 +109,7 @@ window.guardarEnBoveda = async (payload = {}) => {
     }
 };
 
-/**
- * Sincroniza secuencialmente los reportes locales con Firebase al recuperar señal
- */
 window.sincronizarBovedaOffline = async () => {
-    // Verificación de prerequisitos y semáforo de sincronización
     if (sincronizando || !navigator.onLine || !dbAlertas) return;
 
     try {
@@ -159,17 +129,14 @@ window.sincronizarBovedaOffline = async () => {
         window.mostrarIndicadorSync?.(true);
         window.mostrarNotificacion?.(`🟢 Sincronizando ${reportes.length} reporte(s) pendiente(s)...`);
 
-        // Sincronización secuencial para evitar condiciones de carrera en base de datos
         for (const reporte of reportes) {
             const idTemp = reporte.id_local;
             const reporteParaSubir = { ...reporte };
             delete reporteParaSubir.id_local;
 
             try {
-                // 1. Envío a Firebase Realtime Database
                 await dbAlertas.push(reporteParaSubir);
 
-                // 2. Eliminación atómica del registro local una vez confirmado en el servidor
                 await new Promise((res, rej) => {
                     const deleteTx = base.transaction(STORE_NAME, 'readwrite');
                     const deleteStore = deleteTx.objectStore(STORE_NAME);
@@ -179,7 +146,6 @@ window.sincronizarBovedaOffline = async () => {
                 });
             } catch (itemError) {
                 console.error(`Error al sincronizar reporte temporal ${idTemp}:`, itemError);
-                // Si falla un elemento por timeout de red, se detiene la secuencia para reintentar después
                 break;
             }
         }
@@ -192,10 +158,6 @@ window.sincronizarBovedaOffline = async () => {
     }
 };
 
-/**
- * Consulta la cantidad de elementos en espera y actualiza el contador accesible en UI
- * @returns {Promise<number>}
- */
 const actualizarContadorOffline = async () => {
     try {
         const base = await abrirBovedaLocal();
@@ -222,9 +184,6 @@ const actualizarContadorOffline = async () => {
 
 window.actualizarContadorOffline = actualizarContadorOffline;
 
-// ----------------------------------------------------------------------------
-// LISTENERS DE CONECTIVIDAD Y ESTADO DE RED
-// ----------------------------------------------------------------------------
 const actualizarBadgeConexion = (estaEnLinea) => {
     const badge = document.getElementById('badgeConexion');
     if (!badge) return;
@@ -236,12 +195,10 @@ const actualizarBadgeConexion = (estaEnLinea) => {
         badge.textContent = '🟢 ONLINE';
         badge.style.background = 'rgba(16, 185, 129, 0.15)';
         badge.style.color = '#34d399';
-        badge.setAttribute('aria-label', 'Conexión activa con el servidor');
     } else {
         badge.textContent = '🔴 OFFLINE';
         badge.style.background = 'rgba(239, 68, 68, 0.15)';
         badge.style.color = '#f87171';
-        badge.setAttribute('aria-label', 'Modo offline activado. Los datos se guardarán localmente');
     }
 };
 
@@ -254,23 +211,16 @@ window.addEventListener('offline', () => {
     actualizarBadgeConexion(false);
 });
 
-// ----------------------------------------------------------------------------
-// REGISTRO DEL SERVICE WORKER (PWA)
-// ----------------------------------------------------------------------------
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {
         try {
             await navigator.serviceWorker.register('sw.js');
         } catch (swError) {
-            console.warn('Registro de Service Worker omitido o no compatible:', swError);
+            console.warn('Registro de Service Worker omitido:', swError);
         }
     });
 }
 
-// Inicialización de arranque
 inicializarBoveda();
 
-// ----------------------------------------------------------------------------
-// CONTRATOS DE EXPORTACIÓN MODULAR
-// ----------------------------------------------------------------------------
 export { db, activosRef, dbAlertas, abrirBovedaLocal, actualizarContadorOffline };

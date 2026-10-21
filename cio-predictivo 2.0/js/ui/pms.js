@@ -45,7 +45,6 @@ const escaparHTML = (texto = '') =>
 const formatearFechaDDMMAAAA = (fechaInput = '') => {
     if (!fechaInput) return '-';
     
-    // Si es un número serial de Excel (ej: 46317)
     if (!isNaN(fechaInput) && Number(fechaInput) > 10000) {
         const diasExcel = parseInt(fechaInput, 10);
         const fechaEpoch = new Date(1899, 11, 30);
@@ -565,7 +564,7 @@ window.filtrarEspectralesPorEstado = (estado) => {
     }
     if (btnTodos) {
         btnTodos.style.background = estado === 'TODOS' ? '#38bdf8' : 'transparent';
-        btnTodos.style.color = estado === 'TODOS' ? '#0f172a' : '#94a3b8';
+        btnTodos.style.color = estado === 'TODOS' ? '#0f172a' : '#0f172a';
     }
     renderizarTablaEspectrales();
 };
@@ -581,57 +580,58 @@ const renderizarKPIsYTablas = () => {
     const emergentesArray = Object.values(datosSemanaActual.actividades_emergentes || {});
     const totalEmergentes = emergentesArray.length;
 
-    let ejecutadas = 0;
-    let notifSAP = 0;
-    let ctecCerradas = 0;
+    let ejecutadasPlan = 0;
+    let notifSAPCount = 0;
+    let ctecCerradasCount = 0;
 
     ordenesArray.forEach((o) => {
         const est = String(o.estadoReal || 'Ejecutado').toLowerCase();
-        if (est === 'ejecutado') ejecutadas++;
-        if (o.notifSap === true || String(o.notifSap) === 'true') notifSAP++;
-        if (o.ctec === true || String(o.ctec) === 'true') ctecCerradas++;
+        if (est === 'ejecutado') ejecutadasPlan++;
+        if (o.notifSap === true || String(o.notifSap) === 'true') notifSAPCount++;
+        if (o.ctec === true || String(o.ctec) === 'true') ctecCerradasCount++;
     });
 
     emergentesArray.forEach((em) => {
-        if (em.notifSap === true || String(em.notifSap) === 'true') notifSAP++;
-        if (em.ctec === true || String(em.ctec) === 'true') ctecCerradas++;
+        if (em.notifSap === true || String(em.notifSap) === 'true') notifSAPCount++;
+        if (em.ctec === true || String(em.ctec) === 'true') ctecCerradasCount++;
     });
 
     const totalTrabajosGlobal = totalProgramadas + totalEmergentes;
-    const totalEjecutadasGlobal = ejecutadas + totalEmergentes;
-    const pendientes = totalProgramadas - ejecutadas;
-    const pctCumplimiento = totalProgramadas > 0 ? Math.round((ejecutadas / totalProgramadas) * 100) : 0;
-    const pctNotif = totalTrabajosGlobal > 0 ? Math.round((notifSAP / totalTrabajosGlobal) * 100) : 0;
-    const pctCtec = totalTrabajosGlobal > 0 ? Math.round((ctecCerradas / totalTrabajosGlobal) * 100) : 0;
+    const totalEjecutadasGlobal = ejecutadasPlan + totalEmergentes;
+    
+    // Porcentajes
+    const pctCumplimientoPlan = totalProgramadas > 0 ? Math.round((ejecutadasPlan / totalProgramadas) * 100) : 0;
+    const pctNotif = totalTrabajosGlobal > 0 ? Math.round((notifSAPCount / totalTrabajosGlobal) * 100) : 0;
+    const pctCtec = totalTrabajosGlobal > 0 ? Math.round((ctecCerradasCount / totalTrabajosGlobal) * 100) : 0;
 
     const kpisContainer = document.getElementById('pms-kpis-container');
     if (kpisContainer) {
         kpisContainer.innerHTML = `
             <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(0, 230, 118, 0.3); border-radius: 10px; padding: 12px 16px;">
-                <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Cumplimiento Terreno</span>
-                <div style="font-size: 1.8rem; font-weight: 900; color: #00e676; margin: 4px 0;">${pctCumplimiento}%</div>
+                <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Cumplimiento Plan (PMS)</span>
+                <div style="font-size: 1.8rem; font-weight: 900; color: #00e676; margin: 4px 0;">${pctCumplimientoPlan}%</div>
                 <div style="background: rgba(255,255,255,0.1); border-radius: 4px; height: 5px; overflow: hidden; margin-top: 6px;">
-                    <div style="background: #00e676; width: ${pctCumplimiento}%; height: 100%;"></div>
+                    <div style="background: #00e676; width: ${pctCumplimientoPlan}%; height: 100%;"></div>
                 </div>
-                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;">${ejecutadas} de ${totalProgramadas} OMs</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;">${ejecutadasPlan} de ${totalProgramadas} OMs pautadas</span>
             </div>
 
             <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px; padding: 12px 16px;">
-                <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Total Programado</span>
-                <div style="font-size: 1.8rem; font-weight: 900; color: #38bdf8; margin: 4px 0;">${totalProgramadas}</div>
-                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 11px; display: block;">Órdenes de Trabajo SAP PM</span>
+                <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Esfuerzo Total Terreno</span>
+                <div style="font-size: 1.8rem; font-weight: 900; color: #38bdf8; margin: 4px 0;">${totalEjecutadasGlobal}</div>
+                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 11px; display: block;">${ejecutadasPlan} Plan + ${totalEmergentes} Emerg.</span>
             </div>
 
             <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 12px 16px;">
                 <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Actividades Emergentes</span>
                 <div style="font-size: 1.8rem; font-weight: 900; color: #fbbf24; margin: 4px 0;">${totalEmergentes}</div>
-                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 11px; display: block;">Imprevistos en terreno</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 11px; display: block;">Imprevistos atendidos</span>
             </div>
 
             <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; padding: 12px 16px;">
-                <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Ejecución Total vs Pendientes</span>
-                <div style="font-size: 1.5rem; font-weight: 900; color: #60a5fa; margin: 4px 0;">${totalEjecutadasGlobal} / ${pendientes}</div>
-                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;">Realizadas (Prog+Emerg) vs No hechas</span>
+                <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Demanda Total (Carga)</span>
+                <div style="font-size: 1.5rem; font-weight: 900; color: #60a5fa; margin: 4px 0;">${totalTrabajosGlobal} OMs</div>
+                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;">${totalProgramadas} Plan + ${totalEmergentes} Emerg.</span>
             </div>
 
             <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; padding: 12px 16px;">
@@ -640,7 +640,7 @@ const renderizarKPIsYTablas = () => {
                 <div style="background: rgba(255,255,255,0.1); border-radius: 4px; height: 5px; overflow: hidden; margin-top: 6px;">
                     <div style="background: #c084fc; width: ${pctNotif}%; height: 100%;"></div>
                 </div>
-                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;">Notificaciones globales</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;">${notifSAPCount} de ${totalTrabajosGlobal} globales</span>
             </div>
 
             <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(45, 212, 191, 0.3); border-radius: 10px; padding: 12px 16px;">
@@ -649,7 +649,7 @@ const renderizarKPIsYTablas = () => {
                 <div style="background: rgba(255,255,255,0.1); border-radius: 4px; height: 5px; overflow: hidden; margin-top: 6px;">
                     <div style="background: #2dd4bf; width: ${pctCtec}%; height: 100%;"></div>
                 </div>
-                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;">Cierres técnicos globales</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;">${ctecCerradasCount} de ${totalTrabajosGlobal} globales</span>
             </div>
         `;
     }
@@ -913,7 +913,6 @@ window.procesarArchivoExcelPMS = (event) => {
                 return;
             }
 
-            // Respetar la semana seleccionada actual
             let semanaDetectada = semanaSeleccionada || 'PMS43';
 
             const modalResult = await mostrarModalIndustrial({
@@ -932,7 +931,6 @@ window.procesarArchivoExcelPMS = (event) => {
 
             const nuevaSemanaId = modalResult.semana.trim().toUpperCase();
 
-            // OBTENER DATOS EXISTENTES PARA PRESERVAR 100% LAS EMERGENCIAS Y JUSTIFICACIONES PREVIAS
             const snapActual = await dbPMS.child(semanaSeleccionada || nuevaSemanaId).once('value');
             const datosActuales = snapActual.val() || {};
             
@@ -957,7 +955,6 @@ window.procesarArchivoExcelPMS = (event) => {
                 let idFila = mapaLlavesPorOrden[numOm] || `ORD_${numOm || (i + 1)}`;
                 const ordenAntigua = ordenesExistentes[idFila] || {};
 
-                // --- EXTRACCIÓN Y EVALUACIÓN DIRECTA DE COLUMNAS SAP ---
                 const rawEstatus = String(row['Estado de sistema'] || row['Estatus del sistema'] || row['Status'] || '').toUpperCase();
                 
                 const esNotifSap = rawEstatus.includes('NOTI');
@@ -971,15 +968,11 @@ window.procesarArchivoExcelPMS = (event) => {
                 const cantAdjRaw = row['Cant Adj.'] !== undefined ? row['Cant Adj.'] : (row['Documentos'] !== undefined ? row['Documentos'] : 0);
                 const adjuntosFinal = parseInt(cantAdjRaw, 10) || (ordenAntigua.adjuntos || 0);
 
-                // PRESERVACIÓN ESTRICTA DE LA OBSERVACIÓN / JUSTIFICACIÓN DEL USUARIO:
-                // Se mantiene la justificación que el usuario haya escrito a mano. 
-                // Solo se actualiza si el usuario nunca escribió nada y la orden recién fue notificada en SAP.
                 let observacionFinal = ordenAntigua.observacion || '';
                 if (!observacionFinal && esNotifSap) {
                     observacionFinal = rawEstatus; 
                 }
 
-                // Extracción limpia del área (ej: "AR61")
                 const areaSap = extraerAreaLimpia(row['Ubicación técnica'] || row['Ubicac.técnica'] || ordenAntigua.area || 'General');
 
                 ordenesFusionadas[idFila] = {
@@ -998,7 +991,6 @@ window.procesarArchivoExcelPMS = (event) => {
                 };
             });
 
-            // Guardado atómico preservando emergencias y justificaciones
             await dbPMS.child(nuevaSemanaId).set({
                 semana: nuevaSemanaId,
                 fechaCarga: new Date().toISOString(),
@@ -1007,7 +999,7 @@ window.procesarArchivoExcelPMS = (event) => {
             });
 
             if (typeof UI !== 'undefined' && UI.mostrarToast) {
-                UI.mostrarToast(`✅ ¡Sincronización SAP exitosa! Áreas limpias (ARXX), fechas, justificaciones y emergencias preservadas.`, 'exito');
+                UI.mostrarToast(`✅ ¡Sincronización SAP exitosa! Áreas limpias, fechas, justificaciones y emergencias preservadas.`, 'exito');
             }
 
             usuarioCambioSemana = true; 
@@ -1149,12 +1141,12 @@ window.descargarReportePDF_PMS = async () => {
     const altoCard = 18;
 
     const listaKpisPDF = [
-        { titulo: 'CUMPLIMIENTO', valor: `${pctCumplimiento}%`, sub: `${ejecutadas} de ${totalProgramadas} OMs`, color: [22, 163, 74], bg: [240, 253, 244], border: [34, 197, 94] },
-        { titulo: 'PROGRAMADAS', valor: `${totalProgramadas}`, sub: 'Trabajos SAP PM', color: [2, 132, 199], bg: [240, 249, 255], border: [56, 189, 248] },
+        { titulo: 'CUMPLIMIENTO PLAN', valor: `${pctCumplimiento}%`, sub: `${ejecutadas} de ${totalProgramadas} OMs`, color: [22, 163, 74], bg: [240, 253, 244], border: [34, 197, 94] },
+        { titulo: 'ESFUERZO TERRENO', valor: `${totalEjecutadasGlobal}`, sub: 'Plan + Emergentes', color: [2, 132, 199], bg: [240, 249, 255], border: [56, 189, 248] },
         { titulo: 'EMERGENTES', valor: `${totalEmergentes}`, sub: 'Imprevistos terreno', color: [245, 158, 11], bg: [254, 252, 232], border: [245, 158, 11] },
-        { titulo: 'HECHAS / NO HECHAS', valor: `${totalEjecutadasGlobal} / ${pendientes}`, sub: 'Prog+Emerg vs Pend.', color: [59, 130, 246], bg: [239, 246, 255], border: [59, 130, 246] },
-        { titulo: 'NOTIFICADAS SAP', valor: `${pctNotif}%`, sub: 'Globales', color: [147, 51, 234], bg: [250, 245, 255], border: [192, 132, 252] },
-        { titulo: 'CIERRE CTEC', valor: `${pctCtec}%`, sub: 'Globales', color: [13, 148, 136], bg: [240, 253, 250], border: [45, 212, 191] }
+        { titulo: 'DEMANDA TOTAL', valor: `${totalTrabajosGlobal} OMs`, sub: 'Carga global', color: [59, 130, 246], bg: [239, 246, 255], border: [59, 130, 246] },
+        { titulo: 'NOTIFICADAS SAP', valor: `${pctNotif}%`, sub: `${notifSAP} de ${totalTrabajosGlobal}`, color: [147, 51, 234], bg: [250, 245, 255], border: [192, 132, 252] },
+        { titulo: 'CIERRE CTEC', valor: `${pctCtec}%`, sub: `${ctecCerradas} de ${totalTrabajosGlobal}`, color: [13, 148, 136], bg: [240, 253, 250], border: [45, 212, 191] }
     ];
 
     listaKpisPDF.forEach((k, idx) => {

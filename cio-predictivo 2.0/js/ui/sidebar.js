@@ -3,6 +3,8 @@
 // CIO PREDICTIVO 2.0 — Catastro Industrial, Filtro de Áreas y Búsqueda CBM
 // ============================================================================
 
+import { renderizarModuloTriage } from './triage.js';
+
 // ----------------------------------------------------------------------------
 // ESTADO INTERNO DEL SIDEBAR
 // ----------------------------------------------------------------------------
@@ -155,7 +157,6 @@ const renderizarEquiposDeArea = (contenedor, nombreArea) => {
 
     const htmlEquipos = equiposArea.map(({ idKey, eq }) => {
         const tag = escaparHTML(eq.tag || idKey);
-        const nombre = escaparHTML(eq.nombre || 'Sin descripción');
         const sevInfo = obtenerSeveridadInfo(eq.severidad || eq.estado);
         const targetId = eq.tag ? eq.tag.toUpperCase().replace(/\s+/g, '_') : idKey;
 
@@ -312,19 +313,23 @@ window.limpiarBusquedaSidebar = () => {
 
 window.cambiarPestanaSidebar = (pestana) => {
     const tabCatastro = document.getElementById('tab-catastro');
-    const tabAlertas = document.getElementById('tab-alertas');
+    const tabTriage = document.getElementById('tab-triage'); // Pestaña actualizada
 
     if (pestana === 'catastro') {
         tabCatastro?.classList.add('active');
         tabCatastro?.setAttribute('aria-selected', 'true');
-        tabAlertas?.classList.remove('active');
-        tabAlertas?.setAttribute('aria-selected', 'false');
+        tabTriage?.classList.remove('active');
+        tabTriage?.setAttribute('aria-selected', 'false');
         areaSeleccionada = null;
         window.limpiarBusquedaSidebar();
-    } else if (pestana === 'alertas') {
-        if (typeof window.abrirModalAlertasTerreno === 'function') {
-            window.abrirModalAlertasTerreno();
-        }
+    } else if (pestana === 'triage') {
+        tabTriage?.classList.add('active');
+        tabTriage?.setAttribute('aria-selected', 'true');
+        tabCatastro?.classList.remove('active');
+        tabCatastro?.setAttribute('aria-selected', 'false');
+        
+        // Renderizar el módulo Triage en el espacio de trabajo dinámico principal
+        renderizarModuloTriage('espacio-trabajo-dinamico');
     }
 };
 
