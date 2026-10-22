@@ -1,13 +1,10 @@
 // ============================================================================
-// MÓDULO UI TERRENO: WIZARD, BUSCADOR FUSE.JS, EVIDENCIAS Y MAPA GPS
-// CIO PREDICTIVO 2.0 — Estándar ES6+, Orden Cinemático y WAI-ARIA
+// MÓDULO UI TERRENO: WIZARD, BUSCADOR FUSE.JS, EVIDENCIAS Y MAPA GPS (v2.1.0)
+// CIO PREDICTIVO 2.0 — Estándar ES6+, Orden Cinemático y Normalización de Payload
 // ============================================================================
 
-import { activosRef, dbAlertas } from './terreno-core.js';
+import { activosRef, dbAlertas, guardarCatastroLocal, cargarCatastroLocal } from './terreno-core.js';
 
-// ----------------------------------------------------------------------------
-// ESTADO GLOBAL COMPARTIDO
-// ----------------------------------------------------------------------------
 window.catalogoGlobal = [];
 window.equipoSeleccionadoActual = null;
 window.arregloEvidencias = []; 
@@ -16,11 +13,9 @@ window.mapaPWA = null;
 window.fuseInstance = null;
 window.marcadorGPS_PWA = null;
 
-const CACHE_CATASTRO_KEY = 'cio_cached_catastro';
 let capaMarcadoresPWA = null;
 let debounceFuseTimer = null;
 
-// Matriz de hallazgos operacionales CBM
 const HALLAZGOS_POR_TIPO = Object.freeze({
     motor: [
         { frase: '📢 Ruido anómalo en rodamientos', label: '📢 Ruido rodamiento' },
@@ -46,9 +41,6 @@ const HALLAZGOS_POR_TIPO = Object.freeze({
     ]
 });
 
-// ----------------------------------------------------------------------------
-// UTILIDADES PURAS Y ORDENAMIENTO CINEMÁTICO REAL
-// ----------------------------------------------------------------------------
 function escaparHTML(texto = '') {
     return String(texto)
         .replace(/&/g, '&amp;')
@@ -112,9 +104,6 @@ const deducirNombreComponente = (puntoStr, nombreOriginal) => {
     return nombreOriginal || p || 'Punto de Medición';
 };
 
-// ----------------------------------------------------------------------------
-// GESTIÓN DE ÁREAS Y EQUIPOS
-// ----------------------------------------------------------------------------
 function cargarAreasPorFaena() {
     const catalogo = window.catalogoGlobal || [];
     const filtered = catalogo.filter((e) => e.siteId?.includes('Colorados') || !e.siteId);
@@ -225,16 +214,12 @@ function actualizarHallazgosPorSpot(spotName = '') {
     }
 }
 
-function cargarDeCacheLocalInmediato() {
-    const cached = localStorage.getItem(CACHE_CATASTRO_KEY);
-    if (!cached) return;
-
-    try {
-        window.catalogoGlobal = JSON.parse(cached);
+async function cargarDeCacheLocalInmediato() {
+    const equiposGuardados = await cargarCatastroLocal();
+    if (equiposGuardados && equiposGuardados.length > 0) {
+        window.catalogoGlobal = equiposGuardados;
         inicializarFuse();
         cargarAreasPorFaena();
-    } catch (e) {
-        console.warn('[PWA] Error al recuperar catastro local:', e);
     }
 }
 
@@ -249,7 +234,7 @@ cargarDeCacheLocalInmediato();
 if (activosRef) {
     window.mostrarIndicadorSync?.(true);
 
-    activosRef.on('value', (snap) => {
+    activosRef.on('value', async (snap) => {
         const raw = snap.val();
         if (raw) {
             window.catalogoGlobal = Object.keys(raw).map((k) => {
@@ -273,12 +258,7 @@ if (activosRef) {
                 };
             });
 
-            try {
-                localStorage.setItem(CACHE_CATASTRO_KEY, JSON.stringify(window.catalogoGlobal));
-            } catch (err) {
-                console.warn('[PWA] Fallo al guardar en localStorage:', err);
-            }
-
+            await guardarCatastroLocal(window.catalogoGlobal);
             inicializarFuse();
             cargarAreasPorFaena();
 
@@ -544,7 +524,7 @@ window.enviarAlertaSegura = async function() {
     }
 
     const spotFinal = document.getElementById('fieldSpot')?.value ?? 'Condición Global';
-    const sev = document.getElementById('fieldSev')?.value ?? 'Verde';
+    const sev = document.getElementById('fieldSev')?.value ?? 'Rojo';
     const notasManuales = document.getElementById('fieldDetalle')?.value.trim() ?? '';
     const btnTransmitir = document.getElementById('btn-transmitir-final');
 
@@ -563,7 +543,9 @@ window.enviarAlertaSegura = async function() {
         area: document.getElementById('fieldArea')?.value ?? 'General',
         tag: tagSelect,
         componente: spotFinal,
+        severidad: sev,
         severidadPreliminar: `Zona ${sev === 'Rojo' ? 'D' : (sev === 'Naranja' ? 'C' : (sev === 'Amarillo' ? 'B' : 'A'))} (${sev})`,
+        detalle: textoFinal,
         descripcion: textoFinal,
         fotoBase64: primerFoto ? primerFoto.data : '',
         evidencias: window.arregloEvidencias,
@@ -576,7 +558,7 @@ window.enviarAlertaSegura = async function() {
         btnTransmitir.disabled = true;
         btnTransmitir.innerHTML = `<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;" aria-hidden="true">sync</span> TRANSMITIENDO...`;
     }
-    window.mostrarNotificacion('⚡ Transmitiendo hallazgo a Triage...');
+    window.mostrarNotificacion('⚡ Procesando transmisión...');
 
     try {
         if (navigator.onLine && dbAlertas) {

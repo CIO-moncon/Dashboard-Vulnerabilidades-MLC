@@ -1,6 +1,7 @@
 // ============================================================================
-// MÓDULO UI: JS/UI/PMS.JS
+// MÓDULO UI: JS/UI/PMS.JS (v3.1.0 - Unificado con Control SLA y Bitácora)
 // CIO PREDICTIVO 2.0 — Auditoría PMS, Control Espectral, KPIs, Emergencias en PDF y Visor
+// Planta Mina Los Colorados (CMP) | CPF Ingeniería Ltda.
 // ============================================================================
 
 import { auth, db } from '../core/firebase-config.js';
@@ -12,6 +13,7 @@ import {
     formatearFechaNomenclatura,
     abrirVisorPDFInterno
 } from '../core/pdf-plantilla.js';
+import { renderizarExpediente } from './expediente.js';
 
 let semanaSeleccionada = null; 
 let usuarioCambioSemana = false; 
@@ -101,12 +103,12 @@ const mostrarModalIndustrial = ({ titulo, icono, colorBase, htmlCuerpo, textoCon
         overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 9999; animation: fadeIn 0.2s ease;';
 
         overlay.innerHTML = `
-            <div class="modal-box glass-panel" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 24px 40px rgba(0,0,0,0.5); border-radius: 12px; width: 100%; max-width: 420px; overflow: hidden; transform: translateY(20px); animation: slideUp 0.3s forwards ease;">
+            <div class="modal-box glass-panel" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 24px 40px rgba(0,0,0,0.5); border-radius: 12px; width: 100%; max-width: 480px; overflow: hidden; transform: translateY(20px); animation: slideUp 0.3s forwards ease;">
                 <header style="background: rgba(${colorBase}, 0.15); border-bottom: 1px solid rgba(${colorBase}, 0.3); padding: 16px 20px; display: flex; align-items: center; gap: 10px;">
                     <span class="material-symbols-outlined" style="color: rgb(${colorBase}); font-size: 1.5rem;" aria-hidden="true">${icono}</span>
-                    <h3 style="margin: 0; color: white; font-size: 1.1rem; font-weight: 700;">${titulo}</h3>
+                    <h3 style="margin: 0; color: white; font-size: 1.05rem; font-weight: 700;">${titulo}</h3>
                 </header>
-                <div style="padding: 20px; color: #e2e8f0; font-size: 0.85rem; line-height: 1.5;">
+                <div style="padding: 20px; color: #e2e8f0; font-size: 0.82rem; line-height: 1.5;">
                     ${htmlCuerpo}
                 </div>
                 <footer style="padding: 14px 20px; background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: flex-end; gap: 10px;">
@@ -129,7 +131,10 @@ const mostrarModalIndustrial = ({ titulo, icono, colorBase, htmlCuerpo, textoCon
             const formInputs = overlay.querySelectorAll('input, select, textarea');
             if (formInputs.length > 0) {
                 const data = {};
-                formInputs.forEach(inp => data[inp.name] = inp.value);
+                formInputs.forEach(inp => {
+                    if (inp.type === 'checkbox') data[inp.name] = inp.checked;
+                    else data[inp.name] = inp.value;
+                });
                 cerrar(data);
             } else {
                 cerrar(true);
@@ -158,7 +163,7 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico') =
                         Auditoría de Programa Semanal (PMS) & Auditoría CBM
                     </h2>
                     <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted, #94a3b8);">
-                        Control de OMs SAP PM, gestión de emergencias y trazabilidad de Informes Espectrales requeridos.
+                        Control de OMs SAP PM, gestión de emergencias y trazabilidad de Informes Espectrales con SLA de días.
                     </p>
                 </div>
 
@@ -195,15 +200,16 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico') =
 
             <div id="pms-kpis-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;"></div>
 
+            <!-- SECCIÓN: CONTROL DE INFORMES ESPECTRALES CON CONTROL DE DÍAS Y CIERRES TÉCNICOS -->
             <section style="background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                     <div>
                         <h3 style="margin: 0; font-size: 1rem; color: #f87171; font-weight: 800; display: flex; align-items: center; gap: 8px;">
                             <span class="material-symbols-outlined" style="color: #ef4444;" aria-hidden="true">assignment_late</span>
-                            Control de Informes Espectrales Requeridos
+                            Control de Informes Espectrales & Avisos SAP (Ciclo de Vida)
                         </h3>
                         <p style="margin: 3px 0 0 0; font-size: 0.75rem; color: var(--text-muted, #94a3b8);">
-                            Generados automáticamente desde las rutas de terreno. Usa el switch para confirmar la subida del informe a SAP.
+                            Control de días transcurridos (SLA). Cierre de aviso por ejecución con impacto en Bitácora o cierre por obsolescencia.
                         </p>
                     </div>
 
@@ -217,10 +223,13 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico') =
 
                         <div style="display: flex; gap: 4px; background: rgba(0,0,0,0.3); padding: 3px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
                             <button type="button" id="btn-filtro-esp-pendientes" onclick="window.filtrarEspectralesPorEstado('PENDIENTES')" style="background: #ef4444; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
-                                Solo Pendientes (<span id="lbl-esp-pendientes-count">0</span>)
+                                Pendientes (<span id="lbl-esp-pendientes-count">0</span>)
                             </button>
                             <button type="button" id="btn-filtro-esp-emitidos" onclick="window.filtrarEspectralesPorEstado('EMITIDOS')" style="background: transparent; color: #94a3b8; border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
-                                En SAP (<span id="lbl-esp-emitidos-count">0</span>)
+                                Ejecutados (<span id="lbl-esp-emitidos-count">0</span>)
+                            </button>
+                            <button type="button" id="btn-filtro-esp-obsoletos" onclick="window.filtrarEspectralesPorEstado('OBSOLETOS')" style="background: transparent; color: #94a3b8; border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
+                                Obsoletos (<span id="lbl-esp-obsoletos-count">0</span>)
                             </button>
                             <button type="button" id="btn-filtro-esp-todos" onclick="window.filtrarEspectralesPorEstado('TODOS')" style="background: transparent; color: #94a3b8; border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
                                 Todos (<span id="lbl-esp-total-count">0</span>)
@@ -232,6 +241,7 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico') =
                 <div id="pms-tabla-espectrales-container" style="overflow-x: auto; border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;"></div>
             </section>
 
+            <!-- SECCIÓN: ACTIVIDADES EMERGENTES / IMPREVISTOS -->
             <section style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-glass, rgba(255,255,255,0.1)); border-radius: 12px; padding: 14px 18px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <h3 style="margin: 0; font-size: 0.95rem; color: #f59e0b; font-weight: 800; display: flex; align-items: center; gap: 8px;">
@@ -246,6 +256,7 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico') =
                 <div id="pms-tabla-emergencias-container" style="overflow-x: auto;"></div>
             </section>
 
+            <!-- SECCIÓN: ÓRDENES DE TRABAJO PLANIFICADAS SAP PM -->
             <section style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-glass, rgba(255,255,255,0.1)); border-radius: 12px; padding: 14px 18px; display: flex; flex-direction: column; gap: 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                     <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 280px;">
@@ -408,10 +419,14 @@ const actualizarSelectFechasEspectrales = () => {
     if (fechasArr.includes(optPrevias)) selFecha.value = optPrevias;
 };
 
+// ============================================================================
+// TABLA DE INFORMES ESPECTRALES CON CONTROL DE DÍAS Y CIERRES MODULARES
+// ============================================================================
 const renderizarTablaEspectrales = () => {
     const cont = document.getElementById('pms-tabla-espectrales-container');
     const lblPendientes = document.getElementById('lbl-esp-pendientes-count');
     const lblEmitidos = document.getElementById('lbl-esp-emitidos-count');
+    const lblObsoletos = document.getElementById('lbl-esp-obsoletos-count');
     const lblTotal = document.getElementById('lbl-esp-total-count');
 
     if (!cont) return;
@@ -419,21 +434,27 @@ const renderizarTablaEspectrales = () => {
     const items = Object.entries(datosEspectralesSemana);
     let cantPendientes = 0;
     let cantEmitidos = 0;
+    let cantObsoletos = 0;
 
     items.forEach(([, esp]) => {
-        if (esp.estado === 'Emitido') cantEmitidos++;
+        const est = esp.estado || 'Pendiente';
+        if (est === 'Emitido' || est === 'CERRADO_EJECUTADO') cantEmitidos++;
+        else if (est === 'CERRADO_OBSOLETO' || est === 'Obsoleto') cantObsoletos++;
         else cantPendientes++;
     });
 
     if (lblPendientes) lblPendientes.textContent = String(cantPendientes);
     if (lblEmitidos) lblEmitidos.textContent = String(cantEmitidos);
+    if (lblObsoletos) lblObsoletos.textContent = String(cantObsoletos);
     if (lblTotal) lblTotal.textContent = String(items.length);
 
     const filtrados = items.filter(([, esp]) => {
         const coincideFecha = filtroEspectralesFecha === 'TODAS' || esp.fechaCorta === filtroEspectralesFecha;
+        const est = esp.estado || 'Pendiente';
         let coincideEstado = true;
-        if (filtroEspectralesEstado === 'PENDIENTES') coincideEstado = esp.estado !== 'Emitido';
-        else if (filtroEspectralesEstado === 'EMITIDOS') coincideEstado = esp.estado === 'Emitido';
+        if (filtroEspectralesEstado === 'PENDIENTES') coincideEstado = est !== 'Emitido' && est !== 'CERRADO_EJECUTADO' && est !== 'CERRADO_OBSOLETO';
+        else if (filtroEspectralesEstado === 'EMITIDOS') coincideEstado = est === 'Emitido' || est === 'CERRADO_EJECUTADO';
+        else if (filtroEspectralesEstado === 'OBSOLETOS') coincideEstado = est === 'CERRADO_OBSOLETO' || est === 'Obsoleto';
         return coincideFecha && coincideEstado;
     });
 
@@ -441,38 +462,65 @@ const renderizarTablaEspectrales = () => {
         cont.innerHTML = `
             <div style="padding: 2rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
                 <span class="material-symbols-outlined" style="font-size: 2rem; color: #00e676; margin-bottom: 6px;" aria-hidden="true">check_circle</span>
-                <p style="margin: 0;">No hay informes espectrales pendientes bajo los filtros seleccionados.</p>
+                <p style="margin: 0;">No hay informes espectrales bajo los filtros seleccionados.</p>
             </div>
         `;
         return;
     }
+
+    const ahora = Date.now();
 
     cont.innerHTML = `
         <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.78rem;">
             <thead>
                 <tr style="background: rgba(0,0,0,0.5); color: var(--text-muted, #94a3b8); border-bottom: 1px solid rgba(255,255,255,0.1);">
                     <th style="padding: 9px 8px; width: 30px; text-align: center;">#</th>
-                    <th style="padding: 9px 8px; min-width: 85px;">FECHA DETECCIÓN</th>
-                    <th style="padding: 9px 8px; min-width: 90px;">TAG / EQUIPO</th>
-                    <th style="padding: 9px 8px; min-width: 160px;">COMPONENTE & PTO. CRÍTICO</th>
-                    <th style="padding: 9px 8px; min-width: 85px; text-align: center;">RMS DETECTADO</th>
-                    <th style="padding: 9px 8px; min-width: 120px;">N° AVISO SAP</th>
-                    <th style="padding: 9px 8px; min-width: 150px; text-align: center;">SWITCH DE CONTROL</th>
-                    <th style="padding: 9px 8px; min-width: 90px; text-align: center;">EXPEDIENTE</th>
+                    <th style="padding: 9px 8px; min-width: 80px;">DETECCIÓN</th>
+                    <th style="padding: 9px 8px; min-width: 75px; text-align: center;">CONTROL DÍAS</th>
+                    <th style="padding: 9px 8px; min-width: 90px;">TAG / ÁREA</th>
+                    <th style="padding: 9px 8px; min-width: 150px;">COMPONENTE & PUNTO</th>
+                    <th style="padding: 9px 8px; min-width: 80px; text-align: center;">RMS</th>
+                    <th style="padding: 9px 8px; min-width: 110px;">N° AVISO SAP</th>
+                    <th style="padding: 9px 8px; min-width: 160px;">ESTADO / RESULTADO</th>
+                    <th style="padding: 9px 8px; min-width: 150px; text-align: center;">GESTIÓN DE CIERRE</th>
                 </tr>
             </thead>
             <tbody>
                 ${filtrados.map(([idKey, esp], idx) => {
-                    const esEmitido = esp.estado === 'Emitido';
+                    const est = esp.estado || 'Pendiente';
+                    const esCerradoEjecutado = est === 'Emitido' || est === 'CERRADO_EJECUTADO';
+                    const esObsoleto = est === 'CERRADO_OBSOLETO' || est === 'Obsoleto';
                     const semanaNorm = semanaSeleccionada.replace('PMS', 'S');
 
+                    // Cálculo dinámico de SLA de días
+                    const fechaObj = obtenerObjetoFecha(esp.fechaDeteccion || esp.fechaCorta);
+                    const timestampDetect = fechaObj.getTime() < ahora ? fechaObj.getTime() : ahora;
+                    const diasTranscurridos = Math.max(0, Math.floor((ahora - timestampDetect) / 86400000));
+                    
+                    let colorDias = '#00e676';
+                    if (!esCerradoEjecutado && !esObsoleto) {
+                        if (diasTranscurridos > 7) colorDias = '#ef4444';
+                        else if (diasTranscurridos > 3) colorDias = '#f59e0b';
+                    } else {
+                        colorDias = '#64748b';
+                    }
+
                     return `
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); background: ${esEmitido ? 'rgba(0, 230, 118, 0.02)' : 'rgba(239, 68, 68, 0.04)'}; transition: background 0.15s ease;">
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); background: ${esCerradoEjecutado ? 'rgba(0, 230, 118, 0.03)' : (esObsoleto ? 'rgba(148, 163, 184, 0.03)' : 'rgba(239, 68, 68, 0.04)')}; transition: background 0.15s ease;">
                             <td style="padding: 8px; text-align: center; color: var(--text-muted);">${idx + 1}</td>
                             <td style="padding: 8px; font-family: monospace; white-space: nowrap;">${escaparHTML(formatearFechaDDMMAAAA(esp.fechaDeteccion || esp.fechaCorta))}</td>
                             
+                            <!-- CONTROL DE DÍAS (SLA) -->
+                            <td style="padding: 8px; text-align: center;">
+                                <span style="background: rgba(0,0,0,0.3); color: ${colorDias}; border: 1px solid${colorDias}40; padding: 2px 7px; border-radius: 4px; font-weight: 800; font-family: monospace; font-size: 0.74rem;">
+                                    ${diasTranscurridos} d
+                                </span>
+                            </td>
+
                             <td style="padding: 8px;">
-                                <div style="font-weight: 800; color: #ffffff; font-family: monospace;">${escaparHTML(esp.tag || 'TAG')}</div>
+                                <div style="font-weight: 800; color: #ffffff; font-family: monospace; cursor: pointer; text-decoration: underline;" onclick="window.irAExpedienteDesdeAlerta?.('${esp.tag}')">
+                                    ${escaparHTML(esp.tag || 'TAG')}
+                                </div>
                                 <div style="font-size: 0.68rem; color: #38bdf8;">${escaparHTML(esp.area || 'General')}</div>
                             </td>
 
@@ -482,8 +530,8 @@ const renderizarTablaEspectrales = () => {
                             </td>
 
                             <td style="padding: 8px; text-align: center;">
-                                <span style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 3px 8px; border-radius: 6px; font-weight: 900; font-family: monospace;">
-                                    ${parseFloat(esp.rms || 0).toFixed(2)} mm/s
+                                <span style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 3px 6px; border-radius: 5px; font-weight: 900; font-family: monospace;">
+                                    ${parseFloat(esp.rms || 0).toFixed(2)}
                                 </span>
                             </td>
 
@@ -492,25 +540,59 @@ const renderizarTablaEspectrales = () => {
                                        value="${escaparHTML(esp.avisoSap || '')}" 
                                        placeholder="Ej: 10052341" 
                                        oninput="window.autoGuardarAvisoSapEspectral('${semanaNorm}', '${idKey}', this.value)"
-                                       style="width: 100%; background: #0f172a; border: 1px solid rgba(255,255,255,0.12); color: white; padding: 5px 8px; border-radius: 4px; font-size: 0.74rem; font-family: monospace; outline: none; box-sizing: border-box;">
+                                       style="width: 100%; background: #0f172a; border: 1px solid rgba(255,255,255,0.12); color: white; padding: 4px 6px; border-radius: 4px; font-size: 0.74rem; font-family: monospace; outline: none; box-sizing: border-box;">
                             </td>
 
-                            <td style="padding: 8px; text-align: center;">
-                                <button type="button" 
-                                        onclick="window.alternarSwitchEspectral('${semanaNorm}', '${idKey}', '${esp.estado || 'Pendiente'}')"
-                                        title="${esEmitido ? 'Clic para reactivar a Pendiente' : 'Clic para marcar como Realizado y Subido a SAP'}"
-                                        style="background: ${esEmitido ? 'rgba(0, 230, 118, 0.2)' : 'rgba(239, 68, 68, 0.2)'}; color: ${esEmitido ? '#00e676' : '#f87171'}; border: 1px solid ${esEmitido ? '#00e676' : '#ef4444'}; padding: 5px 12px; border-radius: 20px; font-size: 0.74rem; font-weight: 900; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 10px ${esEmitido ? 'rgba(0,230,118,0.25)' : 'rgba(239,68,68,0.25)'}; transition: all 0.18s ease;">
-                                    <span style="width: 8px; height: 8px; border-radius: 50%; background: ${esEmitido ? '#00e676' : '#ef4444'}; display: inline-block;"></span>
-                                    <span>${esEmitido ? '✅ EN SAP / REALIZADO' : '⏳ PENDIENTE'}</span>
-                                </button>
+                            <!-- ESTADO Y EVALUACIÓN -->
+                            <td style="padding: 8px;">
+                                ${esCerradoEjecutado ? `
+                                    <div style="color: #00e676; font-weight: 800; font-size: 0.72rem; display: flex; align-items: center; gap: 4px;">
+                                        <span class="material-symbols-outlined" style="font-size: 0.95rem;">check_circle</span>
+                                        <span>EJECUTADO (${escaparHTML(esp.otSap ? 'OT ' + esp.otSap : 'SAP')})</span>
+                                    </div>
+                                    <div style="font-size: 0.68rem; color: #cbd5e1; margin-top: 2px;">${escaparHTML(esp.evaluacionCondicion || 'Condición Normalizada')}</div>
+                                ` : (esObsoleto ? `
+                                    <div style="color: #94a3b8; font-weight: 800; font-size: 0.72rem; display: flex; align-items: center; gap: 4px;">
+                                        <span class="material-symbols-outlined" style="font-size: 0.95rem;">block</span>
+                                        <span>OBSOLETO</span>
+                                    </div>
+                                    <div style="font-size: 0.68rem; color: #f87171;">${escaparHTML(esp.motivoObsolescencia || 'Descartado')}</div>
+                                    ${esp.avisoSustituto ? `<div style="font-size: 0.68rem; color: #38bdf8;">Nuevo Aviso: ${escaparHTML(esp.avisoSustituto)}</div>` : ''}
+                                ` : `
+                                    <span style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); padding: 2px 6px; border-radius: 4px; font-size: 0.68rem; font-weight: 800;">
+                                        ⏳ PENDIENTE INTERVENCIÓN
+                                    </span>
+                                `)}
                             </td>
 
+                            <!-- ACCIONES DE CIERRE -->
                             <td style="padding: 8px; text-align: center;">
-                                <button type="button" 
-                                        onclick="window.irAExpedienteDesdeAlerta?.('${esp.tag}')"
-                                        style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
-                                    Ver Ficha
-                                </button>
+                                <div style="display: flex; gap: 4px; justify-content: center;">
+                                    ${!esCerradoEjecutado && !esObsoleto ? `
+                                        <button type="button" 
+                                                onclick="window.abrirModalCierreEjecucionEspectral('${semanaNorm}', '${idKey}')"
+                                                style="background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.4); padding: 4px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;"
+                                                title="Cerrar aviso por tarea ejecutada y guardar en bitácora">
+                                            <span class="material-symbols-outlined" style="font-size: 0.85rem;">task_alt</span>
+                                            <span>Ejecutar</span>
+                                        </button>
+
+                                        <button type="button" 
+                                                onclick="window.abrirModalCierreObsolescenciaEspectral('${semanaNorm}', '${idKey}')"
+                                                style="background: rgba(239, 68, 68, 0.12); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 4px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;"
+                                                title="Marcar aviso como obsoleto">
+                                            <span class="material-symbols-outlined" style="font-size: 0.85rem;">block</span>
+                                            <span>Obsoleto</span>
+                                        </button>
+                                    ` : `
+                                        <button type="button" 
+                                                onclick="window.reabrirAvisoEspectral('${semanaNorm}', '${idKey}')"
+                                                style="background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.15); padding: 3px 6px; border-radius: 4px; font-size: 0.68rem; cursor: pointer;"
+                                                title="Reabrir aviso">
+                                            <span class="material-symbols-outlined" style="font-size: 0.85rem;">restart_alt</span>
+                                        </button>
+                                    `}
+                                </div>
                             </td>
                         </tr>
                     `;
@@ -520,20 +602,191 @@ const renderizarTablaEspectrales = () => {
     `;
 };
 
-window.alternarSwitchEspectral = async (semanaKey, idRegistro, estadoActual) => {
-    const nuevoEstado = estadoActual === 'Emitido' ? 'Pendiente' : 'Emitido';
+// ============================================================================
+// MODAL: CIERRE POR EJECUCIÓN TÉCNICA (IMPACTA EN BITÁCORA DEL EQUIPO)
+// ============================================================================
+window.abrirModalCierreEjecucionEspectral = async (semanaKey, idKey) => {
+    const esp = datosEspectralesSemana[idKey];
+    if (!esp) return;
+
+    const formResult = await mostrarModalIndustrial({
+        titulo: 'Cierre Técnico de Aviso & Registro en Bitácora',
+        icono: 'task_alt',
+        colorBase: '34, 197, 94',
+        htmlCuerpo: `
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; font-size: 0.78rem;">
+                    <span style="color: #38bdf8; font-weight: 800;">Activo:</span> <span style="color: white; font-family: monospace;">${escaparHTML(esp.tag)}</span> | 
+                    <span style="color: #38bdf8; font-weight: 800;">Punto:</span> <span style="color: white;">${escaparHTML(esp.punto)}</span>
+                </div>
+
+                <div>
+                    <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 4px;">N° Orden de Trabajo (OT SAP) *</label>
+                    <input type="text" name="otSap" placeholder="Ej: 40058912" required style="width: 100%; background: #0b1120; border: 1px solid rgba(255,255,255,0.15); color: white; padding: 8px; border-radius: 6px; box-sizing: border-box; outline: none; font-family: monospace;">
+                </div>
+
+                <div>
+                    <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 4px;">Evaluación de Condición Resultante (¿Mejoró la criticidad?) *</label>
+                    <select name="evaluacionCondicion" style="width: 100%; background: #0b1120; border: 1px solid rgba(255,255,255,0.15); color: white; padding: 8px; border-radius: 6px; box-sizing: border-box; outline: none;">
+                        <option value="Condición Normalizada (Zona A - Óptimo)">🟢 Condición Normalizada (Zona A - Óptimo)</option>
+                        <option value="Mejora Parcial (Zona B - Seguimiento)">🟡 Mejora Parcial (Zona B - Seguimiento)</option>
+                        <option value="Intervención Paliativa (Requiere Nuevo Chequeo)">🟠 Intervención Paliativa (Zona C - Alerta)</option>
+                        <option value="Sin Cambio Favorable (Persiste Zona D Crítica)">🔴 Sin Cambio Favorable (Zona D - Crítico)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 4px;">Detalle Técnico de la Tarea Ejecutada en Faena *</label>
+                    <textarea name="detalle" rows="3" placeholder="Ej: Se ejecutó cambio de rodamiento lado acople en parada. Amplitud RMS descendió a niveles normales..." required style="width: 100%; background: #0b1120; border: 1px solid rgba(255,255,255,0.15); color: white; padding: 8px; border-radius: 6px; box-sizing: border-box; resize: none; outline: none;"></textarea>
+                </div>
+            </div>
+        `,
+        textoConfirmar: 'Guardar Cierre e Impactar Bitácora'
+    });
+
+    if (!formResult || !formResult.otSap || !formResult.detalle) return;
+
     try {
-        await dbEspectrales.child(semanaKey).child(idRegistro).update({
-            estado: nuevoEstado,
-            fechaCierre: nuevoEstado === 'Emitido' ? new Date().toLocaleString() : null,
-            usuarioCierre: nuevoEstado === 'Emitido' ? (auth.currentUser?.email || 'Analista CBM') : null
+        const fechaActual = new Date();
+        const fechaStr = formatearFechaNomenclatura(fechaActual);
+        const timestamp = Date.now();
+        const analista = auth.currentUser?.email || 'Especialista CBM CPF';
+
+        // 1. Actualizar el estado en el control de informes espectrales
+        await dbEspectrales.child(semanaKey).child(idKey).update({
+            estado: 'Emitido',
+            otSap: formResult.otSap.trim(),
+            evaluacionCondicion: formResult.evaluacionCondicion,
+            detalleTarea: formResult.detalle.trim(),
+            fechaCierre: fechaStr,
+            timestampCierre: timestamp,
+            usuarioCierre: analista
+        });
+
+        // 2. Guardar en la bitácora técnica del activo
+        const equipoId = esp.tag.trim().toUpperCase().replace(/\s+/g, '_');
+        const idBitacora = `BIT_PMS_${esp.avisoSap || 'SN'}_${timestamp}`;
+
+        await db.ref(`activos_criticos/${equipoId}/bitacora/${idBitacora}`).set({
+            tipo: 'INTERVENCION_EJECUTADA',
+            avisoSap: esp.avisoSap || 'S/N',
+            otSap: formResult.otSap.trim(),
+            componente: esp.componente || 'General',
+            punto: esp.punto || '',
+            evaluacionCondicion: formResult.evaluacionCondicion,
+            detalle: formResult.detalle.trim(),
+            fecha: fechaStr,
+            timestamp,
+            responsable: analista
         });
 
         if (typeof UI !== 'undefined' && UI.mostrarToast) {
-            UI.mostrarToast(nuevoEstado === 'Emitido' ? '✅ Informe Espectral marcado como Realizado y Subido a SAP.' : '⏳ Informe reactivado como Pendiente.', 'exito');
+            UI.mostrarToast(`Aviso ${esp.avisoSap || ''} cerrado y registrado en la bitácora de ${esp.tag}.`, 'exito');
         }
     } catch (err) {
-        console.error('Error al alternar estado del informe espectral:', err);
+        console.error('Error cerrando aviso por ejecución:', err);
+    }
+};
+
+// ============================================================================
+// MODAL: CIERRE POR OBSOLESCENCIA (CON EMISIÓN DE AVISO SUSTITUTO)
+// ============================================================================
+window.abrirModalCierreObsolescenciaEspectral = async (semanaKey, idKey) => {
+    const esp = datosEspectralesSemana[idKey];
+    if (!esp) return;
+
+    const formResult = await mostrarModalIndustrial({
+        titulo: 'Cerrar Aviso por Obsolescencia',
+        icono: 'block',
+        colorBase: '239, 68, 68',
+        htmlCuerpo: `
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; font-size: 0.78rem;">
+                    <span style="color: #f87171; font-weight: 800;">Activo:</span> <span style="color: white; font-family: monospace;">${escaparHTML(esp.tag)}</span> | 
+                    <span style="color: #f87171; font-weight: 800;">Aviso:</span> <span style="color: white;">${escaparHTML(esp.avisoSap || 'S/N')}</span>
+                </div>
+
+                <div>
+                    <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 4px;">Motivo de Obsolescencia *</label>
+                    <select name="motivo" style="width: 100%; background: #0b1120; border: 1px solid rgba(255,255,255,0.15); color: white; padding: 8px; border-radius: 6px; box-sizing: border-box; outline: none;">
+                        <option value="Componente Reemplazado en otra ventana operacional">Componente Reemplazado en otra ventana operacional</option>
+                        <option value="Aviso Duplicado o Reemplazado por OT Mayor">Aviso Duplicado o Reemplazado por OT Mayor</option>
+                        <option value="Modificación de Estrategia de Mantenimiento">Modificación de Estrategia de Mantenimiento</option>
+                        <option value="Falso Positivo / Normalización Térmica o Dinámica">Falso Positivo / Normalización Térmica o Dinámica</option>
+                        <option value="Otro motivo justificado">Otro motivo justificado</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 4px;">Justificación Técnica *</label>
+                    <textarea name="detalle" rows="2" placeholder="Detalle la justificación técnica para anular o cerrar este aviso..." required style="width: 100%; background: #0b1120; border: 1px solid rgba(255,255,255,0.15); color: white; padding: 8px; border-radius: 6px; box-sizing: border-box; resize: none; outline: none;"></textarea>
+                </div>
+
+                <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(56, 189, 248, 0.25); padding: 8px 10px; border-radius: 6px;">
+                    <label style="font-size: 0.74rem; color: #38bdf8; font-weight: 700; display: block; margin-bottom: 4px;">Nuevo Aviso SAP Sustituto (Opcional)</label>
+                    <input type="text" name="avisoSustituto" placeholder="Ej: 10061245 (si requiere replanificar)" style="width: 100%; background: #0b1120; border: 1px solid rgba(56, 189, 248, 0.4); color: white; padding: 6px 8px; border-radius: 4px; box-sizing: border-box; outline: none; font-family: monospace;">
+                </div>
+            </div>
+        `,
+        textoConfirmar: 'Confirmar Obsolescencia'
+    });
+
+    if (!formResult || !formResult.detalle) return;
+
+    try {
+        const fechaActual = new Date();
+        const fechaStr = formatearFechaNomenclatura(fechaActual);
+        const timestamp = Date.now();
+        const analista = auth.currentUser?.email || 'Especialista CBM CPF';
+
+        await dbEspectrales.child(semanaKey).child(idKey).update({
+            estado: 'CERRADO_OBSOLETO',
+            motivoObsolescencia: formResult.motivo,
+            detalleObsolescencia: formResult.detalle.trim(),
+            avisoSustituto: formResult.avisoSustituto ? formResult.avisoSustituto.trim() : null,
+            fechaCierre: fechaStr,
+            timestampCierre: timestamp,
+            usuarioCierre: analista
+        });
+
+        // Si se indicó un aviso sustituto, registrarlo como nueva línea de control
+        if (formResult.avisoSustituto && formResult.avisoSustituto.trim()) {
+            const nuevoId = `ESP_${esp.tag}_${esp.punto}_${Date.now()}`;
+            await dbEspectrales.child(semanaKey).child(nuevoId).set({
+                tag: esp.tag,
+                area: esp.area || 'General',
+                componente: esp.componente || 'Punto',
+                punto: esp.punto || '',
+                rms: esp.rms || '0',
+                avisoSap: formResult.avisoSustituto.trim(),
+                estado: 'Pendiente',
+                fechaDeteccion: fechaStr,
+                fechaCorta: fechaStr,
+                observacion: `(Sustituto de Aviso ${esp.avisoSap || 'S/N'}) — ${formResult.detalle.trim()}`
+            });
+        }
+
+        if (typeof UI !== 'undefined' && UI.mostrarToast) {
+            UI.mostrarToast(`Aviso marcado como obsoleto.${formResult.avisoSustituto ? ' Aviso sustituto generado.' : ''}`, 'info');
+        }
+    } catch (err) {
+        console.error('Error cerrando aviso por obsolescencia:', err);
+    }
+};
+
+window.reabrirAvisoEspectral = async (semanaKey, idKey) => {
+    try {
+        await dbEspectrales.child(semanaKey).child(idKey).update({
+            estado: 'Pendiente',
+            fechaCierre: null,
+            timestampCierre: null,
+            usuarioCierre: null
+        });
+        if (typeof UI !== 'undefined' && UI.mostrarToast) {
+            UI.mostrarToast('Aviso reactivado como Pendiente.', 'info');
+        }
+    } catch (err) {
+        console.error('Error reabriendo aviso:', err);
     }
 };
 
@@ -552,6 +805,7 @@ window.filtrarEspectralesPorEstado = (estado) => {
     filtroEspectralesEstado = estado;
     const btnPendientes = document.getElementById('btn-filtro-esp-pendientes');
     const btnEmitidos = document.getElementById('btn-filtro-esp-emitidos');
+    const btnObsoletos = document.getElementById('btn-filtro-esp-obsoletos');
     const btnTodos = document.getElementById('btn-filtro-esp-todos');
 
     if (btnPendientes) {
@@ -562,9 +816,13 @@ window.filtrarEspectralesPorEstado = (estado) => {
         btnEmitidos.style.background = estado === 'EMITIDOS' ? '#00e676' : 'transparent';
         btnEmitidos.style.color = estado === 'EMITIDOS' ? '#0f172a' : '#94a3b8';
     }
+    if (btnObsoletos) {
+        btnObsoletos.style.background = estado === 'OBSOLETOS' ? '#94a3b8' : 'transparent';
+        btnObsoletos.style.color = estado === 'OBSOLETOS' ? '#0f172a' : '#94a3b8';
+    }
     if (btnTodos) {
         btnTodos.style.background = estado === 'TODOS' ? '#38bdf8' : 'transparent';
-        btnTodos.style.color = estado === 'TODOS' ? '#0f172a' : '#0f172a';
+        btnTodos.style.color = estado === 'TODOS' ? '#0f172a' : '#94a3b8';
     }
     renderizarTablaEspectrales();
 };
@@ -664,7 +922,6 @@ const renderizarTablaOrdenes = () => {
 
     const entries = Object.entries(datosSemanaActual.ordenes || {});
 
-    // ORDENAR CRONOLÓGICAMENTE DE FECHA MENOR A MAYOR (ASCENDENTE)
     entries.sort(([, a], [, b]) => {
         const fechaA = obtenerObjetoFecha(a.fecha);
         const fechaB = obtenerObjetoFecha(b.fecha);
@@ -1109,7 +1366,6 @@ window.descargarReportePDF_PMS = async () => {
 
     const totalTrabajosGlobal = totalProgramadas + totalEmergentes;
     const totalEjecutadasGlobal = ejecutadas + totalEmergentes;
-    const pendientes = totalProgramadas - ejecutadas;
     const pctCumplimiento = totalProgramadas > 0 ? Math.round((ejecutadas / totalProgramadas) * 100) : 0;
     const pctNotif = totalTrabajosGlobal > 0 ? Math.round((notifSAP / totalTrabajosGlobal) * 100) : 0;
     const pctCtec = totalTrabajosGlobal > 0 ? Math.round((ctecCerradas / totalTrabajosGlobal) * 100) : 0;

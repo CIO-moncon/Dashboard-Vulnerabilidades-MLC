@@ -1,16 +1,14 @@
 // ============================================================================
-// MÓDULO PRINCIPAL: JS/APP.JS
-// CIO PREDICTIVO 2.0 — Estándar ES6+, MapLibre 3D, WAI-ARIA y Pulsaciones CBM
+// MÓDULO PRINCIPAL: JS/APP.JS (v2.4.0)
+// CIO PREDICTIVO 2.0 — Estándar ES6+, MapLibre 3D, Notificaciones Reactivas y Visor PDF
 // ============================================================================
 
 import { auth, db } from './core/firebase-config.js';
 import { inicializarBarraLateral } from './ui/sidebar.js'; 
 import { renderizarExpediente } from './ui/expediente.js';
 import { renderizarModuloPMS } from './ui/pms.js';
+import { iniciarEscuchaBadgeGlobal } from './ui/triage.js';
 
-// ----------------------------------------------------------------------------
-// ESTADO REACTIVO Y REFERENCIAS GLOBALES
-// ----------------------------------------------------------------------------
 let datosGlobalesEquipos = {}; 
 let mapaActivo = null; 
 let listaMarcadoresActivos = []; 
@@ -28,13 +26,9 @@ let cacheAlertasTerreno = null;
 const dbAlertas = db.ref('alertas_terreno');
 const dbActivos = db.ref('activos_criticos');
 
-// Publicación de contratos globales para interoperabilidad modular
 window.datosGlobalesEquipos = datosGlobalesEquipos;
 window.mapaActivo = null;
 
-// ----------------------------------------------------------------------------
-// UTILIDADES PURAS: ESCAPADO, RESOLUCIÓN VISUAL Y CONTROL DE RECURSOS
-// ----------------------------------------------------------------------------
 const escaparHTML = (texto = '') => 
     String(texto)
         .replace(/&/g, '&amp;')
@@ -100,9 +94,8 @@ const destruirMapaActivo = () => {
     }
 };
 
-// ----------------------------------------------------------------------------
-// CONTROL DE MODO KIOSKO
-// ----------------------------------------------------------------------------
+window.destruirMapaActivo = destruirMapaActivo;
+
 const alternarModoKiosko = () => {
     const activo = document.body.classList.toggle('modo-kiosko-activo');
     const btnKiosko = document.getElementById('kiosko');
@@ -147,9 +140,6 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// ----------------------------------------------------------------------------
-// MODAL: REGISTRAR NUEVO USUARIO
-// ----------------------------------------------------------------------------
 const abrirModalCrearUsuario = () => {
     const modalId = 'modal-crear-usuario-cbm';
     document.getElementById(modalId)?.remove();
@@ -266,9 +256,6 @@ const abrirModalCrearUsuario = () => {
     });
 };
 
-// ----------------------------------------------------------------------------
-// AUTENTICACIÓN Y CICLO DE VIDA (ES6+ / ASYNC-AWAIT)
-// ----------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged((user) => {
         if (user) {
@@ -326,14 +313,28 @@ const mostrarPlataforma = (user) => {
     document.getElementById('vista-login')?.classList.add('oculta');
     document.getElementById('vista-app')?.classList.remove('oculta');
 
-    const nombreTemp = user.email ? user.email.split('@')[0].replace('.', ' ') : 'Usuario';
+    // 1. Obtener y formatear el nombre (Ej: "francisco leiva" -> "Francisco Leiva")
+    let nombreBruto = user.displayName || (user.email ? user.email.split('@')[0].replace('.', ' ') : 'Usuario');
+    const nombreFormateado = nombreBruto.split(' ').map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase()).join(' ');
+
     const perfilNombre = document.getElementById('perfil-nombre');
     const perfilRol = document.getElementById('perfil-rol');
     const avatarIniciales = document.getElementById('avatar-iniciales');
 
-    if (perfilNombre) perfilNombre.textContent = nombreTemp;
+    if (perfilNombre) perfilNombre.textContent = nombreFormateado;
     if (perfilRol) perfilRol.textContent = 'Analista CBM';
-    if (avatarIniciales) avatarIniciales.textContent = nombreTemp.substring(0, 2).toUpperCase();
+
+    // 2. Extraer iniciales correctamente (F y L)
+    if (avatarIniciales) {
+        const partes = nombreFormateado.split(' ').filter(Boolean);
+        let iniciales = 'US';
+        if (partes.length >= 2) {
+            iniciales = (partes[0].charAt(0) + partes[1].charAt(0)).toUpperCase();
+        } else if (partes.length === 1) {
+            iniciales = partes[0].substring(0, 2).toUpperCase();
+        }
+        avatarIniciales.textContent = iniciales;
+    }
 
     inicializarApp();
 };
@@ -344,7 +345,10 @@ const inicializarApp = () => {
 
     inicializarBarraLateral();
 
-    // 1. ESCUCHA DE ALERTAS: SOLO CUANDO EL USUARIO ESTÁ AUTENTICADO
+    // 1. ESCUCHA REACTIVA INMEDIATA PARA EL BADGE DEL SIDEBAR
+    iniciarEscuchaBadgeGlobal();
+
+    // 2. ESCUCHA DE ALERTAS PARA MODAL Y MANAGER
     dbAlertas.on('value', (snap) => {
         cacheAlertasTerreno = snap.val();
         renderizarAlertasTerrenoManager(cacheAlertasTerreno);
@@ -352,7 +356,7 @@ const inicializarApp = () => {
         console.warn('[Alertas] Esperando permisos de lectura:', err.message);
     });
 
-    // 2. ESCUCHA DE ACTIVOS
+    // 3. ESCUCHA DE ACTIVOS
     dbActivos.on('value', (snapshot) => {
         if (!snapshot.exists()) return;
 
@@ -379,7 +383,7 @@ const inicializarApp = () => {
         if (btnEquipo) {
             salirModoKioskoSiAplica();
 
-            const idFirebase = btnEquipo.getAttribute('data-target');
+            const idFirebase = btnEquipo.getAttribute('data-firebase-id') || btnEquipo.getAttribute('data-target');
             document.querySelectorAll('.item-navegable').forEach((b) => (b.style.border = 'none'));
 
             if (btnEquipo.closest('.sidebar-principal')) {
@@ -445,9 +449,6 @@ const inicializarApp = () => {
     });
 };
 
-// ----------------------------------------------------------------------------
-// BANDEJA DE ALERTAS DE TERRENO
-// ----------------------------------------------------------------------------
 window.abrirModalAlertasTerreno = () => {
     const modal = document.getElementById('modal-alertas-terreno');
     if (modal) {
@@ -505,6 +506,7 @@ const renderizarAlertasTerrenoManager = (alertasData) => {
         || document.querySelector('#modal-alertas-terreno .modal-body');
 
     const badge = document.getElementById('badgeAlertasTerreno')
+        || document.getElementById('badgeTriagePendientes')
         || document.querySelector('.badge-alerta');
     
     if (!alertasData) {
@@ -562,11 +564,11 @@ const renderizarAlertasTerrenoManager = (alertasData) => {
             }
             
             const tagLimpio = escaparHTML(al.tag ?? 'SIN TAG');
-            const detalleLimpio = escaparHTML(al.detalle ?? 'Sin detalle adjunto');
+            const detalleLimpio = escaparHTML(al.detalle ?? al.descripcion ?? 'Sin detalle adjunto');
             const areaLimpia = escaparHTML(al.area ?? 'General');
             const componenteLimpio = escaparHTML(al.componente ?? 'General');
             
-            const configVisual = resolverConfiguracionVisual(al.severidad);
+            const configVisual = resolverConfiguracionVisual(al.severidad || al.severidadPreliminar);
             const esCritica = configVisual.claseEstado === 'critica';
 
             const htmlFoto = al.fotoBase64
@@ -667,9 +669,6 @@ window.eliminarAlertaTerreno = async (key) => {
     }
 };
 
-// ----------------------------------------------------------------------------
-// NAVEGACIÓN Y VINCULACIÓN ENTRE MÓDULOS
-// ----------------------------------------------------------------------------
 const obtenerIdEquipoPorTag = (tagBuscado) => {
     if (!tagBuscado) return '';
     const tagLimpio = tagBuscado.trim().toUpperCase();
@@ -699,7 +698,8 @@ window.irAExpedienteDesdeAlerta = (tag) => {
     }
 
     document.querySelectorAll('.item-navegable').forEach((b) => (b.style.border = 'none'));
-    const itemSidebar = document.querySelector(`.sidebar-principal .item-navegable[data-target="${idFirebase}"]`);
+    const itemSidebar = document.querySelector(`.sidebar-principal .item-navegable[data-target="${idFirebase}"]`) ||
+                        document.querySelector(`.sidebar-principal .item-navegable[data-firebase-id="${idFirebase}"]`);
     if (itemSidebar) {
         itemSidebar.style.border = '1px solid var(--primary-blue, #38bdf8)';
         itemSidebar.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -810,9 +810,6 @@ window.filtrarMapaPorAreaOSearch = (modo, valor = '') => {
     dibujarPinesEnMapa();
 };
 
-// ----------------------------------------------------------------------------
-// RENDERIZADO DEL MAPA GEOESPACIAL (MAPLIBRE GL)
-// ----------------------------------------------------------------------------
 const renderizarMapaPlanta = () => {
     const contenedor = document.getElementById('espacio-trabajo-dinamico');
     if (!contenedor) return;
@@ -933,9 +930,6 @@ const renderizarMapaPlanta = () => {
     });
 };
 
-// ----------------------------------------------------------------------------
-// DIBUJO DE PINES EN MAPA
-// ----------------------------------------------------------------------------
 const dibujarPinesEnMapa = () => {
     if (!mapaActivo) return;
 
@@ -997,27 +991,53 @@ const dibujarPinesEnMapa = () => {
                 ${configVisual.animacion}
             `;
 
+            // Validamos que la descripción no repita exactamente el TAG
+            const nombreReal = (eq.nombre && eq.nombre.trim().toUpperCase() !== (eq.tag || '').trim().toUpperCase()) 
+                ? eq.nombre 
+                : 'Activo Crítico de Planta';
+
             const popupHTML = `
-                <article style="text-align: center; font-family: 'Inter', system-ui, sans-serif; min-width: 195px; padding: 0.25rem;">
-                    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 4px;">${escaparHTML(nivelEquipo)}</span>
-                        <span style="width: 10px; height: 10px; border-radius: 50%; background: ${configVisual.colorHex}; display: inline-block;" aria-hidden="true"></span>
+                <article style="background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(12px); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 12px; padding: 16px 18px 14px 16px; color: #ffffff; width: 260px; box-shadow: 0 20px 40px rgba(0,0,0,0.85); font-family: 'Inter', system-ui, sans-serif; box-sizing: border-box;">
+                    
+                    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-right: 20px;">
+                        <span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.68rem; font-weight: 800; padding: 2px 8px; border-radius: 4px;">
+                            ${escaparHTML(nivelEquipo)}
+                        </span>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <span style="width: 8px; height: 8px; border-radius: 50%; background: ${configVisual.colorHex}; box-shadow: 0 0 8px ${configVisual.colorHex}; flex-shrink: 0;" aria-hidden="true"></span>
+                            <span style="font-size: 0.65rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; white-space: nowrap;">${escaparHTML(configVisual.textoEstado)}</span>
+                        </div>
                     </header>
-                    <h4 style="margin: 0 0 4px 0; font-size: 1rem; color: #ffffff; font-family: monospace;">${escaparHTML(eq.tag ?? '')}</h4>
-                    <p style="margin: 0 0 4px 0; font-size: 0.8rem; color: #cbd5e1; font-weight: 600;">${escaparHTML(eq.nombre ?? 'Sin descripción')}</p>
-                    <p style="margin: 0 0 10px 0; font-size: 0.72rem; color: #94a3b8;">Área: ${escaparHTML(eq.area ?? 'General')}</p>
+
+                    <div style="margin-bottom: 10px;">
+                        <h4 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #ffffff; font-family: monospace; letter-spacing: 0.5px;">
+                            ${escaparHTML(eq.tag ?? '')}
+                        </h4>
+                        <p style="margin: 3px 0 0 0; font-size: 0.78rem; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600;">
+                            ${escaparHTML(nombreReal)}
+                        </p>
+                    </div>
+
+                    <div style="font-size: 0.74rem; color: #94a3b8; margin-bottom: 14px; display: flex; align-items: center; gap: 5px;">
+                        <span class="material-symbols-outlined" style="font-size: 0.95rem; color: #38bdf8;" aria-hidden="true">location_on</span>
+                        <span>Área: <strong style="color: #f8fafc;">${escaparHTML(eq.area ?? 'General')}</strong></span>
+                    </div>
+
                     <button type="button" 
                             class="item-navegable" 
                             data-target="${escaparHTML(targetId)}" 
+                            data-firebase-id="${escaparHTML(idKey)}"
                             aria-label="Abrir expediente técnico de ${escaparHTML(eq.tag ?? '')}"
-                            style="background: #38bdf8; color: #0f172a; border: none; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-weight: 700; width: 100%; font-size: 0.8rem;">
-                        Abrir Expediente CBM
+                            style="width: 100%; background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%); color: #0f172a; border: none; padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);">
+                        <span class="material-symbols-outlined" style="font-size: 1.1rem;" aria-hidden="true">folder_open</span>
+                        <span>Abrir Expediente CBM</span>
                     </button>
                 </article>
             `;
 
-            const popup = new maplibregl.Popup({ offset: 12, closeButton: true })
+            const popup = new maplibregl.Popup({ offset: [0, -15], closeButton: true, maxWidth: '280px' })
                 .setHTML(popupHTML);
+
 
             const coords = [lng, lat];
             const marcador = new maplibregl.Marker({ element: el })
@@ -1037,13 +1057,9 @@ const dibujarPinesEnMapa = () => {
 window.renderizarMapaPlanta = renderizarMapaPlanta;
 window.dibujarPinesEnMapa = dibujarPinesEnMapa;
 
-// ============================================================================
-// VISOR DE PDF INTEGRADO GLOBAL (CIO PREDICTIVO 2.0)
-// ============================================================================
 window.abrirVisorPDFDesdeBase64 = (base64Data, nombreArchivo = 'documento.pdf') => {
     let modal = document.getElementById('modal-visor-pdf');
     
-    // Si el modal no existe en el DOM, lo creamos dinámicamente con Glassmorphism
     if (!modal) {
         const div = document.createElement('div');
         div.innerHTML = `
@@ -1075,7 +1091,6 @@ window.abrirVisorPDFDesdeBase64 = (base64Data, nombreArchivo = 'documento.pdf') 
     const btnDescargar = document.getElementById('btn-pdf-descargar');
     const titulo = document.getElementById('modal-pdf-titulo');
 
-    // Convertir Base64 a Blob URL para renderizado fluido en iframe
     const byteCharacters = atob(base64Data.split(',')[1] || base64Data);
     const byteNumbers = new Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {

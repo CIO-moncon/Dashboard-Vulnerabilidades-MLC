@@ -1,6 +1,6 @@
 // ============================================================================
-// NÚCLEO TERRENO: FIREBASE, INDEXEDDB Y MOTOR OFFLINE
-// CIO PREDICTIVO 2.0 — Estándar ES6+, Control de Concurrencia y Sincronización Segura
+// NÚCLEO TERRENO: FIREBASE, INDEXEDDB Y MOTOR OFFLINE (v2.1.0)
+// CIO PREDICTIVO 2.0 — Mina Los Colorados | CPF Ingeniería
 // ============================================================================
 
 const firebaseConfig = Object.freeze({
@@ -24,15 +24,16 @@ try {
         }
         db = firebase.database();
         activosRef = db.ref('activos_criticos'); 
-        dbAlertas = db.ref('alertas_terreno'); // Ruta compartida con Triage
+        dbAlertas = db.ref('alertas_terreno');
     }
 } catch (error) {
     console.error('Error al inicializar los servicios de Firebase en terreno-core:', error);
 }
 
 const DB_NAME = 'CIO_BovedaOffline';
-const DB_VERSION = 1;
-const STORE_NAME = 'reportes_pendientes';
+const DB_VERSION = 2; 
+const STORE_PENDIENTES = 'reportes_pendientes';
+const STORE_CATASTRO = 'catastro_equipos';
 
 let dbLocal = null;
 let sincronizando = false;
@@ -45,7 +46,7 @@ const abrirBovedaLocal = () =>
         }
 
         if (!window.indexedDB) {
-            reject(new Error('IndexedDB no está disponible en este entorno o navegador.'));
+            reject(new Error('IndexedDB no está disponible en este navegador.'));
             return;
         }
 
@@ -53,8 +54,11 @@ const abrirBovedaLocal = () =>
 
         request.onupgradeneeded = (e) => {
             const base = e.target.result;
-            if (!base.objectStoreNames.contains(STORE_NAME)) {
-                base.createObjectStore(STORE_NAME, { keyPath: 'id_local' });
+            if (!base.objectStoreNames.contains(STORE_PENDIENTES)) {
+                base.createObjectStore(STORE_PENDIENTES, { keyPath: 'id_local' });
+            }
+            if (!base.objectStoreNames.contains(STORE_CATASTRO)) {
+                base.createObjectStore(STORE_CATASTRO, { keyPath: 'id' });
             }
         };
 
@@ -92,15 +96,21 @@ window.guardarEnBoveda = async (payload = {}) => {
         };
 
         await new Promise((resolve, reject) => {
-            const tx = base.transaction(STORE_NAME, 'readwrite');
-            const store = tx.objectStore(STORE_NAME);
+            const tx = base.transaction(STORE_PENDIENTES, 'readwrite');
+            const store = tx.objectStore(STORE_PENDIENTES);
             const req = store.add(registro);
             req.onsuccess = () => resolve(true);
             req.onerror = (e) => reject(e.target.error);
         });
 
-        window.mostrarNotificacion?.('📴 Reporte almacenado en bóveda offline.');
+        window.mostrarNotificacion?.('📴 Guardado en bóveda local (Sin cobertura).');
         await actualizarContadorOffline();
+
+        if ('serviceWorker' in navigator && 'SyncManager' in window) {
+            const reg = await navigator.serviceWorker.ready;
+            await reg.sync.register('sync-reportes-terreno');
+        }
+
         return true;
     } catch (error) {
         console.error('Error al guardar reporte en bóveda offline:', error);
@@ -116,8 +126,8 @@ window.sincronizarBovedaOffline = async () => {
         const base = await abrirBovedaLocal();
 
         const reportes = await new Promise((resolve, reject) => {
-            const tx = base.transaction(STORE_NAME, 'readonly');
-            const store = tx.objectStore(STORE_NAME);
+            const tx = base.transaction(STORE_PENDIENTES, 'readonly');
+            const store = tx.objectStore(STORE_PENDIENTES);
             const req = store.getAll();
             req.onsuccess = () => resolve(req.result ?? []);
             req.onerror = (e) => reject(e.target.error);
@@ -133,13 +143,14 @@ window.sincronizarBovedaOffline = async () => {
             const idTemp = reporte.id_local;
             const reporteParaSubir = { ...reporte };
             delete reporteParaSubir.id_local;
+            delete reporteParaSubir.fechaGuardadoLocal;
 
             try {
                 await dbAlertas.push(reporteParaSubir);
 
                 await new Promise((res, rej) => {
-                    const deleteTx = base.transaction(STORE_NAME, 'readwrite');
-                    const deleteStore = deleteTx.objectStore(STORE_NAME);
+                    const deleteTx = base.transaction(STORE_PENDIENTES, 'readwrite');
+                    const deleteStore = deleteTx.objectStore(STORE_PENDIENTES);
                     const delReq = deleteStore.delete(idTemp);
                     delReq.onsuccess = () => res(true);
                     delReq.onerror = (err) => rej(err.target.error);
@@ -162,8 +173,8 @@ const actualizarContadorOffline = async () => {
     try {
         const base = await abrirBovedaLocal();
         const total = await new Promise((resolve, reject) => {
-            const tx = base.transaction(STORE_NAME, 'readonly');
-            const store = tx.objectStore(STORE_NAME);
+            const tx = base.transaction(STORE_PENDIENTES, 'readonly');
+            const store = tx.objectStore(STORE_PENDIENTES);
             const req = store.count();
             req.onsuccess = () => resolve(req.result ?? 0);
             req.onerror = (e) => reject(e.target.error);
@@ -183,6 +194,35 @@ const actualizarContadorOffline = async () => {
 };
 
 window.actualizarContadorOffline = actualizarContadorOffline;
+
+export const guardarCatastroLocal = async (catalogo = []) => {
+    try {
+        const base = await abrirBovedaLocal();
+        const tx = base.transaction(STORE_CATASTRO, 'readwrite');
+        const store = tx.objectStore(STORE_CATASTRO);
+        await store.clear();
+        for (const item of catalogo) {
+            store.put(item);
+        }
+    } catch (err) {
+        console.warn('Fallo al guardar catastro en IndexedDB:', err);
+    }
+};
+
+export const cargarCatastroLocal = async () => {
+    try {
+        const base = await abrirBovedaLocal();
+        return await new Promise((resolve) => {
+            const tx = base.transaction(STORE_CATASTRO, 'readonly');
+            const store = tx.objectStore(STORE_CATASTRO);
+            const req = store.getAll();
+            req.onsuccess = () => resolve(req.result ?? []);
+            req.onerror = () => resolve([]);
+        });
+    } catch {
+        return [];
+    }
+};
 
 const actualizarBadgeConexion = (estaEnLinea) => {
     const badge = document.getElementById('badgeConexion');
@@ -212,11 +252,9 @@ window.addEventListener('offline', () => {
 });
 
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', async () => {
-        try {
-            await navigator.serviceWorker.register('sw.js');
-        } catch (swError) {
-            console.warn('Registro de Service Worker omitido:', swError);
+    navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data?.accion === 'DESPACHAR_BOVEDA_OFFLINE') {
+            window.sincronizarBovedaOffline();
         }
     });
 }

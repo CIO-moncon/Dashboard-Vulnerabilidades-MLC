@@ -1,9 +1,9 @@
 // ============================================================================
-// SERVICE WORKER INDUSTRIAL: SW.JS
-// CIO PREDICTIVO 2.0 — Mina Los Colorados (CMP) | CPF Ingeniería
+// SERVICE WORKER INDUSTRIAL: SW.JS (v2.1.0)
+// CIO PREDICTIVO 2.0 — Background Sync y Cache Resiliente Offline
 // ============================================================================
 
-const VERSION = 'v2.0.3';
+const VERSION = 'v2.1.0';
 const CACHE_ESTATICO = `cio-static-${VERSION}`;
 const CACHE_CDN = `cio-cdn-${VERSION}`;
 const CACHE_MAPAS = `cio-tiles-${VERSION}`;
@@ -36,11 +36,9 @@ const ASSETS_CORE = [
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();
-
     event.waitUntil(
         caches.open(CACHE_ESTATICO).then(async (cache) => {
             console.log(`[SW ${VERSION}] Pre-cacheando recursos del CIO Predictivo...`);
-            // Estrategia resiliente: cada recurso se cachea individualmente sin fallar en bloque
             await Promise.allSettled(
                 ASSETS_CORE.map(async (url) => {
                     try {
@@ -73,6 +71,7 @@ self.addEventListener('activate', (event) => {
     );
 });
 
+// Intercepción de peticiones HTTP
 self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
@@ -107,6 +106,20 @@ self.addEventListener('fetch', (event) => {
 
     event.respondWith(estrategiaAppNetworkFirst(request));
 });
+
+// Evento Background Sync: se dispara automáticamente al recuperar red
+self.addEventListener('sync', (event) => {
+    if (event.tag === 'sync-reportes-terreno') {
+        event.waitUntil(notificarClientesSincronizar());
+    }
+});
+
+async function notificarClientesSincronizar() {
+    const clientes = await self.clients.matchAll({ type: 'window' });
+    for (const cliente of clientes) {
+        cliente.postMessage({ accion: 'DESPACHAR_BOVEDA_OFFLINE' });
+    }
+}
 
 async function estrategiaTilesCacheFirst(request) {
     const cache = await caches.open(CACHE_MAPAS);

@@ -1,11 +1,11 @@
 // ============================================================================
-// MÓDULO UI: JS/UI/ANALISIS.JS
-// CIO PREDICTIVO 2.0 — Estudio de Diagnóstico Experto CBM por Componentes
-// Análisis Segmentado: Motor Eléctrico, Reductor de Velocidad y Poleas a Demanda
-// Con Visor Interno Interactivo de PDF (Iframe Preview + Descarga Directa)
+// MÓDULO UI: JS/UI/ANALISIS.JS (v2.9.0 - Renderizado HD Sin Distorsión en PDF)
+// CIO PREDICTIVO 2.0 — Tendencias Triples, Regresión Lineal y Dossier CBM
+// Planta Mina Los Colorados (CMP) | CPF Ingeniería Ltda.
 // ============================================================================
 
 import { auth, db } from '../core/firebase-config.js';
+import { evaluarISO20816 } from '../domain/evaluador-iso.js';
 import {
     dibujarCabeceraCorporativa,
     dibujarPiePaginaCorporativo,
@@ -15,28 +15,39 @@ import {
     abrirVisorPDFInterno
 } from '../core/pdf-plantilla.js';
 
-let instanciaChartActual = null;
+let chartsInstancias = {
+    rms: null,
+    temp: null,
+    fc: null
+};
 
-// Estado de la tendencia simple
 let datosGraficoMemoria = {
     idFirebase: null,
     puntoId: null,
     nombrePunto: null,
-    variableActiva: 'rms',
+    seleccionGraficos: {
+        rms: true,
+        temp: true,
+        fc: true
+    },
     fechas: [],
     rms: [],
     temp: [],
-    fc: []
+    fc: [],
+    proyecciones: {
+        rms: null,
+        temp: null,
+        fc: null
+    }
 };
 
-// Estado modular del análisis experto por componentes
 let analisisModularMemoria = {
     idFirebase: null,
     tag: '',
     nombreEquipo: '',
     area: '',
     nivel: '',
-    tabActiva: 'motor', // 'motor' | 'reductor' | 'poleas'
+    tabActiva: 'motor',
     motor: {
         activo: true,
         puntos: [],
@@ -79,7 +90,72 @@ let analisisModularMemoria = {
     }
 };
 
-// Utilidades cinemáticas
+// ============================================================================
+// MATEMÁTICA PREDICTIVA: REGRESIÓN LINEAL
+// ============================================================================
+const calcularRegresionLinealYProyeccion = (valores, umbralAlarma, umbralCritico) => {
+    const n = valores.length;
+    if (n < 2) {
+        return { pendiente: 0, r2: 0, diasHastaAlarma: null, diasHastaFalla: null, fechaEstimadaFalla: 'Insuficientes datos' };
+    }
+
+    let sumX = 0;
+    let sumY = 0;
+    let sumXY = 0;
+    let sumX2 = 0;
+    let sumY2 = 0;
+
+    for (let i = 0; i < n; i++) {
+        const x = i;
+        const y = valores[i];
+        sumX += x;
+        sumY += y;
+        sumXY += x * y;
+        sumX2 += x * x;
+        sumY2 += y * y;
+    }
+
+    const divisor = (n * sumX2 - sumX * sumX);
+    if (divisor === 0) return { pendiente: 0, r2: 0, diasHastaAlarma: null, diasHastaFalla: null, fechaEstimadaFalla: 'Tendencia plana' };
+
+    const m = (n * sumXY - sumX * sumY) / divisor;
+    const numR = (n * sumXY - sumX * sumY);
+    const denR = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+    const r2 = denR !== 0 ? Math.pow(numR / denR, 2) : 0;
+
+    let diasHastaAlarma = null;
+    let diasHastaFalla = null;
+    let fechaEstimadaFalla = 'Condición Estable';
+    const ultimoValor = valores[n - 1];
+
+    if (ultimoValor >= umbralCritico) {
+        fechaEstimadaFalla = '¡CONDICIÓN CRÍTICA ALCANZADA!';
+        diasHastaFalla = 0;
+        diasHastaAlarma = 0;
+    } else if (m > 0.01) {
+        const pasosAlarma = Math.max(0, (umbralAlarma - ultimoValor) / m);
+        const pasosCritico = Math.max(0, (umbralCritico - ultimoValor) / m);
+
+        diasHastaAlarma = Math.round(pasosAlarma * 3.5);
+        diasHastaFalla = Math.round(pasosCritico * 3.5);
+
+        const fechaFutura = new Date();
+        fechaFutura.setDate(fechaFutura.getDate() + diasHastaFalla);
+        fechaEstimadaFalla = `~ ${fechaFutura.toLocaleDateString('es-CL')} (${diasHastaFalla} días)`;
+    }
+
+    return {
+        pendiente: Number(m.toFixed(3)),
+        r2: Number(r2.toFixed(2)),
+        diasHastaAlarma,
+        diasHastaFalla,
+        fechaEstimadaFalla
+    };
+};
+
+// ============================================================================
+// UTILIDADES CINEMÁTICAS
+// ============================================================================
 const clasificarPuntoCinematico = (puntoRaw = '') => {
     const p = String(puntoRaw || '').toUpperCase().trim();
     const match = p.match(/^([A-Z]+)(\d+)?(?:[_\-\s]?([A-Z0-9]+))?$/i);
@@ -182,7 +258,18 @@ const extraerSpotsLimpios = (eq) => {
     return resultado;
 };
 
-// Modal de tendencia simple (Chart.js)
+// ============================================================================
+// MODAL DE TENDENCIAS EN PANTALLA
+// ============================================================================
+const destruirGraficosActivos = () => {
+    ['rms', 'temp', 'fc'].forEach((key) => {
+        if (chartsInstancias[key]) {
+            chartsInstancias[key].destroy();
+            chartsInstancias[key] = null;
+        }
+    });
+};
+
 const asegurarModalTendenciaDOM = () => {
     let modal = document.getElementById('modal-grafico-tendencia');
     if (!modal) {
@@ -194,41 +281,102 @@ const asegurarModalTendenciaDOM = () => {
         modal.style.display = 'none';
 
         modal.innerHTML = `
-            <div class="modal-box glass-panel" style="max-width: 840px; width: 94%; max-height: 92vh; display: flex; flex-direction: column; padding: 0;">
-                <header class="modal-header" style="padding: 14px 18px; border-bottom: 1px solid var(--border-glass, rgba(255,255,255,0.1)); display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span class="material-symbols-outlined" style="color: #38bdf8;" aria-hidden="true">query_stats</span>
-                        <h3 id="titulo-modal-grafico" style="margin: 0; color: #ffffff; font-size: 1.05rem; font-weight: 800;">
-                            Tendencia Histórica CBM
-                        </h3>
+            <div class="modal-box glass-panel" style="max-width: 1080px; width: 96%; max-height: 94vh; display: flex; flex-direction: column; padding: 0; box-shadow: 0 24px 60px rgba(0,0,0,0.85);">
+                
+                <header class="modal-header" style="padding: 14px 20px; border-bottom: 1px solid var(--border-glass, rgba(255,255,255,0.1)); display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.98);">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="material-symbols-outlined" style="color: #38bdf8; font-size: 1.5rem;" aria-hidden="true">query_stats</span>
+                        <div>
+                            <h3 id="titulo-modal-grafico" style="margin: 0; color: #ffffff; font-size: 1.05rem; font-weight: 800;">
+                                Tendencia & Diagnóstico Predictivo CBM
+                            </h3>
+                            <span id="badge-punto-grafico" style="font-size: 0.72rem; color: #38bdf8; font-family: monospace;">TAG: --- | Punto: ---</span>
+                        </div>
                     </div>
                     <button type="button" class="btn-cerrar-modal" onclick="window.cerrarModalGraficoTendencia()">&times;</button>
                 </header>
 
-                <div class="modal-body" style="padding: 18px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                        <div id="tabs-variables-grafico" style="display: flex; gap: 6px;">
-                            <button type="button" id="tab-var-rms" onclick="window.cambiarVariableGrafico('rms')" style="background: #38bdf8; color: #0f172a; border: 1px solid #38bdf8; padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
-                                RMS (mm/s)
-                            </button>
-                            <button type="button" id="tab-var-temp" onclick="window.cambiarVariableGrafico('temp')" style="background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
-                                Temperatura (°C)
-                            </button>
-                            <button type="button" id="tab-var-fc" onclick="window.cambiarVariableGrafico('fc')" style="background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
-                                Factor Cresta (FC+)
-                            </button>
-                        </div>
-                        <div id="badge-punto-grafico" style="font-size: 0.75rem; color: #94a3b8; font-family: monospace;">Punto: M1</div>
+                <div style="background: rgba(11, 17, 32, 0.95); padding: 10px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 700; text-transform: uppercase;">
+                            Gráficos Activos en Pantalla & Exportación:
+                        </span>
+                        
+                        <button type="button" id="chk-toggle-rms" onclick="window.toggleGraficoSeleccion('rms')" style="background: #0284c7; color: white; border: 1px solid #38bdf8; padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+                            <span class="material-symbols-outlined" style="font-size: 1rem;">check_box</span>
+                            <span>1. Velocidad RMS</span>
+                        </button>
+
+                        <button type="button" id="chk-toggle-temp" onclick="window.toggleGraficoSeleccion('temp')" style="background: #f59e0b; color: #0f172a; border: 1px solid #facc15; padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+                            <span class="material-symbols-outlined" style="font-size: 1rem;">check_box</span>
+                            <span>2. Temperatura</span>
+                        </button>
+
+                        <button type="button" id="chk-toggle-fc" onclick="window.toggleGraficoSeleccion('fc')" style="background: #9333ea; color: white; border: 1px solid #c084fc; padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+                            <span class="material-symbols-outlined" style="font-size: 1rem;">check_box</span>
+                            <span>3. Factor Cresta</span>
+                        </button>
                     </div>
 
-                    <div style="position: relative; height: 320px; width: 100%; background: #0b1120; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; box-sizing: border-box;">
-                        <canvas id="canvas-tendencia-cbm"></canvas>
-                    </div>
-
-                    <div id="stats-resumen-grafico" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;"></div>
+                    <span style="font-size: 0.7rem; color: #38bdf8; font-family: monospace;">* La selección aplica en vivo y a la exportación PDF</span>
                 </div>
 
-                <footer class="modal-footer" style="padding: 12px 18px; border-top: 1px solid var(--border-glass, rgba(255,255,255,0.1)); display: flex; justify-content: flex-end; gap: 8px;">
+                <div class="modal-body" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto;">
+                    
+                    <div id="grid-graficos-dinamico" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                        
+                        <div id="box-chart-rms" style="background: #0b1120; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="font-size: 0.76rem; color: #38bdf8;">1. Velocidad RMS (mm/s)</strong>
+                                <span id="lbl-val-rms" style="font-size: 0.76rem; color: #ffffff; font-family: monospace; font-weight: 800;">--</span>
+                            </div>
+                            <div style="position: relative; height: 210px; width: 100%;">
+                                <canvas id="canvas-tendencia-rms"></canvas>
+                            </div>
+                        </div>
+
+                        <div id="box-chart-temp" style="background: #0b1120; border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="font-size: 0.76rem; color: #f59e0b;">2. Temperatura (°C)</strong>
+                                <span id="lbl-val-temp" style="font-size: 0.76rem; color: #ffffff; font-family: monospace; font-weight: 800;">--</span>
+                            </div>
+                            <div style="position: relative; height: 210px; width: 100%;">
+                                <canvas id="canvas-tendencia-temp"></canvas>
+                            </div>
+                        </div>
+
+                        <div id="box-chart-fc" style="background: #0b1120; border: 1px solid rgba(192, 132, 252, 0.25); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="font-size: 0.76rem; color: #c084fc;">3. Factor Cresta (FC+)</strong>
+                                <span id="lbl-val-fc" style="font-size: 0.76rem; color: #ffffff; font-family: monospace; font-weight: 800;">--</span>
+                            </div>
+                            <div style="position: relative; height: 210px; width: 100%;">
+                                <canvas id="canvas-tendencia-fc"></canvas>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div id="panel-proyeccion-falla" style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px 16px;"></div>
+
+                    <div style="background: rgba(11, 17, 32, 0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 14px;">
+                        <span style="font-size: 0.74rem; color: #94a3b8; font-weight: 700; text-transform: uppercase;">
+                            Historial Cronológico de Inspecciones en Faena:
+                        </span>
+                        <div id="contenedor-tabla-historial-rapido" style="overflow-x: auto; margin-top: 6px;"></div>
+                    </div>
+
+                </div>
+
+                <footer class="modal-footer" style="padding: 12px 20px; border-top: 1px solid var(--border-glass, rgba(255,255,255,0.1)); display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.98);">
+                    <button type="button" 
+                            id="btn-exportar-pdf-tendencias"
+                            onclick="window.exportarPDFTendenciaPunto()" 
+                            style="background: #0284c7; color: white; border: none; padding: 9px 18px; border-radius: 6px; font-size: 0.8rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);">
+                        <span class="material-symbols-outlined" style="font-size: 1.15rem;">picture_as_pdf</span>
+                        <span>Imprimir / Exportar Gráficos Seleccionados (PDF)</span>
+                    </button>
+
                     <button type="button" class="btn-secundario" onclick="window.cerrarModalGraficoTendencia()">Cerrar</button>
                 </footer>
             </div>
@@ -236,6 +384,61 @@ const asegurarModalTendenciaDOM = () => {
         document.body.appendChild(modal);
     }
     return modal;
+};
+
+window.toggleGraficoSeleccion = (tipo) => {
+    datosGraficoMemoria.seleccionGraficos[tipo] = !datosGraficoMemoria.seleccionGraficos[tipo];
+    
+    const activos = Object.values(datosGraficoMemoria.seleccionGraficos).filter(Boolean).length;
+    if (activos === 0) {
+        datosGraficoMemoria.seleccionGraficos[tipo] = true;
+        if (typeof UI !== 'undefined' && UI.mostrarToast) {
+            UI.mostrarToast('Debe mantener al menos un gráfico visible.', 'alerta');
+        }
+        return;
+    }
+
+    actualizarBotonesToggleYGrid();
+    renderizarTresGraficosSimultaneos();
+};
+
+const actualizarBotonesToggleYGrid = () => {
+    const { rms, temp, fc } = datosGraficoMemoria.seleccionGraficos;
+
+    const actualizarBtn = (id, activo, colorHex) => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        const icon = btn.querySelector('.material-symbols-outlined');
+        if (activo) {
+            btn.style.background = colorHex;
+            btn.style.color = id === 'chk-toggle-temp' ? '#0f172a' : '#ffffff';
+            btn.style.opacity = '1';
+            if (icon) icon.textContent = 'check_box';
+        } else {
+            btn.style.background = 'rgba(255,255,255,0.06)';
+            btn.style.color = '#94a3b8';
+            btn.style.opacity = '0.6';
+            if (icon) icon.textContent = 'check_box_outline_blank';
+        }
+    };
+
+    actualizarBtn('chk-toggle-rms', rms, '#0284c7');
+    actualizarBtn('chk-toggle-temp', temp, '#f59e0b');
+    actualizarBtn('chk-toggle-fc', fc, '#9333ea');
+
+    const boxRMS = document.getElementById('box-chart-rms');
+    const boxTemp = document.getElementById('box-chart-temp');
+    const boxFC = document.getElementById('box-chart-fc');
+
+    if (boxRMS) boxRMS.style.display = rms ? 'flex' : 'none';
+    if (boxTemp) boxTemp.style.display = temp ? 'flex' : 'none';
+    if (boxFC) boxFC.style.display = fc ? 'flex' : 'none';
+
+    const grid = document.getElementById('grid-graficos-dinamico');
+    if (grid) {
+        const cantidad = [rms, temp, fc].filter(Boolean).length;
+        grid.style.gridTemplateColumns = `repeat(${cantidad || 1}, 1fr)`;
+    }
 };
 
 export const abrirGraficoTendencia = async (idFirebase, puntoId, nombrePunto = '') => {
@@ -246,13 +449,12 @@ export const abrirGraficoTendencia = async (idFirebase, puntoId, nombrePunto = '
     const titulo = document.getElementById('titulo-modal-grafico');
     const badge = document.getElementById('badge-punto-grafico');
 
-    if (titulo) titulo.textContent = `Tendencia Histórica: ${puntoId} — ${nombrePunto || 'Componente'}`;
-    if (badge) badge.textContent = `TAG: ${idFirebase} | Punto: ${puntoId}`;
+    if (titulo) titulo.textContent = `Tendencia de Condición Mecánica: [${puntoId}] — ${nombrePunto || 'Componente'}`;
+    if (badge) badge.textContent = `TAG: ${idFirebase} | Punto Cinemático: ${puntoId}`;
 
     datosGraficoMemoria.idFirebase = idFirebase;
     datosGraficoMemoria.puntoId = puntoId;
     datosGraficoMemoria.nombrePunto = nombrePunto;
-    datosGraficoMemoria.variableActiva = 'rms';
 
     try {
         const snap = await db.ref(`activos_criticos/${idFirebase}/historial_mediciones`).once('value');
@@ -277,147 +479,554 @@ export const abrirGraficoTendencia = async (idFirebase, puntoId, nombrePunto = '
         });
 
         if (datosGraficoMemoria.fechas.length === 0) {
-            datosGraficoMemoria.fechas = ['13/10', '14/10', '15/10', '16/10', '17/10', '18/10'];
-            datosGraficoMemoria.rms = [3.2, 3.8, 4.6, 5.1, 5.8, 6.0];
-            datosGraficoMemoria.temp = [45, 48, 50, 55, 60, 66];
-            datosGraficoMemoria.fc = [2.8, 3.1, 3.5, 4.2, 5.0, 6.0];
+            datosGraficoMemoria.fechas = ['01/10', '05/10', '09/10', '13/10', '17/10', '21/10'];
+            datosGraficoMemoria.rms = [3.2, 3.8, 4.4, 5.1, 5.8, 6.4];
+            datosGraficoMemoria.temp = [45, 48, 52, 57, 62, 68];
+            datosGraficoMemoria.fc = [2.6, 2.9, 3.4, 4.1, 4.9, 5.6];
         }
 
-        renderizarLienzoChart();
+        actualizarBotonesToggleYGrid();
+        renderizarTresGraficosSimultaneos();
     } catch (err) {
         console.error('[Analisis] Error recuperando historial:', err);
     }
 };
 
-const renderizarLienzoChart = () => {
-    const canvas = document.getElementById('canvas-tendencia-cbm');
-    if (!canvas || typeof Chart === 'undefined') return;
+const renderizarTresGraficosSimultaneos = () => {
+    if (typeof Chart === 'undefined') return;
+    destruirGraficosActivos();
 
-    if (instanciaChartActual) {
-        instanciaChartActual.destroy();
-        instanciaChartActual = null;
+    const { fechas, rms, temp, fc, seleccionGraficos } = datosGraficoMemoria;
+
+    const evalNormativa = evaluarISO20816(rms[rms.length - 1] || 0, 'grupo1', 'rigido');
+    const umbralAlarmaRMS = evalNormativa.limitesAplicados?.c ?? 4.5;
+    const umbralCriticoRMS = evalNormativa.limitesAplicados?.d ?? 7.1;
+    const proyRMS = calcularRegresionLinealYProyeccion(rms, umbralAlarmaRMS, umbralCriticoRMS);
+    datosGraficoMemoria.proyecciones.rms = proyRMS;
+
+    const proyTemp = calcularRegresionLinealYProyeccion(temp, 65.0, 80.0);
+    datosGraficoMemoria.proyecciones.temp = proyTemp;
+
+    const proyFC = calcularRegresionLinealYProyeccion(fc, 3.5, 5.0);
+    datosGraficoMemoria.proyecciones.fc = proyFC;
+
+    const labelsExtrapolados = [...fechas];
+    if (proyRMS.pendiente > 0 && (rms[rms.length - 1] || 0) < umbralCriticoRMS) {
+        labelsExtrapolados.push('+4d', '+8d');
     }
 
-    const variable = datosGraficoMemoria.variableActiva;
-    let labelEjeY = 'Vibración RMS (mm/s)';
-    let colorCurva = '#38bdf8';
-    let datos = datosGraficoMemoria.rms;
-    let umbralAlerta = 4.5;
-    let umbralCritico = 7.1;
-
-    if (variable === 'temp') {
-        labelEjeY = 'Temperatura (°C)';
-        colorCurva = '#f59e0b';
-        datos = datosGraficoMemoria.temp;
-        umbralAlerta = 65.0;
-        umbralCritico = 80.0;
-    } else if (variable === 'fc') {
-        labelEjeY = 'Factor de Cresta (FC+)';
-        colorCurva = '#c084fc';
-        datos = datosGraficoMemoria.fc;
-        umbralAlerta = 3.5;
-        umbralCritico = 5.0;
+    const rmsExtrapolado = new Array(rms.length).fill(null);
+    rmsExtrapolado[rms.length - 1] = rms[rms.length - 1];
+    if (proyRMS.pendiente > 0 && (rms[rms.length - 1] || 0) < umbralCriticoRMS) {
+        rmsExtrapolado.push(Number((rms[rms.length - 1] + proyRMS.pendiente).toFixed(2)));
+        rmsExtrapolado.push(Number((rms[rms.length - 1] + (proyRMS.pendiente * 2)).toFixed(2)));
     }
 
-    const ctx = canvas.getContext('2d');
+    const lblRMS = document.getElementById('lbl-val-rms');
+    const lblTemp = document.getElementById('lbl-val-temp');
+    const lblFC = document.getElementById('lbl-val-fc');
+    if (lblRMS) lblRMS.textContent = `${rms[rms.length - 1] || 0} mm/s`;
+    if (lblTemp) lblTemp.textContent = `${temp[temp.length - 1] || 0} °C`;
+    if (lblFC) lblFC.textContent = `${fc[fc.length - 1] || 0}`;
 
-    instanciaChartActual = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: datosGraficoMemoria.fechas,
-            datasets: [
-                {
-                    label: labelEjeY,
-                    data: datos,
-                    borderColor: colorCurva,
-                    backgroundColor: 'rgba(56, 189, 248, 0.12)',
-                    borderWidth: 3,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                    pointBackgroundColor: colorCurva,
-                    tension: 0.25,
-                    fill: true
-                },
-                {
-                    label: `Límite Alerta (${umbralAlerta})`,
-                    data: datosGraficoMemoria.fechas.map(() => umbralAlerta),
-                    borderColor: '#f97316',
-                    borderWidth: 1.5,
-                    borderDash: [6, 4],
-                    pointRadius: 0,
-                    fill: false
-                },
-                {
-                    label: `Límite Crítico (${umbralCritico})`,
-                    data: datosGraficoMemoria.fechas.map(() => umbralCritico),
-                    borderColor: '#ef4444',
-                    borderWidth: 2,
-                    borderDash: [4, 4],
-                    pointRadius: 0,
-                    fill: false
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { labels: { color: '#cbd5e1', font: { size: 11, weight: '600' } } }
+    const configBase = (ctx, label, datos, color, datosExt, umbralAlerta, umbralCritico, unidad) => {
+        return new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labelsExtrapolados,
+                datasets: [
+                    {
+                        label: `${label} (${unidad})`,
+                        data: datos,
+                        borderColor: color,
+                        backgroundColor: `${color}20`,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        tension: 0.2,
+                        fill: true
+                    },
+                    {
+                        label: 'Proyección',
+                        data: datosExt,
+                        borderColor: '#a855f7',
+                        borderWidth: 2,
+                        borderDash: [4, 4],
+                        pointRadius: 3,
+                        pointBackgroundColor: '#a855f7',
+                        fill: false
+                    },
+                    {
+                        label: `Alarma (${umbralAlerta})`,
+                        data: labelsExtrapolados.map(() => umbralAlerta),
+                        borderColor: '#f97316',
+                        borderWidth: 1.2,
+                        borderDash: [5, 4],
+                        pointRadius: 0,
+                        fill: false
+                    },
+                    {
+                        label: `Crítico (${umbralCritico})`,
+                        data: labelsExtrapolados.map(() => umbralCritico),
+                        borderColor: '#ef4444',
+                        borderWidth: 1.5,
+                        borderDash: [3, 3],
+                        pointRadius: 0,
+                        fill: false
+                    }
+                ]
             },
-            scales: {
-                x: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
-                y: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#94a3b8', font: { size: 10 } } }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#cbd5e1', font: { size: 9, weight: '700' } } }
+                },
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } }
+                }
             }
-        }
-    });
+        });
+    };
 
-    const statsContainer = document.getElementById('stats-resumen-grafico');
-    if (statsContainer) {
-        const ultimo = datos[datos.length - 1] || 0;
-        const max = Math.max(...datos);
-        const prom = (datos.reduce((a, b) => a + b, 0) / (datos.length || 1)).toFixed(1);
+    if (seleccionGraficos.rms) {
+        const ctxRMS = document.getElementById('canvas-tendencia-rms')?.getContext('2d');
+        if (ctxRMS) chartsInstancias.rms = configBase(ctxRMS, 'RMS', rms, '#38bdf8', rmsExtrapolado, umbralAlarmaRMS, umbralCriticoRMS, 'mm/s');
+    }
 
-        statsContainer.innerHTML = `
-            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.08); padding: 10px; border-radius: 8px; text-align: center;">
-                <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Última Lectura</span>
-                <div style="font-size: 1.25rem; font-weight: 800; color: ${colorCurva}; margin-top: 2px;">${ultimo}</div>
+    if (seleccionGraficos.temp) {
+        const ctxTemp = document.getElementById('canvas-tendencia-temp')?.getContext('2d');
+        if (ctxTemp) chartsInstancias.temp = configBase(ctxTemp, 'Temperatura', temp, '#f59e0b', [], 65.0, 80.0, '°C');
+    }
+
+    if (seleccionGraficos.fc) {
+        const ctxFC = document.getElementById('canvas-tendencia-fc')?.getContext('2d');
+        if (ctxFC) chartsInstancias.fc = configBase(ctxFC, 'Factor Cresta', fc, '#c084fc', [], 3.5, 5.0, 'FC+');
+    }
+
+    const panelProyeccion = document.getElementById('panel-proyeccion-falla');
+    if (panelProyeccion) {
+        const estadoProy = (rms[rms.length - 1] || 0) >= umbralCriticoRMS || (proyRMS.diasHastaFalla !== null && proyRMS.diasHastaFalla <= 15) ? '#ef4444' : '#00e676';
+
+        panelProyeccion.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="color: ${estadoProy}; font-size: 1.3rem;">insights</span>
+                    <strong style="color: #ffffff; font-size: 0.88rem;">Diagnóstico Predictivo de Vida Residual (Velocidad RMS):</strong>
+                </div>
+                <span style="font-size: 0.72rem; color: #94a3b8; font-family: monospace;">Ajuste R²: <strong>${proyRMS.r2}</strong> | Tasa: <strong>+${proyRMS.pendiente} mm/s/ciclo</strong></span>
             </div>
-            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.08); padding: 10px; border-radius: 8px; text-align: center;">
-                <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Máximo Registrado</span>
-                <div style="font-size: 1.25rem; font-weight: 800; color: #ef4444; margin-top: 2px;">${max}</div>
-            </div>
-            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.08); padding: 10px; border-radius: 8px; text-align: center;">
-                <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Promedio Histórico</span>
-                <div style="font-size: 1.25rem; font-weight: 800; color: #ffffff; margin-top: 2px;">${prom}</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px;">
+                <div style="background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px;">
+                    <span style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase;">Estimación hasta Alarma (Zona C):</span>
+                    <div style="font-size: 1.05rem; font-weight: 800; color: #facc15; margin-top: 2px;">
+                        ${proyRMS.diasHastaAlarma !== null ? `~ ${proyRMS.diasHastaAlarma} días` : 'No proyectado (Estable)'}
+                    </div>
+                </div>
+                <div style="background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px;">
+                    <span style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase;">Proyección a Falla Crítica (Zona D):</span>
+                    <div style="font-size: 1.05rem; font-weight: 800; color: ${estadoProy}; margin-top: 2px;">
+                        ${proyRMS.fechaEstimadaFalla}
+                    </div>
+                </div>
             </div>
         `;
     }
-};
 
-window.cambiarVariableGrafico = (variable) => {
-    datosGraficoMemoria.variableActiva = variable;
-    ['rms', 'temp', 'fc'].forEach((t) => {
-        const btn = document.getElementById(`tab-var-${t}`);
-        if (btn) {
-            const activo = t === variable;
-            btn.style.background = activo ? '#38bdf8' : 'rgba(255,255,255,0.06)';
-            btn.style.color = activo ? '#0f172a' : '#cbd5e1';
-            btn.style.borderColor = activo ? '#38bdf8' : 'rgba(255,255,255,0.15)';
-        }
-    });
-    renderizarLienzoChart();
+    const tablaContainer = document.getElementById('contenedor-tabla-historial-rapido');
+    if (tablaContainer) {
+        tablaContainer.innerHTML = `
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.78rem; font-family: monospace;">
+                <thead>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">
+                        <th style="padding: 6px;">Fecha</th>
+                        ${seleccionGraficos.rms ? '<th style="padding: 6px;">RMS (mm/s)</th>' : ''}
+                        ${seleccionGraficos.temp ? '<th style="padding: 6px;">Temp (°C)</th>' : ''}
+                        ${seleccionGraficos.fc ? '<th style="padding: 6px;">FC+</th>' : ''}
+                        <th style="padding: 6px;">Evaluación ISO</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${fechas.slice(-6).map((f, i) => {
+                        const r = rms[i] || 0;
+                        const t = temp[i] || 0;
+                        const c = fc[i] || 0;
+                        let col = '#00e676';
+                        let tag = 'Zona A (Óptimo)';
+                        if (r >= umbralCriticoRMS || t >= 80) { col = '#ef4444'; tag = 'Zona D (Crítico)'; }
+                        else if (r >= umbralAlarmaRMS || t >= 65) { col = '#f97316'; tag = 'Zona C (Alerta)'; }
+                        else if (r >= 2.8 || t >= 55) { col = '#eab308'; tag = 'Zona B (Seguimiento)'; }
+
+                        return `
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                                <td style="padding: 6px; color: #ffffff;">${f}</td>${seleccionGraficos.rms ? `<td style="padding: 6px; font-weight: bold; color: ${col};">${r.toFixed(2)}</td>` : ''}
+                                ${seleccionGraficos.temp ? `<td style="padding: 6px; color: #e2e8f0;">${t.toFixed(1)}</td>` : ''}
+                                ${seleccionGraficos.fc ? `<td style="padding: 6px; color: #c084fc;">${c.toFixed(2)}</td>` : ''}
+                                <td style="padding: 6px; color: ${col}; font-weight: bold;">${tag}</td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        `;
+    }
 };
 
 window.cerrarModalGraficoTendencia = () => {
     const modal = document.getElementById('modal-grafico-tendencia');
     if (modal) modal.style.display = 'none';
-    if (instanciaChartActual) {
-        instanciaChartActual.destroy();
-        instanciaChartActual = null;
-    }
+    destruirGraficosActivos();
 };
 
-// Modal de Análisis Experto Modular
+// ============================================================================
+// MOTOR DE RENDERIZADO HD OFFSCREEN PARA PDF (FONDO BLANCO, SIN DISTORSIÓN)
+// ============================================================================
+const generarGraficoHDOffscreen = (titulo, labels, datos, colorLínea, datosProy, umbralAlerta, umbralCritico, unidad, anchoPx = 1100, altoPx = 420) => {
+    return new Promise((resolve) => {
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = anchoPx;
+        offCanvas.height = altoPx;
+        const ctx = offCanvas.getContext('2d');
+
+        // Fondo blanco puro institucional
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, anchoPx, altoPx);
+
+        const chartOff = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: `${titulo} (${unidad})`,
+                        data: datos,
+                        borderColor: colorLínea,
+                        backgroundColor: 'rgba(2, 132, 199, 0.08)',
+                        borderWidth: 3.5,
+                        pointRadius: 5.5,
+                        pointBackgroundColor: colorLínea,
+                        tension: 0.2,
+                        fill: true
+                    },
+                    {
+                        label: 'Proyección Estimada',
+                        data: datosProy,
+                        borderColor: '#9333ea',
+                        borderWidth: 2.8,
+                        borderDash: [6, 5],
+                        pointRadius: 4.5,
+                        pointBackgroundColor: '#9333ea',
+                        fill: false
+                    },
+                    {
+                        label: `Límite Alerta (${umbralAlerta})`,
+                        data: labels.map(() => umbralAlerta),
+                        borderColor: '#ea580c',
+                        borderWidth: 2,
+                        borderDash: [8, 5],
+                        pointRadius: 0,
+                        fill: false
+                    },
+                    {
+                        label: `Límite Crítico (${umbralCritico})`,
+                        data: labels.map(() => umbralCritico),
+                        borderColor: '#dc2626',
+                        borderWidth: 2.5,
+                        borderDash: [5, 4],
+                        pointRadius: 0,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: false,
+                animation: false,
+                devicePixelRatio: 2, // Calidad Retina HD
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: '#0f172a',
+                            font: { size: 14, weight: 'bold', family: 'helvetica' },
+                            padding: 16,
+                            boxWidth: 24
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(0, 0, 0, 0.08)' },
+                        ticks: { color: '#334155', font: { size: 13, weight: 'bold', family: 'helvetica' } }
+                    },
+                    y: {
+                        grid: { color: 'rgba(0, 0, 0, 0.08)' },
+                        ticks: { color: '#334155', font: { size: 13, weight: 'bold', family: 'helvetica' } }
+                    }
+                }
+            }
+        });
+
+        setTimeout(() => {
+            const dataUrl = offCanvas.toDataURL('image/png', 1.0);
+            chartOff.destroy();
+            offCanvas.remove();
+            resolve(dataUrl);
+        }, 120);
+    });
+};
+
+// ============================================================================
+// EXPORTACIÓN A PDF: GRÁFICOS APILADOS EN ALTA RESOLUCIÓN Y PANEL LIMPIO
+// ============================================================================
+window.exportarPDFTendenciaPunto = async () => {
+    const { jsPDF } = window.jspdf || {};
+    if (!jsPDF) {
+        alert('Librería jsPDF no disponible.');
+        return;
+    }
+
+    const { idFirebase, puntoId, nombrePunto, fechas, rms, temp, fc, proyecciones, seleccionGraficos } = datosGraficoMemoria;
+
+    const listaGraficosAImprimir = [];
+    if (seleccionGraficos.rms) listaGraficosAImprimir.push('rms');
+    if (seleccionGraficos.temp) listaGraficosAImprimir.push('temp');
+    if (seleccionGraficos.fc) listaGraficosAImprimir.push('fc');
+
+    if (listaGraficosAImprimir.length === 0) {
+        alert('Debe tener al menos un gráfico seleccionado para imprimir.');
+        return;
+    }
+
+    if (typeof UI !== 'undefined' && UI.mostrarToast) {
+        UI.mostrarToast(`Generando reporte HD con ${listaGraficosAImprimir.length} gráfico(s) apilado(s)...`, 'info');
+    }
+
+    const fechaActual = new Date();
+    const numSemana = String(obtenerSemanaISO(fechaActual)).padStart(2, '0');
+    const fechaImpresion = formatearFechaNomenclatura(fechaActual);
+    const tagLimpio = String(idFirebase || 'ACTIVO').trim().toUpperCase();
+    const nombreArchivo = `${tagLimpio}_${puntoId}_tendencias_S${numSemana}_(${fechaImpresion}).pdf`;
+
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const margenX = 14;
+    const anchoPagina = doc.internal.pageSize.getWidth();
+    const altoPagina = doc.internal.pageSize.getHeight();
+    const anchoContenido = anchoPagina - (margenX * 2);
+
+    const ultimoRMS = rms[rms.length - 1] || 0;
+    let severidadGlobal = 'VERDE';
+    if (ultimoRMS >= 7.1) severidadGlobal = 'ROJO';
+    else if (ultimoRMS >= 4.5) severidadGlobal = 'NARANJA';
+    else if (ultimoRMS >= 2.8) severidadGlobal = 'AMARILLO';
+
+    // 1. Cabecera Corporativa
+    await dibujarCabeceraCorporativa(doc, {
+        titulo: `REPORTE DE TENDENCIA DE CONDICIÓN — PUNTO ${puntoId}`,
+        subtitulo: 'Planta Mina Los Colorados (CMP) | CPF Ingeniería Ltda.',
+        referencia: `Análisis Predictivo de Vida Residual | Gráficas HD: ${listaGraficosAImprimir.join(', ').toUpperCase()}`,
+        severidad: severidadGlobal,
+        textoCondicion: 'ESTADO TENDENCIA',
+        margenX
+    });
+
+    // 2. Ficha Técnica del Punto
+    let posY = 34;
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(margenX, posY, anchoContenido, 20, 2, 2, 'FD');
+
+    doc.setFontSize(10.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(15, 23, 42);
+    doc.text(`TAG: ${tagLimpio}  |  PUNTO: [${puntoId}] — ${nombrePunto || 'Componente Cinemático'}`, margenX + 5, posY + 6.5);
+
+    doc.setFontSize(7.8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Últimos Registros: RMS: ${ultimoRMS.toFixed(2)} mm/s  |  Temp: ${(temp[temp.length - 1] || 0).toFixed(1)} °C  |  FC+: ${(fc[fc.length - 1] || 0).toFixed(2)}`, margenX + 5, posY + 12);
+    doc.text(`Fecha Inspección: ${fechas[fechas.length - 1] || fechaImpresion}   |   Semana SAP: S${numSemana}`, margenX + 5, posY + 16.5);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(15, 23, 42);
+    doc.text(`Responsable CBM: ${auth.currentUser?.email || 'Especialista CBM CPF'}`, margenX + 115, posY + 16.5);
+
+    posY += 24;
+
+    // 3. GENERACIÓN HD OFFSCREEN Y RENDERIZADO APILADO EN PDF
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(15, 23, 42);
+    doc.text(`Gráficas de Tendencia Histórica & Extrapolación (${listaGraficosAImprimir.length}):`, margenX, posY);
+
+    posY += 3;
+
+    // Extrapolación de RMS
+    const pRMS = proyecciones.rms || {};
+    const labelsExtrap = [...fechas];
+    if (pRMS.pendiente > 0 && ultimoRMS < 7.1) labelsExtrap.push('+4d', '+8d');
+    const rmsExt = new Array(rms.length).fill(null);
+    rmsExt[rms.length - 1] = rms[rms.length - 1];
+    if (pRMS.pendiente > 0 && ultimoRMS < 7.1) {
+        rmsExt.push(Number((ultimoRMS + pRMS.pendiente).toFixed(2)));
+        rmsExt.push(Number((ultimoRMS + (pRMS.pendiente * 2)).toFixed(2)));
+    }
+
+    // Renderizar según la cantidad con altura y aspecto proporcional
+    if (listaGraficosAImprimir.length === 1) {
+        const tipo = listaGraficosAImprimir[0];
+        let imgHD = null;
+        if (tipo === 'rms') imgHD = await generarGraficoHDOffscreen('Velocidad RMS', labelsExtrap, rms, '#0284c7', rmsExt, 4.5, 7.1, 'mm/s', 1200, 480);
+        else if (tipo === 'temp') imgHD = await generarGraficoHDOffscreen('Temperatura Operativa', fechas, temp, '#d97706', [], 65.0, 80.0, '°C', 1200, 480);
+        else imgHD = await generarGraficoHDOffscreen('Factor de Cresta', fechas, fc, '#7c3aed', [], 3.5, 5.0, 'FC+', 1200, 480);
+
+        const alto = 75;
+        doc.addImage(imgHD, 'PNG', margenX, posY, anchoContenido, alto);
+        posY += alto + 6;
+
+    } else if (listaGraficosAImprimir.length === 2) {
+        const alto = 48;
+        for (const tipo of listaGraficosAImprimir) {
+            let imgHD = null;
+            if (tipo === 'rms') imgHD = await generarGraficoHDOffscreen('Velocidad RMS', labelsExtrap, rms, '#0284c7', rmsExt, 4.5, 7.1, 'mm/s', 1200, 420);
+            else if (tipo === 'temp') imgHD = await generarGraficoHDOffscreen('Temperatura Operativa', fechas, temp, '#d97706', [], 65.0, 80.0, '°C', 1200, 420);
+            else imgHD = await generarGraficoHDOffscreen('Factor de Cresta', fechas, fc, '#7c3aed', [], 3.5, 5.0, 'FC+', 1200, 420);
+
+            doc.addImage(imgHD, 'PNG', margenX, posY, anchoContenido, alto);
+            posY += alto + 4;
+        }
+
+    } else if (listaGraficosAImprimir.length === 3) {
+        // Gráfico 1 (RMS principal): Ancho completo arriba con proporción amplia
+        const imgRMS = await generarGraficoHDOffscreen('Velocidad RMS', labelsExtrap, rms, '#0284c7', rmsExt, 4.5, 7.1, 'mm/s', 1200, 400);
+        const altoPrincipal = 52;
+        doc.addImage(imgRMS, 'PNG', margenX, posY, anchoContenido, altoPrincipal);
+        posY += altoPrincipal + 4;
+
+        // Gráficos 2 y 3 (Temp y FC+): En 2 columnas con proporción 1.5:1 nítida
+        const imgTemp = await generarGraficoHDOffscreen('Temperatura', fechas, temp, '#d97706', [], 65.0, 80.0, '°C', 700, 440);
+        const imgFC = await generarGraficoHDOffscreen('Factor Cresta', fechas, fc, '#7c3aed', [], 3.5, 5.0, 'FC+', 700, 440);
+
+        const anchoMedio = (anchoContenido - 4) / 2;
+        const altoSecundario = 44;
+        doc.addImage(imgTemp, 'PNG', margenX, posY, anchoMedio, altoSecundario);
+        doc.addImage(imgFC, 'PNG', margenX + anchoMedio + 4, posY, anchoMedio, altoSecundario);
+        posY += altoSecundario + 6;
+    }
+
+    // 4. PANEL DE PROYECCIÓN DE VIDA RESIDUAL CORREGIDO (SIN DESBORDE)
+    const esCritico = ultimoRMS >= 7.1 || (pRMS.diasHastaFalla !== null && pRMS.diasHastaFalla <= 0);
+
+    doc.setFillColor(240, 249, 255);
+    doc.setDrawColor(56, 189, 248);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(margenX, posY, anchoContenido, 28, 2, 2, 'FD');
+
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(2, 132, 199);
+    doc.text('CÁLCULO PREDICTIVO DE VIDA RESIDUAL (REGRESIÓN LINEAL ISO 20816-3):', margenX + 5, posY + 5.5);
+
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(51, 65, 85);
+    doc.text(`• Tasa de Degradación Dinámica (Pendiente m): +${pRMS.pendiente || 0} mm/s por ciclo`, margenX + 6, posY + 11);
+    doc.text(`• Coeficiente de Determinación (Ajuste R²): ${pRMS.r2 || 0} (Confiabilidad del modelo)`, margenX + 6, posY + 15.5);
+    doc.text(`• Tiempo Estimado hasta Alarma (Zona C): ${pRMS.diasHastaAlarma !== null ? `~ ${pRMS.diasHastaAlarma} días` : 'Estable / Sin tendencia crítica'}`, margenX + 6, posY + 20);
+
+    // Caja destacada de advertencia crítica protegida dentro del ancho
+    const anchoCajaAlerta = 82;
+    const altoCajaAlerta = 15;
+    const xCajaAlerta = margenX + anchoContenido - anchoCajaAlerta - 4;
+    const yCajaAlerta = posY + 8.5;
+
+    doc.setFillColor(esCritico ? 254 : 240, esCritico ? 226 : 253, esCritico ? 226 : 244);
+    doc.setDrawColor(esCritico ? 239 : 34, esCritico ? 68 : 197, esCritico ? 68 : 94);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(xCajaAlerta, yCajaAlerta, anchoCajaAlerta, altoCajaAlerta, 2, 2, 'FD');
+
+    doc.setFontSize(6.8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(esCritico ? 185 : 21, esCritico ? 28 : 128, esCritico ? 28 : 61);
+    doc.text('PROYECCIÓN A CONDICIÓN CRÍTICA (ZONA D):', xCajaAlerta + (anchoCajaAlerta / 2), yCajaAlerta + 5, { align: 'center' });
+
+    doc.setFontSize(7.8);
+    doc.text(String(pRMS.fechaEstimadaFalla || 'Condición Estable'), xCajaAlerta + (anchoCajaAlerta / 2), yCajaAlerta + 11, { align: 'center' });
+
+    posY += 33;
+
+    // Salto de página seguro
+    if (posY > altoPagina - 45) {
+        doc.addPage();
+        posY = 20;
+    }
+
+    // 5. Tabla de Registro Cronológico
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(15, 23, 42);
+    doc.text('Registro Cronológico de Mediciones en Terreno:', margenX, posY);
+
+    posY += 3.5;
+    doc.setFillColor(30, 41, 59);
+    doc.rect(margenX, posY, anchoContenido, 6.5, 'F');
+    doc.setFontSize(7.5);
+    doc.setTextColor(255, 255, 255);
+    doc.text('FECHA', margenX + 6, posY + 4.5);
+    if (seleccionGraficos.rms) doc.text('RMS (mm/s)', margenX + 45, posY + 4.5);
+    if (seleccionGraficos.temp) doc.text('TEMP (°C)', margenX + 85, posY + 4.5);
+    if (seleccionGraficos.fc) doc.text('FC+', margenX + 125, posY + 4.5);
+    doc.text('ZONA ISO 20816-3', margenX + 155, posY + 4.5);
+
+    posY += 6.5;
+    const ultimosRegistros = fechas.slice(-8);
+
+    ultimosRegistros.forEach((f, idx) => {
+        const rVal = rms[fechas.indexOf(f)] || 0;
+        const tVal = temp[fechas.indexOf(f)] || 0;
+        const fcVal = fc[fechas.indexOf(f)] || 0;
+
+        let tagZona = 'Zona A (Óptimo)';
+        let colorZona = [22, 163, 74];
+        if (rVal >= 7.1 || tVal >= 80) { tagZona = 'Zona D (Crítico)'; colorZona = [220, 38, 38]; }
+        else if (rVal >= 4.5 || tVal >= 65) { tagZona = 'Zona C (Alerta)'; colorZona = [234, 88, 12]; }
+        else if (rVal >= 2.8 || tVal >= 55) { tagZona = 'Zona B (Seguimiento)'; colorZona = [202, 138, 4]; }
+
+        if (idx % 2 === 0) {
+            doc.setFillColor(248, 250, 252);
+            doc.rect(margenX, posY, anchoContenido, 5.5, 'F');
+        }
+
+        doc.setFontSize(7.2);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(51, 65, 85);
+        doc.text(f, margenX + 6, posY + 3.8);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(15, 23, 42);
+        if (seleccionGraficos.rms) doc.text(rVal > 0 ? rVal.toFixed(2) : '--', margenX + 48, posY + 3.8);
+        if (seleccionGraficos.temp) doc.text(tVal > 0 ? `${tVal.toFixed(1)}` : '--', margenX + 88, posY + 3.8);
+        if (seleccionGraficos.fc) doc.text(fcVal > 0 ? `${fcVal.toFixed(2)}` : '--', margenX + 126, posY + 3.8);
+
+        doc.setTextColor(...colorZona);
+        doc.text(tagZona, margenX + 155, posY + 3.8);
+
+        posY += 5.5;
+    });
+
+    // 6. Pie de Página Corporativo
+    dibujarPiePaginaCorporativo(doc, {
+        fechaImpresion,
+        textoCentro: `Reporte de Tendencia & Diagnóstico Predictivo | Activo: ${tagLimpio}`,
+        margenX
+    });
+
+    abrirVisorPDFInterno(doc, nombreArchivo);
+};
+
+// ============================================================================
+// MODAL DE ANÁLISIS EXPERTO MODULAR (MOTOR, REDUCTOR Y POLEAS)
+// ============================================================================
 export const abrirModalAnalisisExperto = async (idFirebase) => {
     let modal = document.getElementById('modal-analisis-experto-cbm');
     if (modal) modal.remove();
@@ -431,7 +1040,6 @@ export const abrirModalAnalisisExperto = async (idFirebase) => {
     const tagLimpio = String(eq.tag || idFirebase).trim().toUpperCase();
     const spotsLimpios = extraerSpotsLimpios(eq);
 
-    // Separación por subsistemas cinemáticos
     const spotsMotor = spotsLimpios.filter((s) => s.punto.startsWith('M'));
     const spotsReductor = spotsLimpios.filter((s) => s.punto.startsWith('G') || s.punto.startsWith('R'));
     const spotsPoleas = spotsLimpios.filter((s) => s.punto.startsWith('PL') || s.punto.startsWith('P') || s.punto.startsWith('CH') || s.punto.startsWith('D'));
@@ -511,7 +1119,6 @@ export const abrirModalAnalisisExperto = async (idFirebase) => {
 
     modal.innerHTML = `
         <div class="modal-box glass-panel" style="max-width: 1040px; width: 96%; max-height: 94vh; display: flex; flex-direction: column; padding: 0;">
-            
             <header class="modal-header" style="padding: 14px 20px; border-bottom: 1px solid var(--border-glass, rgba(255,255,255,0.1)); display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.95);">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <div style="background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: #c084fc;">
@@ -687,7 +1294,7 @@ const renderizarVistaComponenteActivo = () => {
                                     Temp: <span style="color: #e2e8f0;">${t > 0 ? `${t.toFixed(1)} °C` : '--'}</span>
                                 </div>
                             </div>
-                            <span style="background: ${bgTag}; color: ${cText}; border: 1px solid${cText}; font-size: 0.65rem; font-weight: 900; padding: 2px 6px; border-radius: 4px;">
+                            <span style="background: ${bgTag}; color: ${cText}; border: 1px solid ${cText}; font-size: 0.65rem; font-weight: 900; padding: 2px 6px; border-radius: 4px;">
                                 ${r >= 7.1 ? 'CRÍTICO' : (r >= 4.5 ? 'ALERTA' : 'NORMAL')}
                             </span>
                         </div>
@@ -702,7 +1309,6 @@ const renderizarVistaComponenteActivo = () => {
             </span>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 6px;">
                 
-                <!-- Evidencia 1: FFT -->
                 <div style="background: rgba(15, 23, 42, 0.7); border: 2px dashed rgba(56, 189, 248, 0.4); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;">
                     <span style="font-size: 0.72rem; color: #38bdf8; font-weight: 800; text-transform: uppercase;">1. Espectro FFT</span>
                     <div id="preview-${tab}-espectro" style="width: 100%; height: 130px; background: #000000; border-radius: 6px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
@@ -715,7 +1321,6 @@ const renderizarVistaComponenteActivo = () => {
                     </div>
                 </div>
 
-                <!-- Evidencia 2: Cascada -->
                 <div style="background: rgba(15, 23, 42, 0.7); border: 2px dashed rgba(168, 85, 247, 0.4); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;">
                     <span style="font-size: 0.72rem; color: #c084fc; font-weight: 800; text-transform: uppercase;">2. Cascada / PeakVue</span>
                     <div id="preview-${tab}-cascada" style="width: 100%; height: 130px; background: #000000; border-radius: 6px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
@@ -728,7 +1333,6 @@ const renderizarVistaComponenteActivo = () => {
                     </div>
                 </div>
 
-                <!-- Evidencia 3: Termograma -->
                 <div style="background: rgba(15, 23, 42, 0.7); border: 2px dashed rgba(249, 115, 22, 0.4); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;">
                     <span style="font-size: 0.72rem; color: #fb923c; font-weight: 800; text-transform: uppercase;">3. Termograma Infrarrojo</span>
                     <div id="preview-${tab}-termo" style="width: 100%; height: 130px; background: #000000; border-radius: 6px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
@@ -814,7 +1418,6 @@ window.quitarImagenComponente = (componente, propiedad) => {
     renderizarVistaComponenteActivo();
 };
 
-// Guardado de análisis experto en Firebase
 window.guardarAnalisisExpertoEnFirebase = async () => {
     const btn = document.getElementById('btn-guardar-analisis-db');
     if (btn) {
@@ -898,10 +1501,6 @@ window.guardarAnalisisExpertoEnFirebase = async () => {
     }
 };
 
-// ----------------------------------------------------------------------------
-// GENERADOR OFICIAL DEL INFORME ESPECTRAL CBM EN PDF (CON VISOR INTERNO)
-// Nomenclatura: TAG_informe_espectral_Sxx_(dd-mm-aaaa).pdf
-// ----------------------------------------------------------------------------
 window.descargarInformeEspectralCompletoPDF = async () => {
     const { jsPDF } = window.jspdf || {};
     if (!jsPDF) {
@@ -938,7 +1537,6 @@ window.descargarInformeEspectralCompletoPDF = async () => {
         const comp = listaComponentesAImprimir[cIdx];
         const { datos } = comp;
 
-        // 1. Cabecera Corporativa con Sello de Condición en la esquina superior derecha
         await dibujarCabeceraCorporativa(doc, {
             titulo: `INFORME ESPECTRAL CBM — ${comp.nombre}`,
             subtitulo: 'Planta Mina Los Colorados (CMP) | CPF Ingeniería Ltda.',
@@ -948,14 +1546,12 @@ window.descargarInformeEspectralCompletoPDF = async () => {
             margenX
         });
 
-        // 2. Ficha Técnica del Componente (100% Despejada y legible)
         let posY = 34;
         doc.setFillColor(248, 250, 252);
         doc.setDrawColor(226, 232, 240);
         doc.setLineWidth(0.4);
         doc.roundedRect(margenX, posY, anchoContenido, 26, 2, 2, 'FD');
 
-        // Columna 1 (Izquierda)
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(15, 23, 42);
@@ -968,7 +1564,6 @@ window.descargarInformeEspectralCompletoPDF = async () => {
         doc.text(`Área Operacional: ${area}   |   Cota / Nivel: ${nivel}`, margenX + 5, posY + 18);
         doc.text(`Puntos Analizados: ${datos.puntos.map((p) => `[${p.punto}]`).join(', ')}`, margenX + 5, posY + 23);
 
-        // Columna 2 (Derecha)
         doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(15, 23, 42);
@@ -980,7 +1575,6 @@ window.descargarInformeEspectralCompletoPDF = async () => {
         doc.text(`Fecha Inspección: ${fechaImpresion}`, margenX + 102, posY + 18);
         doc.text(`Analista: ${auth.currentUser?.email || 'Especialista CBM CPF'}`, margenX + 102, posY + 23);
 
-        // 3. Tabla Cinemática del Componente
         posY += 31;
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
@@ -1032,7 +1626,6 @@ window.descargarInformeEspectralCompletoPDF = async () => {
             posY += 5.8;
         });
 
-        // 4. Evidencias Gráficas del Componente (FFT + Cascada + Termo)
         posY += 5;
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
@@ -1043,7 +1636,6 @@ window.descargarInformeEspectralCompletoPDF = async () => {
         const anchoEv = (anchoContenido - 8) / 3;
         const altoEv = 48;
 
-        // Foto 1: FFT
         doc.setFillColor(15, 23, 42);
         doc.roundedRect(margenX, posY, anchoEv, altoEv, 2, 2, 'F');
         if (datos.espectroImg) {
@@ -1058,7 +1650,6 @@ window.descargarInformeEspectralCompletoPDF = async () => {
         doc.setTextColor(51, 65, 85);
         doc.text('Figura 1: Espectro FFT', margenX + 1, posY + altoEv + 4);
 
-        // Foto 2: Cascada
         const xFoto2 = margenX + anchoEv + 4;
         doc.setFillColor(15, 23, 42);
         doc.roundedRect(xFoto2, posY, anchoEv, altoEv, 2, 2, 'F');
@@ -1071,7 +1662,6 @@ window.descargarInformeEspectralCompletoPDF = async () => {
         }
         doc.text('Figura 2: Cascada / PeakVue', xFoto2 + 1, posY + altoEv + 4);
 
-        // Foto 3: Termograma
         const xFoto3 = xFoto2 + anchoEv + 4;
         doc.setFillColor(15, 23, 42);
         doc.roundedRect(xFoto3, posY, anchoEv, altoEv, 2, 2, 'F');
@@ -1086,7 +1676,6 @@ window.descargarInformeEspectralCompletoPDF = async () => {
 
         posY += altoEv + 9;
 
-        // 5. Diagnóstico Especializado del Componente
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(15, 23, 42);
@@ -1107,7 +1696,6 @@ window.descargarInformeEspectralCompletoPDF = async () => {
 
         posY += altoDiag + 5;
 
-        // 6. Recomendaciones Operacionales
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(15, 23, 42);
@@ -1128,7 +1716,6 @@ window.descargarInformeEspectralCompletoPDF = async () => {
 
         posY += altoRecom + 5;
 
-        // 7. Gestión SAP PM
         doc.setFillColor(240, 249, 255);
         doc.setDrawColor(56, 189, 248);
         doc.setLineWidth(0.5);
@@ -1153,14 +1740,12 @@ window.descargarInformeEspectralCompletoPDF = async () => {
         doc.text('* Conforme a normativas ISO 20816-3 (Vibración Mecánica) e ISO 18434-1 (Termografía Infrarroja).', margenX + 5, posY + 9.5);
     }
 
-    // Pie de página corporativo con numeración en todas las hojas
     dibujarPiePaginaCorporativo(doc, {
         fechaImpresion,
         textoCentro: `Dossier Técnico Espectral CBM | Emisión: ${fechaImpresion}`,
         margenX
     });
 
-    // Apertura en Visor Interno Interactivo
     abrirVisorPDFInterno(doc, nombreArchivoPDF);
 };
 

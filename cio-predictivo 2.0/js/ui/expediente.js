@@ -1,11 +1,11 @@
 // ============================================================================
-// MÓDULO UI: JS/UI/EXPEDIENTE.JS
-// CIO PREDICTIVO 2.0 — Secuencia Cinemática, Reactividad y Reporte Diario SAP
-// Con Visor Interno Interactivo (Iframe Preview + Descarga)
+// MÓDULO UI: JS/UI/EXPEDIENTE.JS (v2.8.0 - Edición en Cascada de Spots y Mapa 3D)
+// CIO PREDICTIVO 2.0 — Planta Mina Los Colorados | CPF Ingeniería Ltda.
 // ============================================================================
 
 import { auth, db } from '../core/firebase-config.js';
 import { abrirGraficoTendencia, abrirModalAnalisisExperto } from './analisis.js';
+import { obtenerEstructuraMLC, obtenerSpotsEstructura } from '../domain/plantillas.js';
 import {
     dibujarCabeceraCorporativa,
     dibujarPiePaginaCorporativo,
@@ -21,9 +21,6 @@ window.abrirModalAnalisisExperto = abrirModalAnalisisExperto;
 let equipoActual = null;
 let idEquipoActual = null;
 
-// ----------------------------------------------------------------------------
-// INYECCIÓN DE ESTILOS DE SEVERIDAD REACTIVOS (!IMPORTANT)
-// ----------------------------------------------------------------------------
 const inyectarEstilosSeveridad = () => {
     if (document.getElementById('cbm-estilos-dinamicos-severidad')) return;
     const style = document.createElement('style');
@@ -57,14 +54,59 @@ const inyectarEstilosSeveridad = () => {
             box-shadow: 0 0 12px rgba(239, 68, 68, 0.55) !important;
             font-weight: 800 !important;
         }
+        .timeline-cbm-contenedor {
+            position: relative;
+            padding-left: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .timeline-cbm-contenedor::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 4px;
+            bottom: 4px;
+            width: 2px;
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .timeline-hito-item {
+            position: relative;
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 10px 14px;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+        .timeline-hito-item:hover {
+            background: rgba(30, 41, 59, 0.9);
+            border-color: rgba(56, 189, 248, 0.4);
+            transform: translateX(4px);
+        }
+        .timeline-punto-nodo {
+            position: absolute;
+            left: -24px;
+            top: 14px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid #0f172a;
+            box-shadow: 0 0 8px currentColor;
+        }
     `;
     document.head.appendChild(style);
 };
 inyectarEstilosSeveridad();
 
-// ----------------------------------------------------------------------------
-// ALGORITMO CINEMÁTICO REAL: M -> A -> G -> E -> PL -> CH -> T
-// ----------------------------------------------------------------------------
+const escaparHTML = (texto = '') =>
+    String(texto || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
 const clasificarPuntoCinematico = (puntoRaw = '') => {
     const p = String(puntoRaw || '').toUpperCase().trim();
     const match = p.match(/^([A-Z]+)(\d+)?(?:[_\-\s]?([A-Z0-9]+))?$/i);
@@ -147,9 +189,6 @@ const esMismoDia = (fechaStr, fechaRef = new Date()) => {
            str.includes(`${yRef}-${mStr}-${dStr}`);
 };
 
-// ----------------------------------------------------------------------------
-// EVALUACIÓN NORMATIVA Y ESTILOS DINÁMICOS EN VIVO
-// ----------------------------------------------------------------------------
 window.evaluarInputEnVivo = (inputEl, tipo) => {
     if (!inputEl) return;
     const v = parseFloat(inputEl.value);
@@ -265,6 +304,236 @@ const resolverColorTexto = (tipo, valor) => {
     return '#94a3b8';
 };
 
+const resolverColorBadge = (sev = '') => {
+    const s = String(sev).toLowerCase();
+    if (s.includes('rojo') || s.includes('crit')) return '#ef4444';
+    if (s.includes('naranja') || s.includes('alert')) return '#f97316';
+    if (s.includes('amarillo') || s.includes('seg')) return '#eab308';
+    if (s.includes('normal') || s.includes('optimo') || s.includes('verde')) return '#00e676';
+    return '#38bdf8';
+};
+
+// ----------------------------------------------------------------------------
+// MODAL: BITÁCORA / LÍNEA DE TIEMPO DEL ACTIVO
+// ----------------------------------------------------------------------------
+window.abrirModalTimelineActivo = (idFirebase) => {
+    const modalId = 'modal-timeline-completo-activo';
+    document.getElementById(modalId)?.remove();
+
+    const eq = (window.datosGlobalesEquipos && window.datosGlobalesEquipos[idFirebase]) || equipoActual || {};
+    const tag = eq.tag || idFirebase;
+    
+    const timelineRaw = eq.timeline || {};
+    const bitacoraRaw = eq.bitacora || {};
+    
+    const listaCompleta = [];
+    
+    Object.entries(timelineRaw).forEach(([k, v]) => {
+        listaCompleta.push({ idKey: k, origen: 'timeline', ...v });
+    });
+    
+    Object.entries(bitacoraRaw).forEach(([k, v]) => {
+        listaCompleta.push({ 
+            idKey: k, 
+            origen: 'pms', 
+            titulo: `Intervención SAP PM: Aviso ${v.avisoSap}`, 
+            severidadNueva: v.evaluacionCondicion || 'Condición Evaluada',
+            autor: v.responsable,
+            ...v 
+        });
+    });
+
+    listaCompleta.sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
+
+    const modal = document.createElement('div');
+    modal.id = modalId;
+    modal.className = 'modal-overlay';
+    modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 99999;';
+
+    modal.innerHTML = `
+        <div class="modal-box glass-panel" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; width: 95%; max-width: 720px; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,0.8);">
+            <header style="background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid rgba(255,255,255,0.1); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="material-symbols-outlined" style="color: #f59e0b; font-size: 1.4rem;">timeline</span>
+                    <div>
+                        <h3 style="margin: 0; color: #ffffff; font-size: 1.05rem; font-weight: 800; font-family: monospace;">
+                            Bitácora Técnica Operativa: ${tag}
+                        </h3>
+                        <p style="margin: 0; font-size: 0.72rem; color: #94a3b8;">
+                            Historial consolidado de hallazgos CBM e intervenciones SAP PM ejecutadas.
+                        </p>
+                    </div>
+                </div>
+                <button type="button" onclick="document.getElementById('${modalId}').remove()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </header>
+
+            <div style="padding: 18px 20px; overflow-y: auto; flex: 1;">
+                ${listaCompleta.length === 0 ? `
+                    <div style="padding: 3rem 1rem; text-align: center; color: #94a3b8; font-size: 0.85rem; background: rgba(0,0,0,0.25); border-radius: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 2.2rem; color: #64748b; margin-bottom: 6px;">event_note</span>
+                        <p style="margin: 0;">No se registran eventos, intervenciones ni cambios de condición históricos para ${tag}.</p>
+                    </div>
+                ` : `
+                    <div class="timeline-cbm-contenedor">
+                        ${listaCompleta.map((item) => {
+                            const colorNodo = resolverColorBadge(item.severidadNueva || item.severidadAnterior);
+                            const fechaTexto = item.timestamp ? new Date(item.timestamp).toLocaleString('es-CL') : 'Fecha no especificada';
+                            
+                            if (item.origen === 'pms') {
+                                return `
+                                    <div class="timeline-hito-item" style="border-left: 3px solid #22c55e;">
+                                        <span class="timeline-punto-nodo" style="background-color: #22c55e; border-color: #22c55e; box-shadow: 0 0 8px #22c55e;"></span>
+                                        
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap;">
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <span class="material-symbols-outlined" style="color: #22c55e; font-size: 1.1rem;">build</span>
+                                                <strong style="color: #ffffff; font-size: 0.88rem;">${escaparHTML(item.titulo)}</strong>
+                                                ${item.otSap ? `<span style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); padding: 1px 6px; border-radius: 4px; font-size: 0.68rem; font-family: monospace; font-weight: bold;">OT: ${escaparHTML(item.otSap)}</span>` : ''}
+                                            </div>
+                                            <time style="font-size: 0.7rem; color: #94a3b8; font-family: monospace;">${fechaTexto}</time>
+                                        </div>
+
+                                        <div style="margin: 6px 0; padding: 4px 8px; background: rgba(34, 197, 94, 0.1); border-radius: 4px; border: 1px dashed rgba(34, 197, 94, 0.3);">
+                                            <span style="font-size: 0.7rem; color: #94a3b8; font-weight: bold;">Resultado CBM:</span>
+                                            <span style="font-size: 0.75rem; color: #22c55e; font-weight: bold; margin-left: 4px;">${escaparHTML(item.evaluacionCondicion)}</span>
+                                        </div>
+
+                                        <p style="margin: 0; font-size: 0.78rem; color: #cbd5e1; line-height: 1.35;">
+                                            ${escaparHTML(item.detalle || '')}
+                                        </p>
+
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 0.7rem; color: #64748b;">
+                                            <span>👤 Ejecutado por: ${escaparHTML(item.autor || 'Sistema')}</span>
+                                        </div>
+                                    </div>
+                                `;
+                            } else {
+                                const payloadEnc = encodeURIComponent(JSON.stringify(item));
+                                return `
+                                    <div class="timeline-hito-item" onclick="window.abrirModalDetalleTimeline('${payloadEnc}')" title="Clic para abrir ficha completa">
+                                        <span class="timeline-punto-nodo" style="background-color: ${colorNodo}; color: ${colorNodo};"></span>
+                                        
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap;">
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <strong style="color: #ffffff; font-size: 0.88rem;">${escaparHTML(item.titulo || 'Evento')}</strong>
+                                                <span style="background: rgba(0,0,0,0.4); color: ${colorNodo}; border: 1px solid ${colorNodo}; padding: 1px 6px; border-radius: 4px; font-size: 0.68rem; font-weight: 800;">
+                                                    ${escaparHTML(item.severidadNueva || item.severidadAnterior || 'Info')}
+                                                </span>
+                                                ${item.avisoSap ? `<span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 1px 6px; border-radius: 4px; font-size: 0.68rem; font-family: monospace; font-weight: bold;">SAP: ${escaparHTML(item.avisoSap)}</span>` : ''}
+                                            </div>
+                                            <time style="font-size: 0.7rem; color: #94a3b8; font-family: monospace;">${fechaTexto}</time>
+                                        </div>
+
+                                        <p style="margin: 4px 0 0 0; font-size: 0.78rem; color: #cbd5e1; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                            ${escaparHTML(item.detalle || '')}
+                                        </p>
+
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 0.7rem; color: #64748b;">
+                                            <span>👤 Registrado por: ${escaparHTML(item.autor || 'Sistema')}</span>
+                                            ${item.evidencias && item.evidencias.length > 0 ? `<span style="color: #38bdf8; display: inline-flex; align-items: center; gap: 3px;"><span class="material-symbols-outlined" style="font-size: 0.85rem;">photo_camera</span> ${item.evidencias.length} evidencias</span>` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        }).join('')}
+                    </div>
+                `}
+            </div>
+
+            <footer style="padding: 12px 20px; background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: flex-end;">
+                <button type="button" onclick="document.getElementById('${modalId}').remove()" style="background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.2); padding: 7px 16px; border-radius: 6px; font-weight: 700; cursor: pointer;">Cerrar</button>
+            </footer>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+};
+
+// ----------------------------------------------------------------------------
+// MODAL DETALLE DE HITO EN TIMELINE
+// ----------------------------------------------------------------------------
+window.abrirModalDetalleTimeline = (hitoJsonStr) => {
+    try {
+        const hito = JSON.parse(decodeURIComponent(hitoJsonStr));
+        const modalId = 'modal-detalle-timeline-item';
+        document.getElementById(modalId)?.remove();
+
+        const colorSevNueva = resolverColorBadge(hito.severidadNueva);
+        const colorSevAnt = resolverColorBadge(hito.severidadAnterior);
+        const fechaFmt = hito.timestamp ? new Date(hito.timestamp).toLocaleString('es-CL') : 'Fecha no especificada';
+
+        let evidenciasHTML = '';
+        if (hito.evidencias && Array.isArray(hito.evidencias) && hito.evidencias.length > 0) {
+            evidenciasHTML = `
+                <div style="margin-top: 10px;">
+                    <label style="font-size: 0.72rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 6px;">
+                        Evidencias Registradas (${hito.evidencias.length}):
+                    </label>
+                    <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px;">
+                        ${hito.evidencias.map((ev, i) => {
+                            if (ev.tipo === 'video') {
+                                return `<video src="${ev.data}" controls style="height: 100px; width: 140px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0;"></video>`;
+                            }
+                            return `<img src="${ev.data}" style="height: 100px; width: 100px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); cursor: pointer; flex-shrink: 0;" onclick="window.abrirVisorMultimediaInterno('${ev.data}', 'imagen')" title="Clic para abrir en visor interno" alt="Evidencia ${i + 1}">`;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        const modal = document.createElement('div');
+        modal.id = modalId;
+        modal.className = 'modal-overlay';
+        modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 100000;';
+
+        modal.innerHTML = `
+            <div class="modal-box glass-panel" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; width: 95%; max-width: 500px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,0.85);">
+                <header style="background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid rgba(255,255,255,0.1); padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="color: #38bdf8;">history_toggle_off</span>
+                        <h3 style="margin: 0; color: #ffffff; font-size: 1rem; font-weight: 700;">Hito de Bitácora CBM</h3>
+                    </div>
+                    <button type="button" onclick="document.getElementById('${modalId}').remove()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer;">&times;</button>
+                </header>
+
+                <div style="padding: 16px 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; font-size: 0.85rem; color: #e2e8f0;">
+                    <div>
+                        <h4 style="margin: 0 0 4px 0; color: #ffffff; font-size: 0.98rem;">${escaparHTML(hito.titulo || 'Evento')}</h4>
+                        <time style="font-size: 0.72rem; color: #94a3b8;">📅 ${escaparHTML(fechaFmt)} | Autor: ${escaparHTML(hito.autor || 'Sistema')}</time>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+                        <span style="font-size: 0.75rem; color: #94a3b8;">Severidad:</span>
+                        <span style="background: rgba(0,0,0,0.5); color: ${colorSevAnt}; border: 1px solid ${colorSevAnt}; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: bold;">
+                            ${escaparHTML(hito.severidadAnterior || 'N/A')}
+                        </span>
+                        <span class="material-symbols-outlined" style="font-size: 0.9rem; color: #64748b;">arrow_forward</span>
+                        <span style="background: rgba(0,0,0,0.5); color: ${colorSevNueva}; border: 1px solid ${colorSevNueva}; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: bold;">
+                            ${escaparHTML(hito.severidadNueva || 'N/A')}
+                        </span>
+                        ${hito.avisoSap ? `<span style="margin-left: auto; color: #38bdf8; font-family: monospace; font-weight: bold; font-size: 0.75rem;">SAP: ${escaparHTML(hito.avisoSap)}</span>` : ''}
+                    </div>
+
+                    <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); padding: 10px 12px; border-radius: 6px;">
+                        <span style="font-size: 0.7rem; color: #38bdf8; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 4px;">Detalle / Diagnóstico:</span>
+                        <p style="margin: 0; white-space: pre-line; line-height: 1.4; color: #cbd5e1;">${escaparHTML(hito.detalle || 'Sin detalle adicional')}</p>
+                    </div>
+
+                    ${evidenciasHTML}
+                </div>
+
+                <footer style="padding: 10px 18px; background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: flex-end;">
+                    <button type="button" onclick="document.getElementById('${modalId}').remove()" style="background: #0284c7; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 700; cursor: pointer;">Entendido</button>
+                </footer>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    } catch (e) {
+        console.error('Error al abrir detalle de timeline:', e);
+    }
+};
+
 // ----------------------------------------------------------------------------
 // RENDERIZADO DEL EXPEDIENTE TÉCNICO
 // ----------------------------------------------------------------------------
@@ -274,17 +543,15 @@ export const renderizarExpediente = async (idFirebase, idContenedor = 'espacio-t
 
     idEquipoActual = idFirebase;
 
-    if (window.datosGlobalesEquipos && window.datosGlobalesEquipos[idFirebase]) {
-        equipoActual = window.datosGlobalesEquipos[idFirebase];
-    } else {
-        const snap = await db.ref(`activos_criticos/${idFirebase}`).once('value');
-        equipoActual = snap.val() || {};
-    }
+    const snap = await db.ref(`activos_criticos/${idFirebase}`).once('value');
+    equipoActual = snap.val() || {};
 
     const tag = equipoActual.tag || idFirebase;
     const nombre = equipoActual.nombre || 'Activo Crítico de Planta';
     const area = equipoActual.area || 'General';
     const nivel = equipoActual.nivel || 'Nivel 1';
+    const sevActual = equipoActual.severidad || equipoActual.estado || 'Verde';
+    const colorSevActual = resolverColorBadge(sevActual);
 
     let rawSpots = equipoActual.spots || equipoActual.components || [];
     let spotsArray = [];
@@ -327,6 +594,10 @@ export const renderizarExpediente = async (idFirebase, idContenedor = 'espacio-t
     const spotsLimpios = Array.from(mapaUnico.values());
     spotsLimpios.sort(ordenarPuntosCinematicos);
 
+    const timelineRaw = equipoActual.timeline || {};
+    const bitacoraRaw = equipoActual.bitacora || {};
+    const totalHitos = Object.keys(timelineRaw).length + Object.keys(bitacoraRaw).length;
+
     const tzOffset = new Date().getTimezoneOffset() * 60000;
     const fechaHoraLocal = new Date(Date.now() - tzOffset).toISOString().slice(0, 16);
 
@@ -346,6 +617,9 @@ export const renderizarExpediente = async (idFirebase, idContenedor = 'espacio-t
                             <span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 4px;">
                                 ${nivel}
                             </span>
+                            <span style="background: rgba(0,0,0,0.5); color: ${colorSevActual}; border: 1px solid ${colorSevActual}; font-size: 0.72rem; font-weight: 800; padding: 2px 8px; border-radius: 4px;">
+                                Condición: ${sevActual.toUpperCase()}
+                            </span>
                         </div>
                         <p style="margin: 3px 0 0 0; font-size: 0.8rem; color: var(--text-muted, #94a3b8);">
                             ${nombre} | <span style="color: #38bdf8; font-weight: 600;">${area}</span>
@@ -354,6 +628,16 @@ export const renderizarExpediente = async (idFirebase, idContenedor = 'espacio-t
                 </div>
 
                 <nav aria-label="Acciones del activo" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    
+                    <button type="button" 
+                            id="btn-timeline-directo"
+                            onclick="window.abrirModalTimelineActivo('${idFirebase}')" 
+                            title="Ver bitácora técnica e historial de eventos"
+                            style="background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.45); padding: 8px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);">
+                        <span class="material-symbols-outlined" style="font-size: 1.1rem;" aria-hidden="true">timeline</span>
+                        <span>Bitácora PMS/CBM (${totalHitos})</span>
+                    </button>
+
                     <button type="button" onclick="window.ubicarEnMapaDesdeAlerta('${tag}')" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); padding: 8px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
                         <span class="material-symbols-outlined" style="font-size: 1.1rem;" aria-hidden="true">my_location</span>
                         <span>Ver en Mapa 3D</span>
@@ -366,7 +650,7 @@ export const renderizarExpediente = async (idFirebase, idContenedor = 'espacio-t
 
                     <button type="button" onclick="window.abrirModalConfigurarMaquina('${idFirebase}')" style="background: rgba(255, 255, 255, 0.08); color: #ffffff; border: 1px solid var(--border-glass, rgba(255,255,255,0.15)); padding: 8px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
                         <span class="material-symbols-outlined" style="font-size: 1.1rem;" aria-hidden="true">settings</span>
-                        <span>Configurar Máquina</span>
+                        <span>Configuración</span>
                     </button>
 
                     <button type="button" onclick="window.descargarPDFEquipo('${idFirebase}')" title="Vista Previa y Resumen CBM para SAP PM" style="background: rgba(0, 230, 118, 0.18); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.45); padding: 8px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
@@ -424,7 +708,7 @@ export const renderizarExpediente = async (idFirebase, idContenedor = 'espacio-t
                                         <td style="padding: 10px; text-align: center;">
                                             <button type="button" 
                                                     onclick="window.abrirGraficoTendencia('${idFirebase}', '${puntoId}', '${compName}')"
-                                                    title="Ver tendencia histórica de ${puntoId}"
+                                                    title="Ver tendencia triple histórica de ${puntoId}"
                                                     style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s ease;">
                                                 <span class="material-symbols-outlined" style="font-size: 1.25rem;" aria-hidden="true">query_stats</span>
                                             </button>
@@ -511,7 +795,7 @@ export const renderizarExpediente = async (idFirebase, idContenedor = 'espacio-t
 };
 
 // ----------------------------------------------------------------------------
-// GUARDADO INMUTABLE Y DISPARO DE INFORME ESPECTRAL EN FIREBASE
+// GUARDADO DE MEDICIONES DE RUTA Y REGISTRO EN TIMELINE SI CAMBIA CONDICIÓN
 // ----------------------------------------------------------------------------
 window.guardarMedicionesRuta = async (idFirebase) => {
     const btn = document.getElementById('btn-guardar-ruta-cbm');
@@ -553,6 +837,7 @@ window.guardarMedicionesRuta = async (idFirebase) => {
     try {
         const eq = (window.datosGlobalesEquipos && window.datosGlobalesEquipos[idFirebase]) || equipoActual || {};
         const tagLimpio = String(eq.tag || idFirebase || 'MH').trim().toUpperCase();
+        const sevAnterior = eq.severidad || eq.estado || 'Verde';
 
         let peorSeveridad = 'Verde';
         const updatesActivo = {};
@@ -579,6 +864,7 @@ window.guardarMedicionesRuta = async (idFirebase) => {
         }
 
         updatesActivo[`severidad`] = peorSeveridad;
+        updatesActivo[`estado`] = peorSeveridad;
         updatesActivo[`ultimaInspeccion`] = fechaHora;
 
         updatesActivo[`historial_mediciones/${idHistorial}`] = {
@@ -590,9 +876,21 @@ window.guardarMedicionesRuta = async (idFirebase) => {
             puntos: medicionesPorPunto
         };
 
+        if (peorSeveridad !== sevAnterior || peorSeveridad === 'Rojo' || peorSeveridad === 'Naranja') {
+            const idTimeline = db.ref(`activos_criticos/${idFirebase}/timeline`).push().key;
+            updatesActivo[`timeline/${idTimeline}`] = {
+                tipo: 'CAMBIO_CONDICION_RUTA',
+                titulo: `Ruta de Medición — Condición ${peorSeveridad}`,
+                detalle: `Medición registrada con ${puntosConDatos.length} punto(s). Severidad resultante: ${peorSeveridad}.`,
+                severidadAnterior: sevAnterior,
+                severidadNueva: peorSeveridad,
+                autor: auth.currentUser?.email || 'Inspector Terreno',
+                timestamp: new Date().toISOString()
+            };
+        }
+
         await db.ref(`activos_criticos/${idFirebase}`).update(updatesActivo);
 
-        // Disparo automático de informe espectral si hay punto crítico en motor o reductor
         try {
             const fechaCorta = fechaHora.split(' ')[0] || new Date().toLocaleDateString();
             const numSemana = String(obtenerSemanaISO(new Date())).padStart(2, '0');
@@ -640,14 +938,14 @@ window.guardarMedicionesRuta = async (idFirebase) => {
         }
 
         if (typeof UI !== 'undefined' && UI.mostrarToast) {
-            UI.mostrarToast(`✅ Mediciones e historial guardados. Condición: ${peorSeveridad}`, 'exito');
+            UI.mostrarToast(`✅ Mediciones registradas. Condición: ${peorSeveridad}`, 'exito');
         }
 
         renderizarExpediente(idFirebase);
     } catch (err) {
         console.error('[Expediente] Error guardando historial:', err);
         if (typeof UI !== 'undefined' && UI.mostrarToast) {
-            UI.mostrarToast('Error de conexión al guardar el historial en Firebase.', 'error');
+            UI.mostrarToast('Error de conexión al guardar el historial.', 'error');
         }
         if (btn) {
             btn.disabled = false;
@@ -658,7 +956,6 @@ window.guardarMedicionesRuta = async (idFirebase) => {
 
 // ----------------------------------------------------------------------------
 // GENERADOR DE PDF DIARIO CON VISOR INTERNO INTERACTIVO
-// Nomenclatura: TAG_Sxx_(dd-mm-aaaa)_resumen.pdf
 // ----------------------------------------------------------------------------
 window.descargarPDFEquipo = async (idFirebase) => {
     const { jsPDF } = window.jspdf || {};
@@ -668,7 +965,7 @@ window.descargarPDFEquipo = async (idFirebase) => {
     }
 
     if (typeof UI !== 'undefined' && UI.mostrarToast) {
-        UI.mostrarToast('Generando vista previa del reporte diario para SAP...', 'info');
+        UI.mostrarToast('Generando vista previa del reporte diario...', 'info');
     }
 
     let eq = (window.datosGlobalesEquipos && window.datosGlobalesEquipos[idFirebase]) || {};
@@ -710,7 +1007,6 @@ window.descargarPDFEquipo = async (idFirebase) => {
         }));
     }
 
-    // Filtrar estrictamente solo las mediciones del día de la impresión
     const mapaPuntosDelDia = new Map();
 
     spotsArray.forEach((s) => {
@@ -761,7 +1057,6 @@ window.descargarPDFEquipo = async (idFirebase) => {
     const spotsValidos = Array.from(mapaPuntosDelDia.values());
     spotsValidos.sort(ordenarPuntosCinematicos);
 
-    // Calcular severidad global de la jornada
     let sevGlobal = 'VERDE';
     if (spotsValidos.length === 0) {
         sevGlobal = 'SIN_DATOS';
@@ -789,7 +1084,6 @@ window.descargarPDFEquipo = async (idFirebase) => {
     const altoPagina = doc.internal.pageSize.getHeight();
     const anchoContenido = anchoPagina - (margenX * 2);
 
-    // 1. CABECERA CORPORATIVA CON SELLO EN LA ESQUINA SUPERIOR DERECHA
     await dibujarCabeceraCorporativa(doc, {
         titulo: 'REPORTE DIARIO DE CONDICIÓN MECÁNICA — CBM',
         subtitulo: 'Planta Mina Los Colorados (CMP) | CPF Ingeniería Ltda.',
@@ -799,14 +1093,12 @@ window.descargarPDFEquipo = async (idFirebase) => {
         margenX
     });
 
-    // 2. FICHA TÉCNICA DEL ACTIVO (100% DESPEJADA)
     let posY = 34;
     doc.setFillColor(248, 250, 252);
     doc.setDrawColor(226, 232, 240);
     doc.setLineWidth(0.4);
     doc.roundedRect(margenX, posY, anchoContenido, 26, 2, 2, 'FD');
 
-    // Columna 1 (Izquierda)
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(15, 23, 42);
@@ -819,7 +1111,6 @@ window.descargarPDFEquipo = async (idFirebase) => {
     doc.text(`Área: ${area}   |   Cota/Nivel: ${nivel}`, margenX + 5, posY + 18);
     doc.text(`Fecha Inspección: ${fechaImpresion}`, margenX + 5, posY + 23);
 
-    // Columna 2 (Derecha)
     doc.setFontSize(8);
     doc.setTextColor(15, 23, 42);
     doc.setFont('helvetica', 'bold');
@@ -831,7 +1122,6 @@ window.descargarPDFEquipo = async (idFirebase) => {
     doc.text(`Puntos Evaluados Hoy: ${spotsValidos.length}`, margenX + 98, posY + 18);
     doc.text(`Responsable: ${auth.currentUser?.email || 'Inspector CBM'}`, margenX + 98, posY + 23);
 
-    // 3. TABLA CINEMÁTICA CON COLORES
     posY += 33;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
@@ -914,7 +1204,6 @@ window.descargarPDFEquipo = async (idFirebase) => {
         });
     }
 
-    // 4. DIAGNÓSTICO OPERACIONAL DE LA JORNADA
     posY += 6;
     doc.setFontSize(9.5);
     doc.setFont('helvetica', 'bold');
@@ -1122,25 +1411,27 @@ window.descargarPDFEquipo = async (idFirebase) => {
         doc.text(lineasNota, margenX + 5, subY);
     }
 
-    // 5. PIE DE PÁGINA CENTRALIZADO
     dibujarPiePaginaCorporativo(doc, {
         fechaImpresion,
         textoCentro: `Respaldo CBM para SAP PM | Fecha de Impresión: ${fechaImpresion}`,
         margenX
     });
 
-    // 6. APERTURA EN VISOR INTERNO INTERACTIVO
     abrirVisorPDFInterno(doc, nombreArchivoPDF);
 };
 
 // ----------------------------------------------------------------------------
-// MODAL: CONFIGURAR MÁQUINA
+// MODAL: CONFIGURAR MÁQUINA (CON GESTIÓN EN CASCADA Y MAPA 3D)
 // ----------------------------------------------------------------------------
 window.abrirModalConfigurarMaquina = async (idFirebase) => {
     const modalId = 'modal-configurar-maquina-cbm';
     document.getElementById(modalId)?.remove();
 
-    const eq = (window.datosGlobalesEquipos && window.datosGlobalesEquipos[idFirebase]) || {};
+    let eq = (window.datosGlobalesEquipos && window.datosGlobalesEquipos[idFirebase]) || {};
+    if (!eq.tag && idFirebase) {
+        const snap = await db.ref(`activos_criticos/${idFirebase}`).once('value');
+        eq = snap.val() || {};
+    }
 
     const modal = document.createElement('div');
     modal.id = modalId;
@@ -1149,26 +1440,29 @@ window.abrirModalConfigurarMaquina = async (idFirebase) => {
     modal.setAttribute('aria-modal', 'true');
 
     modal.innerHTML = `
-        <div class="modal-box glass-panel" style="max-width: 520px; width: 92%; padding: 0;">
-            <header class="modal-header">
+        <div class="modal-box glass-panel" style="max-width: 680px; width: 95%; max-height: 92vh; display: flex; flex-direction: column; padding: 0;">
+            <header class="modal-header" style="padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
                 <h3 style="margin: 0; color: #ffffff; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
                     <span class="material-symbols-outlined" style="color: #38bdf8;" aria-hidden="true">settings</span>
-                    Configurar Máquina: ${eq.tag || idFirebase}
+                    Configuración y Puntos Cinemáticos MLC: ${eq.tag || idFirebase}
                 </h3>
                 <button type="button" class="btn-cerrar-modal" onclick="document.getElementById('${modalId}').remove()">&times;</button>
             </header>
 
-            <form id="form-config-maquina" onsubmit="event.preventDefault();" style="padding: 18px 22px; display: flex; flex-direction: column; gap: 12px;">
-                <div class="campo-formulario">
-                    <label style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Denominación / Nombre:</label>
-                    <input type="text" id="cfg-nombre" value="${eq.nombre || ''}" placeholder="Ej: Correa Transportadora CV-01" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-glass); background: #0f172a; color: white;">
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <form id="form-config-maquina" onsubmit="event.preventDefault();" style="padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto;">
+                
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+                    <div class="campo-formulario">
+                        <label style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Denominación / Nombre:</label>
+                        <input type="text" id="cfg-nombre" value="${eq.nombre || ''}" placeholder="Ej: CV-01 o Beltfeeder" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-glass); background: #0f172a; color: white;">
+                    </div>
                     <div class="campo-formulario">
                         <label style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Área Operacional:</label>
                         <input type="text" id="cfg-area" value="${eq.area || 'AR66'}" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-glass); background: #0f172a; color: white;">
                     </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
                     <div class="campo-formulario">
                         <label style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Nivel / Cota:</label>
                         <select id="cfg-nivel" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-glass); background: #0f172a; color: white;">
@@ -1178,9 +1472,6 @@ window.abrirModalConfigurarMaquina = async (idFirebase) => {
                             <option value="Nivel -1" ${eq.nivel === 'Nivel -1' ? 'selected' : ''}>Nivel -1</option>
                         </select>
                     </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <div class="campo-formulario">
                         <label style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Potencia (kW):</label>
                         <input type="number" id="cfg-potencia" value="${eq.potencia || ''}" placeholder="Ej: 150" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-glass); background: #0f172a; color: white;">
@@ -1191,9 +1482,72 @@ window.abrirModalConfigurarMaquina = async (idFirebase) => {
                     </div>
                 </div>
 
-                <footer class="modal-footer" style="padding: 12px 0 0 0; margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: flex-end; gap: 8px;">
+                <!-- SECCIÓN DE GEOLOCALIZACIÓN Y PIN EN MAPA 3D -->
+                <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 8px;">
+                    <span style="font-size: 0.78rem; color: #38bdf8; font-weight: 700; text-transform: uppercase;">Coordenadas GPS (Mapa 3D)</span>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label style="font-size: 0.72rem; color: #94a3b8;">Latitud:</label>
+                            <input type="text" id="cfg-lat" value="${eq.latitud || ''}" style="width: 100%; padding: 6px 10px; border-radius: 6px; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); color: white; font-family: monospace; font-size: 0.8rem;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.72rem; color: #94a3b8;">Longitud:</label>
+                            <input type="text" id="cfg-lng" value="${eq.longitud || ''}" style="width: 100%; padding: 6px 10px; border-radius: 6px; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); color: white; font-family: monospace; font-size: 0.8rem;">
+                        </div>
+                    </div>
+                    <button type="button" onclick="window.activarSeleccionPinMapaModal('${idFirebase}')" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 7px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px;">
+                        <span class="material-symbols-outlined" style="font-size: 1rem;">pin_drop</span>
+                        <span>Marcar / Cambiar Ubicación con Pin en el Mapa 3D</span>
+                    </button>
+                </div>
+
+                <!-- SECCIÓN DE GESTIÓN Y EDICIÓN DINÁMICA DE SPOTS -->
+                <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 10px;">
+                    <span style="font-size: 0.78rem; color: #c084fc; font-weight: 700; text-transform: uppercase;">Gestión Avanzada de Puntos Cinemáticos (Spots)</span>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                        <div>
+                            <label style="font-size: 0.7rem; color: #94a3b8; display: block; margin-bottom: 2px;">Ejes Reductor (G):</label>
+                            <input type="number" id="cfg-input-red" min="0" max="12" value="6" style="width: 100%; padding: 6px; border-radius: 6px; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); color: white; font-size: 0.8rem;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.7rem; color: #94a3b8; display: block; margin-bottom: 2px;">Pares Poleas (PL):</label>
+                            <input type="number" id="cfg-input-pol" min="0" max="15" value="11" style="width: 100%; padding: 6px; border-radius: 6px; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); color: white; font-size: 0.8rem;">
+                        </div>
+                        <div style="display: flex; flex-direction: column; justify-content: flex-end;">
+                            <button type="button" onclick="window.aplicarEstructuraCascadaModal()" style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); padding: 7px; border-radius: 6px; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
+                                Aplicar en Cascada
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 6px; align-items: center; margin-top: 4px;">
+                        <input type="text" id="cfg-nuevo-spot-custom" placeholder="Ej: CH1 o M3" style="flex: 1; padding: 6px 10px; border-radius: 6px; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); color: white; font-size: 0.78rem; font-family: monospace;">
+                        <button type="button" onclick="window.agregarSpotManualModal()" style="background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.4); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">
+                            + Agregar Punto
+                        </button>
+                    </div>
+
+                    <!-- TABLA INTERACTIVA DE SPOTS ACTIVOS -->
+                    <div style="max-height: 160px; overflow-y: auto; background: #0b1120; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 6px;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; font-family: monospace;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8; text-align: left;">
+                                    <th style="padding: 4px 6px;">Punto</th>
+                                    <th style="padding: 4px 6px;">Componente / Descripción</th>
+                                    <th style="padding: 4px 6px; text-align: right;">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-config-spots-activos">
+                                <!-- Se poblará dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <footer class="modal-footer" style="padding: 10px 0 0 0; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: flex-end; gap: 8px;">
                     <button type="button" class="btn-secundario" onclick="document.getElementById('${modalId}').remove()">Cancelar</button>
-                    <button type="button" id="btn-guardar-cfg-maquina" class="btn-primario" style="background: #0284c7; color: white; font-weight: 700;">Guardar Ficha</button>
+                    <button type="button" id="btn-guardar-cfg-maquina" style="background: #0284c7; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 800; font-size: 0.8rem; cursor: pointer;">Guardar Ficha Completa</button>
                 </footer>
             </form>
         </div>
@@ -1201,29 +1555,199 @@ window.abrirModalConfigurarMaquina = async (idFirebase) => {
 
     document.body.appendChild(modal);
 
+    let spotsEnEdicion = JSON.parse(JSON.stringify(eq.spots || eq.components || {
+        'M1': { punto: 'M1', componente: 'Motor NDE (Lado Libre)', rms: '', temp: '', fc: '' },
+        'M2': { punto: 'M2', componente: 'Motor DE (Lado Acople)', rms: '', temp: '', fc: '' },
+        'G1': { punto: 'G1', componente: 'Reductor Etapa 1', rms: '', temp: '', fc: '' },
+        'G2': { punto: 'G2', componente: 'Reductor Etapa 2', rms: '', temp: '', fc: '' },
+        'PL1_LI': { punto: 'PL1_LI', componente: 'Polea 1 Lado Izquierdo', rms: '', temp: '', fc: '' },
+        'PL1_LD': { punto: 'PL1_LD', componente: 'Polea 1 Lado Derecho', rms: '', temp: '', fc: '' }
+    }));
+
+    const renderizarTablaSpotsModal = () => {
+        const tbody = document.getElementById('tabla-config-spots-activos');
+        if (!tbody) return;
+
+        const keys = Object.keys(spotsEnEdicion);
+        if (keys.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 10px;">Sin puntos cinemáticos configurados.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = keys.map((k) => {
+            const item = spotsEnEdicion[k] || {};
+            return `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                    <td style="padding: 6px; font-weight: bold; color: #38bdf8;">${k}</td>
+                    <td style="padding: 6px;">
+                        <input type="text" value="${item.componente || ''}" oninput="window.actualizarNombreComponenteModal('${k}', this.value)" style="width: 100%; background: #0f172a; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 3px 6px; border-radius: 4px; font-size: 0.75rem;">
+                    </td>
+                    <td style="padding: 6px; text-align: right;">
+                        <button type="button" onclick="window.eliminarSpotCascadaModal('${k}')" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: none; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; cursor: pointer;" title="Eliminar en cascada">Eliminar</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    };
+
+    window.actualizarNombreComponenteModal = (spotKey, nuevoVal) => {
+        if (spotsEnEdicion[spotKey]) {
+            spotsEnEdicion[spotKey].componente = nuevoVal;
+        }
+    };
+
+    // ELIMINACIÓN EN CASCADA INTELIGENTE
+    window.eliminarSpotCascadaModal = (spotKey) => {
+        const upper = String(spotKey).toUpperCase();
+
+        if (upper.startsWith('G')) {
+            const numBorrar = parseInt(upper.replace(/\D/g, ''), 10);
+            Object.keys(spotsEnEdicion).forEach((k) => {
+                if (k.toUpperCase().startsWith('G')) {
+                    const n = parseInt(k.replace(/\D/g, ''), 10);
+                    if (n >= numBorrar) delete spotsEnEdicion[k];
+                }
+            });
+        } else if (upper.includes('PL')) {
+            const match = upper.match(/PL(\d+)/);
+            if (match) {
+                const numBorrar = parseInt(match[1], 10);
+                Object.keys(spotsEnEdicion).forEach((k) => {
+                    const m = k.toUpperCase().match(/PL(\d+)/);
+                    if (m) {
+                        const n = parseInt(m[1], 10);
+                        if (n >= numBorrar) {
+                            delete spotsEnEdicion[`PL${n}_LI`];
+                            delete spotsEnEdicion[`PL${n}_LD`];
+                        }
+                    }
+                });
+            }
+        } else {
+            delete spotsEnEdicion[spotKey];
+        }
+
+        renderizarTablaSpotsModal();
+    };
+
+    // APLICAR EN CASCADA SEGÚN INPUTS
+    window.aplicarEstructuraCascadaModal = () => {
+        const nRed = parseInt(document.getElementById('cfg-input-red')?.value || '6', 10);
+        const nPol = parseInt(document.getElementById('cfg-input-pol')?.value || '11', 10);
+
+        spotsEnEdicion = {
+            'M1': { punto: 'M1', componente: 'Motor NDE (Lado Libre)', rms: '', temp: '', fc: '' },
+            'M2': { punto: 'M2', componente: 'Motor DE (Lado Acople)', rms: '', temp: '', fc: '' }
+        };
+
+        for (let i = 1; i <= nRed; i++) {
+            spotsEnEdicion[`G${i}`] = { punto: `G${i}`, componente: `Reductor Etapa ${i}`, rms: '', temp: '', fc: '' };
+        }
+
+        for (let i = 1; i <= nPol; i++) {
+            spotsEnEdicion[`PL${i}_LI`] = { punto: `PL${i}_LI`, componente: `Polea ${i} Lado Izquierdo`, rms: '', temp: '', fc: '' };
+            spotsEnEdicion[`PL${i}_LD`] = { punto: `PL${i}_LD`, componente: `Polea ${i} Lado Derecho`, rms: '', temp: '', fc: '' };
+        }
+
+        renderizarTablaSpotsModal();
+    };
+
+    window.agregarSpotManualModal = () => {
+        const inp = document.getElementById('cfg-nuevo-spot-custom');
+        const val = inp?.value.trim().toUpperCase();
+        if (!val) return;
+
+        spotsEnEdicion[val] = { punto: val, componente: `Punto Adicional ${val}`, rms: '', temp: '', fc: '' };
+        inp.value = '';
+        renderizarTablaSpotsModal();
+    };
+
+    renderizarTablaSpotsModal();
+
+    // NAVEGACIÓN AL MAPA 3D OPTIMIZADA (SIN LAG)
+    window.activarSeleccionPinMapaModal = async (idEquip) => {
+        const nombreVal = document.getElementById('cfg-nombre')?.value.trim();
+        const areaVal = document.getElementById('cfg-area')?.value.trim();
+        const nivelVal = document.getElementById('cfg-nivel')?.value;
+
+        // 1. Guardar cambios en segundo plano antes de desmontar el modal
+        try {
+            db.ref(`activos_criticos/${idEquip}`).update({
+                nombre: nombreVal,
+                area: areaVal,
+                nivel: nivelVal,
+                spots: spotsEnEdicion
+            }).catch(err => console.warn(err));
+        } catch(e) { console.warn(e); }
+
+        // 2. Cerrar el modal de forma inmediata
+        document.getElementById(modalId)?.remove();
+
+        // 3. Forzar cambio a pestaña de catastro de forma optimizada
+        const btnCatastro = document.getElementById('tab-catastro');
+        if (btnCatastro) btnCatastro.click();
+
+        if (typeof UI !== 'undefined' && UI.mostrarToast) {
+            UI.mostrarToast('📍 MODO PIN ACTIVO: Haz clic en el Mapa 3D para posicionar el equipo.', 'alerta');
+        }
+
+        // 4. Asignar el listener de forma diferida (evita el bloqueo de renderizado del navegador)
+        setTimeout(() => {
+            if (window.mapaActivo) {
+                const listenerPin = async (e) => {
+                    const { lng, lat } = e.lngLat;
+                    window.mapaActivo.off('click', listenerPin);
+
+                    try {
+                        await db.ref(`activos_criticos/${idEquip}`).update({ latitud: lat, longitud: lng });
+                        if (typeof UI !== 'undefined' && UI.mostrarToast) {
+                            UI.mostrarToast(`✅ Ubicación 3D guardada con éxito (Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)})`, 'exito');
+                        }
+                        if (window.renderizarMapaPlanta) window.renderizarMapaPlanta();
+                        renderizarExpediente(idEquip);
+                    } catch (err) {
+                        console.error('Error al guardar coordenadas:', err);
+                    }
+                };
+                window.mapaActivo.on('click', listenerPin);
+            }
+        }, 150);
+    };
+
     modal.querySelector('#btn-guardar-cfg-maquina')?.addEventListener('click', async () => {
         const nombreVal = document.getElementById('cfg-nombre')?.value.trim();
         const areaVal = document.getElementById('cfg-area')?.value.trim();
         const nivelVal = document.getElementById('cfg-nivel')?.value;
         const potenciaVal = document.getElementById('cfg-potencia')?.value;
         const rpmVal = document.getElementById('cfg-rpm')?.value;
+        const latVal = document.getElementById('cfg-lat')?.value.trim();
+        const lngVal = document.getElementById('cfg-lng')?.value.trim();
 
         try {
-            await db.ref(`activos_criticos/${idFirebase}`).update({
+            const payloadUpdate = {
                 nombre: nombreVal,
                 area: areaVal,
                 nivel: nivelVal,
                 potencia: potenciaVal,
-                rpm: rpmVal
-            });
+                rpm: rpmVal,
+                spots: spotsEnEdicion
+            };
+
+            if (latVal && lngVal) {
+                payloadUpdate.latitud = parseFloat(latVal);
+                payloadUpdate.longitud = parseFloat(lngVal);
+            }
+
+            await db.ref(`activos_criticos/${idFirebase}`).update(payloadUpdate);
 
             if (typeof UI !== 'undefined' && UI.mostrarToast) {
-                UI.mostrarToast('Ficha técnica actualizada en Firebase.', 'exito');
+                UI.mostrarToast('✅ Ficha técnica y puntos actualizados en Firebase.', 'exito');
             }
             modal.remove();
             renderizarExpediente(idFirebase);
+            if (window.renderizarMapaPlanta) window.renderizarMapaPlanta();
         } catch (err) {
-            console.error('Error guardando configuración:', err);
+            console.error('Error al guardar configuración:', err);
         }
     });
 };

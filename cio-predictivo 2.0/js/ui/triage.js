@@ -1,15 +1,17 @@
 // ============================================================================
-// MÓDULO UI: JS/UI/TRIAGE.JS
-// CIO PREDICTIVO 2.0 — Triage, Visor Multimedia, Avisos SAP, Ficha WhatsApp y PDF
+// MÓDULO UI: JS/UI/TRIAGE.JS (v2.3.0)
+// CIO PREDICTIVO 2.0 — Escucha Global de Alertas, Integración con Timeline y Catastro
 // ============================================================================
 
 import { auth, db } from '../core/firebase-config.js';
 import { dibujarCabeceraCorporativa, dibujarPiePaginaCorporativo, resolverPaletaSeveridadISO } from '../core/pdf-plantilla.js';
 
 let dbTriage = db.ref('alertas_terreno');
+let dbActivos = db.ref('activos_criticos');
 let listaHallazgosActuales = {};
 let filtroEstadoTriage = 'PENDIENTES';
 let filtroBusquedaTriage = '';
+let escuchaIniciada = false;
 
 const escaparHTML = (texto = '') =>
     String(texto || '')
@@ -19,13 +21,92 @@ const escaparHTML = (texto = '') =>
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
 
+const normalizarSeveridadParaCatastro = (textoSev = '') => {
+    const s = String(textoSev).toLowerCase();
+    if (s.includes('rojo') || s.includes('zona d') || s.includes('critico') || s.includes('crítico')) return 'Rojo';
+    if (s.includes('naranja') || s.includes('zona c') || s.includes('alerta')) return 'Naranja';
+    if (s.includes('amarillo') || s.includes('zona b') || s.includes('seguimiento')) return 'Amarillo';
+    return 'Verde';
+};
+
 const obtenerColorCriticidad = (textoSev = '') => {
     const s = String(textoSev).toLowerCase();
-    if (s.includes('rojo')) return '#ef4444';
-    if (s.includes('naranja')) return '#f97316';
-    if (s.includes('amarillo')) return '#eab308';
-    if (s.includes('verde')) return '#00e676';
+    if (s.includes('rojo') || s.includes('d')) return '#ef4444';
+    if (s.includes('naranja') || s.includes('c')) return '#f97316';
+    if (s.includes('amarillo') || s.includes('b')) return '#eab308';
+    if (s.includes('verde') || s.includes('a')) return '#00e676';
     return '#38bdf8';
+};
+
+const resolverKeyActivoCritico = async (tagBuscado) => {
+    if (!tagBuscado) return null;
+    const tagLimpio = String(tagBuscado).trim().toUpperCase();
+    const tagNormalizado = tagLimpio.replace(/\s+/g, '_');
+
+    if (window.datosGlobalesEquipos) {
+        if (window.datosGlobalesEquipos[tagNormalizado]) return tagNormalizado;
+        if (window.datosGlobalesEquipos[tagLimpio]) return tagLimpio;
+        for (const [idKey, eq] of Object.entries(window.datosGlobalesEquipos)) {
+            if (eq?.tag && eq.tag.trim().toUpperCase() === tagLimpio) return idKey;
+        }
+    }
+
+    try {
+        const snapDirecto = await dbActivos.child(tagNormalizado).once('value');
+        if (snapDirecto.exists()) return tagNormalizado;
+
+        const snapQuery = await dbActivos.orderByChild('tag').equalTo(tagBuscado).once('value');
+        if (snapQuery.exists()) {
+            return Object.keys(snapQuery.val())[0];
+        }
+    } catch (err) {
+        console.warn('[Triage] Fallo al buscar key de activo en Firebase:', err);
+    }
+
+    return tagNormalizado;
+};
+
+// ============================================================================
+// ESCUCHA PERMANENTE DEL BADGE DE TRIAGE EN EL SIDEBAR
+// ============================================================================
+export const iniciarEscuchaBadgeGlobal = () => {
+    if (escuchaIniciada) return;
+    escuchaIniciada = true;
+
+    dbTriage.on('value', (snapshot) => {
+        listaHallazgosActuales = snapshot.val() || {};
+        actualizarBadgeTriageGlobal();
+        if (document.getElementById('triage-lista-container')) {
+            renderizarListaTriage();
+        }
+    }, (err) => {
+        console.warn('[Triage] Esperando permisos para contador de alertas:', err.message);
+    });
+};
+
+const actualizarBadgeTriageGlobal = () => {
+    const entries = Object.entries(listaHallazgosActuales);
+    let pend = 0;
+    entries.forEach(([, h]) => {
+        const estadoH = h.estado || 'Pendiente';
+        if (estadoH === 'Pendiente' || estadoH === 'nuevo') pend++;
+    });
+
+    // Soporte para ambos selectores usados en app.js y el sidebar
+    const badgeSidebar = document.getElementById('badgeTriagePendientes') || 
+                         document.getElementById('badgeAlertasTerreno') || 
+                         document.querySelector('.badge-alerta');
+
+    if (badgeSidebar) {
+        badgeSidebar.textContent = String(pend);
+        if (pend > 0) {
+            badgeSidebar.style.display = 'inline-flex';
+            badgeSidebar.classList.add('pulsante');
+        } else {
+            badgeSidebar.style.display = 'none';
+            badgeSidebar.classList.remove('pulsante');
+        }
+    }
 };
 
 // ============================================================================
@@ -36,7 +117,7 @@ window.abrirVisorMultimediaInterno = (urlMedia, tipo = 'imagen') => {
     if (!modal) {
         const div = document.createElement('div');
         div.innerHTML = `
-            <div id="modal-visor-multimedia" class="modal-overlay" role="dialog" aria-modal="true" style="position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);">
+            <div id="modal-visor-multimedia" class="modal-overlay" role="dialog" aria-modal="true" style="position: fixed; inset: 0; z-index: 100000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);">
                 <div class="modal-box glass-panel" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 24px 60px rgba(0,0,0,0.8); border-radius: 14px; width: 95%; max-width: 900px; height: 85vh; display: flex; flex-direction: column; overflow: hidden;">
                     <header style="background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid rgba(255,255,255,0.1); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 10px;">
@@ -81,6 +162,8 @@ export const renderizarModuloTriage = (idContenedor = 'espacio-trabajo-dinamico'
     const contenedor = document.getElementById(idContenedor);
     if (!contenedor) return;
 
+    iniciarEscuchaBadgeGlobal();
+
     contenedor.innerHTML = `
         <section class="seccion-triage-industrial" style="padding: 1.25rem; height: 100%; overflow-y: auto; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; animation: fadeIn 0.25s ease;">
             
@@ -91,12 +174,12 @@ export const renderizarModuloTriage = (idContenedor = 'espacio-trabajo-dinamico'
                         Bandeja de Triage de Hallazgos de Terreno
                     </h2>
                     <p style="margin: 0; font-size: 0.78rem; color: #94a3b8;">
-                        Validación experta, generación de Avisos SAP y reportes ejecutivos en PDF.
+                        Validación experta CBM con actualización de Timeline del activo, Mapa 3D y Avisos SAP.
                     </p>
                 </div>
 
                 <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                    <div style="display: flex; gap: 4px; background: rgba(0,0,0,0.4); padding: 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div style="display: gap: 4px; background: rgba(0,0,0,0.4); padding: 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
                         <button type="button" id="btn-triage-pendientes" onclick="window.filtrarTriageEstado('PENDIENTES')" style="background: #f59e0b; color: #0f172a; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">
                             Pendientes / Vistos (<span id="lbl-triage-pend-count">0</span>)
                         </button>
@@ -138,36 +221,7 @@ export const renderizarModuloTriage = (idContenedor = 'espacio-trabajo-dinamico'
         </section>
     `;
 
-    escucharHallazgosTriage();
-};
-
-const escucharHallazgosTriage = () => {
-    dbTriage.on('value', (snapshot) => {
-        listaHallazgosActuales = snapshot.val() || {};
-        renderizarListaTriage();
-        actualizarBadgeTriageGlobal();
-    });
-};
-
-const actualizarBadgeTriageGlobal = () => {
-    const entries = Object.entries(listaHallazgosActuales);
-    let pend = 0;
-    entries.forEach(([, h]) => {
-        const estadoH = h.estado || 'Pendiente';
-        if (estadoH === 'Pendiente' || estadoH === 'nuevo') pend++;
-    });
-
-    const badgeSidebar = document.getElementById('badgeTriagePendientes');
-    if (badgeSidebar) {
-        if (pend > 0) {
-            badgeSidebar.textContent = String(pend);
-            badgeSidebar.style.display = 'inline-block';
-            badgeSidebar.classList.add('pulsante');
-        } else {
-            badgeSidebar.style.display = 'none';
-            badgeSidebar.classList.remove('pulsante');
-        }
-    }
+    renderizarListaTriage();
 };
 
 const renderizarListaTriage = () => {
@@ -311,7 +365,6 @@ window.filtrarTriageTexto = (txt) => {
     renderizarListaTriage();
 };
 
-// Modal de Validación con Generación de Aviso SAP y botón de Ficha WhatsApp
 window.abrirModalValidacionAnalista = async (idKey) => {
     const hallazgo = listaHallazgosActuales[idKey];
     if (!hallazgo) return;
@@ -369,7 +422,7 @@ window.abrirModalValidacionAnalista = async (idKey) => {
 
                 <div style="background: rgba(0,0,0,0.3); padding: 10px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08);">
                     <p style="margin: 0 0 4px 0; color: #38bdf8; font-weight: bold; font-size: 0.78rem;">Descripción del Reporte de Terreno:</p>
-                    <p style="margin: 0; color: #e2e8f0; white-space: pre-line; line-height: 1.4;">${escaparHTML(hallazgo.descripcion)}</p>
+                    <p style="margin: 0; color: #e2e8f0; white-space: pre-line; line-height: 1.4;">${escaparHTML(hallazgo.descripcion || hallazgo.detalle)}</p>
                 </div>
 
                 <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
@@ -387,8 +440,8 @@ window.abrirModalValidacionAnalista = async (idKey) => {
                     <div>
                         <label style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 4px;">Decisión del Analista</label>
                         <select id="select-estado-val" style="width: 100%; background: #0f172a; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 9px; border-radius: 6px; outline: none; cursor: pointer; font-weight: bold;">
-                            <option value="Validado" ${hallazgo.estado === 'Validado' ? 'selected' : ''}>✅ Validar</option>
-                            <option value="Descartado" ${hallazgo.estado === 'Descartado' ? 'selected' : ''}>❌ Descartar</option>
+                            <option value="Validado" ${hallazgo.estado === 'Validado' ? 'selected' : ''}>✅ Validar (Impacta Timeline y Mapa 3D)</option>
+                            <option value="Descartado" ${hallazgo.estado === 'Descartado' ? 'selected' : ''}>❌ Descartar (Registra en Timeline sin alterar Mapa)</option>
                             <option value="Visto" ${hallazgo.estado === 'Visto' ? 'selected' : ''}>👁️ Visto (En revisión)</option>
                         </select>
                     </div>
@@ -412,7 +465,7 @@ window.abrirModalValidacionAnalista = async (idKey) => {
 
             <footer style="padding: 12px 20px; background: rgba(0,0,0,0.4); border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0;">
                 <button type="button" id="btn-cerrar-val" style="background: transparent; color: #94a3b8; border: 1px solid rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">Cerrar</button>
-                <button type="button" id="btn-guardar-val" style="background: #f59e0b; color: #0f172a; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 800;">Guardar Validación y Aviso SAP</button>
+                <button type="button" id="btn-guardar-val" style="background: #f59e0b; color: #0f172a; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 800;">Guardar y Registrar en Timeline</button>
             </footer>
         </div>
     `;
@@ -423,34 +476,95 @@ window.abrirModalValidacionAnalista = async (idKey) => {
     overlay.querySelector('#btn-cerrar-val').onclick = cerrarModal;
 
     overlay.querySelector('#btn-guardar-val').onclick = async () => {
+        const btnGuardar = overlay.querySelector('#btn-guardar-val');
         const nuevoEstado = overlay.querySelector('#select-estado-val').value;
         const nuevaSeveridad = overlay.querySelector('#select-severidad-val').value;
         const avisoSapVal = overlay.querySelector('#input-aviso-sap-val').value.trim();
         const diagnosticoTxt = overlay.querySelector('#textarea-diag-val').value.trim();
 
+        if (btnGuardar) {
+            btnGuardar.disabled = true;
+            btnGuardar.innerHTML = 'Registrando...';
+        }
+
         try {
+            const fechaValidacion = new Date().toISOString();
+            const usuarioValidador = auth.currentUser?.email || 'Analista CBM';
+
             await dbTriage.child(idKey).update({
                 estado: nuevoEstado,
                 severidadValidada: nuevaSeveridad,
+                severidad: normalizarSeveridadParaCatastro(nuevaSeveridad),
                 avisoSap: avisoSapVal,
                 diagnostico: diagnosticoTxt,
-                analistaValidador: auth.currentUser?.email || 'Analista CBM',
-                fechaValidacion: new Date().toLocaleString()
+                analistaValidador: usuarioValidador,
+                fechaValidacion: fechaValidacion
             });
 
+            const tagEquipo = hallazgo.tag;
+            const keyActivo = await resolverKeyActivoCritico(tagEquipo);
+
+            if (keyActivo) {
+                const snapActivo = await dbActivos.child(keyActivo).once('value');
+                const dataActivo = snapActivo.val() || {};
+                const sevAnterior = dataActivo.severidad || dataActivo.estado || 'Verde';
+
+                if (nuevoEstado === 'Validado') {
+                    const sevNormalizada = normalizarSeveridadParaCatastro(nuevaSeveridad);
+                    
+                    await dbActivos.child(keyActivo).update({
+                        severidad: sevNormalizada,
+                        estado: sevNormalizada,
+                        ultimoHallazgo: diagnosticoTxt || hallazgo.descripcion || 'Hallazgo de terreno validado',
+                        avisoSapActivo: avisoSapVal || null,
+                        fechaUltimaActualizacion: fechaValidacion
+                    });
+
+                    await dbActivos.child(`${keyActivo}/timeline`).push({
+                        tipo: 'HALLAZGO_VALIDADO',
+                        titulo: `Hallazgo Validado — ${hallazgo.componente || 'General'}`,
+                        detalle: diagnosticoTxt || hallazgo.descripcion || 'Diagnóstico de terreno validado por analista.',
+                        descripcionOriginal: hallazgo.descripcion || hallazgo.detalle || '',
+                        severidadAnterior: sevAnterior,
+                        severidadNueva: sevNormalizada,
+                        avisoSap: avisoSapVal || null,
+                        componente: hallazgo.componente || 'Condición Global',
+                        autor: usuarioValidador,
+                        timestamp: fechaValidacion,
+                        evidencias: listaEvidencias,
+                        idAlertaRef: idKey
+                    });
+
+                } else if (nuevoEstado === 'Descartado') {
+                    await dbActivos.child(`${keyActivo}/timeline`).push({
+                        tipo: 'HALLAZGO_DESCARTADO',
+                        titulo: `Hallazgo Descartado — ${hallazgo.componente || 'General'}`,
+                        detalle: diagnosticoTxt || 'El hallazgo fue revisado y descartado por el analista CBM.',
+                        severidadAnterior: sevAnterior,
+                        severidadNueva: sevAnterior,
+                        componente: hallazgo.componente || 'Condición Global',
+                        autor: usuarioValidador,
+                        timestamp: fechaValidacion,
+                        evidencias: listaEvidencias,
+                        idAlertaRef: idKey
+                    });
+                }
+            }
+
             if (typeof UI !== 'undefined' && UI.mostrarToast) {
-                UI.mostrarToast(`✅ Hallazgo actualizado y sincronizado con SAP.`, 'exito');
+                UI.mostrarToast(`✅ Validación guardada y registrada en la bitácora de ${tagEquipo}.`, 'exito');
             }
             cerrarModal();
         } catch (err) {
-            console.error('Error al actualizar triage:', err);
+            console.error('Error al actualizar triage y timeline:', err);
+            if (btnGuardar) {
+                btnGuardar.disabled = false;
+                btnGuardar.innerHTML = 'Guardar y Registrar en Timeline';
+            }
         }
     };
 };
 
-// ============================================================================
-// GENERACIÓN DE FICHA GRÁFICA PARA WHATSAPP (CON GRID MULTI-IMAGEN)
-// ============================================================================
 window.generarFichaWhatsApp = async (idKey) => {
     const hallazgo = listaHallazgosActuales[idKey];
     if (!hallazgo) return;
@@ -480,7 +594,6 @@ window.generarFichaWhatsApp = async (idKey) => {
     const fechaStr = hallazgo.timestamp ? new Date(hallazgo.timestamp).toLocaleString('es-CL') : (hallazgo.fecha || 'Reciente');
     const severidadTxt = hallazgo.severidadValidada || hallazgo.severidadPreliminar || hallazgo.severidad || 'Zona C';
     const colorSev = obtenerColorCriticidad(severidadTxt);
-    
     const avisoSapFinal = avisoSapActual !== '' ? avisoSapActual : 'PENDIENTE DE ASIGNAR';
     const colorAviso = avisoSapActual !== '' ? '#00e676' : '#facc15';
 
@@ -507,7 +620,6 @@ window.generarFichaWhatsApp = async (idKey) => {
                 </div>
             `;
         } else {
-            // Cuadrícula elegante 2x2 para 3 o 4 imágenes
             contenedorEvidenciasHTML = `
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; background: #000; padding: 6px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
                     ${listaFotos.map(img => `<img src="${img}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 6px;" crossorigin="anonymous" />`).join('')}
@@ -553,7 +665,7 @@ window.generarFichaWhatsApp = async (idKey) => {
         <div style="margin-bottom: 16px;">
             <div style="font-size: 0.7rem; color: #94a3b8; font-weight: 600; margin-bottom: 4px;">DESCRIPCIÓN DEL HALLAZGO / DIAGNÓSTICO</div>
             <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; font-size: 0.85rem; color: #e2e8f0; line-height: 1.4; white-space: pre-line;">
-                ${escaparHTML(hallazgo.diagnostico || hallazgo.descripcion)}
+                ${escaparHTML(hallazgo.diagnostico || hallazgo.descripcion || hallazgo.detalle)}
             </div>
         </div>
 
@@ -599,9 +711,6 @@ window.generarFichaWhatsApp = async (idKey) => {
     }
 };
 
-// ============================================================================
-// GENERACIÓN DE REPORTE PDF (SIN ESTADO TÉCNICO Y CON KPIS COLOREADOS)
-// ============================================================================
 window.generarReportePDFTriage = async () => {
     const { jsPDF } = window.jspdf || {};
     if (!jsPDF) {
@@ -665,7 +774,6 @@ window.generarReportePDFTriage = async () => {
     const altoPagina = doc.internal.pageSize.getHeight();
     const anchoContenido = anchoPagina - (margenX * 2);
 
-    // Cabecera corporativa sin estado técnico genérico
     await dibujarCabeceraCorporativa(doc, {
         titulo: `REPORTE CONSOLIDADO DE TRIAGE — (${rangoFiltro})`,
         subtitulo: 'Planta Mina Los Colorados (CMP) | CPF Ingeniería Ltda.',
@@ -677,7 +785,6 @@ window.generarReportePDFTriage = async () => {
 
     let posY = 32;
 
-    // Panel superior con KPIs de Zonas coloreados
     doc.setFillColor(248, 250, 252);
     doc.setDrawColor(203, 213, 225);
     doc.roundedRect(anchoPagina - margenX - 95, posY, 95, 14, 1.5, 1.5, 'FD');
@@ -787,9 +894,15 @@ window.generarReportePDFTriage = async () => {
         margenX
     });
 
-    window.abrirVisorPDFInterno?.(doc, `Reporte_Triage_${rangoFiltro}.pdf`);
+    if (window.abrirVisorPDFDesdeBase64) {
+        const pdfBase64 = doc.output('datauristring');
+        window.abrirVisorPDFDesdeBase64(pdfBase64, `Reporte_Triage_${rangoFiltro}.pdf`);
+    } else {
+        doc.save(`Reporte_Triage_${rangoFiltro}.pdf`);
+    }
 };
 
 export default {
-    renderizarModuloTriage
+    renderizarModuloTriage,
+    iniciarEscuchaBadgeGlobal
 };
