@@ -1,6 +1,6 @@
 // ============================================================================
-// MÓDULO PRINCIPAL: JS/APP.JS (v2.4.0)
-// CIO PREDICTIVO 2.0 — Estándar ES6+, MapLibre 3D, Notificaciones Reactivas y Visor PDF
+// MÓDULO PRINCIPAL: JS/APP.JS (v2.4.1)
+// CIO PREDICTIVO 2.0 — Estándar ES6+, MapLibre 3D, Sincronización Offline y Visor PDF
 // ============================================================================
 
 import { auth, db } from './core/firebase-config.js';
@@ -313,7 +313,6 @@ const mostrarPlataforma = (user) => {
     document.getElementById('vista-login')?.classList.add('oculta');
     document.getElementById('vista-app')?.classList.remove('oculta');
 
-    // 1. Obtener y formatear el nombre (Ej: "francisco leiva" -> "Francisco Leiva")
     let nombreBruto = user.displayName || (user.email ? user.email.split('@')[0].replace('.', ' ') : 'Usuario');
     const nombreFormateado = nombreBruto.split(' ').map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase()).join(' ');
 
@@ -324,7 +323,6 @@ const mostrarPlataforma = (user) => {
     if (perfilNombre) perfilNombre.textContent = nombreFormateado;
     if (perfilRol) perfilRol.textContent = 'Analista CBM';
 
-    // 2. Extraer iniciales correctamente (F y L)
     if (avatarIniciales) {
         const partes = nombreFormateado.split(' ').filter(Boolean);
         let iniciales = 'US';
@@ -342,6 +340,20 @@ const mostrarPlataforma = (user) => {
 const inicializarApp = () => {
     if (appInicializada) return;
     appInicializada = true;
+
+    // Conexión con el Service Worker para Sincronización Offline (Background Sync Bridge)[cite: 9]
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', async (event) => {
+            if (event.data && event.data.accion === 'DESPACHAR_BOVEDA_OFFLINE') {
+                console.log('[PWA] Service Worker solicitó sincronizar bóveda offline...');
+                if (typeof window.sincronizarColaAlertasOffline === 'function') {
+                    await window.sincronizarColaAlertasOffline();
+                } else {
+                    document.dispatchEvent(new CustomEvent('sincronizarBovedaOffline'));
+                }
+            }
+        });
+    }
 
     inicializarBarraLateral();
 
@@ -991,7 +1003,6 @@ const dibujarPinesEnMapa = () => {
                 ${configVisual.animacion}
             `;
 
-            // Validamos que la descripción no repita exactamente el TAG
             const nombreReal = (eq.nombre && eq.nombre.trim().toUpperCase() !== (eq.tag || '').trim().toUpperCase()) 
                 ? eq.nombre 
                 : 'Activo Crítico de Planta';

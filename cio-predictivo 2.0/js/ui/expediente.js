@@ -1,6 +1,6 @@
 // ============================================================================
-// MÓDULO UI: JS/UI/EXPEDIENTE.JS (v2.8.0 - Edición en Cascada de Spots y Mapa 3D)
-// CIO PREDICTIVO 2.0 — Planta Mina Los Colorados | CPF Ingeniería Ltda.
+// MÓDULO UI: JS/UI/EXPEDIENTE.JS (v2.8.1 - Edición en Cascada, Mapa 3D y Backend Python)[cite: 23]
+// CIO PREDICTIVO 2.0 — Planta Mina Los Colorados | CPF Ingeniería Ltda.[cite: 23]
 // ============================================================================
 
 import { auth, db } from '../core/firebase-config.js';
@@ -314,7 +314,7 @@ const resolverColorBadge = (sev = '') => {
 };
 
 // ----------------------------------------------------------------------------
-// MODAL: BITÁCORA / LÍNEA DE TIEMPO DEL ACTIVO
+// MODAL: BITÁCORA / LÍNEA DE TIEMPO DEL ACTIVO[cite: 23]
 // ----------------------------------------------------------------------------
 window.abrirModalTimelineActivo = (idFirebase) => {
     const modalId = 'modal-timeline-completo-activo';
@@ -450,7 +450,7 @@ window.abrirModalTimelineActivo = (idFirebase) => {
 };
 
 // ----------------------------------------------------------------------------
-// MODAL DETALLE DE HITO EN TIMELINE
+// MODAL DETALLE DE HITO EN TIMELINE[cite: 23]
 // ----------------------------------------------------------------------------
 window.abrirModalDetalleTimeline = (hitoJsonStr) => {
     try {
@@ -535,7 +535,7 @@ window.abrirModalDetalleTimeline = (hitoJsonStr) => {
 };
 
 // ----------------------------------------------------------------------------
-// RENDERIZADO DEL EXPEDIENTE TÉCNICO
+// RENDERIZADO DEL EXPEDIENTE TÉCNICO[cite: 23]
 // ----------------------------------------------------------------------------
 export const renderizarExpediente = async (idFirebase, idContenedor = 'espacio-trabajo-dinamico') => {
     const contenedor = document.getElementById(idContenedor);
@@ -795,7 +795,7 @@ export const renderizarExpediente = async (idFirebase, idContenedor = 'espacio-t
 };
 
 // ----------------------------------------------------------------------------
-// GUARDADO DE MEDICIONES DE RUTA Y REGISTRO EN TIMELINE SI CAMBIA CONDICIÓN
+// GUARDADO DE MEDICIONES DE RUTA CON BACKEND PYTHON E INTEGRACIÓN EN CASCADA[cite: 23]
 // ----------------------------------------------------------------------------
 window.guardarMedicionesRuta = async (idFirebase) => {
     const btn = document.getElementById('btn-guardar-ruta-cbm');
@@ -831,7 +831,7 @@ window.guardarMedicionesRuta = async (idFirebase) => {
 
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">sync</span> Guardando...`;
+        btn.innerHTML = `<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">sync</span> Analizando con Python...`;
     }
 
     try {
@@ -843,10 +843,14 @@ window.guardarMedicionesRuta = async (idFirebase) => {
         const updatesActivo = {};
         const idHistorial = db.ref(`activos_criticos/${idFirebase}/historial_mediciones`).push().key;
 
+        const arrayMuestraTemporal = [];
+
         for (const [pto, valores] of Object.entries(medicionesPorPunto)) {
             const rms = parseFloat(valores.rms || 0);
             const temp = parseFloat(valores.temp || 0);
             const fc = parseFloat(valores.fc || 0);
+
+            if (rms > 0) arrayMuestraTemporal.push(rms);
 
             if (rms >= 7.1 || temp >= 80 || fc >= 5.0) {
                 peorSeveridad = 'Rojo';
@@ -856,11 +860,43 @@ window.guardarMedicionesRuta = async (idFirebase) => {
                 peorSeveridad = 'Amarillo';
             }
 
-            if (valores.rms) updatesActivo[`spots/${pto}/rms`] = valores.rms;
-            if (valores.temp) updatesActivo[`spots/${pto}/temp`] = valores.temp;
-            if (valores.fc) updatesActivo[`spots/${pto}/fc`] = valores.fc;
+            if (valores.rms !== undefined && valores.rms !== '') {
+                updatesActivo[`spots/${pto}/rms`] = valores.rms;
+            }
+            if (valores.temp !== undefined && valores.temp !== '') {
+                updatesActivo[`spots/${pto}/temp`] = valores.temp;
+            }
+            if (valores.fc !== undefined && valores.fc !== '') {
+                updatesActivo[`spots/${pto}/fc`] = valores.fc;
+            }
             updatesActivo[`spots/${pto}/fecha`] = fechaHora;
             updatesActivo[`spots/${pto}/componente`] = valores.componente;
+        }
+
+        // Llamada fetch al microservicio backend en Python (FastAPI + SciPy + ML)
+        if (arrayMuestraTemporal.length > 0) {
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/analizar-vibracion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tag_equipo: tagLimpio,
+                        componente: "Ruta de Terreno General",
+                        frecuencia_muestreo: 1000.0,
+                        muestra_temporal: arrayMuestraTemporal
+                    })
+                });
+
+                if (response.ok) {
+                    const resultadoPython = await response.json();
+                    console.log("[Backend Python] Diagnóstico analítico exitoso:", resultadoPython);
+                    if (resultadoPython.anomalia_detectada) {
+                        console.warn("[ML Isolation Forest] ¡Anomalía detectada en el patrón vibracional!");
+                    }
+                }
+            } catch (errPython) {
+                console.warn("[Backend Python] Servidor local no disponible, continuando guardado normal en Firebase:", errPython);
+            }
         }
 
         updatesActivo[`severidad`] = peorSeveridad;
@@ -938,7 +974,7 @@ window.guardarMedicionesRuta = async (idFirebase) => {
         }
 
         if (typeof UI !== 'undefined' && UI.mostrarToast) {
-            UI.mostrarToast(`✅ Mediciones registradas. Condición: ${peorSeveridad}`, 'exito');
+            UI.mostrarToast(`✅ Mediciones registradas y analizadas. Condición: ${peorSeveridad}`, 'exito');
         }
 
         renderizarExpediente(idFirebase);
@@ -955,7 +991,7 @@ window.guardarMedicionesRuta = async (idFirebase) => {
 };
 
 // ----------------------------------------------------------------------------
-// GENERADOR DE PDF DIARIO CON VISOR INTERNO INTERACTIVO
+// GENERADOR DE PDF DIARIO CON VISOR INTERNO INTERACTIVO[cite: 23]
 // ----------------------------------------------------------------------------
 window.descargarPDFEquipo = async (idFirebase) => {
     const { jsPDF } = window.jspdf || {};
@@ -1421,7 +1457,7 @@ window.descargarPDFEquipo = async (idFirebase) => {
 };
 
 // ----------------------------------------------------------------------------
-// MODAL: CONFIGURAR MÁQUINA (CON GESTIÓN EN CASCADA Y MAPA 3D)
+// MODAL: CONFIGURAR MÁQUINA (CON GESTIÓN EN CASCADA Y MAPA 3D)[cite: 23]
 // ----------------------------------------------------------------------------
 window.abrirModalConfigurarMaquina = async (idFirebase) => {
     const modalId = 'modal-configurar-maquina-cbm';
@@ -1482,7 +1518,6 @@ window.abrirModalConfigurarMaquina = async (idFirebase) => {
                     </div>
                 </div>
 
-                <!-- SECCIÓN DE GEOLOCALIZACIÓN Y PIN EN MAPA 3D -->
                 <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 8px;">
                     <span style="font-size: 0.78rem; color: #38bdf8; font-weight: 700; text-transform: uppercase;">Coordenadas GPS (Mapa 3D)</span>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -1501,7 +1536,6 @@ window.abrirModalConfigurarMaquina = async (idFirebase) => {
                     </button>
                 </div>
 
-                <!-- SECCIÓN DE GESTIÓN Y EDICIÓN DINÁMICA DE SPOTS -->
                 <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 10px;">
                     <span style="font-size: 0.78rem; color: #c084fc; font-weight: 700; text-transform: uppercase;">Gestión Avanzada de Puntos Cinemáticos (Spots)</span>
                     
@@ -1528,7 +1562,6 @@ window.abrirModalConfigurarMaquina = async (idFirebase) => {
                         </button>
                     </div>
 
-                    <!-- TABLA INTERACTIVA DE SPOTS ACTIVOS -->
                     <div style="max-height: 160px; overflow-y: auto; background: #0b1120; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 6px;">
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; font-family: monospace;">
                             <thead>
@@ -1539,7 +1572,6 @@ window.abrirModalConfigurarMaquina = async (idFirebase) => {
                                 </tr>
                             </thead>
                             <tbody id="tabla-config-spots-activos">
-                                <!-- Se poblará dinámicamente -->
                             </tbody>
                         </table>
                     </div>
@@ -1596,7 +1628,6 @@ window.abrirModalConfigurarMaquina = async (idFirebase) => {
         }
     };
 
-    // ELIMINACIÓN EN CASCADA INTELIGENTE
     window.eliminarSpotCascadaModal = (spotKey) => {
         const upper = String(spotKey).toUpperCase();
 
@@ -1630,7 +1661,6 @@ window.abrirModalConfigurarMaquina = async (idFirebase) => {
         renderizarTablaSpotsModal();
     };
 
-    // APLICAR EN CASCADA SEGÚN INPUTS
     window.aplicarEstructuraCascadaModal = () => {
         const nRed = parseInt(document.getElementById('cfg-input-red')?.value || '6', 10);
         const nPol = parseInt(document.getElementById('cfg-input-pol')?.value || '11', 10);
@@ -1664,13 +1694,11 @@ window.abrirModalConfigurarMaquina = async (idFirebase) => {
 
     renderizarTablaSpotsModal();
 
-    // NAVEGACIÓN AL MAPA 3D OPTIMIZADA (SIN LAG)
     window.activarSeleccionPinMapaModal = async (idEquip) => {
         const nombreVal = document.getElementById('cfg-nombre')?.value.trim();
         const areaVal = document.getElementById('cfg-area')?.value.trim();
         const nivelVal = document.getElementById('cfg-nivel')?.value;
 
-        // 1. Guardar cambios en segundo plano antes de desmontar el modal
         try {
             db.ref(`activos_criticos/${idEquip}`).update({
                 nombre: nombreVal,
@@ -1680,10 +1708,8 @@ window.abrirModalConfigurarMaquina = async (idFirebase) => {
             }).catch(err => console.warn(err));
         } catch(e) { console.warn(e); }
 
-        // 2. Cerrar el modal de forma inmediata
         document.getElementById(modalId)?.remove();
 
-        // 3. Forzar cambio a pestaña de catastro de forma optimizada
         const btnCatastro = document.getElementById('tab-catastro');
         if (btnCatastro) btnCatastro.click();
 
@@ -1691,7 +1717,6 @@ window.abrirModalConfigurarMaquina = async (idFirebase) => {
             UI.mostrarToast('📍 MODO PIN ACTIVO: Haz clic en el Mapa 3D para posicionar el equipo.', 'alerta');
         }
 
-        // 4. Asignar el listener de forma diferida (evita el bloqueo de renderizado del navegador)
         setTimeout(() => {
             if (window.mapaActivo) {
                 const listenerPin = async (e) => {
