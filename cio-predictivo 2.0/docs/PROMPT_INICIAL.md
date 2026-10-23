@@ -19,6 +19,7 @@ Plataforma web industrial de monitoreo de condición (CBM) y gestión de activos
 - **Expedientes y Puntos Cinemáticos:** Gestión modular de componentes con eliminación en cascada de spots y cálculo dinámico de RMS, temperatura y Factor de Cresta (`FC+`).
 - **Analítica Híbrida PWA ⇄ Python:** Indicador de estado en línea/offline del servidor FastAPI, análisis automatizado de rutas de terreno con manejo de excepciones y visualización de diagnósticos expertos.
 - **Gestión de Alertas y Reportes:** Bandeja reactiva con soporte para evidencias multimedia, bitácora cruzada PMS/CBM con trazabilidad de avisos SAP PM y generadores de informes PDF diarios/espectrales en alta resolución (jsPDF).
+- **Dashboard CBM y Control Espectral:** Reubicación estratégica de paneles analíticos e interfaz optimizada para mostrar exclusivamente el nombre general del equipo en las tablas de seguimiento de avisos SAP, manteniendo la limpieza visual para el operador[cite: 4].
 
 ## 4. Siguientes Pasos y Roadmap de Futuras Mejoras (Inspirado en Código Abierto / Industrial Open Source)
 1. **Modo Offline PWA Avanzado:** Cola de sincronización local basada en IndexedDB con reordenamiento por lotes para asegurar la continuidad operacional completa en zonas de faena sin conectividad de red.
