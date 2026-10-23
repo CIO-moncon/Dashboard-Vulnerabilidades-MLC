@@ -1,6 +1,6 @@
 // ============================================================================
-// MÓDULO UI: JS/UI/EXPEDIENTE.JS (v2.8.1 - Edición en Cascada, Mapa 3D y Backend Python)[cite: 23]
-// CIO PREDICTIVO 2.0 — Planta Mina Los Colorados | CPF Ingeniería Ltda.[cite: 23]
+// MÓDULO UI: JS/UI/EXPEDIENTE.JS (v2.9.1 - Resiliencia Offline y Conectividad Python)
+// CIO PREDICTIVO 2.0 — Planta Mina Los Colorados | CPF Ingeniería Ltda.
 // ============================================================================
 
 import { auth, db } from '../core/firebase-config.js';
@@ -314,7 +314,44 @@ const resolverColorBadge = (sev = '') => {
 };
 
 // ----------------------------------------------------------------------------
-// MODAL: BITÁCORA / LÍNEA DE TIEMPO DEL ACTIVO[cite: 23]
+// VERIFICACIÓN DE ESTADO DEL BACKEND PYTHON (FASTAPI)
+// ----------------------------------------------------------------------------
+const verificarEstadoBackendPython = async () => {
+    const indicadorEl = document.getElementById('estado-backend-python');
+    if (!indicadorEl) return;
+
+    try {
+        const controlador = new AbortController();
+        const timeoutId = setTimeout(() => controlador.abort(), 1500);
+
+        const response = await fetch('http://127.0.0.1:8000/', { 
+            method: 'GET',
+            signal: controlador.signal 
+        });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+            indicadorEl.innerHTML = `
+                <span style="display: inline-block; width: 8px; height: 8px; background: #00e676; border-radius: 50%; box-shadow: 0 0 8px #00e676; margin-right: 5px;"></span>
+                <span style="color: #00e676; font-size: 0.72rem; font-weight: 700;">Backend Python: En Línea (SciPy + ML)</span>
+            `;
+            return true;
+        } else {
+            throw new Error("Respuesta no OK");
+        }
+    } catch (e) {
+        indicadorEl.innerHTML = `
+            <span style="display: inline-block; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 8px #ef4444; margin-right: 5px;"></span>
+            <span style="color: #f87171; font-size: 0.72rem; font-weight: 700;">Backend Python: Offline (Modo Local Estándar)</span>
+        `;
+        return false;
+    }
+};
+
+setInterval(verificarEstadoBackendPython, 10000);
+
+// ----------------------------------------------------------------------------
+// MODAL: BITÁCORA / LÍNEA DE TIEMPO DEL ACTIVO
 // ----------------------------------------------------------------------------
 window.abrirModalTimelineActivo = (idFirebase) => {
     const modalId = 'modal-timeline-completo-activo';
@@ -450,7 +487,7 @@ window.abrirModalTimelineActivo = (idFirebase) => {
 };
 
 // ----------------------------------------------------------------------------
-// MODAL DETALLE DE HITO EN TIMELINE[cite: 23]
+// MODAL DETALLE DE HITO EN TIMELINE
 // ----------------------------------------------------------------------------
 window.abrirModalDetalleTimeline = (hitoJsonStr) => {
     try {
@@ -535,7 +572,7 @@ window.abrirModalDetalleTimeline = (hitoJsonStr) => {
 };
 
 // ----------------------------------------------------------------------------
-// RENDERIZADO DEL EXPEDIENTE TÉCNICO[cite: 23]
+// RENDERIZADO DEL EXPEDIENTE TÉCNICO
 // ----------------------------------------------------------------------------
 export const renderizarExpediente = async (idFirebase, idContenedor = 'espacio-trabajo-dinamico') => {
     const contenedor = document.getElementById(idContenedor);
@@ -620,6 +657,10 @@ export const renderizarExpediente = async (idFirebase, idContenedor = 'espacio-t
                             <span style="background: rgba(0,0,0,0.5); color: ${colorSevActual}; border: 1px solid ${colorSevActual}; font-size: 0.72rem; font-weight: 800; padding: 2px 8px; border-radius: 4px;">
                                 Condición: ${sevActual.toUpperCase()}
                             </span>
+                            <div id="estado-backend-python" style="display: inline-flex; align-items: center; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);">
+                                <span style="display: inline-block; width: 8px; height: 8px; background: #facc15; border-radius: 50%; margin-right: 5px;"></span>
+                                <span style="color: #facc15; font-size: 0.72rem;">Verificando Python...</span>
+                            </div>
                         </div>
                         <p style="margin: 3px 0 0 0; font-size: 0.8rem; color: var(--text-muted, #94a3b8);">
                             ${nombre} | <span style="color: #38bdf8; font-weight: 600;">${area}</span>
@@ -785,6 +826,8 @@ export const renderizarExpediente = async (idFirebase, idContenedor = 'espacio-t
         </article>
     `;
 
+    verificarEstadoBackendPython();
+
     const tbody = document.getElementById('tabla-spots-body');
     if (tbody) {
         tbody.addEventListener('input', (e) => {
@@ -795,7 +838,7 @@ export const renderizarExpediente = async (idFirebase, idContenedor = 'espacio-t
 };
 
 // ----------------------------------------------------------------------------
-// GUARDADO DE MEDICIONES DE RUTA CON BACKEND PYTHON E INTEGRACIÓN EN CASCADA[cite: 23]
+// GUARDADO DE MEDICIONES DE RUTA CON BACKEND PYTHON E INTEGRACIÓN RESILIENTE
 // ----------------------------------------------------------------------------
 window.guardarMedicionesRuta = async (idFirebase) => {
     const btn = document.getElementById('btn-guardar-ruta-cbm');
@@ -831,7 +874,7 @@ window.guardarMedicionesRuta = async (idFirebase) => {
 
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">sync</span> Analizando con Python...`;
+        btn.innerHTML = `<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">sync</span> Guardando y Analizando...`;
     }
 
     try {
@@ -873,35 +916,59 @@ window.guardarMedicionesRuta = async (idFirebase) => {
             updatesActivo[`spots/${pto}/componente`] = valores.componente;
         }
 
-        // Llamada fetch al microservicio backend en Python (FastAPI + SciPy + ML)
-        if (arrayMuestraTemporal.length > 0) {
+        let analiticaPythonDatos = null;
+
+        // Verificamos conectividad rápida antes de lanzar la petición pesada
+        const pythonEnLinea = await verificarEstadoBackendPython();
+
+        if (pythonEnLinea && arrayMuestraTemporal.length > 0) {
             try {
-                const response = await fetch('http://localhost:8000/api/v1/analizar-vibracion', {
+                const controlador = new AbortController();
+                const timeoutId = setTimeout(() => controlador.abort(), 3500);
+
+                const response = await fetch('http://127.0.0.1:8000/api/analizar-vibracion', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         tag_equipo: tagLimpio,
-                        componente: "Ruta de Terreno General",
-                        frecuencia_muestreo: 1000.0,
-                        muestra_temporal: arrayMuestraTemporal
-                    })
+                        amplitudes: arrayMuestraTemporal,
+                        frecuencia_muestreo: 1000.0
+                    }),
+                    signal: controlador.signal
                 });
+                clearTimeout(timeoutId);
 
                 if (response.ok) {
                     const resultadoPython = await response.json();
-                    console.log("[Backend Python] Diagnóstico analítico exitoso:", resultadoPython);
-                    if (resultadoPython.anomalia_detectada) {
-                        console.warn("[ML Isolation Forest] ¡Anomalía detectada en el patrón vibracional!");
+                    const resAnalisis = resultadoPython.resultado_analisis;
+                    
+                    analiticaPythonDatos = {
+                        rms_mm_s: resAnalisis.rms_mm_s,
+                        factor_cresta: resAnalisis.factor_cresta,
+                        pico_maximo: resAnalisis.pico_maximo,
+                        evaluacion_iso: resAnalisis.evaluacion_iso,
+                        anomalia_ml: resAnalisis.anomalia_ml,
+                        recomendacion_mantenimiento: resAnalisis.recomendacion_mantenimiento,
+                        picos_espectrales: resAnalisis.picos_espectrales_dominantes
+                    };
+                    
+                    if (typeof UI !== 'undefined' && UI.mostrarToast) {
+                        const mensajeToast = `🐍 ${resAnalisis.evaluacion_iso} | RMS: ${resAnalisis.rms_mm_s} mm/s\n💡 ${resAnalisis.recomendacion_mantenimiento}`;
+                        UI.mostrarToast(mensajeToast, resAnalisis.evaluacion_iso.includes('Crítico') ? 'error' : 'exito');
                     }
                 }
             } catch (errPython) {
-                console.warn("[Backend Python] Servidor local no disponible, continuando guardado normal en Firebase:", errPython);
+                console.warn("[Backend Python] Petición omitida por resiliencia offline:", errPython);
             }
         }
 
         updatesActivo[`severidad`] = peorSeveridad;
         updatesActivo[`estado`] = peorSeveridad;
         updatesActivo[`ultimaInspeccion`] = fechaHora;
+        
+        if (analiticaPythonDatos) {
+            updatesActivo[`analitica_python`] = analiticaPythonDatos;
+        }
 
         updatesActivo[`historial_mediciones/${idHistorial}`] = {
             id: idHistorial,
@@ -909,7 +976,8 @@ window.guardarMedicionesRuta = async (idFirebase) => {
             fecha: fechaHora,
             usuario: auth.currentUser?.email || 'Inspector Terreno',
             severidadGlobal: peorSeveridad,
-            puntos: medicionesPorPunto
+            puntos: medicionesPorPunto,
+            analitica_python: analiticaPythonDatos || { estado: "Offline / Modo Local" }
         };
 
         if (peorSeveridad !== sevAnterior || peorSeveridad === 'Rojo' || peorSeveridad === 'Naranja') {
@@ -974,14 +1042,14 @@ window.guardarMedicionesRuta = async (idFirebase) => {
         }
 
         if (typeof UI !== 'undefined' && UI.mostrarToast) {
-            UI.mostrarToast(`✅ Mediciones registradas y analizadas. Condición: ${peorSeveridad}`, 'exito');
+            UI.mostrarToast(`✅ Mediciones registradas con éxito. Condición: ${peorSeveridad}`, 'exito');
         }
 
         renderizarExpediente(idFirebase);
     } catch (err) {
         console.error('[Expediente] Error guardando historial:', err);
         if (typeof UI !== 'undefined' && UI.mostrarToast) {
-            UI.mostrarToast('Error de conexión al guardar el historial.', 'error');
+            UI.mostrarToast('Error al guardar el historial en Firebase.', 'error');
         }
         if (btn) {
             btn.disabled = false;
@@ -991,7 +1059,7 @@ window.guardarMedicionesRuta = async (idFirebase) => {
 };
 
 // ----------------------------------------------------------------------------
-// GENERADOR DE PDF DIARIO CON VISOR INTERNO INTERACTIVO[cite: 23]
+// GENERADOR DE PDF DIARIO CON VISOR INTERNO INTERACTIVO Y ANÁLISIS EXPERTO
 // ----------------------------------------------------------------------------
 window.descargarPDFEquipo = async (idFirebase) => {
     const { jsPDF } = window.jspdf || {};
@@ -1266,7 +1334,19 @@ window.descargarPDFEquipo = async (idFirebase) => {
     const diagnosticos = [];
     let hayCriticoOAlerta = false;
 
-    if (spotsValidos.length === 0) {
+    const analiticaPython = eq.analitica_python || {};
+    if (analiticaPython.evaluacion_iso && analiticaPython.evaluacion_iso !== "No disponible / Offline") {
+        diagnosticos.push({
+            titulo: `ANÁLISIS EXPERTO — ${analiticaPython.evaluacion_iso.toUpperCase()}`,
+            detalle: `RMS Global: ${analiticaPython.rms_mm_s} mm/s | Factor de Cresta: ${analiticaPython.factor_cresta} | Pico Máx: ${analiticaPython.pico_maximo} mm/s\nAnomalía ML (Isolation Forest): ${analiticaPython.anomalia_ml ? 'DETECTADA (Desvío Anómalo)' : 'Normal'}\nRecomendación Técnica: ${analiticaPython.recomendacion_mantenimiento}`,
+            color: analiticaPython.evaluacion_iso.includes('Crítico') ? [185, 28, 28] : [2, 132, 199]
+        });
+        if (analiticaPython.evaluacion_iso.includes('Crítico') || analiticaPython.evaluacion_iso.includes('Alerta')) {
+            hayCriticoOAlerta = true;
+        }
+    }
+
+    if (spotsValidos.length === 0 && !analiticaPython.evaluacion_iso) {
         diagnosticos.push({
             titulo: 'SIN MEDICIONES EN LA JORNADA',
             detalle: `No se ingresaron lecturas en la fecha de hoy (${fechaImpresion}). Este reporte refleja únicamente las actividades ejecutadas en la fecha de emisión del documento.`,
@@ -1457,7 +1537,7 @@ window.descargarPDFEquipo = async (idFirebase) => {
 };
 
 // ----------------------------------------------------------------------------
-// MODAL: CONFIGURAR MÁQUINA (CON GESTIÓN EN CASCADA Y MAPA 3D)[cite: 23]
+// MODAL: CONFIGURAR MÁQUINA (CON GESTIÓN EN CASCADA Y MAPA 3D)
 // ----------------------------------------------------------------------------
 window.abrirModalConfigurarMaquina = async (idFirebase) => {
     const modalId = 'modal-configurar-maquina-cbm';
