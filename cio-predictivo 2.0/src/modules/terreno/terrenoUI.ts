@@ -1,22 +1,19 @@
 import { 
   ActivoTerreno, 
   AlertaTerrenoPayload, 
+  EvidenciaAlerta,
   transmitirAlertaTerreno, 
   guardarCatastroLocal, 
   cargarCatastroLocal,
   actualizarBadgeConexionUI 
 } from './terrenoCore';
 import { evaluarISO20816 } from '../../core/domain/evaluadorIso';
+import { masterTemplateRegistry } from '../../core/domain/plantillas';
 import { AuthService } from '../../core/auth/authService';
 import { TenantConfig } from '../../core/types/tenant.types';
 
 declare const L: any;
 declare const Fuse: any;
-
-interface EvidenciaMedia {
-  tipo: 'imagen' | 'audio';
-  data: string;
-}
 
 interface FallaConfig {
   frase: string;
@@ -51,7 +48,7 @@ const HALLAZGOS_POR_TIPO: Readonly<Record<string, readonly FallaConfig[]>> = Obj
 export class TerrenoUIController {
   private catalogoGlobal: ActivoTerreno[] = [];
   private equipoSeleccionado: ActivoTerreno | null = null;
-  private arregloEvidencias: EvidenciaMedia[] = [];
+  private arregloEvidencias: EvidenciaAlerta[] = [];
   private chipsSeleccionados: string[] = [];
   private mapaPWA: any = null;
   private capaMarcadores: any = null;
@@ -153,7 +150,22 @@ export class TerrenoUIController {
 
   public onEquipoCambiado(tag: string): void {
     this.equipoSeleccionado = this.catalogoGlobal.find((e) => e.tag === tag) ?? null;
-    this.poblarPuntosCinematicos(this.equipoSeleccionado?.components ?? []);
+    
+    // Si no tiene componentes cargados, resolver cinemática estándar con MasterTemplateRegistry
+    let componentes = this.equipoSeleccionado?.components ?? [];
+    if (componentes.length === 0) {
+      const template = masterTemplateRegistry.resolverEstructura(tag);
+      if (template) {
+        componentes = template.nodos.flatMap((nodo) => 
+          nodo.spots.map((spot) => ({
+            id: spot,
+            nombre: `${nodo.nombre} - ${spot}`,
+            tipo: nodo.id
+          }))
+        );
+      }
+    }
+    this.poblarPuntosCinematicos(componentes);
   }
 
   private poblarPuntosCinematicos(componentsList: any[]): void {
@@ -164,7 +176,7 @@ export class TerrenoUIController {
 
     if (componentsList.length > 0) {
       optionsHTML += componentsList.map((comp, idx) => {
-        const puntoId = typeof comp === 'string' ? comp : (comp.punto || comp.tag || `P${idx + 1}`);
+        const puntoId = typeof comp === 'string' ? comp : (comp.id || comp.punto || comp.tag || `P${idx + 1}`);
         const nombre = typeof comp === 'string' ? comp : (comp.nombre || comp.componente || puntoId);
         return `<option value="${this.escaparHTML(nombre)}">⚙️ [${this.escaparHTML(puntoId)}] ${this.escaparHTML(nombre)}</option>`;
       }).join('');
@@ -178,8 +190,8 @@ export class TerrenoUIController {
     const lower = spotName.toLowerCase();
     let tipo = 'general';
     if (lower.includes('motor')) tipo = 'motor';
-    else if (lower.includes('reductor') || lower.includes('transmisi')) tipo = 'reductor';
-    else if (lower.includes('polea') || lower.includes('correa')) tipo = 'polea';
+    else if (lower.includes('reductor') || lower.includes('transmisi') || lower.includes('g1')) tipo = 'reductor';
+    else if (lower.includes('polea') || lower.includes('correa') || lower.includes('pl')) tipo = 'polea';
 
     const fallas = HALLAZGOS_POR_TIPO[tipo] ?? HALLAZGOS_POR_TIPO.general;
     const contenedor = document.getElementById('contenedor-chips-dinamicos');
@@ -197,7 +209,7 @@ export class TerrenoUIController {
                 data-seleccionado="false"
                 data-frase="${this.escaparHTML(falla.frase)}"
                 onclick="window.toggleChip(this, '${this.escaparHTML(falla.frase)}')" 
-                style="background: rgba(56, 189, 248, 0.1); color: var(--primary-blue, #38bdf8); border: 1px solid rgba(56, 189, 248, 0.3); padding: 8px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease;">
+                style="background: var(--primary-bg-translucent, rgba(56, 189, 248, 0.1)); color: var(--primary-color, #38bdf8); border: 1px solid var(--primary-border-translucent, rgba(56, 189, 248, 0.3)); padding: 8px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease;">
             ${this.escaparHTML(falla.label)}
         </button>
       `).join('');
@@ -210,15 +222,15 @@ export class TerrenoUIController {
     if (estaActivo) {
       chipEl.setAttribute('data-seleccionado', 'false');
       chipEl.setAttribute('aria-pressed', 'false');
-      chipEl.style.background = 'rgba(56, 189, 248, 0.1)';
-      chipEl.style.borderColor = 'rgba(56, 189, 248, 0.3)';
-      chipEl.style.color = 'var(--primary-blue, #38bdf8)';
+      chipEl.style.background = 'var(--primary-bg-translucent, rgba(56, 189, 248, 0.1))';
+      chipEl.style.borderColor = 'var(--primary-border-translucent, rgba(56, 189, 248, 0.3))';
+      chipEl.style.color = 'var(--primary-color, #38bdf8)';
       this.chipsSeleccionados = this.chipsSeleccionados.filter((c) => c !== fraseCompleta);
     } else {
       chipEl.setAttribute('data-seleccionado', 'true');
       chipEl.setAttribute('aria-pressed', 'true');
       chipEl.style.background = 'var(--primary-hover, #0284c7)';
-      chipEl.style.borderColor = 'var(--primary-blue, #38bdf8)';
+      chipEl.style.borderColor = 'var(--primary-color, #38bdf8)';
       chipEl.style.color = '#ffffff';
       this.chipsSeleccionados.push(fraseCompleta);
     }
@@ -269,7 +281,7 @@ export class TerrenoUIController {
     const SpeechRecognition = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      alert('Este navegador no posee soporte para dictado por voz.');
+      alert('Este dispositivo no posee soporte para dictado por voz.');
       return;
     }
 
@@ -277,6 +289,7 @@ export class TerrenoUIController {
       const rec = new SpeechRecognition();
       rec.lang = 'es-CL';
       rec.onstart = () => this.mostrarNotificacion('🎙️ Escuchando dictado...');
+      rec.onerror = () => this.mostrarNotificacion('⚠️ Micrófono bloqueado o sin audio.');
       rec.onresult = (e: any) => {
         if (cajaTexto) {
           cajaTexto.value = `${cajaTexto.value} ${e.results[0][0].transcript}`.trim();
@@ -297,7 +310,11 @@ export class TerrenoUIController {
       if (file.type.startsWith('image/')) {
         try {
           const dataUrl = await this.comprimirFoto(file);
-          this.arregloEvidencias.push({ tipo: 'imagen', data: dataUrl });
+          this.arregloEvidencias.push({
+            tipo: 'IMAGEN_BASE64',
+            data: dataUrl,
+            metadata: { nombreOriginal: file.name, tamano: file.size }
+          });
         } catch (err) {
           console.error('[TerrenoUI] Fallo compresión:', err);
         }
@@ -397,6 +414,16 @@ export class TerrenoUIController {
       return;
     }
 
+    // Si rmsInput no fue provisto como argumento, leer desde el campo en el DOM
+    let rmsValor = rmsInput;
+    if (rmsValor === undefined) {
+      const inputRmsDOM = document.getElementById('fieldRms') as HTMLInputElement | null;
+      if (inputRmsDOM && inputRmsDOM.value !== '') {
+        const parsed = Number.parseFloat(inputRmsDOM.value);
+        if (!isNaN(parsed)) rmsValor = parsed;
+      }
+    }
+
     const spotFinal = (document.getElementById('fieldSpot') as HTMLSelectElement)?.value ?? 'Condición Global';
     const sevColor = (document.getElementById('fieldSev') as HTMLInputElement)?.value ?? 'Rojo';
     const notasManuales = (document.getElementById('fieldDetalle') as HTMLTextAreaElement)?.value.trim() ?? '';
@@ -410,8 +437,10 @@ export class TerrenoUIController {
       textoFinal += `📝 Notas: ${notasManuales}`;
     }
 
-    const evaluacionIso = rmsInput !== undefined ? evaluarISO20816(rmsInput, 'grupo1', 'rigido') : null;
-    const zonaIsoFinal = evaluacionIso ? evaluacionIso.zona : (sevColor === 'Rojo' ? 'D' : sevColor === 'Naranja' ? 'C' : 'B');
+    const evaluacionIso = rmsValor !== undefined ? evaluarISO20816(rmsValor, 'grupo1', 'rigido') : null;
+    const zonaIsoFinal = evaluacionIso && evaluacionIso.zona !== 'S/D' 
+      ? evaluacionIso.zona 
+      : (sevColor === 'Rojo' ? 'D' : sevColor === 'Naranja' ? 'C' : 'B');
 
     const sesion = AuthService.getSesion();
     const inspectorNombre = sesion?.nombre ?? 'Inspector de Terreno';
@@ -423,7 +452,7 @@ export class TerrenoUIController {
       componente: spotFinal,
       severidad: sevColor,
       severidadIso: `Zona ${zonaIsoFinal}`,
-      rmsLectura: rmsInput,
+      rmsLectura: rmsValor,
       detalle: textoFinal,
       descripcion: textoFinal,
       evidencias: this.arregloEvidencias,
@@ -463,6 +492,8 @@ export class TerrenoUIController {
     if (fieldDetalle) fieldDetalle.value = '';
     const fieldTagSelect = document.getElementById('fieldTagSelect') as HTMLSelectElement | null;
     if (fieldTagSelect) fieldTagSelect.value = '';
+    const fieldRms = document.getElementById('fieldRms') as HTMLInputElement | null;
+    if (fieldRms) fieldRms.value = '';
     const inputBuscador = document.getElementById('buscador-fuse-local') as HTMLInputElement | null;
     if (inputBuscador) inputBuscador.value = '';
     this.renderizarGaleria();
@@ -483,7 +514,7 @@ export class TerrenoUIController {
 
     const btnNav = document.getElementById(`nav-btn-${vista}`);
     if (btnNav) {
-      btnNav.style.color = 'var(--primary-blue, #38bdf8)';
+      btnNav.style.color = 'var(--primary-color, var(--primary-blue, #38bdf8))';
       btnNav.setAttribute('aria-pressed', 'true');
     }
 
@@ -557,7 +588,9 @@ export class TerrenoUIController {
   public centrarEnMiUbicacion(): void {
     if (!this.mapaPWA) return;
 
+    this.mostrarNotificacion('📡 Localizando señal GPS...');
     this.mapaPWA.locate({ setView: true, maxZoom: 17 });
+    
     this.mapaPWA.once('locationfound', (e: any) => {
       if (this.marcadorGPS) {
         this.mapaPWA.removeLayer(this.marcadorGPS);
@@ -568,6 +601,11 @@ export class TerrenoUIController {
         iconSize: [16, 16]
       });
       this.marcadorGPS = L.marker(e.latlng, { icon: iconoGPS }).addTo(this.mapaPWA);
+      this.mostrarNotificacion('📍 Ubicación GPS fijada.');
+    });
+
+    this.mapaPWA.once('locationerror', () => {
+      this.mostrarNotificacion('⚠️ No se pudo obtener la posición GPS.');
     });
   }
 

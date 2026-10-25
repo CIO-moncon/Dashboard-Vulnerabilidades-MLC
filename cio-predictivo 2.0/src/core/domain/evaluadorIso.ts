@@ -3,9 +3,9 @@ export type SoporteIso = 'rigido' | 'flexible';
 export type ZonaIsoId = 'A' | 'B' | 'C' | 'D' | 'SIN_DATOS';
 
 export interface IsoLimites {
-  readonly b: number;
-  readonly c: number;
-  readonly d: number;
+  readonly b: number; // Límite Zona A -> B
+  readonly c: number; // Límite Zona B -> C
+  readonly d: number; // Límite Zona C -> D
 }
 
 export interface IsoZonaDef {
@@ -88,7 +88,7 @@ export const evaluarISO20816 = (
   }
 
   const claveNormativa: `${GrupoIso}_${SoporteIso}` = `${grupo}_${soporte}`;
-  const limites = MATRIZ_LIMITES_ISO[claveNormativa] ?? MATRIZ_LIMITES_ISO['grupo1_rigido'];
+  const limites = MATRIZ_LIMITES_ISO[claveNormativa] ?? MATRIZ_LIMITES_ISO.grupo1_rigido;
 
   let zonaClave: ZonaIsoId = 'D';
   if (valorNumerico <= limites.b) {
@@ -115,28 +115,32 @@ export const calcularSaludComponente = (
     return { rmsMax: 0, ...ZONAS_ISO.SIN_DATOS, rmsEvaluado: 0 };
   }
 
-  let rmsMax = 0;
-  let tieneLecturasValidas = false;
+  let rmsMax = -1;
 
   for (let i = 0, len = valoresRms.length; i < len; i++) {
     const item = valoresRms[i];
-    let val = 0;
+    if (item === null || item === undefined) continue;
 
-    if (typeof item === 'object' && item !== null) {
-      val = Number.parseFloat(String(item.valor ?? item.rms ?? 0));
-    } else if (typeof item === 'number' || typeof item === 'string') {
-      val = Number.parseFloat(String(item));
+    let rawVal: number | string | undefined;
+
+    if (typeof item === 'object') {
+      rawVal = item.valor ?? item.rms;
+    } else {
+      rawVal = item;
     }
 
-    if (Number.isFinite(val)) {
-      tieneLecturasValidas = true;
+    if (rawVal === null || rawVal === undefined || rawVal === '') continue;
+
+    const val = typeof rawVal === 'number' ? rawVal : Number.parseFloat(String(rawVal));
+
+    if (Number.isFinite(val) && val >= 0) {
       if (val > rmsMax) {
         rmsMax = val;
       }
     }
   }
 
-  if (!tieneLecturasValidas) {
+  if (rmsMax < 0) {
     return { rmsMax: 0, ...ZONAS_ISO.SIN_DATOS, rmsEvaluado: 0 };
   }
 

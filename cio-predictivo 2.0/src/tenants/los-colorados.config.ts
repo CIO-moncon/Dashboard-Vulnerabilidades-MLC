@@ -29,6 +29,7 @@ export const LosColoradosTenantConfig: TenantConfig = {
     analisisFFTAvanzado: true,
     integracionSapPm: true,
     modoOfflineEstricto: true,
-    exportacionPdfEjecutivo: true
+    exportacionPdfEjecutivo: true,
+    gemelo3D: true
   }
 };

@@ -16,6 +16,7 @@ export interface TenantThemeTokens {
   bgDark?: string;
   bgDarkDeep?: string;
   bgCard?: string;
+  fontFamily?: string;
 }
 
 export interface GeoBoundingBox {
@@ -32,6 +33,7 @@ export interface TenantFeatureFlags {
   integracionSapPm: boolean;
   modoOfflineEstricto: boolean;
   exportacionPdfEjecutivo: boolean;
+  gemelo3D: boolean;
 }
 
 export interface TenantConfig {

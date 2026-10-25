@@ -10,17 +10,17 @@
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" href="./assets/img/logo-cpf.png" type="image/png">
     <link rel="apple-touch-icon" href="./assets/img/logo-cpf.png">
-    <meta name="theme-color" content="#030712">
+    <meta name="theme-color" content="#0E1B1F">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <!-- Tipografías e Iconos -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
     
-    <!-- Hojas de Estilo en Carpeta CSS -->
+    <!-- Hojas de Estilo -->
     <link rel="stylesheet" href="./css/variables.css">
     <link rel="stylesheet" href="./css/main.css">
 
@@ -29,20 +29,19 @@
     <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.basic.min.js"></script>
 
-    <!-- Google Firebase Compat (v8.10.1) -->
-    <script defer src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script defer src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script defer src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-
     <style>
         :root {
             --app-bar-h: 60px;
             --bottom-nav-h: 60px;
+            --primary-color: #38bdf8;
+            --primary-hover: #0284c7;
+            --bg-dark: #0E1B1F;
+            --bg-card: #16282D;
         }
 
         body {
-            background-color: var(--bg-dark, #090a0f);
-            color: var(--text-main, #f8fafc);
+            background-color: var(--bg-dark, #0E1B1F);
+            color: var(--text-main, #f4f6f5);
             height: 100vh;
             height: 100dvh;
             overflow: hidden;
@@ -58,7 +57,7 @@
             height: calc(100dvh - var(--app-bar-h) - var(--bottom-nav-h));
             overflow-y: auto;
             padding: clamp(12px, 3vw, 18px);
-            padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 12px));
+            padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 14px));
             box-sizing: border-box;
             contain: content;
         }
@@ -90,7 +89,7 @@
         .campo-formulario select,
         .campo-formulario input,
         .campo-formulario textarea {
-            background: #1a2234 !important;
+            background: var(--bg-card, #16282D) !important;
             border: 1px solid rgba(255, 255, 255, 0.15) !important;
             color: #ffffff !important;
             padding: 12px 14px;
@@ -99,6 +98,12 @@
             outline: none;
             box-sizing: border-box;
             min-height: 44px;
+        }
+
+        .campo-formulario select:focus,
+        .campo-formulario input:focus,
+        .campo-formulario textarea:focus {
+            border-color: var(--primary-color, #38bdf8) !important;
         }
 
         .grid-criticidad {
@@ -127,8 +132,8 @@
         #sev_Rojo     { background: rgba(239, 68, 68, 0.25);  color: #f87171; border-color: #ef4444; border-width: 2px; }
 
         .bottom-nav-pwa {
-            background: rgba(15, 23, 42, 0.96);
-            border-top: 1px solid var(--border-glass, rgba(255, 255, 255, 0.12));
+            background: rgba(14, 27, 31, 0.96);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
             height: var(--bottom-nav-h);
             display: flex;
             justify-content: space-around;
@@ -160,7 +165,7 @@
         }
 
         .bottom-nav-pwa .nav-item.active {
-            color: var(--primary-blue, #38bdf8);
+            color: var(--primary-color, #38bdf8);
         }
     </style>
 </head>
@@ -176,12 +181,12 @@
     </aside>
 
     <!-- HEADER DE TERRENO -->
-    <header style="background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-glass, rgba(255, 255, 255, 0.1)); padding: 0 16px; display: flex; justify-content: space-between; align-items: center; height: var(--app-bar-h); z-index: 100; backdrop-filter: blur(8px);">
+    <header style="background: rgba(14, 27, 31, 0.95); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 0 16px; display: flex; justify-content: space-between; align-items: center; height: var(--app-bar-h); z-index: 100; backdrop-filter: blur(8px);">
         <div style="display: flex; align-items: center; gap: 10px;">
             <div style="background: #ffffff; padding: 3px 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; height: 30px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);">
                 <img src="./assets/img/logo-cpf.png" alt="Logotipo CPF Ingeniería" style="height: 20px; width: auto; object-fit: contain;">
             </div>
-            <h1 style="font-size: 1rem; margin: 0; color: #ffffff; font-weight: 700;">
+            <h1 style="font-size: 1rem; margin: 0; color: #ffffff; font-weight: 700; font-family: 'Space Grotesk', sans-serif;">
                 CIO Terreno — MLC
             </h1>
         </div>
@@ -197,16 +202,16 @@
 
             <button type="button" 
                     id="badgeConexion" 
-                    onclick="window.sincronizarBovedaOffline()" 
+                    onclick="window.forzarSincronizacion()" 
                     aria-label="Estado de conexión. Clic para sincronizar"
                     style="background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.4); padding: 5px 10px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
                 🟢 ONLINE
             </button>
             
             <button type="button" 
-                    onclick="window.salirATelefonoOSuperior()" 
+                    onclick="window.reiniciarFormulario()" 
                     aria-label="Reiniciar formulario"
-                    style="background: rgba(255, 255, 255, 0.08); color: var(--text-main, #ffffff); border: 1px solid var(--border-glass, rgba(255, 255, 255, 0.15)); padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                    style="background: rgba(255, 255, 255, 0.08); color: var(--text-main, #ffffff); border: 1px solid rgba(255, 255, 255, 0.15); padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
                 <span class="material-symbols-outlined" style="font-size: 0.95rem;" aria-hidden="true">restart_alt</span>
                 <span>Reset</span>
             </button>
@@ -222,7 +227,7 @@
                 
                 <!-- PASO 1 -->
                 <div class="wizard-step" id="step-1" role="region" aria-label="Paso 1: Identificar Equipo">
-                    <h2 style="font-size: 1.15rem; color: #38bdf8; margin: 0 0 4px 0; display: flex; align-items: center; gap: 6px;">
+                    <h2 style="font-size: 1.15rem; color: var(--primary-color, #38bdf8); margin: 0 0 4px 0; display: flex; align-items: center; gap: 6px;">
                         <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
                         Paso 1: Identificar Equipo
                     </h2>
@@ -230,12 +235,12 @@
                     <div class="campo-formulario">
                         <label for="fieldFaena">Faena Operacional</label>
                         <select id="fieldFaena" name="faena">
-                            <option value="Planta, Mina los Colorados">Mina Los Colorados (MLC)</option>
+                            <option value="mina_los_colorados">Mina Los Colorados (CMP)</option>
                         </select>
                     </div>
 
                     <div class="campo-formulario">
-                        <label for="buscador-fuse-local" style="color: #38bdf8;">
+                        <label for="buscador-fuse-local" style="color: var(--primary-color, #38bdf8);">
                             🔍 Búsqueda Rápida Local (Fuse.js)
                         </label>
                         <div style="position: relative;">
@@ -265,7 +270,7 @@
 
                     <button type="button" 
                             onclick="window.avanzarPaso(2)" 
-                            style="background: #0284c7; color: white; border: none; padding: 13px; border-radius: 8px; font-weight: 700; font-size: 0.92rem; cursor: pointer; margin-top: 8px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                            style="background: var(--primary-hover, #0284c7); color: white; border: none; padding: 13px; border-radius: 8px; font-weight: 700; font-size: 0.92rem; cursor: pointer; margin-top: 8px; display: flex; justify-content: center; align-items: center; gap: 8px;">
                         <span>Siguiente: Diagnóstico</span>
                         <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
                     </button>
@@ -273,9 +278,9 @@
 
                 <!-- PASO 2 -->
                 <div class="wizard-step" id="step-2" role="region" aria-label="Paso 2: Diagnóstico Rápido" style="display: none;">
-                    <h2 style="font-size: 1.15rem; color: #38bdf8; margin: 0 0 4px 0; display: flex; align-items: center; gap: 6px;">
+                    <h2 style="font-size: 1.15rem; color: var(--primary-color, #38bdf8); margin: 0 0 4px 0; display: flex; align-items: center; gap: 6px;">
                         <span class="material-symbols-outlined" aria-hidden="true">settings</span>
-                        Paso 2: Diagnóstico Rápido
+                        Paso 2: Diagnóstico y Medición
                     </h2>
 
                     <div class="campo-formulario">
@@ -283,6 +288,16 @@
                         <select id="fieldSpot" name="spot" onchange="window.actualizarHallazgosPorSpot(this.value)">
                             <option value="Condición Global del Equipo">🌐 Condición Global (Todo el equipo)</option>
                         </select>
+                    </div>
+
+                    <div class="campo-formulario">
+                        <label for="fieldRms" style="color: #facc15;">Medición de Vibración RMS (mm/s) — Opcional ISO 20816-3</label>
+                        <input type="number" 
+                               step="0.01" 
+                               id="fieldRms" 
+                               name="rms" 
+                               placeholder="Ej: 4.85" 
+                               style="font-family: monospace; font-size: 1.05rem;">
                     </div>
 
                     <div class="campo-formulario">
@@ -296,13 +311,13 @@
                     <div style="display: flex; gap: 10px; margin-top: 10px;">
                         <button type="button" 
                                 onclick="window.avanzarPaso(1)" 
-                                style="flex: 1; background: rgba(255, 255, 255, 0.08); color: white; border: 1px solid var(--border-glass, rgba(255, 255, 255, 0.15)); padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;">
+                                style="flex: 1; background: rgba(255, 255, 255, 0.08); color: white; border: 1px solid rgba(255, 255, 255, 0.15); padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;">
                             <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
                             <span>Volver</span>
                         </button>
                         <button type="button" 
                                 onclick="window.avanzarPaso(3)" 
-                                style="flex: 1; background: #0284c7; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;">
+                                style="flex: 1; background: var(--primary-hover, #0284c7); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;">
                             <span>Siguiente: Evidencias</span>
                             <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
                         </button>
@@ -311,7 +326,7 @@
 
                 <!-- PASO 3 -->
                 <div class="wizard-step" id="step-3" role="region" aria-label="Paso 3: Evidencias y Notas" style="display: none;">
-                    <h2 style="font-size: 1.15rem; color: #38bdf8; margin: 0 0 4px 0; display: flex; align-items: center; gap: 6px;">
+                    <h2 style="font-size: 1.15rem; color: var(--primary-color, #38bdf8); margin: 0 0 4px 0; display: flex; align-items: center; gap: 6px;">
                         <span class="material-symbols-outlined" aria-hidden="true">photo_camera</span>
                         Paso 3: Evidencias y Notas
                     </h2>
@@ -329,7 +344,7 @@
                                     id="btn-dictado" 
                                     onclick="window.iniciarDictado()" 
                                     aria-label="Iniciar dictado por voz"
-                                    style="position: absolute; right: 10px; bottom: 12px; background: transparent; border: none; color: #38bdf8; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;">
+                                    style="position: absolute; right: 10px; bottom: 12px; background: transparent; border: none; color: var(--primary-color, #38bdf8); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;">
                                 <span class="material-symbols-outlined" style="font-size: 1.6rem;" aria-hidden="true">mic</span>
                             </button>
                         </div>
@@ -346,30 +361,29 @@
                             </button>
                             
                             <button type="button" 
-                                    onclick="document.getElementById('inputCamaraVideo').click()" 
-                                    style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 48px;">
-                                <span class="material-symbols-outlined" aria-hidden="true">videocam</span> 
-                                <span>Grabar Video</span>
+                                    onclick="document.getElementById('inputCamaraFotoGaleria').click()" 
+                                    style="background: rgba(255, 255, 255, 0.08); color: #f4f6f5; border: 1px solid rgba(255, 255, 255, 0.15); padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 48px;">
+                                <span class="material-symbols-outlined" aria-hidden="true">collections</span> 
+                                <span>Galería</span>
                             </button>
                         </div>
 
                         <input type="file" id="inputCamaraFoto" accept="image/*" capture="environment" multiple style="display: none;" onchange="window.procesarYComprimirMedia(event)" aria-hidden="true">
-                        <input type="file" id="inputCamaraVideo" accept="video/*" capture="environment" style="display: none;" onchange="window.procesarYComprimirMedia(event)" aria-hidden="true">
+                        <input type="file" id="inputCamaraFotoGaleria" accept="image/*" multiple style="display: none;" onchange="window.procesarYComprimirMedia(event)" aria-hidden="true">
                         
                         <div id="mediaGallery" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;" role="region" aria-label="Galería de fotos adjuntas"></div>
                     </div>
 
-                    <!-- LÍNEA CORREGIDA: display: flex sin propiedades CSS rotas -->
                     <div style="display: flex; gap: 10px; margin-top: 10px;">
                         <button type="button" 
                                 onclick="window.avanzarPaso(2)" 
-                                style="flex: 1; background: rgba(255, 255, 255, 0.08); color: white; border: 1px solid var(--border-glass, rgba(255, 255, 255, 0.15)); padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;">
+                                style="flex: 1; background: rgba(255, 255, 255, 0.08); color: white; border: 1px solid rgba(255, 255, 255, 0.15); padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;">
                             <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
                             <span>Volver</span>
                         </button>
                         <button type="button" 
                                 onclick="window.avanzarPaso(4)" 
-                                style="flex: 1; background: #0284c7; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;">
+                                style="flex: 1; background: var(--primary-hover, #0284c7); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;">
                             <span>Siguiente: Severidad</span>
                             <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
                         </button>
@@ -378,7 +392,7 @@
 
                 <!-- PASO 4 -->
                 <div class="wizard-step" id="step-4" role="region" aria-label="Paso 4: Criticidad Final" style="display: none;">
-                    <h2 style="font-size: 1.15rem; color: #38bdf8; margin: 0 0 4px 0; display: flex; align-items: center; gap: 6px;">
+                    <h2 style="font-size: 1.15rem; color: var(--primary-color, #38bdf8); margin: 0 0 4px 0; display: flex; align-items: center; gap: 6px;">
                         <span class="material-symbols-outlined" aria-hidden="true">warning</span>
                         Paso 4: Criticidad Final
                     </h2>
@@ -405,14 +419,14 @@
                     <button type="button" 
                             id="btn-transmitir-final" 
                             onclick="window.enviarAlertaSegura()" 
-                            style="background: #00e676; color: #0f172a; border: none; padding: 14px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 1rem; margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 8px; min-height: 50px;">
+                            style="background: #F5A623; color: #0E1B1F; border: none; padding: 14px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 1rem; margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 8px; min-height: 50px;">
                         <span class="material-symbols-outlined" aria-hidden="true">send</span>
                         <span>TRANSMITIR AL CIO</span>
                     </button>
                     
                     <button type="button" 
                             onclick="window.avanzarPaso(3)" 
-                            style="background: rgba(255, 255, 255, 0.08); color: white; border: 1px solid var(--border-glass, rgba(255, 255, 255, 0.15)); padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 8px;">
+                            style="background: rgba(255, 255, 255, 0.08); color: white; border: 1px solid rgba(255, 255, 255, 0.15); padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 8px;">
                         ⬅️ Revisar Evidencias
                     </button>
                 </div>
@@ -429,15 +443,15 @@
                            id="buscador-mapa-pwa" 
                            onkeyup="window.buscarEnMapaPWA(event)" 
                            placeholder="Buscar equipo por TAG (Ej. MH2401)..." 
-                           style="width: 100%; background: #1a2234; border: 1px solid rgba(255,255,255,0.15); color: white; padding: 12px 14px 12px 42px; border-radius: 24px; outline: none; box-sizing: border-box; font-size: 0.9rem;">
+                           style="width: 100%; background: var(--bg-card, #16282D); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 12px 14px 12px 42px; border-radius: 24px; outline: none; box-sizing: border-box; font-size: 0.9rem;">
                 </div>
             </div>
 
-            <div id="mapa-gps-pwa" role="application" style="flex: 1; width: 100%; min-height: 420px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); overflow: hidden; background: #0f172a;"></div>
+            <div id="mapa-gps-pwa" role="application" style="flex: 1; width: 100%; min-height: 420px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); overflow: hidden; background: #0E1B1F;"></div>
 
             <button type="button" 
                     onclick="window.centrarEnMiUbicacion()" 
-                    style="position: absolute; right: 16px; bottom: 20px; background: #38bdf8; color: #0f172a; border: none; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6); cursor: pointer; z-index: 1000;">
+                    style="position: absolute; right: 16px; bottom: 20px; background: #F5A623; color: #0E1B1F; border: none; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6); cursor: pointer; z-index: 1000;">
                 <span class="material-symbols-outlined" style="font-size: 1.5rem;" aria-hidden="true">my_location</span>
             </button>
         </section>
@@ -456,15 +470,64 @@
             <span>Mapa GPS</span>
         </button>
 
-        <button type="button" class="nav-item" id="nav-btn-sync" onclick="window.sincronizarBovedaOffline()">
+        <button type="button" class="nav-item" id="nav-btn-sync" onclick="window.forzarSincronizacion()">
             <span class="material-symbols-outlined" aria-hidden="true">cloud_sync</span>
             <span>Pendientes <span id="contadorOffline" style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.68rem; font-weight: 800;">0</span></span>
         </button>
     </nav>
 
-    <!-- SCRIPTS MODULARES ÚNICOS -->
-    <script type="module" src="./js/terreno-core.js"></script>
-    <script type="module" src="./js/terreno-ui.js"></script>
+    <!-- PUNTO DE ENTRADA MODULAR TYPESCRIPT -->
+    <script type="module">
+        import { LosColoradosTenantConfig } from './src/tenants/los-colorados.config.js';
+        import { injectTenantTheme } from './src/core/theme/tokenInjector.js';
+        import { TerrenoUIController } from './src/modules/terreno/terrenoUI.js';
+        import { SyncManager } from './src/core/offline/syncManager.js';
+        import { OutboxDatabase } from './src/core/offline/outboxDatabase.js';
+
+        // 1. Inyectar tokens de diseño de Mina Los Colorados
+        injectTenantTheme(LosColoradosTenantConfig.theme);
+
+        // 2. Inicializar el despachador offline y el controlador UI
+        SyncManager.inicializar();
+        const uiController = new TerrenoUIController(LosColoradosTenantConfig);
+        await uiController.inicializar();
+
+        // 3. Monitoreo reactivo de la cola Outbox
+        const actualizarContadorPendientes = async () => {
+            try {
+                const pendientes = await OutboxDatabase.obtenerPendientesPorTenant(LosColoradosTenantConfig.branding.tenantId);
+                const badge = document.getElementById('contadorOffline');
+                if (badge) badge.textContent = String(pendientes.length);
+            } catch (err) {
+                console.warn('Error al leer contador offline:', err);
+            }
+        };
+
+        SyncManager.suscribirEstado(({ sincronizando, pendientes }) => {
+            const indSync = document.getElementById('indicadorSincronizando');
+            if (indSync) indSync.style.display = sincronizando ? 'inline-flex' : 'none';
+            const badge = document.getElementById('contadorOffline');
+            if (badge) badge.textContent = String(pendientes);
+        });
+
+        // 4. Métodos globales complementarios para botones del header/nav
+        window.forzarSincronizacion = async () => {
+            uiController.mostrarNotificacion('🔄 Sincronizando con el servidor central...');
+            const stats = await SyncManager.sincronizarPendientes();
+            uiController.mostrarNotificacion(`✅ Sincronizados: ${stats.exitosos} | Fallidos: ${stats.fallidos}`);
+            await actualizarContadorPendientes();
+        };
+
+        window.reiniciarFormulario = () => {
+            uiController.avanzarPaso(1);
+            const form = document.getElementById('form-reporte-terreno');
+            if (form) form.reset();
+            uiController.mostrarNotificacion('🔄 Formulario reiniciado');
+        };
+
+        // Verificación inicial de cola
+        await actualizarContadorPendientes();
+    </script>
 
     <!-- Registro del Service Worker -->
     <script>

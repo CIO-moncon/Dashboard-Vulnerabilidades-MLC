@@ -1,30 +1,30 @@
 import { TenantThemeTokens } from '../types/tenant.types';
 
+const TOKEN_TO_CSS_VARS: Record<keyof TenantThemeTokens, string[]> = {
+  primaryColor: ['--primary-color', '--primary-blue'],
+  primaryHover: ['--primary-hover'],
+  primaryActive: ['--primary-active'],
+  primaryBgTranslucent: ['--primary-bg-translucent', '--primary-blue-bg'],
+  primaryBorderTranslucent: ['--primary-border-translucent', '--primary-blue-border'],
+  bgDark: ['--bg-dark'],
+  bgDarkDeep: ['--bg-dark-deep'],
+  bgCard: ['--bg-card'],
+  fontFamily: ['--font-family-base']
+};
+
 export const injectTenantTheme = (tokens: TenantThemeTokens): void => {
+  if (typeof document === 'undefined') return;
+
   const root = document.documentElement;
 
-  if (tokens.primaryColor) {
-    root.style.setProperty('--primary-blue', tokens.primaryColor);
-  }
-  if (tokens.primaryHover) {
-    root.style.setProperty('--primary-hover', tokens.primaryHover);
-  }
-  if (tokens.primaryActive) {
-    root.style.setProperty('--primary-active', tokens.primaryActive);
-  }
-  if (tokens.primaryBgTranslucent) {
-    root.style.setProperty('--primary-blue-bg', tokens.primaryBgTranslucent);
-  }
-  if (tokens.primaryBorderTranslucent) {
-    root.style.setProperty('--primary-blue-border', tokens.primaryBorderTranslucent);
-  }
-  if (tokens.bgDark) {
-    root.style.setProperty('--bg-dark', tokens.bgDark);
-  }
-  if (tokens.bgDarkDeep) {
-    root.style.setProperty('--bg-dark-deep', tokens.bgDarkDeep);
-  }
-  if (tokens.bgCard) {
-    root.style.setProperty('--bg-card', tokens.bgCard);
-  }
+  (Object.keys(tokens) as Array<keyof TenantThemeTokens>).forEach((key) => {
+    const value = tokens[key];
+    const cssVars = TOKEN_TO_CSS_VARS[key];
+
+    if (value && cssVars) {
+      cssVars.forEach((cssVar) => {
+        root.style.setProperty(cssVar, value);
+      });
+    }
+  });
 };
