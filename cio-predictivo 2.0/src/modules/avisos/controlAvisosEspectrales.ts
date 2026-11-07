@@ -23,18 +23,12 @@ let memoriaAvisos: RegistroAvisoEspectral[] = [];
 let filtroSemanaActiva: string = `S${String(obtenerSemanaISO(new Date())).padStart(2, '0')}`;
 let filtroEstadoActivo: string = 'TODOS';
 
-const escaparHTML = (texto = ''): string =>
-  String(texto || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+import { escaparHTML } from '../../core/utils/sanitizar';
 
 export const cargarAvisosEspectrales = async (): Promise<void> => {
   try {
     const res = await fetch(`/api/cbm/registros?tipo=analisis_experto&limit=100`, {
-      headers: AuthService.getHeadersTenant()
+      headers: AuthService.getHeadersTenant(),
     });
 
     if (res.ok) {
@@ -44,7 +38,9 @@ export const cargarAvisosEspectrales = async (): Promise<void> => {
 
       registros.forEach((r: any) => {
         const payload = r.payload || {};
-        const semana = payload.semanaSap || `S${String(obtenerSemanaISO(new Date(payload.timestamp || Date.now()))).padStart(2, '0')}`;
+        const semana =
+          payload.semanaSap ||
+          `S${String(obtenerSemanaISO(new Date(payload.timestamp || Date.now()))).padStart(2, '0')}`;
 
         ['motor', 'reductor', 'poleas'].forEach((subKey) => {
           const sub = payload[subKey];
@@ -57,14 +53,18 @@ export const cargarAvisosEspectrales = async (): Promise<void> => {
               id: `${payload.tag}_${subKey}_${r.id}`,
               tag: payload.tag || 'S/T',
               componente: compNombre,
-              punto: sub.puntos?.[0]?.punto || (subKey === 'motor' ? 'M1' : (subKey === 'reductor' ? 'G1' : 'PL1')),
+              punto:
+                sub.puntos?.[0]?.punto ||
+                (subKey === 'motor' ? 'M1' : subKey === 'reductor' ? 'G1' : 'PL1'),
               severidad: sub.severidad || 'ROJO',
               avisoSap: sub.avisoSap || 'Pendiente',
               prioridadSap: sub.prioridadSap || (sub.severidad === 'ROJO' ? 'Alta' : 'Media'),
               estadoInforme: sub.avisoSap ? 'Emitido' : 'Pendiente',
               semanaSap: semana,
               fechaEmision: payload.fecha || formatearFechaNomenclatura(new Date()),
-              diagnosticoResumen: sub.diagnostico ? sub.diagnostico.substring(0, 110) + '...' : 'Sin detalle'
+              diagnosticoResumen: sub.diagnostico
+                ? sub.diagnostico.substring(0, 110) + '...'
+                : 'Sin detalle',
             });
           }
         });
@@ -91,7 +91,8 @@ export const cargarAvisosEspectrales = async (): Promise<void> => {
         estadoInforme: 'Emitido',
         semanaSap: sem,
         fechaEmision: formatearFechaNomenclatura(new Date()),
-        diagnosticoResumen: 'Modulación en frecuencia de giro 1X/2X y energía en pista exterior NDE. Relubricación e inspección.'
+        diagnosticoResumen:
+          'Modulación en frecuencia de giro 1X/2X y energía en pista exterior NDE. Relubricación e inspección.',
       },
       {
         id: 'AVS_02',
@@ -104,7 +105,8 @@ export const cargarAvisosEspectrales = async (): Promise<void> => {
         estadoInforme: 'Emitido',
         semanaSap: sem,
         fechaEmision: formatearFechaNomenclatura(new Date()),
-        diagnosticoResumen: 'Impactos dinámicos en etapa intermedia (GMF). Requiere inspección de backlash en parada programada.'
+        diagnosticoResumen:
+          'Impactos dinámicos en etapa intermedia (GMF). Requiere inspección de backlash en parada programada.',
       },
       {
         id: 'AVS_03',
@@ -117,13 +119,16 @@ export const cargarAvisosEspectrales = async (): Promise<void> => {
         estadoInforme: 'Pendiente',
         semanaSap: sem,
         fechaEmision: formatearFechaNomenclatura(new Date()),
-        diagnosticoResumen: 'Tendencia ascendente de velocidad RMS hacia Zona C. Seguimiento dinámico semanal.'
-      }
+        diagnosticoResumen:
+          'Tendencia ascendente de velocidad RMS hacia Zona C. Seguimiento dinámico semanal.',
+      },
     ];
   }
 };
 
-export const renderizarControlAvisosEspectrales = async (contenedorId = 'espacio-trabajo-dinamico'): Promise<void> => {
+export const renderizarControlAvisosEspectrales = async (
+  contenedorId = 'espacio-trabajo-dinamico',
+): Promise<void> => {
   const contenedor = document.getElementById(contenedorId);
   if (!contenedor) return;
 
@@ -235,19 +240,23 @@ export const renderizarControlAvisosEspectrales = async (contenedorId = 'espacio
               </tr>
             </thead>
             <tbody>
-              ${avisosFiltrados.length === 0 ? `
+              ${
+                avisosFiltrados.length === 0
+                  ? `
                 <tr>
                   <td colspan="9" style="padding: 2.5rem; text-align: center; color: #94A3B8;">
                     No se encontraron avisos SAP registrados bajo los filtros seleccionados.
                   </td>
                 </tr>
-              ` : avisosFiltrados.map((av) => {
-                let colorSev = '#00e676';
-                if (av.severidad === 'ROJO') colorSev = '#ef4444';
-                else if (av.severidad === 'NARANJA') colorSev = '#f97316';
-                else if (av.severidad === 'AMARILLO') colorSev = '#eab308';
+              `
+                  : avisosFiltrados
+                      .map((av) => {
+                        let colorSev = '#00e676';
+                        if (av.severidad === 'ROJO') colorSev = '#ef4444';
+                        else if (av.severidad === 'NARANJA') colorSev = '#f97316';
+                        else if (av.severidad === 'AMARILLO') colorSev = '#eab308';
 
-                return `
+                        return `
                   <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s ease;">
                     <td style="padding: 12px 14px; font-family: monospace; font-weight: 700; color: #38bdf8;">${escaparHTML(av.semanaSap)}</td>
                     <td style="padding: 12px 14px; font-family: monospace; font-weight: 800; color: #ffffff;">${escaparHTML(av.tag)}</td>
@@ -279,7 +288,9 @@ export const renderizarControlAvisosEspectrales = async (contenedorId = 'espacio
                     </td>
                   </tr>
                 `;
-              }).join('')}
+                      })
+                      .join('')
+              }
             </tbody>
           </table>
         </div>
@@ -301,7 +312,8 @@ export const editarAvisoEspectralModal = (avisoId: string): void => {
   modal = document.createElement('div');
   modal.id = 'modal-gestionar-aviso-sap';
   modal.className = 'modal-overlay';
-  modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 99999;';
+  modal.style.cssText =
+    'position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 99999;';
 
   modal.innerHTML = `
     <div class="modal-box glass-panel" style="background: #0E1B1F; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; width: 95%; max-width: 480px; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,0.85);">
@@ -366,8 +378,12 @@ if (typeof window !== 'undefined') {
 
   window.guardarCambiosAvisoEspectral = async (id: string) => {
     const inputNum = document.getElementById('input-aviso-sap-val') as HTMLInputElement | null;
-    const selectPrio = document.getElementById('select-aviso-prioridad-val') as HTMLSelectElement | null;
-    const selectEst = document.getElementById('select-aviso-estado-val') as HTMLSelectElement | null;
+    const selectPrio = document.getElementById(
+      'select-aviso-prioridad-val',
+    ) as HTMLSelectElement | null;
+    const selectEst = document.getElementById(
+      'select-aviso-estado-val',
+    ) as HTMLSelectElement | null;
 
     const registro = memoriaAvisos.find((a) => a.id === id);
     if (!registro) return;
@@ -381,10 +397,13 @@ if (typeof window !== 'undefined') {
       avisoSap: registro.avisoSap,
       prioridadSap: registro.prioridadSap,
       estadoInforme: registro.estadoInforme,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
-    UI.mostrarToast(`Aviso SAP para ${registro.tag} actualizado a: ${registro.avisoSap || 'Pendiente'}`, 'exito');
+    UI.mostrarToast(
+      `Aviso SAP para ${registro.tag} actualizado a: ${registro.avisoSap || 'Pendiente'}`,
+      'exito',
+    );
     document.getElementById('modal-gestionar-aviso-sap')?.remove();
     renderizarControlAvisosEspectrales();
   };
@@ -406,7 +425,7 @@ if (typeof window !== 'undefined') {
       estadoInforme: 'Emitido',
       semanaSap: `S${String(obtenerSemanaISO(new Date())).padStart(2, '0')}`,
       fechaEmision: formatearFechaNomenclatura(new Date()),
-      diagnosticoResumen: 'Aviso SAP ingresado manualmente por especialista CBM.'
+      diagnosticoResumen: 'Aviso SAP ingresado manualmente por especialista CBM.',
     });
 
     UI.mostrarToast(`Aviso SAP ${avisoSap} vinculado a ${tag}`, 'exito');

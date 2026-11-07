@@ -21,6 +21,8 @@ export class SyncManager {
   private static apiUrlDirecto = '/api/cbm/registro-directo';
   private static readonly TAMANO_LOTE = 25;
   private static readonly MAX_INTENTOS = 5;
+  private static readonly INTERVALO_AUTOSYNC_MS = 60_000;
+  private static timerAutoSync: ReturnType<typeof setInterval> | null = null;
   private static listeners: Set<SyncEventListener> = new Set();
 
   public static inicializar(endpoints?: { batch?: string; directo?: string }): void {
@@ -32,6 +34,31 @@ export class SyncManager {
         console.info('[SyncManager] Conexión restablecida. Iniciando sincronización...');
         this.sincronizarPendientes();
       });
+
+      // Reintento periódico: la red industrial puede recuperarse sin disparar 'online'.
+      if (this.timerAutoSync === null) {
+        this.timerAutoSync = setInterval(() => {
+          if (navigator.onLine) this.sincronizarPendientes();
+        }, this.INTERVALO_AUTOSYNC_MS);
+      }
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && navigator.onLine) {
+          this.sincronizarPendientes();
+        }
+      });
+
+      // Primer intento al cargar la aplicación.
+      if (navigator.onLine) {
+        setTimeout(() => this.sincronizarPendientes(), 1500);
+      }
+    }
+  }
+
+  public static detenerAutoSync(): void {
+    if (this.timerAutoSync !== null) {
+      clearInterval(this.timerAutoSync);
+      this.timerAutoSync = null;
     }
   }
 
@@ -47,7 +74,7 @@ export class SyncManager {
   public static async despacharOEncolar<T>(
     resource: string,
     actionType: OutboxItem['actionType'],
-    payload: T
+    payload: T,
   ): Promise<DespachoResultado<T>> {
     const sesion = AuthService.getSesion();
     const tenantId = sesion?.tenantId ?? 'default_tenant';
@@ -59,9 +86,9 @@ export class SyncManager {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...AuthService.getHeadersTenant()
+            ...AuthService.getHeadersTenant(),
           },
-          body: JSON.stringify({ resource, actionType, payload })
+          body: JSON.stringify({ resource, actionType, payload }),
         });
 
         if (response.ok) {
@@ -70,7 +97,7 @@ export class SyncManager {
         }
 
         console.warn(
-          `[SyncManager] Servidor devolvió HTTP ${response.status}. Encolando en Outbox IndexedDB.`
+          `[SyncManager] Servidor devolvió HTTP ${response.status}. Encolando en Outbox IndexedDB.`,
         );
       } catch (err) {
         console.warn('[SyncManager] Error de red. Fallback a cola Outbox IndexedDB:', err);
@@ -83,10 +110,11 @@ export class SyncManager {
       userId,
       actionType,
       resource,
-      payload
+      payload,
     );
 
-    this.notificarEstado(1);
+    const pendientes = await OutboxDatabase.contarPendientesPorTenant(tenantId);
+    this.notificarEstado(pendientes);
     return { sincronizadoDirecto: false, item: itemEncolado };
   }
 
@@ -102,14 +130,17 @@ export class SyncManager {
 
     try {
       this.sincronizando = true;
-      const pendientes = await OutboxDatabase.obtenerPendientesPorTenant(sesion.tenantId);
-      
+      const pendientes = await OutboxDatabase.obtenerReintentablesPorTenant(
+        sesion.tenantId,
+        this.MAX_INTENTOS,
+      );
+
       // Filtrar registros que ya hayan superado el umbral máximo de reintentos
       const candidatos = pendientes.filter((item) => item.intentos < this.MAX_INTENTOS);
       stats.total = candidatos.length;
 
       if (candidatos.length === 0) {
-        this.notificarEstado(0);
+        this.notificarEstado(await OutboxDatabase.contarPendientesPorTenant(sesion.tenantId));
         return stats;
       }
 
@@ -124,7 +155,7 @@ export class SyncManager {
       console.error('[SyncManager] Error crítico en ciclo de sincronización:', error);
     } finally {
       this.sincronizando = false;
-      const restantes = (await OutboxDatabase.obtenerPendientesPorTenant(sesion.tenantId)).length;
+      const restantes = await OutboxDatabase.contarPendientesPorTenant(sesion.tenantId);
       this.notificarEstado(restantes);
     }
 
@@ -134,21 +165,19 @@ export class SyncManager {
   private static async procesarLote(
     lote: OutboxItem[],
     tenantId: string,
-    stats: SyncStats
+    stats: SyncStats,
   ): Promise<void> {
     // 1. Marcar items en proceso para evitar duplicidad si entra otra sincronización
-    await Promise.all(
-      lote.map((item) => OutboxDatabase.actualizarEstado(item.id, 'EN_PROCESO'))
-    );
+    await Promise.all(lote.map((item) => OutboxDatabase.actualizarEstado(item.id, 'EN_PROCESO')));
 
     try {
       const response = await fetch(this.apiUrlBatch, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...AuthService.getHeadersTenant()
+          ...AuthService.getHeadersTenant(),
         },
-        body: JSON.stringify({ tenantId, items: lote })
+        body: JSON.stringify({ tenantId, items: lote }),
       });
 
       if (!response.ok) {
@@ -171,8 +200,8 @@ export class SyncManager {
       if (fallidosIds.length > 0) {
         await Promise.all(
           fallidosIds.map((id) =>
-            OutboxDatabase.actualizarEstado(id, 'FALLIDO', 'Rechazado por backend en lote')
-          )
+            OutboxDatabase.actualizarEstado(id, 'FALLIDO', 'Rechazado por backend en lote'),
+          ),
         );
         stats.fallidos += fallidosIds.length;
       }
@@ -182,7 +211,7 @@ export class SyncManager {
 
       // Si falló el lote completo, revertir estado a FALLIDO e incrementar intentos
       await Promise.all(
-        lote.map((item) => OutboxDatabase.actualizarEstado(item.id, 'FALLIDO', errorMsg))
+        lote.map((item) => OutboxDatabase.actualizarEstado(item.id, 'FALLIDO', errorMsg)),
       );
       stats.fallidos += lote.length;
     }

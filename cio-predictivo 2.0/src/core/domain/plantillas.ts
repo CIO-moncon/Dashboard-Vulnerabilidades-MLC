@@ -21,7 +21,7 @@ export const motorElectricoEstandar: NodoCinematico = Object.freeze({
   id: 'motor',
   nombre: 'Motor Eléctrico Principal',
   icono: 'electric_bolt',
-  spots: Object.freeze(['M1_LL', 'M2_LA'])
+  spots: Object.freeze(['M1_LL', 'M2_LA']),
 });
 
 export const generarPoleasDinamicas = (cantidadPares: number): string[] => {
@@ -40,121 +40,122 @@ export const generarReductoresDinamicos = (cantidadEjes: number): string[] => {
   return spots;
 };
 
-export const CATALOGO_PLANTILLAS_BASE: Readonly<Record<string, Omit<EstructuraEquipo, 'key'>>> = Object.freeze({
-  transportador: {
-    nombre: 'Correa Transportadora Estándar',
-    familia: 'Transporte de Mineral',
-    icono: 'conveyor_belt',
-    defaultsIso: { grupo: 'grupo1', soporte: 'rigido' },
-    nodos: Object.freeze([
-      motorElectricoEstandar,
-      {
-        id: 'reductor',
-        nombre: 'Caja Reductora',
-        icono: 'settings',
-        spots: Object.freeze(['RED_EJE1', 'RED_EJE2', 'RED_EJE3'])
-      },
-      {
-        id: 'poleas',
-        nombre: 'Poleas de Cabeza y Cola',
-        icono: 'album',
-        spots: Object.freeze(['POL_CAB_LI', 'POL_CAB_LD', 'POL_COL_LI', 'POL_COL_LD'])
-      }
-    ])
-  },
-  chancador_primario: {
-    nombre: 'Chancador Giratorio Primario',
-    familia: 'Conminución Primaria',
-    icono: 'precision_manufacturing',
-    defaultsIso: { grupo: 'grupo1', soporte: 'rigido' },
-    nodos: Object.freeze([
-      motorElectricoEstandar,
-      {
-        id: 'contraejecbm',
-        nombre: 'Caja Contraeje',
-        icono: 'sync_alt',
-        spots: Object.freeze(['CE_EXT', 'CE_INT'])
-      },
-      {
-        id: 'conjunto_pivote',
-        nombre: 'Pivote y Excétrica',
-        icono: 'circle',
-        spots: Object.freeze(['EXC_RAD', 'EXC_AX'])
-      }
-    ])
-  },
-  chancador_secundario: {
-    nombre: 'Chancador de Cono Secundario',
-    familia: 'Conminución Secundaria',
-    icono: 'construction',
-    defaultsIso: { grupo: 'grupo1', soporte: 'flexible' },
-    nodos: Object.freeze([
-      motorElectricoEstandar,
-      {
-        id: 'contraeje',
-        nombre: 'Contraeje Cónico',
-        icono: 'settings_input_component',
-        spots: Object.freeze(['CE_LA', 'CE_LL'])
-      }
-    ])
-  },
-  harnero_secundario: {
-    nombre: 'Harnero Vibratorio / Criba',
-    familia: 'Clasificación',
-    icono: 'grid_view',
-    defaultsIso: { grupo: 'grupo1', soporte: 'flexible' },
-    nodos: Object.freeze([
-      motorElectricoEstandar,
-      {
-        id: 'excitador',
-        nombre: 'Mecanismo Excitador',
-        icono: 'vibration',
-        spots: Object.freeze(['EXC_LI_RAD', 'EXC_LD_RAD', 'EXC_LI_AX', 'EXC_LD_AX'])
-      }
-    ])
-  },
-  prensa: {
-    nombre: 'Prensa de Rodillos HPGR',
-    familia: 'Molienda / HPGR',
-    icono: 'compress',
-    defaultsIso: { grupo: 'grupo1', soporte: 'rigido' },
-    nodos: Object.freeze([
-      {
-        id: 'motor_fijo',
-        nombre: 'Motor Rodillo Fijo',
-        icono: 'electric_bolt',
-        spots: Object.freeze(['MF_LL', 'MF_LA'])
-      },
-      {
-        id: 'motor_movil',
-        nombre: 'Motor Rodillo Móvil',
-        icono: 'electric_bolt',
-        spots: Object.freeze(['MM_LL', 'MM_LA'])
-      },
-      {
-        id: 'rodillos',
-        nombre: 'Chumaceras de Rodillos',
-        icono: 'drag_indicator',
-        spots: Object.freeze(['RF_LI', 'RF_LD', 'RM_LI', 'RM_LD'])
-      }
-    ])
-  },
-  colector: {
-    nombre: 'Ventilador / Colector de Polvo',
-    familia: 'Servicios Planta',
-    icono: 'mode_fan',
-    defaultsIso: { grupo: 'grupo2', soporte: 'rigido' },
-    nodos: Object.freeze([
-      motorElectricoEstandar,
-      {
-        id: 'ventilador',
-        nombre: 'Chumacera Ventilador',
-        icono: 'air',
-        spots: Object.freeze(['FAN_LA', 'FAN_LL'])
-      }
-    ])
-  }
-});
+export const CATALOGO_PLANTILLAS_BASE: Readonly<Record<string, Omit<EstructuraEquipo, 'key'>>> =
+  Object.freeze({
+    transportador: {
+      nombre: 'Correa Transportadora Estándar',
+      familia: 'Transporte de Mineral',
+      icono: 'conveyor_belt',
+      defaultsIso: { grupo: 'grupo1', soporte: 'rigido' },
+      nodos: Object.freeze([
+        motorElectricoEstandar,
+        {
+          id: 'reductor',
+          nombre: 'Caja Reductora',
+          icono: 'settings',
+          spots: Object.freeze(['RED_EJE1', 'RED_EJE2', 'RED_EJE3']),
+        },
+        {
+          id: 'poleas',
+          nombre: 'Poleas de Cabeza y Cola',
+          icono: 'album',
+          spots: Object.freeze(['POL_CAB_LI', 'POL_CAB_LD', 'POL_COL_LI', 'POL_COL_LD']),
+        },
+      ]),
+    },
+    chancador_primario: {
+      nombre: 'Chancador Giratorio Primario',
+      familia: 'Conminución Primaria',
+      icono: 'precision_manufacturing',
+      defaultsIso: { grupo: 'grupo1', soporte: 'rigido' },
+      nodos: Object.freeze([
+        motorElectricoEstandar,
+        {
+          id: 'contraejecbm',
+          nombre: 'Caja Contraeje',
+          icono: 'sync_alt',
+          spots: Object.freeze(['CE_EXT', 'CE_INT']),
+        },
+        {
+          id: 'conjunto_pivote',
+          nombre: 'Pivote y Excétrica',
+          icono: 'circle',
+          spots: Object.freeze(['EXC_RAD', 'EXC_AX']),
+        },
+      ]),
+    },
+    chancador_secundario: {
+      nombre: 'Chancador de Cono Secundario',
+      familia: 'Conminución Secundaria',
+      icono: 'construction',
+      defaultsIso: { grupo: 'grupo1', soporte: 'flexible' },
+      nodos: Object.freeze([
+        motorElectricoEstandar,
+        {
+          id: 'contraeje',
+          nombre: 'Contraeje Cónico',
+          icono: 'settings_input_component',
+          spots: Object.freeze(['CE_LA', 'CE_LL']),
+        },
+      ]),
+    },
+    harnero_secundario: {
+      nombre: 'Harnero Vibratorio / Criba',
+      familia: 'Clasificación',
+      icono: 'grid_view',
+      defaultsIso: { grupo: 'grupo1', soporte: 'flexible' },
+      nodos: Object.freeze([
+        motorElectricoEstandar,
+        {
+          id: 'excitador',
+          nombre: 'Mecanismo Excitador',
+          icono: 'vibration',
+          spots: Object.freeze(['EXC_LI_RAD', 'EXC_LD_RAD', 'EXC_LI_AX', 'EXC_LD_AX']),
+        },
+      ]),
+    },
+    prensa: {
+      nombre: 'Prensa de Rodillos HPGR',
+      familia: 'Molienda / HPGR',
+      icono: 'compress',
+      defaultsIso: { grupo: 'grupo1', soporte: 'rigido' },
+      nodos: Object.freeze([
+        {
+          id: 'motor_fijo',
+          nombre: 'Motor Rodillo Fijo',
+          icono: 'electric_bolt',
+          spots: Object.freeze(['MF_LL', 'MF_LA']),
+        },
+        {
+          id: 'motor_movil',
+          nombre: 'Motor Rodillo Móvil',
+          icono: 'electric_bolt',
+          spots: Object.freeze(['MM_LL', 'MM_LA']),
+        },
+        {
+          id: 'rodillos',
+          nombre: 'Chumaceras de Rodillos',
+          icono: 'drag_indicator',
+          spots: Object.freeze(['RF_LI', 'RF_LD', 'RM_LI', 'RM_LD']),
+        },
+      ]),
+    },
+    colector: {
+      nombre: 'Ventilador / Colector de Polvo',
+      familia: 'Servicios Planta',
+      icono: 'mode_fan',
+      defaultsIso: { grupo: 'grupo2', soporte: 'rigido' },
+      nodos: Object.freeze([
+        motorElectricoEstandar,
+        {
+          id: 'ventilador',
+          nombre: 'Chumacera Ventilador',
+          icono: 'air',
+          spots: Object.freeze(['FAN_LA', 'FAN_LL']),
+        },
+      ]),
+    },
+  });
 
 export class MasterTemplateRegistry {
   private templates: Map<string, EstructuraEquipo> = new Map();

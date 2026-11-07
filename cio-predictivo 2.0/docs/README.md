@@ -1,20 +1,73 @@
 # 🛡️ CIO Predictivo 2.0 — Planta Mina Los Colorados
 
-Plataforma industrial de monitoreo de condición (CBM) basada en Web Technologies nativas (ES6+, HTML5, CSS) y Firebase, diseñada para operar en entornos mineros de alta exigencia y baja conectividad.
+Plataforma industrial de monitoreo de condición (CBM) con frontend **Vite +
+TypeScript** (PWA offline) y backend **FastAPI + SQLite**. Diseñada para operar en
+entornos mineros de alta exigencia y baja conectividad.
 
-## 🚀 Características Principales
-- **Gemelo Digital 3D:** Visualización cartográfica avanzada con MapLibre GL JS y modelos de elevación de terreno.
-- **Gestión de Activos y Severidad:** Diagnóstico de vibraciones y temperaturas bajo norma **ISO 20816-3**.
-- **Modo Offline / PWA:** Operación continua sin conexión a internet y sincronización automática en segundo plano.
-- **Seguridad por Roles:** Control de acceso granular para Analistas, Inspectores y Supervisores de Planta.
+## 🚀 Características principales
 
-## 🛠️ Requisitos del Entorno de Desarrollo
-Dado que la plataforma utiliza **Módulos ES6 nativos**, no se puede abrir el archivo `index.html` directamente haciendo doble clic (`file://`). Se requiere un servidor local estático.
+- **Gemelo digital 3D:** visualización cartográfica con MapLibre GL JS y modelos de elevación.
+- **Gestión de activos y severidad:** diagnóstico de vibraciones y temperaturas bajo norma **ISO 20816-3**.
+- **Modo offline / PWA:** operación sin conexión y sincronización automática del Outbox.
+- **Seguridad por roles:** autenticación JWT y permisos granulares para Administrador,
+  Supervisor, Analista CBM y Operador de Terreno.
+- **Auditoría persistente:** trazabilidad de login, análisis y cambios por tenant.
 
-1. **Node.js** instalado en tu equipo.
-2. Un servidor ligero como **Live Server** (extensión de VS Code) o **http-server**.
+## 🛠️ Requisitos
 
-## ⚙️ Configuración Local
-1. Clona el repositorio:
-   ```bash
-   git clone [https://github.com/tu-usuario/cio-predictivo-2.0.git](https://github.com/tu-usuario/cio-predictivo-2.0.git)
+- **Node.js 20+** y npm.
+- **Python 3.11+**.
+
+La plataforma usa módulos ES nativos, por lo que no debe abrirse `index.html` con
+`file://`; utilice el servidor de desarrollo de Vite o un servidor estático.
+
+## ⚙️ Configuración local
+
+1. Backend:
+
+   ```powershell
+   cd backend
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   python -m pip install -r requirements.txt
+   Copy-Item .env.example .env
+   # Editar .env: definir CIO_SECRET_KEY y CIO_ADMIN_PASSWORD
+   python -m uvicorn main:app --host 127.0.0.1 --port 8000
+   ```
+
+2. Frontend (otra terminal):
+
+   ```powershell
+   npm install
+   npm run dev
+   ```
+
+   Abrir <http://localhost:5173>. Vite redirige `/api` a `http://127.0.0.1:8000`.
+
+## 🔐 Credenciales iniciales
+
+| Campo      | Valor                  |
+| ---------- | ---------------------- |
+| Email      | `admin@cpf.cl`         |
+| Contraseña | `CambiarEstaClave123!` |
+
+Cambie la contraseña antes de producción mediante `CIO_ADMIN_PASSWORD` (se aplica
+solo al crear el administrador inicial con la tabla `users` vacía).
+
+## 🧪 Verificación
+
+```powershell
+npm run typecheck
+npm test
+npm run build
+```
+
+Consulte el **README de la raíz del repositorio** para el detalle de variables de
+entorno, despliegue, endpoints y notas operativas.
+
+## 📚 Documentación adicional
+
+- `docs/ARQUITECTURA.md`
+- `docs/CONTEXTO.md`
+- `docs/MANUAL_TERRENO.md`
+- `docs/CHANGELOG.md`

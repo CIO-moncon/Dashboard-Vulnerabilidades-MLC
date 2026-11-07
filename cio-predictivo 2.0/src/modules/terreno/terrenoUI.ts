@@ -1,16 +1,17 @@
-import { 
-  ActivoTerreno, 
-  AlertaTerrenoPayload, 
+import {
+  ActivoTerreno,
+  AlertaTerrenoPayload,
   EvidenciaAlerta,
-  transmitirAlertaTerreno, 
-  guardarCatastroLocal, 
+  transmitirAlertaTerreno,
+  guardarCatastroLocal,
   cargarCatastroLocal,
-  actualizarBadgeConexionUI 
+  actualizarBadgeConexionUI,
 } from './terrenoCore';
 import { evaluarISO20816 } from '../../core/domain/evaluadorIso';
 import { masterTemplateRegistry } from '../../core/domain/plantillas';
 import { AuthService } from '../../core/auth/authService';
 import { TenantConfig } from '../../core/types/tenant.types';
+import { escaparHTML } from '../../core/utils/sanitizar';
 
 declare const L: any;
 declare const Fuse: any;
@@ -25,24 +26,24 @@ const HALLAZGOS_POR_TIPO: Readonly<Record<string, readonly FallaConfig[]>> = Obj
     { frase: '📢 Ruido anómalo en rodamientos', label: '📢 Ruido rodamiento' },
     { frase: '🔥 Gradiente térmico elevado en carcasa', label: '🔥 Sobrecalentamiento' },
     { frase: '🛢️ Expulsión o degradación de grasa', label: '🛢️ Fuga de grasa' },
-    { frase: '⚠️ Alta vibración predominante', label: '⚠️ Alta Vibración' }
+    { frase: '⚠️ Alta vibración predominante', label: '⚠️ Alta Vibración' },
   ],
   reductor: [
     { frase: '🛢️ Fuga activa de lubricante por retenes', label: '🛢️ Fuga de aceite' },
     { frase: '⚙️ Golpeteo o ruido cíclico en engranajes', label: '⚙️ Ruido engranajes' },
     { frase: '🔥 Temperatura crítica en descansos', label: '🔥 Temperatura alta' },
-    { frase: '📊 Nivel de aceite bajo en visor', label: '📊 Nivel bajo / Sin aceite' }
+    { frase: '📊 Nivel de aceite bajo en visor', label: '📊 Nivel bajo / Sin aceite' },
   ],
   polea: [
     { frase: '⛓️ Desgaste severo o corte de correa', label: '⛓️ Correa dañada' },
-    { frase: '📐 Desalineamiento angular o paralelo', label: '📐 Desalineamiento' }
+    { frase: '📐 Desalineamiento angular o paralelo', label: '📐 Desalineamiento' },
   ],
   general: [
     { frase: '🛢️ Fuga visible de fluido/lubricante', label: '🛢️ Fuga de fluido' },
     { frase: '📢 Ruido mecánico anómalo general', label: '📢 Ruido anómalo' },
     { frase: '⚠️ Vibración mecánica severa', label: '⚠️ Alta Vibración' },
-    { frase: '🔥 Temperatura elevada fuera de rango', label: '🔥 Alta Temperatura' }
-  ]
+    { frase: '🔥 Temperatura elevada fuera de rango', label: '🔥 Alta Temperatura' },
+  ],
 });
 
 export class TerrenoUIController {
@@ -122,7 +123,7 @@ export class TerrenoUIController {
       this.fuseInstance = new Fuse(this.catalogoGlobal, {
         keys: ['tag', 'area', 'id'],
         threshold: 0.35,
-        distance: 100
+        distance: 100,
       });
     }
   }
@@ -132,8 +133,11 @@ export class TerrenoUIController {
     if (!selectArea) return;
 
     const areasUnicas = [...new Set(this.catalogoGlobal.map((e) => e.area))].filter(Boolean).sort();
-    selectArea.innerHTML = '<option value="">-- Selecciona el Área --</option>' +
-      areasUnicas.map((a) => `<option value="${this.escaparHTML(a)}">${this.escaparHTML(a)}</option>`).join('');
+    selectArea.innerHTML =
+      '<option value="">-- Selecciona el Área --</option>' +
+      areasUnicas
+        .map((a) => `<option value="${escaparHTML(a)}">${escaparHTML(a)}</option>`)
+        .join('');
   }
 
   public onAreaCambiada(areaSeleccionada: string): void {
@@ -141,27 +145,28 @@ export class TerrenoUIController {
     if (!selectEquipo) return;
 
     const filtrados = this.catalogoGlobal.filter((e) => e.area === areaSeleccionada);
-    selectEquipo.innerHTML = '<option value="">-- Selecciona el equipo --</option>' +
+    selectEquipo.innerHTML =
+      '<option value="">-- Selecciona el equipo --</option>' +
       filtrados
         .sort((a, b) => a.tag.localeCompare(b.tag))
-        .map((e) => `<option value="${this.escaparHTML(e.tag)}">${this.escaparHTML(e.tag)}</option>`)
+        .map((e) => `<option value="${escaparHTML(e.tag)}">${escaparHTML(e.tag)}</option>`)
         .join('');
   }
 
   public onEquipoCambiado(tag: string): void {
     this.equipoSeleccionado = this.catalogoGlobal.find((e) => e.tag === tag) ?? null;
-    
+
     // Si no tiene componentes cargados, resolver cinemática estándar con MasterTemplateRegistry
     let componentes = this.equipoSeleccionado?.components ?? [];
     if (componentes.length === 0) {
       const template = masterTemplateRegistry.resolverEstructura(tag);
       if (template) {
-        componentes = template.nodos.flatMap((nodo) => 
+        componentes = template.nodos.flatMap((nodo) =>
           nodo.spots.map((spot) => ({
             id: spot,
             nombre: `${nodo.nombre} - ${spot}`,
-            tipo: nodo.id
-          }))
+            tipo: nodo.id,
+          })),
         );
       }
     }
@@ -172,14 +177,19 @@ export class TerrenoUIController {
     const selSpot = document.getElementById('fieldSpot') as HTMLSelectElement | null;
     if (!selSpot) return;
 
-    let optionsHTML = '<option value="Condición Global del Equipo">🌐 Condición Global (Todo el equipo)</option>';
+    let optionsHTML =
+      '<option value="Condición Global del Equipo">🌐 Condición Global (Todo el equipo)</option>';
 
     if (componentsList.length > 0) {
-      optionsHTML += componentsList.map((comp, idx) => {
-        const puntoId = typeof comp === 'string' ? comp : (comp.id || comp.punto || comp.tag || `P${idx + 1}`);
-        const nombre = typeof comp === 'string' ? comp : (comp.nombre || comp.componente || puntoId);
-        return `<option value="${this.escaparHTML(nombre)}">⚙️ [${this.escaparHTML(puntoId)}] ${this.escaparHTML(nombre)}</option>`;
-      }).join('');
+      optionsHTML += componentsList
+        .map((comp, idx) => {
+          const puntoId =
+            typeof comp === 'string' ? comp : comp.id || comp.punto || comp.tag || `P${idx + 1}`;
+          const nombre =
+            typeof comp === 'string' ? comp : comp.nombre || comp.componente || puntoId;
+          return `<option value="${escaparHTML(nombre)}">⚙️ [${escaparHTML(puntoId)}] ${escaparHTML(nombre)}</option>`;
+        })
+        .join('');
     }
 
     selSpot.innerHTML = optionsHTML;
@@ -190,8 +200,10 @@ export class TerrenoUIController {
     const lower = spotName.toLowerCase();
     let tipo = 'general';
     if (lower.includes('motor')) tipo = 'motor';
-    else if (lower.includes('reductor') || lower.includes('transmisi') || lower.includes('g1')) tipo = 'reductor';
-    else if (lower.includes('polea') || lower.includes('correa') || lower.includes('pl')) tipo = 'polea';
+    else if (lower.includes('reductor') || lower.includes('transmisi') || lower.includes('g1'))
+      tipo = 'reductor';
+    else if (lower.includes('polea') || lower.includes('correa') || lower.includes('pl'))
+      tipo = 'polea';
 
     const fallas = HALLAZGOS_POR_TIPO[tipo] ?? HALLAZGOS_POR_TIPO.general;
     const contenedor = document.getElementById('contenedor-chips-dinamicos');
@@ -201,18 +213,22 @@ export class TerrenoUIController {
       const fieldDetalle = document.getElementById('fieldDetalle') as HTMLTextAreaElement | null;
       if (fieldDetalle) fieldDetalle.value = '';
 
-      contenedor.innerHTML = fallas.map((falla) => `
+      contenedor.innerHTML = fallas
+        .map(
+          (falla) => `
         <button type="button" 
                 class="chip-hallazgo"
                 role="button"
                 aria-pressed="false"
                 data-seleccionado="false"
-                data-frase="${this.escaparHTML(falla.frase)}"
-                onclick="window.toggleChip(this, '${this.escaparHTML(falla.frase)}')" 
+                data-frase="${escaparHTML(falla.frase)}"
+                onclick="window.toggleChip(this, '${escaparHTML(falla.frase)}')" 
                 style="background: var(--primary-bg-translucent, rgba(56, 189, 248, 0.1)); color: var(--primary-color, #38bdf8); border: 1px solid var(--primary-border-translucent, rgba(56, 189, 248, 0.3)); padding: 8px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease;">
-            ${this.escaparHTML(falla.label)}
+            ${escaparHTML(falla.label)}
         </button>
-      `).join('');
+      `,
+        )
+        .join('');
     }
   }
 
@@ -251,7 +267,9 @@ export class TerrenoUIController {
           selectArea.value = match.area;
           this.onAreaCambiada(match.area);
 
-          const selectEquipo = document.getElementById('fieldTagSelect') as HTMLSelectElement | null;
+          const selectEquipo = document.getElementById(
+            'fieldTagSelect',
+          ) as HTMLSelectElement | null;
           if (selectEquipo) {
             selectEquipo.value = match.tag;
             this.onEquipoCambiado(match.tag);
@@ -278,7 +296,8 @@ export class TerrenoUIController {
 
   public iniciarDictado(): void {
     const cajaTexto = document.getElementById('fieldDetalle') as HTMLTextAreaElement | null;
-    const SpeechRecognition = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
       alert('Este dispositivo no posee soporte para dictado por voz.');
@@ -313,7 +332,7 @@ export class TerrenoUIController {
           this.arregloEvidencias.push({
             tipo: 'IMAGEN_BASE64',
             data: dataUrl,
-            metadata: { nombreOriginal: file.name, tamano: file.size }
+            metadata: { nombreOriginal: file.name, tamano: file.size },
           });
         } catch (err) {
           console.error('[TerrenoUI] Fallo compresión:', err);
@@ -378,7 +397,9 @@ export class TerrenoUIController {
     const gallery = document.getElementById('mediaGallery');
     if (!gallery) return;
 
-    gallery.innerHTML = this.arregloEvidencias.map((ev, index) => `
+    gallery.innerHTML = this.arregloEvidencias
+      .map(
+        (ev, index) => `
       <figure style="position: relative; display: inline-block; margin: 0;">
           <img src="${ev.data}" 
                style="border-radius: 6px; height: 70px; width: 70px; object-fit: cover; border: 1px solid var(--border-glass, rgba(255,255,255,0.15));" 
@@ -389,7 +410,9 @@ export class TerrenoUIController {
               ✕
           </button>
       </figure>
-    `).join('');
+    `,
+      )
+      .join('');
   }
 
   public seleccionarSeveridadVisual(sev: string): void {
@@ -400,7 +423,9 @@ export class TerrenoUIController {
       const btn = document.getElementById(`sev_${s}`);
       if (btn) {
         const seleccionado = s === sev;
-        btn.style.border = seleccionado ? '2px solid #ffffff' : '1px solid var(--border-glass, rgba(255,255,255,0.15))';
+        btn.style.border = seleccionado
+          ? '2px solid #ffffff'
+          : '1px solid var(--border-glass, rgba(255,255,255,0.15))';
         btn.setAttribute('aria-checked', seleccionado ? 'true' : 'false');
       }
     });
@@ -424,10 +449,14 @@ export class TerrenoUIController {
       }
     }
 
-    const spotFinal = (document.getElementById('fieldSpot') as HTMLSelectElement)?.value ?? 'Condición Global';
+    const spotFinal =
+      (document.getElementById('fieldSpot') as HTMLSelectElement)?.value ?? 'Condición Global';
     const sevColor = (document.getElementById('fieldSev') as HTMLInputElement)?.value ?? 'Rojo';
-    const notasManuales = (document.getElementById('fieldDetalle') as HTMLTextAreaElement)?.value.trim() ?? '';
-    const btnTransmitir = document.getElementById('btn-transmitir-final') as HTMLButtonElement | null;
+    const notasManuales =
+      (document.getElementById('fieldDetalle') as HTMLTextAreaElement)?.value.trim() ?? '';
+    const btnTransmitir = document.getElementById(
+      'btn-transmitir-final',
+    ) as HTMLButtonElement | null;
 
     let textoFinal = `[COMPONENTE: ${spotFinal}]\n`;
     if (this.chipsSeleccionados.length > 0) {
@@ -437,10 +466,16 @@ export class TerrenoUIController {
       textoFinal += `📝 Notas: ${notasManuales}`;
     }
 
-    const evaluacionIso = rmsValor !== undefined ? evaluarISO20816(rmsValor, 'grupo1', 'rigido') : null;
-    const zonaIsoFinal = evaluacionIso && evaluacionIso.zona !== 'S/D' 
-      ? evaluacionIso.zona 
-      : (sevColor === 'Rojo' ? 'D' : sevColor === 'Naranja' ? 'C' : 'B');
+    const evaluacionIso =
+      rmsValor !== undefined ? evaluarISO20816(rmsValor, 'grupo1', 'rigido') : null;
+    const zonaIsoFinal =
+      evaluacionIso && evaluacionIso.zona !== 'S/D'
+        ? evaluacionIso.zona
+        : sevColor === 'Rojo'
+          ? 'D'
+          : sevColor === 'Naranja'
+            ? 'C'
+            : 'B';
 
     const sesion = AuthService.getSesion();
     const inspectorNombre = sesion?.nombre ?? 'Inspector de Terreno';
@@ -458,7 +493,7 @@ export class TerrenoUIController {
       evidencias: this.arregloEvidencias,
       timestamp: new Date().toISOString(),
       inspector: inspectorNombre,
-      estado: 'Pendiente'
+      estado: 'Pendiente',
     };
 
     if (btnTransmitir) {
@@ -468,9 +503,10 @@ export class TerrenoUIController {
 
     try {
       const res = await transmitirAlertaTerreno(payload);
-      const msg = res.modo === 'online' 
-        ? '✅ Hallazgo transmitido al servidor central.' 
-        : '📴 Guardado en la cola local (Offline). Se sincronizará al recuperar señal.';
+      const msg =
+        res.modo === 'online'
+          ? '✅ Hallazgo transmitido al servidor central.'
+          : '📴 Guardado en la cola local (Offline). Se sincronizará al recuperar señal.';
       this.mostrarNotificacion(msg);
       this.limpiarFormulario();
       this.avanzarPaso(1);
@@ -533,13 +569,19 @@ export class TerrenoUIController {
 
     if (!this.mapaPWA) {
       const { center, zoom } = this.tenantConfig.geoViewer;
-      this.mapaPWA = L.map('mapa-gps-pwa', { preferCanvas: true }).setView([center[1], center[0]], zoom);
+      this.mapaPWA = L.map('mapa-gps-pwa', { preferCanvas: true }).setView(
+        [center[1], center[0]],
+        zoom,
+      );
 
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: '© Esri',
-        maxNativeZoom: 17,
-        maxZoom: 21
-      }).addTo(this.mapaPWA);
+      L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {
+          attribution: '© Esri',
+          maxNativeZoom: 17,
+          maxZoom: 21,
+        },
+      ).addTo(this.mapaPWA);
 
       this.capaMarcadores = L.layerGroup().addTo(this.mapaPWA);
     }
@@ -564,22 +606,24 @@ export class TerrenoUIController {
           className: 'custom-pin-pwa',
           html: `<div style="background-color: ${colorPin}; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 12px rgba(0,0,0,0.8);"></div>`,
           iconSize: [16, 16],
-          iconAnchor: [8, 8]
+          iconAnchor: [8, 8],
         });
 
         const htmlPopup = `
           <div style="font-family: system-ui, sans-serif; padding: 4px; min-width: 140px;">
-              <strong style="color: #0f172a; font-size: 0.95rem; font-family: monospace;">${this.escaparHTML(equipo.tag)}</strong><br>
-              <span style="color: #64748b; font-size: 0.75rem;">Área: ${this.escaparHTML(equipo.area)}</span><br>
+              <strong style="color: #0f172a; font-size: 0.95rem; font-family: monospace;">${escaparHTML(equipo.tag)}</strong><br>
+              <span style="color: #64748b; font-size: 0.75rem;">Área: ${escaparHTML(equipo.area)}</span><br>
               <button type="button" 
-                      onclick="window.reportarDesdeMapa('${this.escaparHTML(equipo.tag)}', '${this.escaparHTML(equipo.area)}')" 
+                      onclick="window.reportarDesdeMapa('${escaparHTML(equipo.tag)}', '${escaparHTML(equipo.area)}')" 
                       style="margin-top: 8px; background: var(--primary-hover, #0284c7); color: white; border: none; padding: 6px 10px; border-radius: 6px; width: 100%; cursor: pointer; font-weight: 700; font-size: 0.75rem;">
                   🎯 Reportar en este equipo
               </button>
           </div>
         `;
 
-        const marcador = L.marker([equipo.lat, equipo.lng], { icon: iconEquipo }).bindPopup(htmlPopup);
+        const marcador = L.marker([equipo.lat, equipo.lng], { icon: iconEquipo }).bindPopup(
+          htmlPopup,
+        );
         this.capaMarcadores.addLayer(marcador);
       }
     });
@@ -590,7 +634,7 @@ export class TerrenoUIController {
 
     this.mostrarNotificacion('📡 Localizando señal GPS...');
     this.mapaPWA.locate({ setView: true, maxZoom: 17 });
-    
+
     this.mapaPWA.once('locationfound', (e: any) => {
       if (this.marcadorGPS) {
         this.mapaPWA.removeLayer(this.marcadorGPS);
@@ -598,7 +642,7 @@ export class TerrenoUIController {
       const iconoGPS = L.divIcon({
         className: 'gps-pin',
         html: `<div style="background-color: #3b82f6; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #3b82f6;"></div>`,
-        iconSize: [16, 16]
+        iconSize: [16, 16],
       });
       this.marcadorGPS = L.marker(e.latlng, { icon: iconoGPS }).addTo(this.mapaPWA);
       this.mostrarNotificacion('📍 Ubicación GPS fijada.');
@@ -635,7 +679,9 @@ export class TerrenoUIController {
     const busqueda = target.value.toLowerCase().trim();
     if (!busqueda) return;
 
-    const equipo = this.catalogoGlobal.find((eq) => eq.tag && eq.tag.toLowerCase().includes(busqueda));
+    const equipo = this.catalogoGlobal.find(
+      (eq) => eq.tag && eq.tag.toLowerCase().includes(busqueda),
+    );
     if (!equipo) {
       alert(`⚠️ No se encontró el equipo "${busqueda}".`);
       return;
@@ -659,14 +705,5 @@ export class TerrenoUIController {
     this.timerNotificacion = window.setTimeout(() => {
       t.style.display = 'none';
     }, 3800);
-  }
-
-  private escaparHTML(texto = ''): string {
-    return String(texto)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
   }
 }

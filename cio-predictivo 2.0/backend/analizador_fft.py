@@ -1,32 +1,45 @@
-import io
 import base64
-from typing import List, Dict, Any, Optional
+import io
+from typing import Any
+
+import matplotlib
 import numpy as np
 from scipy.signal import find_peaks, windows
 from sklearn.ensemble import IsolationForest
-import matplotlib
-matplotlib.use('Agg')  # Modo headless para servidores sin display
+
+matplotlib.use("Agg")  # Modo headless para servidores sin display
 import matplotlib.pyplot as plt
 
 # -----------------------------------------------------------------------------
 # MODELO ML PRE-ENTRENADO (Inicializado una sola vez en memoria)
 # -----------------------------------------------------------------------------
 # Línea base preliminar de comportamiento de vibración [RMS, Crest Factor]
-BASE_TRAIN_DATA = np.array([
-    [1.2, 2.1], [1.5, 2.3], [1.1, 2.0], [1.8, 2.5],
-    [2.0, 2.2], [1.3, 2.4], [1.6, 2.1], [1.4, 2.3],
-    [2.2, 2.6], [1.7, 2.2], [1.9, 2.4], [2.1, 2.3]
-])
+BASE_TRAIN_DATA = np.array(
+    [
+        [1.2, 2.1],
+        [1.5, 2.3],
+        [1.1, 2.0],
+        [1.8, 2.5],
+        [2.0, 2.2],
+        [1.3, 2.4],
+        [1.6, 2.1],
+        [1.4, 2.3],
+        [2.2, 2.6],
+        [1.7, 2.2],
+        [1.9, 2.4],
+        [2.1, 2.3],
+    ]
+)
 clf_anomalias = IsolationForest(contamination=0.08, random_state=42)
 clf_anomalias.fit(BASE_TRAIN_DATA)
 
 
 def procesar_senal_vibracion(
-    amplitudes: List[float],
+    amplitudes: list[float],
     fs: float = 1000.0,
     grupo_iso: str = "grupo1",
-    soporte_iso: str = "rigido"
-) -> Dict[str, Any]:
+    soporte_iso: str = "rigido",
+) -> dict[str, Any]:
     """
     Procesa la señal temporal de vibración:
     1. Remoción de offset DC y aplicación de ventana Hanning.
@@ -83,7 +96,7 @@ def procesar_senal_vibracion(
         ("grupo1", "rigido"): {"b": 2.3, "c": 4.5, "d": 7.1},
         ("grupo1", "flexible"): {"b": 3.5, "c": 7.1, "d": 11.0},
         ("grupo2", "rigido"): {"b": 1.4, "c": 2.8, "d": 4.5},
-        ("grupo2", "flexible"): {"b": 2.3, "c": 4.5, "d": 7.1}
+        ("grupo2", "flexible"): {"b": 2.3, "c": 4.5, "d": 7.1},
     }
     limites = matriz_limites.get((grupo_iso, soporte_iso), matriz_limites[("grupo1", "rigido")])
 
@@ -98,38 +111,46 @@ def procesar_senal_vibracion(
         recomendacion = "Operación restringida. Programar inspección de vibración o termografía en el próximo turno."
     else:
         evaluacion_iso = "Zona D (Peligro / Daño)"
-        recomendacion = "¡CONDICIÓN CRÍTICA! Detener equipo o programar intervención correctiva urgente."
+        recomendacion = (
+            "¡CONDICIÓN CRÍTICA! Detener equipo o programar intervención correctiva urgente."
+        )
 
     if anomalia_detectada and evaluacion_iso in ["Zona A (Óptimo)", "Zona B (Aceptable)"]:
         recomendacion += " (Nota CBM: Se detectó patrón impulsivo o transitorio anómalo por factor de cresta elevado)."
 
     # 6. Renderizado de Gráfico Espectral (Paleta Industrial Sala de Control)
-    fig, ax = plt.subplots(figsize=(6, 2.4), facecolor='#0E1B1F', dpi=140)
-    ax.set_facecolor('#16282D')
+    fig, ax = plt.subplots(figsize=(6, 2.4), facecolor="#0E1B1F", dpi=140)
+    ax.set_facecolor("#16282D")
 
-    ax.plot(freqs, fft_vals, color='#38BDF8', linewidth=1.1, label='Espectro FFT (Hanning)')
+    ax.plot(freqs, fft_vals, color="#38BDF8", linewidth=1.1, label="Espectro FFT (Hanning)")
 
     if picos_espectrales:
         px = [p["frecuencia_hz"] for p in picos_espectrales]
         py = [p["amplitud"] for p in picos_espectrales]
-        ax.scatter(px, py, color='#F5A623', s=24, zorder=5, label='Armónicos Dominantes')
+        ax.scatter(px, py, color="#F5A623", s=24, zorder=5, label="Armónicos Dominantes")
 
-    ax.set_title(f"Espectro FFT | RMS: {rms:.2f} mm/s | {evaluacion_iso}", color='#F4F6F5', fontsize=8.5, fontweight='bold', pad=8)
-    ax.set_xlabel("Frecuencia (Hz)", color='#94A3B8', fontsize=7.5)
-    ax.set_ylabel("Amplitud (mm/s)", color='#94A3B8', fontsize=7.5)
-    ax.tick_params(colors='#94A3B8', labelsize=7)
-    ax.grid(color='rgba(255, 255, 255, 0.07)', linestyle='--', linewidth=0.5)
+    ax.set_title(
+        f"Espectro FFT | RMS: {rms:.2f} mm/s | {evaluacion_iso}",
+        color="#F4F6F5",
+        fontsize=8.5,
+        fontweight="bold",
+        pad=8,
+    )
+    ax.set_xlabel("Frecuencia (Hz)", color="#94A3B8", fontsize=7.5)
+    ax.set_ylabel("Amplitud (mm/s)", color="#94A3B8", fontsize=7.5)
+    ax.tick_params(colors="#94A3B8", labelsize=7)
+    ax.grid(color=(1.0, 1.0, 1.0, 0.07), linestyle="--", linewidth=0.5)
 
     for spine in ax.spines.values():
-        spine.set_edgecolor('rgba(255, 255, 255, 0.12)')
+        spine.set_edgecolor((1.0, 1.0, 1.0, 0.12))
 
     plt.tight_layout()
 
     # Buffer a Base64 sin tocar disco
     buffer = io.BytesIO()
-    fig.savefig(buffer, format='png', facecolor='#0E1B1F', edgecolor='none')
+    fig.savefig(buffer, format="png", facecolor="#0E1B1F", edgecolor="none")
     buffer.seek(0)
-    imagen_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+    imagen_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
     plt.close(fig)
 
     return {
@@ -140,5 +161,5 @@ def procesar_senal_vibracion(
         "anomalia_ml": anomalia_detectada,
         "recomendacion_mantenimiento": recomendacion,
         "picos_espectrales_dominantes": picos_espectrales,
-        "grafico_fft_base64": f"data:image/png;base64,{imagen_base64}"
+        "grafico_fft_base64": f"data:image/png;base64,{imagen_base64}",
     }

@@ -1,0 +1,44 @@
+# ============================================================================
+# Dependencias y artefactos de build
+# ============================================================================
+node_modules/
+dist/
+.vite/
+coverage/
+
+# ============================================================================
+# Python / backend
+# ============================================================================
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Base de datos SQLite y respaldos WAL/SHM
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Datos de migración locales (grandes y específicos de la instalación)
+firebase_data.json
+
+# ============================================================================
+# Secretos y configuración local
+# ============================================================================
+.env
+.env.local
+.env.*.local
+
+# ============================================================================
+# Logs, temporales y sistema operativo
+# ============================================================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+desktop.ini

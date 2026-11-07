@@ -19,7 +19,7 @@ export const generarPDFExpediente = async ({
   tagEquipo = 'ACTIVO_CBM',
   elementoId = 'espacio-trabajo-dinamico',
   tenantConfig = LosColoradosTenantConfig,
-  abrirEnVisor = true
+  abrirEnVisor = true,
 }: GenerarPDFExpedienteOptions = {}): Promise<boolean> => {
   if (typeof document === 'undefined') return false;
 
@@ -65,7 +65,7 @@ export const generarPDFExpediente = async ({
       allowTaint: false,
       logging: false,
       scrollX: 0,
-      scrollY: 0
+      scrollY: 0,
     });
 
     const imgData = canvas.toDataURL('image/jpeg', 0.92);
@@ -75,7 +75,7 @@ export const generarPDFExpediente = async ({
     const pdf = new jsPDF({
       orientation: 'landscape',
       unit: 'mm',
-      format: 'letter'
+      format: 'letter',
     });
 
     const pageWidth = pdf.internal.pageSize.getWidth();
@@ -136,11 +136,13 @@ export const generarPDFExpediente = async ({
     pdf.text(
       `Documento oficial generado por CIO Predictivo 2.0 — ${tenantConfig.branding.nombreFaena}`,
       12,
-      pageHeight - 6
+      pageHeight - 6,
     );
 
     // 8. Sanitización del nombre de archivo y salida
-    const tagSeguro = String(tagEquipo).trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+    const tagSeguro = String(tagEquipo)
+      .trim()
+      .replace(/[^a-zA-Z0-9_-]/g, '_');
     const nombreArchivo = `Expediente_${tagSeguro}_${fechaStr}.pdf`;
 
     if (abrirEnVisor) {

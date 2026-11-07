@@ -80,7 +80,7 @@ export class OutboxDatabase {
     userId: string,
     actionType: OutboxItem['actionType'],
     resource: string,
-    payload: T
+    payload: T,
   ): Promise<OutboxItem<T>> {
     const db = await this.abrirDB();
     const item: OutboxItem<T> = {
@@ -92,7 +92,8 @@ export class OutboxDatabase {
       payload,
       timestamp: Date.now(),
       intentos: 0,
-      estado: 'PENDIENTE'
+      estado: 'PENDIENTE',
+      fechaUltimoIntento: Date.now(),
     };
 
     return new Promise((resolve, reject) => {
@@ -105,6 +106,49 @@ export class OutboxDatabase {
     });
   }
 
+  /**
+   * Devuelve las operaciones que deben (re)intentarse:
+   *  - PENDIENTE: nunca enviadas.
+   *  - FALLIDO: enviadas sin éxito y con intentos restantes.
+   *  - EN_PROCESO: huérfanas por cierre de pestaña; se reencolan si superan el timeout.
+   */
+  public static async obtenerReintentablesPorTenant(
+    tenantId: string,
+    maxIntentos = 5,
+    staleMs = 5 * 60 * 1000,
+  ): Promise<OutboxItem[]> {
+    const db = await this.abrirDB();
+    const items = await new Promise<OutboxItem[]>((resolve, reject) => {
+      const tx = db.transaction([STORE_OUTBOX], 'readonly');
+      const store = tx.objectStore(STORE_OUTBOX);
+      const index = store.index('tenantId');
+      const req = index.getAll(IDBKeyRange.only(tenantId));
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+
+    const ahora = Date.now();
+    const candidatos = items.filter((item) => {
+      if (item.estado === 'PENDIENTE') return true;
+      if (item.estado === 'FALLIDO') return item.intentos < maxIntentos;
+      if (item.estado === 'EN_PROCESO') {
+        return !item.fechaUltimoIntento || ahora - item.fechaUltimoIntento > staleMs;
+      }
+      return false;
+    });
+
+    // Recuperar EN_PROCESO huérfanas antes de reenviarlas.
+    const huerfanos = candidatos.filter((item) => item.estado === 'EN_PROCESO');
+    if (huerfanos.length > 0) {
+      await Promise.all(huerfanos.map((item) => this.actualizarEstado(item.id, 'PENDIENTE')));
+    }
+
+    return candidatos.map((item) =>
+      item.estado === 'EN_PROCESO' ? { ...item, estado: 'PENDIENTE' as const } : item,
+    );
+  }
+
+  /** Compatibilidad: pendientes estrictos (no incluye fallidos ni huérfanos). */
   public static async obtenerPendientesPorTenant(tenantId: string): Promise<OutboxItem[]> {
     const db = await this.abrirDB();
     return new Promise((resolve, reject) => {
@@ -131,10 +175,32 @@ export class OutboxDatabase {
     });
   }
 
+  /**
+   * Cuenta las operaciones que aún pueden sincronizarse (para badges de UI).
+   * Excluye los FALLIDO que agotaron sus reintentos para no mostrar un badge
+   * permanentemente atascado.
+   */
+  public static async contarPendientesPorTenant(
+    tenantId: string,
+    maxIntentos = 5,
+  ): Promise<number> {
+    const db = await this.abrirDB();
+    const items = await new Promise<OutboxItem[]>((resolve, reject) => {
+      const tx = db.transaction([STORE_OUTBOX], 'readonly');
+      const store = tx.objectStore(STORE_OUTBOX);
+      const index = store.index('tenantId');
+      const req = index.getAll(IDBKeyRange.only(tenantId));
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+
+    return items.filter((item) => item.estado !== 'FALLIDO' || item.intentos < maxIntentos).length;
+  }
+
   public static async actualizarEstado(
     id: string,
     estado: OutboxItem['estado'],
-    errorMensaje?: string
+    errorMensaje?: string,
   ): Promise<void> {
     const db = await this.abrirDB();
     return new Promise((resolve, reject) => {
@@ -178,5 +244,18 @@ export class OutboxDatabase {
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
+  }
+
+  /** Cierra la conexión cacheada. Útil para pruebas y cambios de versión. */
+  public static async cerrarConexion(): Promise<void> {
+    if (!this.dbPromise) return;
+    try {
+      const db = await this.dbPromise;
+      db.close();
+    } catch {
+      /* conexión ya inválida */
+    } finally {
+      this.dbPromise = null;
+    }
   }
 }

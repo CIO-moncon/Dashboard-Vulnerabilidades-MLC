@@ -1,0 +1,25 @@
+{
+  "name": "dashboard-vulnerabilidades-mlc",
+  "version": "1.0.0",
+  "description": "Plataforma industrial de monitoreo de condición (CBM) para la **Mina Los Colorados**. Combina un frontend **Vite + TypeScript** (PWA offline), un backend **FastAPI** con persistencia **SQLite** y autenticación real por **JWT**.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CIO-moncon/Dashboard-Vulnerabilidades-MLC.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/CIO-moncon/Dashboard-Vulnerabilidades-MLC/issues"
+  },
+  "homepage": "https://github.com/CIO-moncon/Dashboard-Vulnerabilidades-MLC#readme",
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.6"
+  }
+}

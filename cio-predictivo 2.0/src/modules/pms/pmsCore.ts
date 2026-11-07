@@ -57,27 +57,21 @@ export interface DatosSemanaPMS {
 
 // Variables de estado del módulo
 let semanaSeleccionada: string = '2026-W43';
-let listaSemanasDisponibles: string[] = ['2026-W43', '2026-W42'];
-let datosSemanaActual: DatosSemanaPMS = {
+const listaSemanasDisponibles: string[] = ['2026-W43', '2026-W42'];
+const datosSemanaActual: DatosSemanaPMS = {
   semana: '2026-W43',
   ordenes: {},
-  actividades_emergentes: {}
+  actividades_emergentes: {},
 };
 let datosEspectralesSemana: Record<string, AvisoEspectralCBM> = {};
 
 let filtroTexto = '';
-let filtroEstado = 'TODOS';
+const filtroEstado = 'TODOS';
 let filtroEspectralesEstado: 'PENDIENTES' | 'EMITIDOS' | 'OBSOLETOS' | 'TODOS' = 'PENDIENTES';
-let filtroEspectralesFecha = 'TODAS';
+const filtroEspectralesFecha = 'TODAS';
 const debounceGuardado: Record<string, number> = {};
 
-const escaparHTML = (texto = ''): string =>
-  String(texto || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+import { escaparHTML } from '../../core/utils/sanitizar';
 
 export const formatearFechaDDMMAAAA = (fechaInput = ''): string => {
   if (!fechaInput) return '-';
@@ -95,7 +89,7 @@ export const formatearFechaDDMMAAAA = (fechaInput = ''): string => {
   }
 
   const str = String(fechaInput).trim();
-  const matchYMD = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  const matchYMD = str.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
   if (matchYMD) {
     return `${matchYMD[3].padStart(2, '0')}-${matchYMD[2].padStart(2, '0')}-${matchYMD[1]}`;
   }
@@ -110,9 +104,13 @@ export const obtenerObjetoFecha = (fechaInput: any): Date => {
     return fechaEpoch;
   }
   const str = String(fechaInput).trim();
-  const matchYMD = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  const matchYMD = str.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
   if (matchYMD) {
-    return new Date(parseInt(matchYMD[1], 10), parseInt(matchYMD[2], 10) - 1, parseInt(matchYMD[3], 10));
+    return new Date(
+      parseInt(matchYMD[1], 10),
+      parseInt(matchYMD[2], 10) - 1,
+      parseInt(matchYMD[3], 10),
+    );
   }
   const parsed = new Date(str);
   return isNaN(parsed.getTime()) ? new Date(2099, 0, 1) : parsed;
@@ -132,7 +130,7 @@ const mostrarModalIndustrial = ({
   htmlCuerpo,
   textoConfirmar = 'Aceptar',
   textoCancelar = 'Cancelar',
-  mostrarCancelar = true
+  mostrarCancelar = true,
 }: {
   titulo: string;
   icono: string;
@@ -177,11 +175,14 @@ const mostrarModalIndustrial = ({
     const btnOk = document.getElementById(`btn-ok-${idModal}`);
     if (btnOk) {
       btnOk.onclick = () => {
-        const formInputs = overlay.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea');
+        const formInputs = overlay.querySelectorAll<
+          HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+        >('input, select, textarea');
         if (formInputs.length > 0) {
           const data: Record<string, any> = {};
           formInputs.forEach((inp) => {
-            if (inp instanceof HTMLInputElement && inp.type === 'checkbox') data[inp.name] = inp.checked;
+            if (inp instanceof HTMLInputElement && inp.type === 'checkbox')
+              data[inp.name] = inp.checked;
             else data[inp.name] = inp.value;
           });
           cerrar(data);
@@ -205,7 +206,7 @@ export const cargarDatosSemanaActual = async (): Promise<void> => {
     if (!sesion) return;
 
     const response = await fetch(`/api/cbm/registros?limit=200`, {
-      headers: AuthService.getHeadersTenant()
+      headers: AuthService.getHeadersTenant(),
     });
 
     if (response.ok) {
@@ -232,7 +233,7 @@ export const cargarDatosSemanaActual = async (): Promise<void> => {
             notifSap: Boolean(payload.notifSap),
             ctec: Boolean(payload.ctec),
             adjuntos: payload.adjuntos || 0,
-            observacion: payload.observacion || ''
+            observacion: payload.observacion || '',
           };
         } else if (r.resource.startsWith('emergencia_pms:')) {
           mapaEmergencias[r.id] = {
@@ -243,7 +244,7 @@ export const cargarDatosSemanaActual = async (): Promise<void> => {
             fecha: payload.fecha || new Date().toISOString(),
             turno: payload.turno || 'CPF',
             notifSap: Boolean(payload.notifSap),
-            ctec: Boolean(payload.ctec)
+            ctec: Boolean(payload.ctec),
           };
         } else if (r.resource.startsWith('aviso_espectral:')) {
           mapaEspectrales[r.id] = {
@@ -262,7 +263,7 @@ export const cargarDatosSemanaActual = async (): Promise<void> => {
             avisoSustituto: payload.avisoSustituto,
             fechaDeteccion: payload.fechaDeteccion || payload.fecha,
             fechaCorta: payload.fechaCorta,
-            timestamp: payload.timestamp || r.creado_en * 1000
+            timestamp: payload.timestamp || r.creado_en * 1000,
           };
         }
       });
@@ -419,9 +420,12 @@ const renderizarKPIsYTablas = (): void => {
 
   const totalTrabajosGlobal = totalProgramadas + totalEmergentes;
   const totalEjecutadasGlobal = ejecutadasPlan + totalEmergentes;
-  const pctCumplimientoPlan = totalProgramadas > 0 ? Math.round((ejecutadasPlan / totalProgramadas) * 100) : 0;
-  const pctNotif = totalTrabajosGlobal > 0 ? Math.round((notifSAPCount / totalTrabajosGlobal) * 100) : 0;
-  const pctCtec = totalTrabajosGlobal > 0 ? Math.round((ctecCerradasCount / totalTrabajosGlobal) * 100) : 0;
+  const pctCumplimientoPlan =
+    totalProgramadas > 0 ? Math.round((ejecutadasPlan / totalProgramadas) * 100) : 0;
+  const pctNotif =
+    totalTrabajosGlobal > 0 ? Math.round((notifSAPCount / totalTrabajosGlobal) * 100) : 0;
+  const pctCtec =
+    totalTrabajosGlobal > 0 ? Math.round((ctecCerradasCount / totalTrabajosGlobal) * 100) : 0;
 
   const kpisContainer = document.getElementById('pms-kpis-container');
   if (kpisContainer) {
@@ -477,9 +481,15 @@ const renderizarTablaOrdenes = (): void => {
     const txt = filtroTexto.toLowerCase();
     const coincideTexto =
       !txt ||
-      String(ord.numero || '').toLowerCase().includes(txt) ||
-      String(ord.tag || '').toLowerCase().includes(txt) ||
-      String(ord.area || '').toLowerCase().includes(txt);
+      String(ord.numero || '')
+        .toLowerCase()
+        .includes(txt) ||
+      String(ord.tag || '')
+        .toLowerCase()
+        .includes(txt) ||
+      String(ord.area || '')
+        .toLowerCase()
+        .includes(txt);
 
     let coincideEstado = true;
     if (filtroEstado !== 'TODOS') coincideEstado = ord.estadoReal === filtroEstado;
@@ -558,7 +568,8 @@ const renderizarTablaEmergencias = (): void => {
       </thead>
       <tbody>
         ${items
-          .map(([key, em]) => `
+          .map(
+            ([key, em]) => `
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
               <td style="padding: 8px 6px; font-family: monospace;">${escaparHTML(formatearFechaDDMMAAAA(em.fecha))}</td>
               <td style="padding: 8px 6px; font-weight: 700; color: #f87171; font-family: monospace;">${escaparHTML(em.tag)}</td>
@@ -575,7 +586,8 @@ const renderizarTablaEmergencias = (): void => {
                 </button>
               </td>
             </tr>
-          `)
+          `,
+          )
           .join('')}
       </tbody>
     </table>
@@ -611,9 +623,12 @@ const renderizarTablaEspectrales = (): void => {
 
   const filtrados = items.filter(([, esp]) => {
     const est = esp.estado || 'Pendiente';
-    if (filtroEspectralesEstado === 'PENDIENTES') return est !== 'Emitido' && est !== 'CERRADO_EJECUTADO' && est !== 'CERRADO_OBSOLETO';
-    if (filtroEspectralesEstado === 'EMITIDOS') return est === 'Emitido' || est === 'CERRADO_EJECUTADO';
-    if (filtroEspectralesEstado === 'OBSOLETOS') return est === 'CERRADO_OBSOLETO' || est === 'Obsoleto';
+    if (filtroEspectralesEstado === 'PENDIENTES')
+      return est !== 'Emitido' && est !== 'CERRADO_EJECUTADO' && est !== 'CERRADO_OBSOLETO';
+    if (filtroEspectralesEstado === 'EMITIDOS')
+      return est === 'Emitido' || est === 'CERRADO_EJECUTADO';
+    if (filtroEspectralesEstado === 'OBSOLETOS')
+      return est === 'CERRADO_OBSOLETO' || est === 'Obsoleto';
     return true;
   });
 
@@ -682,7 +697,11 @@ const renderizarTablaEspectrales = (): void => {
 // ============================================================================
 // ACTUALIZACIÓN DE CAMPOS Y DESPACHO CON AUDITORÍA
 // ============================================================================
-export const actualizarCampoOrden = async (idOrden: string, campo: string, valor: any): Promise<void> => {
+export const actualizarCampoOrden = async (
+  idOrden: string,
+  campo: string,
+  valor: any,
+): Promise<void> => {
   if (datosSemanaActual.ordenes[idOrden]) {
     (datosSemanaActual.ordenes[idOrden] as any)[campo] = valor;
   }
@@ -693,11 +712,15 @@ export const actualizarCampoOrden = async (idOrden: string, campo: string, valor
     semana: semanaSeleccionada,
     campo,
     valor,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   });
 };
 
-export const actualizarCampoEmergencia = async (idEmergencia: string, campo: string, valor: any): Promise<void> => {
+export const actualizarCampoEmergencia = async (
+  idEmergencia: string,
+  campo: string,
+  valor: any,
+): Promise<void> => {
   if (datosSemanaActual.actividades_emergentes[idEmergencia]) {
     (datosSemanaActual.actividades_emergentes[idEmergencia] as any)[campo] = valor;
   }
@@ -708,7 +731,7 @@ export const actualizarCampoEmergencia = async (idEmergencia: string, campo: str
     semana: semanaSeleccionada,
     campo,
     valor,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   });
 };
 
@@ -732,7 +755,7 @@ export const abrirModalCierreEjecucion = async (idKey: string): Promise<void> =>
         </div>
       </div>
     `,
-    textoConfirmar: 'Guardar Cierre'
+    textoConfirmar: 'Guardar Cierre',
   });
 
   if (!res || !res.otSap || !res.detalle) return;
@@ -744,7 +767,7 @@ export const abrirModalCierreEjecucion = async (idKey: string): Promise<void> =>
 
   await SyncManager.despacharOEncolar(`aviso_espectral:${idKey}`, 'UPDATE', {
     ...esp,
-    timestampCierre: Date.now()
+    timestampCierre: Date.now(),
   });
 };
 
@@ -764,7 +787,7 @@ export const abrirModalCierreObsolescencia = async (idKey: string): Promise<void
         </div>
       </div>
     `,
-    textoConfirmar: 'Confirmar Obsolescencia'
+    textoConfirmar: 'Confirmar Obsolescencia',
   });
 
   if (!res || !res.motivo) return;
@@ -775,7 +798,7 @@ export const abrirModalCierreObsolescencia = async (idKey: string): Promise<void
 
   await SyncManager.despacharOEncolar(`aviso_espectral:${idKey}`, 'UPDATE', {
     ...esp,
-    timestampCierre: Date.now()
+    timestampCierre: Date.now(),
   });
 };
 
@@ -818,7 +841,7 @@ export const procesarArchivoExcelPMS = (event: Event): void => {
           notifSap: esNotif,
           ctec: esCtec,
           adjuntos: parseInt(String(row['Cant Adj.'] || 0), 10) || 0,
-          observacion: rawEstatus
+          observacion: rawEstatus,
         };
       });
 
@@ -829,7 +852,7 @@ export const procesarArchivoExcelPMS = (event: Event): void => {
       await SyncManager.despacharOEncolar(`carga_masiva_pms:${semanaSeleccionada}`, 'CREATE', {
         semana: semanaSeleccionada,
         totalOrdenes: jsonData.length,
-        ordenes: ordenesImportadas
+        ordenes: ordenesImportadas,
       });
 
       alert(`✅ Sincronizadas ${jsonData.length} órdenes de trabajo de SAP PM.`);
@@ -865,7 +888,7 @@ export const abrirModalNuevaEmergencia = async (): Promise<void> => {
         </div>
       </div>
     `,
-    textoConfirmar: 'Registrar'
+    textoConfirmar: 'Registrar',
   });
 
   if (!res || !res.tag || !res.desc) return;
@@ -879,7 +902,7 @@ export const abrirModalNuevaEmergencia = async (): Promise<void> => {
     fecha: new Date().toISOString().split('T')[0],
     turno: 'CPF',
     notifSap: false,
-    ctec: false
+    ctec: false,
   };
 
   datosSemanaActual.actividades_emergentes[idEmergencia] = nuevaEmergencia;

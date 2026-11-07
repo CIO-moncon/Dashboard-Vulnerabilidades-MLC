@@ -1,0 +1,18 @@
+# Dependencias y build
+node_modules/
+dist/
+.vite/
+
+# Backend (no aplica al frontend)
+backend/
+
+# Git y docs
+.git/
+docs/
+
+# Tests
+*.test.ts
+
+# Sistema
+.DS_Store
+Thumbs.db

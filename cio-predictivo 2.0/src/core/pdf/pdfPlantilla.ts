@@ -39,7 +39,9 @@ const logoCachePorRuta = new Map<string, string>();
 /**
  * Convierte dinámicamente cualquier logo de faena/empresa a Base64 para jsPDF.
  */
-export const obtenerLogoBase64 = (rutaLogo = '/assets/img/logo-cpf.png'): Promise<string | null> => {
+export const obtenerLogoBase64 = (
+  rutaLogo = '/assets/img/logo-cpf.png',
+): Promise<string | null> => {
   if (logoCachePorRuta.has(rutaLogo)) {
     return Promise.resolve(logoCachePorRuta.get(rutaLogo)!);
   }
@@ -77,7 +79,9 @@ export const obtenerLogoBase64 = (rutaLogo = '/assets/img/logo-cpf.png'): Promis
  * Mapeo estricto de colores y estados de criticidad según ISO 20816-3 para informes PDF.
  */
 export const resolverPaletaSeveridadISO = (severidadRaw = ''): PaletaSeveridadPDF => {
-  const sev = String(severidadRaw || '').trim().toUpperCase();
+  const sev = String(severidadRaw || '')
+    .trim()
+    .toUpperCase();
 
   if (sev === 'ROJO' || sev === 'CRITICO' || sev === 'D' || sev.includes('ZONA D')) {
     return {
@@ -86,17 +90,23 @@ export const resolverPaletaSeveridadISO = (severidadRaw = ''): PaletaSeveridadPD
       border: [239, 68, 68],
       hex: '#ef4444',
       etiqueta: 'CRÍTICO (ZONA D)',
-      estadoCorto: 'Zona D (Crítico)'
+      estadoCorto: 'Zona D (Crítico)',
     };
   }
-  if (sev === 'NARANJA' || sev === 'SALMON' || sev === 'ALERTA' || sev === 'C' || sev.includes('ZONA C')) {
+  if (
+    sev === 'NARANJA' ||
+    sev === 'SALMON' ||
+    sev === 'ALERTA' ||
+    sev === 'C' ||
+    sev.includes('ZONA C')
+  ) {
     return {
       bg: [255, 237, 213],
       text: [154, 52, 18],
       border: [249, 115, 22],
       hex: '#f97316',
       etiqueta: 'ALERTA (ZONA C)',
-      estadoCorto: 'Zona C (Alerta)'
+      estadoCorto: 'Zona C (Alerta)',
     };
   }
   if (sev === 'AMARILLO' || sev === 'SEGUIMIENTO' || sev === 'B' || sev.includes('ZONA B')) {
@@ -106,7 +116,7 @@ export const resolverPaletaSeveridadISO = (severidadRaw = ''): PaletaSeveridadPD
       border: [234, 179, 8],
       hex: '#eab308',
       etiqueta: 'SEGUIMIENTO (ZONA B)',
-      estadoCorto: 'Zona B (Seguimiento)'
+      estadoCorto: 'Zona B (Seguimiento)',
     };
   }
   if (sev === 'SIN_DATOS' || sev === 'VACIO' || sev === 'S/D') {
@@ -116,7 +126,7 @@ export const resolverPaletaSeveridadISO = (severidadRaw = ''): PaletaSeveridadPD
       border: [203, 213, 225],
       hex: '#94a3b8',
       etiqueta: 'SIN MEDICIÓN',
-      estadoCorto: 'Sin datos'
+      estadoCorto: 'Sin datos',
     };
   }
   return {
@@ -125,7 +135,7 @@ export const resolverPaletaSeveridadISO = (severidadRaw = ''): PaletaSeveridadPD
     border: [34, 197, 94],
     hex: '#00e676',
     etiqueta: 'ÓPTIMO (ZONA A)',
-    estadoCorto: 'Zona A (Óptimo)'
+    estadoCorto: 'Zona A (Óptimo)',
   };
 };
 
@@ -134,7 +144,7 @@ export const resolverPaletaSeveridadISO = (severidadRaw = ''): PaletaSeveridadPD
  */
 export const dibujarCabeceraCorporativa = async (
   doc: any,
-  options: CabeceraPDFOptions = {}
+  options: CabeceraPDFOptions = {},
 ): Promise<void> => {
   const config = options.tenantConfig || LosColoradosTenantConfig;
   const margenX = options.margenX ?? 14;
@@ -187,7 +197,9 @@ export const dibujarCabeceraCorporativa = async (
     doc.setFontSize(7);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...paleta.text);
-    doc.text(String(textoCondicion).toUpperCase(), xBadge + anchoBadge / 2, yBadge + 5.5, { align: 'center' });
+    doc.text(String(textoCondicion).toUpperCase(), xBadge + anchoBadge / 2, yBadge + 5.5, {
+      align: 'center',
+    });
 
     doc.setFontSize(8.5);
     doc.text(paleta.etiqueta, xBadge + anchoBadge / 2, yBadge + 12.8, { align: 'center' });
@@ -243,10 +255,7 @@ export const dibujarCabeceraCorporativa = async (
 /**
  * Pie de página corporativo con paginación dinámica y membrete multi-tenant.
  */
-export const dibujarPiePaginaCorporativo = (
-  doc: any,
-  options: PiePaginaPDFOptions = {}
-): void => {
+export const dibujarPiePaginaCorporativo = (doc: any, options: PiePaginaPDFOptions = {}): void => {
   const config = options.tenantConfig || LosColoradosTenantConfig;
   const totalPaginas = doc.internal.getNumberOfPages();
   const anchoPagina = doc.internal.pageSize.getWidth();
@@ -273,7 +282,9 @@ export const dibujarPiePaginaCorporativo = (
     const infoCentro = options.textoCentro || `Respaldo SAP PM | Emisión: ${fechaTexto}`;
     doc.text(infoCentro, anchoPagina / 2, pieY + 1.5, { align: 'center' });
 
-    doc.text(`Página ${p} de ${totalPaginas}`, margenX + anchoContenido, pieY + 1.5, { align: 'right' });
+    doc.text(`Página ${p} de ${totalPaginas}`, margenX + anchoContenido, pieY + 1.5, {
+      align: 'right',
+    });
   }
 };
 
@@ -282,7 +293,7 @@ export const dibujarPiePaginaCorporativo = (
  */
 export const dibujarPortadaGerencialMensual = async (
   doc: any,
-  options: PortadaGerencialOptions = {}
+  options: PortadaGerencialOptions = {},
 ): Promise<void> => {
   const config = options.tenantConfig || LosColoradosTenantConfig;
   const anchoPagina = doc.internal.pageSize.getWidth();
@@ -296,7 +307,7 @@ export const dibujarPortadaGerencialMensual = async (
     subtitulo: `Consolidado Mensual — ${mesAnio.toUpperCase()} | ${faena}`,
     referencia: 'Documento Ejecutivo de Confiabilidad y Trazabilidad de Activos',
     margenX: 14,
-    tenantConfig: config
+    tenantConfig: config,
   });
 
   let startY = 52;
@@ -314,10 +325,13 @@ export const dibujarPortadaGerencialMensual = async (
   startY += 14;
   const itemsMeta = [
     { label: 'Faena Minera:', val: faena },
-    { label: 'Ámbito Operacional:', val: 'Monitoreo de Condición (CBM), Termografía y Vibraciones ISO 20816-3' },
+    {
+      label: 'Ámbito Operacional:',
+      val: 'Monitoreo de Condición (CBM), Termografía y Vibraciones ISO 20816-3',
+    },
     { label: 'Empresa Matriz / Cliente:', val: config.branding.empresaMatriz || faena },
     { label: 'Superintendencia Solicitante:', val: superintendencia },
-    { label: 'Periodo Evaluado:', val: mesAnio }
+    { label: 'Periodo Evaluado:', val: mesAnio },
   ];
 
   itemsMeta.forEach((item, idx) => {
@@ -333,8 +347,16 @@ export const dibujarPortadaGerencialMensual = async (
 
   doc.setFontSize(8);
   doc.setTextColor(148, 163, 184);
-  doc.text('Documento confidencial para gestión estratégica de confiabilidad y respaldo SAP PM.', 14, altoPagina - 20);
-  doc.text(`Fecha de Emisión Oficial: ${new Date().toLocaleDateString('es-CL')}`, 14, altoPagina - 15);
+  doc.text(
+    'Documento confidencial para gestión estratégica de confiabilidad y respaldo SAP PM.',
+    14,
+    altoPagina - 20,
+  );
+  doc.text(
+    `Fecha de Emisión Oficial: ${new Date().toLocaleDateString('es-CL')}`,
+    14,
+    altoPagina - 15,
+  );
 };
 
 export const obtenerSemanaISO = (fechaDada = new Date()): number => {
@@ -342,7 +364,12 @@ export const obtenerSemanaISO = (fechaDada = new Date()): number => {
   fecha.setHours(0, 0, 0, 0);
   fecha.setDate(fecha.getDate() + 3 - ((fecha.getDay() + 6) % 7));
   const semana1 = new Date(fecha.getFullYear(), 0, 4);
-  return 1 + Math.round(((fecha.getTime() - semana1.getTime()) / 86400000 - 3 + ((semana1.getDay() + 6) % 7)) / 7);
+  return (
+    1 +
+    Math.round(
+      ((fecha.getTime() - semana1.getTime()) / 86400000 - 3 + ((semana1.getDay() + 6) % 7)) / 7,
+    )
+  );
 };
 
 export const formatearFechaNomenclatura = (fecha = new Date()): string => {

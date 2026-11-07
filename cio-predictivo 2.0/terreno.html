@@ -478,11 +478,21 @@
 
     <!-- PUNTO DE ENTRADA MODULAR TYPESCRIPT -->
     <script type="module">
-        import { LosColoradosTenantConfig } from './src/tenants/los-colorados.config.js';
-        import { injectTenantTheme } from './src/core/theme/tokenInjector.js';
-        import { TerrenoUIController } from './src/modules/terreno/terrenoUI.js';
-        import { SyncManager } from './src/core/offline/syncManager.js';
-        import { OutboxDatabase } from './src/core/offline/outboxDatabase.js';
+        import { LosColoradosTenantConfig } from './src/tenants/los-colorados.config';
+        import { injectTenantTheme } from './src/core/theme/tokenInjector';
+        import { TerrenoUIController } from './src/modules/terreno/terrenoUI';
+        import { SyncManager } from './src/core/offline/syncManager';
+        import { OutboxDatabase } from './src/core/offline/outboxDatabase';
+        import { AuthService, inicializarInterceptorAutenticado } from './src/core/auth/authService';
+
+        // 0. La PWA de terreno comparte la sesión del dashboard. Sin sesión válida
+        //    no se permite operar ni encolar registros.
+        inicializarInterceptorAutenticado();
+        const sesionTerreno = AuthService.getSesion();
+        if (!sesionTerreno) {
+            window.location.replace('./index.html');
+            throw new Error('Sesión requerida para operar la PWA de terreno.');
+        }
 
         // 1. Inyectar tokens de diseño de Mina Los Colorados
         injectTenantTheme(LosColoradosTenantConfig.theme);
@@ -495,9 +505,9 @@
         // 3. Monitoreo reactivo de la cola Outbox
         const actualizarContadorPendientes = async () => {
             try {
-                const pendientes = await OutboxDatabase.obtenerPendientesPorTenant(LosColoradosTenantConfig.branding.tenantId);
+                const pendientes = await OutboxDatabase.contarPendientesPorTenant(sesionTerreno.tenantId);
                 const badge = document.getElementById('contadorOffline');
-                if (badge) badge.textContent = String(pendientes.length);
+                if (badge) badge.textContent = String(pendientes);
             } catch (err) {
                 console.warn('Error al leer contador offline:', err);
             }

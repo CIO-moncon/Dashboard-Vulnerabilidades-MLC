@@ -6,7 +6,7 @@ import {
   dibujarPiePaginaCorporativo,
   obtenerSemanaISO,
   formatearFechaNomenclatura,
-  abrirVisorPDFInterno
+  abrirVisorPDFInterno,
 } from '../../core/pdf/pdfPlantilla';
 
 declare const Chart: any;
@@ -70,17 +70,17 @@ export interface AnalisisModularMemoria {
 const chartsInstancias: Record<string, any> = {
   rms: null,
   temp: null,
-  fc: null
+  fc: null,
 };
 
-let datosGraficoMemoria: DatosGraficoMemoria = {
+const datosGraficoMemoria: DatosGraficoMemoria = {
   idFirebase: null,
   puntoId: null,
   nombrePunto: null,
   seleccionGraficos: {
     rms: true,
     temp: true,
-    fc: true
+    fc: true,
   },
   fechas: [],
   rms: [],
@@ -89,11 +89,11 @@ let datosGraficoMemoria: DatosGraficoMemoria = {
   proyecciones: {
     rms: null,
     temp: null,
-    fc: null
-  }
+    fc: null,
+  },
 };
 
-let analisisModularMemoria: AnalisisModularMemoria = {
+const analisisModularMemoria: AnalisisModularMemoria = {
   idFirebase: null,
   tag: '',
   nombreEquipo: '',
@@ -113,7 +113,7 @@ let analisisModularMemoria: AnalisisModularMemoria = {
       'Se generará el aviso en SAP PM para parada programada. Realizar relubricación manual controlada con grasa recomendada e inspección de holguras mecánicas.',
     generaAviso: true,
     avisoSap: '',
-    prioridadSap: 'Alta'
+    prioridadSap: 'Alta',
   },
   reductor: {
     activo: true,
@@ -128,7 +128,7 @@ let analisisModularMemoria: AnalisisModularMemoria = {
       'Se generará aviso en SAP PM para chequeo de holguras entre dientes (backlash) e inspección de desgaste en engranajes. Muestreo de lubricante para recuento ferrografico.',
     generaAviso: true,
     avisoSap: '',
-    prioridadSap: 'Alta'
+    prioridadSap: 'Alta',
   },
   poleas: {
     activo: false,
@@ -144,8 +144,8 @@ let analisisModularMemoria: AnalisisModularMemoria = {
       'Mantener pauta de lubricación periódica y verificar tensión y alineamiento de correas en la próxima ventana operacional.',
     generaAviso: false,
     avisoSap: '',
-    prioridadSap: 'Media'
-  }
+    prioridadSap: 'Media',
+  },
 };
 
 // ============================================================================
@@ -154,11 +154,17 @@ let analisisModularMemoria: AnalisisModularMemoria = {
 export const calcularRegresionLinealYProyeccion = (
   valores: number[],
   umbralAlarma: number,
-  umbralCritico: number
+  umbralCritico: number,
 ): ProyeccionFalla => {
   const n = valores.length;
   if (n < 2) {
-    return { pendiente: 0, r2: 0, diasHastaAlarma: null, diasHastaFalla: null, fechaEstimadaFalla: 'Insuficientes datos' };
+    return {
+      pendiente: 0,
+      r2: 0,
+      diasHastaAlarma: null,
+      diasHastaFalla: null,
+      fechaEstimadaFalla: 'Insuficientes datos',
+    };
   }
 
   let sumX = 0;
@@ -179,7 +185,13 @@ export const calcularRegresionLinealYProyeccion = (
 
   const divisor = n * sumX2 - sumX * sumX;
   if (divisor === 0) {
-    return { pendiente: 0, r2: 0, diasHastaAlarma: null, diasHastaFalla: null, fechaEstimadaFalla: 'Tendencia plana' };
+    return {
+      pendiente: 0,
+      r2: 0,
+      diasHastaAlarma: null,
+      diasHastaFalla: null,
+      fechaEstimadaFalla: 'Tendencia plana',
+    };
   }
 
   const m = (n * sumXY - sumX * sumY) / divisor;
@@ -213,7 +225,7 @@ export const calcularRegresionLinealYProyeccion = (
     r2: Number(r2.toFixed(2)),
     diasHastaAlarma,
     diasHastaFalla,
-    fechaEstimadaFalla
+    fechaEstimadaFalla,
   };
 };
 
@@ -301,7 +313,11 @@ const asegurarModalTendenciaDOM = (): HTMLElement => {
   return modal;
 };
 
-export const abrirGraficoTendencia = async (idActivo: string, puntoId: string, nombrePunto = ''): Promise<void> => {
+export const abrirGraficoTendencia = async (
+  idActivo: string,
+  puntoId: string,
+  nombrePunto = '',
+): Promise<void> => {
   const modal = asegurarModalTendenciaDOM();
   modal.style.display = 'flex';
   modal.classList.remove('oculto');
@@ -309,7 +325,8 @@ export const abrirGraficoTendencia = async (idActivo: string, puntoId: string, n
   const titulo = document.getElementById('titulo-modal-grafico');
   const badge = document.getElementById('badge-punto-grafico');
 
-  if (titulo) titulo.textContent = `Tendencia de Condición: [${puntoId}] — ${nombrePunto || 'Componente'}`;
+  if (titulo)
+    titulo.textContent = `Tendencia de Condición: [${puntoId}] — ${nombrePunto || 'Componente'}`;
   if (badge) badge.textContent = `TAG: ${idActivo} | Punto: ${puntoId}`;
 
   datosGraficoMemoria.idFirebase = idActivo;
@@ -318,9 +335,12 @@ export const abrirGraficoTendencia = async (idActivo: string, puntoId: string, n
 
   try {
     // Consultar historial del activo a través del endpoint REST del backend
-    const response = await fetch(`/api/cbm/registros?tag=${encodeURIComponent(idActivo)}&limit=50`, {
-      headers: AuthService.getHeadersTenant()
-    });
+    const response = await fetch(
+      `/api/cbm/registros?tag=${encodeURIComponent(idActivo)}&limit=50`,
+      {
+        headers: AuthService.getHeadersTenant(),
+      },
+    );
 
     datosGraficoMemoria.fechas = [];
     datosGraficoMemoria.rms = [];
@@ -383,7 +403,16 @@ const renderizarTresGraficosSimultaneos = (): void => {
     rmsExtrapolado.push(Number(((rms[rms.length - 1] || 0) + proyRMS.pendiente * 2).toFixed(2)));
   }
 
-  const configBase = (ctx: any, label: string, datos: number[], color: string, datosExt: any[], umbralAlerta: number, umbralCritico: number, unidad: string) => {
+  const configBase = (
+    ctx: any,
+    label: string,
+    datos: number[],
+    color: string,
+    datosExt: any[],
+    umbralAlerta: number,
+    umbralCritico: number,
+    unidad: string,
+  ) => {
     return new Chart(ctx, {
       type: 'line',
       data: {
@@ -397,7 +426,7 @@ const renderizarTresGraficosSimultaneos = (): void => {
             borderWidth: 2.5,
             pointRadius: 4,
             tension: 0.2,
-            fill: true
+            fill: true,
           },
           {
             label: 'Proyección',
@@ -406,7 +435,7 @@ const renderizarTresGraficosSimultaneos = (): void => {
             borderWidth: 2,
             borderDash: [4, 4],
             pointRadius: 3,
-            fill: false
+            fill: false,
           },
           {
             label: `Alarma (${umbralAlerta})`,
@@ -415,7 +444,7 @@ const renderizarTresGraficosSimultaneos = (): void => {
             borderWidth: 1.2,
             borderDash: [5, 4],
             pointRadius: 0,
-            fill: false
+            fill: false,
           },
           {
             label: `Crítico (${umbralCritico})`,
@@ -424,42 +453,79 @@ const renderizarTresGraficosSimultaneos = (): void => {
             borderWidth: 1.5,
             borderDash: [3, 3],
             pointRadius: 0,
-            fill: false
-          }
-        ]
+            fill: false,
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { labels: { color: '#cbd5e1', font: { size: 9, weight: '700' } } }
+          legend: { labels: { color: '#cbd5e1', font: { size: 9, weight: '700' } } },
         },
         scales: {
-          x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } },
-          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } }
-        }
-      }
+          x: {
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { color: '#94a3b8', font: { size: 9 } },
+          },
+          y: {
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { color: '#94a3b8', font: { size: 9 } },
+          },
+        },
+      },
     });
   };
 
   if (seleccionGraficos.rms) {
-    const ctxRMS = (document.getElementById('canvas-tendencia-rms') as HTMLCanvasElement)?.getContext('2d');
-    if (ctxRMS) chartsInstancias.rms = configBase(ctxRMS, 'RMS', rms, '#38bdf8', rmsExtrapolado, umbralAlarmaRMS, umbralCriticoRMS, 'mm/s');
+    const ctxRMS = (
+      document.getElementById('canvas-tendencia-rms') as HTMLCanvasElement
+    )?.getContext('2d');
+    if (ctxRMS)
+      chartsInstancias.rms = configBase(
+        ctxRMS,
+        'RMS',
+        rms,
+        '#38bdf8',
+        rmsExtrapolado,
+        umbralAlarmaRMS,
+        umbralCriticoRMS,
+        'mm/s',
+      );
   }
 
   if (seleccionGraficos.temp) {
-    const ctxTemp = (document.getElementById('canvas-tendencia-temp') as HTMLCanvasElement)?.getContext('2d');
-    if (ctxTemp) chartsInstancias.temp = configBase(ctxTemp, 'Temperatura', temp, '#F5A623', [], 65.0, 80.0, '°C');
+    const ctxTemp = (
+      document.getElementById('canvas-tendencia-temp') as HTMLCanvasElement
+    )?.getContext('2d');
+    if (ctxTemp)
+      chartsInstancias.temp = configBase(
+        ctxTemp,
+        'Temperatura',
+        temp,
+        '#F5A623',
+        [],
+        65.0,
+        80.0,
+        '°C',
+      );
   }
 
   if (seleccionGraficos.fc) {
-    const ctxFC = (document.getElementById('canvas-tendencia-fc') as HTMLCanvasElement)?.getContext('2d');
-    if (ctxFC) chartsInstancias.fc = configBase(ctxFC, 'Factor Cresta', fc, '#c084fc', [], 3.5, 5.0, 'FC+');
+    const ctxFC = (document.getElementById('canvas-tendencia-fc') as HTMLCanvasElement)?.getContext(
+      '2d',
+    );
+    if (ctxFC)
+      chartsInstancias.fc = configBase(ctxFC, 'Factor Cresta', fc, '#c084fc', [], 3.5, 5.0, 'FC+');
   }
 
   const panelProyeccion = document.getElementById('panel-proyeccion-falla');
   if (panelProyeccion) {
-    const estadoProy = (rms[rms.length - 1] || 0) >= umbralCriticoRMS || (proyRMS.diasHastaFalla !== null && proyRMS.diasHastaFalla <= 15) ? '#ef4444' : '#00e676';
+    const estadoProy =
+      (rms[rms.length - 1] || 0) >= umbralCriticoRMS ||
+      (proyRMS.diasHastaFalla !== null && proyRMS.diasHastaFalla <= 15)
+        ? '#ef4444'
+        : '#00e676';
 
     panelProyeccion.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
@@ -546,7 +612,7 @@ export const guardarDiagnosticoExperto = async (): Promise<void> => {
     tag,
     diagnostico: analisisModularMemoria.motor.diagnostico,
     recomendaciones: analisisModularMemoria.motor.recomendaciones,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   });
 
   alert(`✅ Diagnóstico experto guardado para ${tag}`);

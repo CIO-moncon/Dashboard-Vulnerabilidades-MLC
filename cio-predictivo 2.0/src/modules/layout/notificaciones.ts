@@ -5,13 +5,7 @@ export interface UIController {
   confirmar: (mensaje: string, titulo?: string) => Promise<boolean>;
 }
 
-const escaparHTML = (texto = ''): string =>
-  String(texto || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+import { escaparHTML } from '../../core/utils/sanitizar';
 
 export const UI: UIController = {
   /**
@@ -24,11 +18,14 @@ export const UI: UIController = {
     if (!container) {
       container = document.createElement('div');
       container.id = 'toast-container';
-      container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 8px; max-width: 90vw; pointer-events: none;';
+      container.style.cssText =
+        'position: fixed; bottom: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 8px; max-width: 90vw; pointer-events: none;';
       document.body.appendChild(container);
     }
 
-    const tipoNorm: TipoToast = ['exito', 'error', 'alerta', 'info'].includes(tipo) ? tipo : 'exito';
+    const tipoNorm: TipoToast = ['exito', 'error', 'alerta', 'info'].includes(tipo)
+      ? tipo
+      : 'exito';
     const toast = document.createElement('div');
     toast.className = `toast ${tipoNorm}`;
     toast.setAttribute('role', tipoNorm === 'error' ? 'alert' : 'status');
@@ -39,7 +36,7 @@ export const UI: UIController = {
     let icono = 'check_circle';
     let colorIcono = '#00e676';
     let bordeColor = 'rgba(0, 230, 118, 0.4)';
-    let fondoColor = 'rgba(22, 40, 45, 0.95)';
+    const fondoColor = 'rgba(22, 40, 45, 0.95)';
 
     if (tipoNorm === 'error') {
       icono = 'error';
@@ -110,7 +107,8 @@ export const UI: UIController = {
         modal = document.createElement('div');
         modal.id = 'modal-confirmacion';
         modal.className = 'modal-overlay oculto';
-        modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 100000;';
+        modal.style.cssText =
+          'position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 100000;';
         modal.innerHTML = `
           <div class="modal-box glass-panel" style="background: #0E1B1F; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; width: 95%; max-width: 440px; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,0.8);">
             <header style="background: rgba(14, 27, 31, 0.95); border-bottom: 1px solid rgba(255,255,255,0.1); padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
@@ -188,7 +186,7 @@ export const UI: UIController = {
         (btnCancelar || btnAceptar)?.focus();
       }, 50);
     });
-  }
+  },
 };
 
 // Registro en el objeto window para retrocompatibilidad con scripts existentes

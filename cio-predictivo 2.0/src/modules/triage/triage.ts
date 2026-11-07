@@ -32,19 +32,15 @@ let filtroEstadoTriage: FiltroEstadoTriage = 'PENDIENTES';
 let filtroBusquedaTriage = '';
 let timerEscuchaBadge: number | null = null;
 
-const escaparHTML = (texto = ''): string =>
-  String(texto || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+import { escaparHTML } from '../../core/utils/sanitizar';
 
 export const normalizarSeveridadParaCatastro = (textoSev = ''): string => {
   const s = String(textoSev).toLowerCase();
-  if (s.includes('rojo') || s.includes('zona d') || s.includes('critico') || s.includes('crítico')) return 'Rojo';
+  if (s.includes('rojo') || s.includes('zona d') || s.includes('critico') || s.includes('crítico'))
+    return 'Rojo';
   if (s.includes('naranja') || s.includes('zona c') || s.includes('alerta')) return 'Naranja';
-  if (s.includes('amarillo') || s.includes('zona b') || s.includes('seguimiento')) return 'Amarillo';
+  if (s.includes('amarillo') || s.includes('zona b') || s.includes('seguimiento'))
+    return 'Amarillo';
   return 'Verde';
 };
 
@@ -57,16 +53,13 @@ export const obtenerColorCriticidad = (textoSev = ''): string => {
   return '#38bdf8';
 };
 
-// ============================================================================
-// CONSULTA Y SINCRONIZACIÓN DE ALERTAS (FASTAPI REST + AUDIT TRAIL)
-// ============================================================================
 export const cargarAlertasDesdeServidor = async (): Promise<void> => {
   try {
     const sesion = AuthService.getSesion();
     if (!sesion) return;
 
-    const response = await fetch('/api/cbm/registros?limit=150', {
-      headers: AuthService.getHeadersTenant()
+    const response = await fetch('/api/cbm/registros?limit=500', {
+      headers: AuthService.getHeadersTenant(),
     });
 
     if (response.ok) {
@@ -74,13 +67,20 @@ export const cargarAlertasDesdeServidor = async (): Promise<void> => {
       const registros = data.registros || [];
       const mapaTemporal: Record<string, HallazgoTriage> = {};
 
-      registros.forEach((r: any) => {
+      const soloAlertas = registros.filter(
+        (r: any) =>
+          (r.resource && r.resource.startsWith('alerta_terreno:')) ||
+          r.tipo === 'alerta_terreno' ||
+          (r.payload && (r.payload.inspector || r.payload.severidadPreliminar)),
+      );
+
+      soloAlertas.forEach((r: any) => {
         const payload = r.payload || {};
         const idKey = r.id || `cbm_${Date.now()}`;
         mapaTemporal[idKey] = {
           id: idKey,
           tenantId: r.tenant_id,
-          tag: payload.tag || 'EQUIPO',
+          tag: (payload.tag || 'EQUIPO').toUpperCase(),
           area: payload.area || 'General',
           componente: payload.componente || 'Condición Global',
           severidad: payload.severidad || 'Zona C',
@@ -94,8 +94,9 @@ export const cargarAlertasDesdeServidor = async (): Promise<void> => {
           estado: (payload.estado as EstadoTriage) || 'Pendiente',
           inspector: payload.inspector || r.user_id,
           analistaValidador: payload.analistaValidador,
-          timestamp: payload.timestamp || r.creado_en * 1000,
-          evidencias: payload.evidencias || []
+          timestamp: payload.timestamp || (r.creado_en ? r.creado_en * 1000 : Date.now()),
+          evidencias: payload.evidencias || [],
+          fotoBase64: payload.fotoBase64 || '',
         };
       });
 
@@ -113,7 +114,6 @@ export const cargarAlertasDesdeServidor = async (): Promise<void> => {
 export const iniciarEscuchaBadgeGlobal = (): void => {
   if (timerEscuchaBadge !== null) return;
   cargarAlertasDesdeServidor();
-  // Sondeo periódico cada 20 segundos para monitoreo en vivo en sala de control
   timerEscuchaBadge = window.setInterval(cargarAlertasDesdeServidor, 20000);
 };
 
@@ -144,10 +144,10 @@ const actualizarBadgeTriageGlobal = (): void => {
   }
 };
 
-// ============================================================================
-// VISOR MULTIMEDIA
-// ============================================================================
-export const abrirVisorMultimediaInterno = (urlMedia: string, tipo: 'imagen' | 'video' = 'imagen'): void => {
+export const abrirVisorMultimediaInterno = (
+  urlMedia: string,
+  tipo: 'imagen' | 'video' = 'imagen',
+): void => {
   let modal = document.getElementById('modal-visor-multimedia');
   if (!modal) {
     const div = document.createElement('div');
@@ -195,9 +195,6 @@ export const cerrarVisorMultimedia = (): void => {
   }
 };
 
-// ============================================================================
-// RENDERIZADO DE LA VISTA PRINCIPAL DE TRIAGE
-// ============================================================================
 export const renderizarModuloTriage = (idContenedor = 'espacio-trabajo-dinamico'): void => {
   const contenedor = document.getElementById(idContenedor);
   if (!contenedor) return;
@@ -218,7 +215,7 @@ export const renderizarModuloTriage = (idContenedor = 'espacio-trabajo-dinamico'
           </p>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <div style="display: flex; items-center; gap: 10px; flex-wrap: wrap;">
           <div style="display: flex; gap: 4px; background: rgba(0,0,0,0.4); padding: 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
             <button type="button" id="btn-triage-pendientes" onclick="window.filtrarTriageEstado('PENDIENTES')" style="background: #F5A623; color: #0E1B1F; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">
               Pendientes (<span id="lbl-triage-pend-count">0</span>)
@@ -272,10 +269,18 @@ export const renderizarListaTriage = (): void => {
     const texto = filtroBusquedaTriage.toLowerCase();
     const coincideTexto =
       !texto ||
-      String(h.tag || '').toLowerCase().includes(texto) ||
-      String(h.area || '').toLowerCase().includes(texto) ||
-      String(h.componente || '').toLowerCase().includes(texto) ||
-      String(h.descripcion || '').toLowerCase().includes(texto);
+      String(h.tag || '')
+        .toLowerCase()
+        .includes(texto) ||
+      String(h.area || '')
+        .toLowerCase()
+        .includes(texto) ||
+      String(h.componente || '')
+        .toLowerCase()
+        .includes(texto) ||
+      String(h.descripcion || '')
+        .toLowerCase()
+        .includes(texto);
 
     let coincideEstado = true;
     const estadoH = h.estado || 'Pendiente';
@@ -357,7 +362,7 @@ export const renderizarListaTriage = (): void => {
 
           <div style="text-align: right;">
             <button type="button" onclick="window.abrirModalValidacionAnalista('${escaparHTML(idKey)}')" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">
-              ${estado === 'Pendiente' || estado === 'nuevo' ? 'Ver Reporte' : (esVisto ? 'Validar Caso' : 'Ver / Editar')}
+              ${estado === 'Pendiente' || estado === 'nuevo' ? 'Ver Reporte' : esVisto ? 'Validar Caso' : 'Ver / Editar'}
             </button>
           </div>
         </div>
@@ -405,7 +410,9 @@ export const abrirModalValidacionAnalista = async (idKey: string): Promise<void>
 
   let multimediaHTML = `<div style="font-size: 0.78rem; color: #94A3B8; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; text-align: center;">📷 Sin evidencias multimedia adjuntas.</div>`;
 
-  const listaEvidencias = hallazgo.evidencias || (hallazgo.fotoBase64 ? [{ tipo: 'IMAGEN_BASE64', data: hallazgo.fotoBase64 }] : []);
+  const listaEvidencias =
+    hallazgo.evidencias ||
+    (hallazgo.fotoBase64 ? [{ tipo: 'IMAGEN_BASE64', data: hallazgo.fotoBase64 }] : []);
 
   if (listaEvidencias.length > 0) {
     multimediaHTML = `
@@ -419,7 +426,11 @@ export const abrirModalValidacionAnalista = async (idKey: string): Promise<void>
     `;
   }
 
-  const sevActual = hallazgo.severidadValidada || hallazgo.severidadPreliminar || hallazgo.severidad || 'Zona C (Naranja)';
+  const sevActual =
+    hallazgo.severidadValidada ||
+    hallazgo.severidadPreliminar ||
+    hallazgo.severidad ||
+    'Zona C (Naranja)';
 
   overlay.innerHTML = `
     <div class="modal-box glass-panel" style="background: #0E1B1F; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; width: 100%; max-width: 540px; overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;">
@@ -491,10 +502,16 @@ export const abrirModalValidacionAnalista = async (idKey: string): Promise<void>
 
   overlay.querySelector('#btn-guardar-val')!.addEventListener('click', async () => {
     const btnGuardar = overlay.querySelector('#btn-guardar-val') as HTMLButtonElement;
-    const nuevoEstado = (overlay.querySelector('#select-estado-val') as HTMLSelectElement).value as EstadoTriage;
-    const nuevaSeveridad = (overlay.querySelector('#select-severidad-val') as HTMLSelectElement).value;
-    const avisoSapVal = (overlay.querySelector('#input-aviso-sap-val') as HTMLInputElement).value.trim();
-    const diagnosticoTxt = (overlay.querySelector('#textarea-diag-val') as HTMLTextAreaElement).value.trim();
+    const nuevoEstado = (overlay.querySelector('#select-estado-val') as HTMLSelectElement)
+      .value as EstadoTriage;
+    const nuevaSeveridad = (overlay.querySelector('#select-severidad-val') as HTMLSelectElement)
+      .value;
+    const avisoSapVal = (
+      overlay.querySelector('#input-aviso-sap-val') as HTMLInputElement
+    ).value.trim();
+    const diagnosticoTxt = (
+      overlay.querySelector('#textarea-diag-val') as HTMLTextAreaElement
+    ).value.trim();
 
     btnGuardar.disabled = true;
     btnGuardar.innerHTML = `<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">sync</span> Guardando...`;
@@ -510,13 +527,15 @@ export const abrirModalValidacionAnalista = async (idKey: string): Promise<void>
         avisoSap: avisoSapVal,
         diagnostico: diagnosticoTxt,
         analistaValidador: sesion?.email || 'Analista CBM',
-        fechaValidacion: new Date().toISOString()
+        fechaValidacion: new Date().toISOString(),
       };
 
-      // Despacho con trazabilidad hacia el backend y cola outbox
-      await SyncManager.despacharOEncolar(`alerta_validacion:${idKey}`, 'UPDATE', payloadValidacion);
+      await SyncManager.despacharOEncolar(
+        `alerta_validacion:${idKey}`,
+        'UPDATE',
+        payloadValidacion,
+      );
 
-      // Actualización reactiva local
       if (listaHallazgosActuales[idKey]) {
         listaHallazgosActuales[idKey].estado = nuevoEstado;
         listaHallazgosActuales[idKey].severidadValidada = nuevaSeveridad;
@@ -535,9 +554,6 @@ export const abrirModalValidacionAnalista = async (idKey: string): Promise<void>
   });
 };
 
-// ============================================================================
-// EXPOSICIÓN GLOBAL
-// ============================================================================
 if (typeof window !== 'undefined') {
   const w = window as any;
   w.renderizarModuloTriage = renderizarModuloTriage;

@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Bases de datos locales y migración (se montan como volúmenes si se necesitan)
+*.db
+*.db-shm
+*.db-wal
+firebase_data.json
+
+# Secretos y configuración local
+.env
+.env.*
+
+# Tests y cachés
+.pytest_cache/
+tests/
+requirements-dev.txt
+
+# Sistema
+.DS_Store
+Thumbs.db

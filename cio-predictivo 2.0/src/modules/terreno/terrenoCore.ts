@@ -97,7 +97,7 @@ export const guardarCatastroLocal = async (catalogo: ActivoTerreno[] = []): Prom
       catalogo.forEach((item) => {
         store.put({
           ...item,
-          tenantId: item.tenantId || tenantIdActual || 'default_tenant'
+          tenantId: item.tenantId || tenantIdActual || 'default_tenant',
         });
       });
 
@@ -138,23 +138,19 @@ export const cargarCatastroLocal = async (): Promise<ActivoTerreno[]> => {
 };
 
 export const transmitirAlertaTerreno = async (
-  payload: AlertaTerrenoPayload
+  payload: AlertaTerrenoPayload,
 ): Promise<{ exito: boolean; modo: 'online' | 'offline_outbox' }> => {
   const sesion = AuthService.getSesion();
   const tenantId = sesion?.tenantId || payload.tenantId;
 
-  const resultado = await SyncManager.despacharOEncolar(
-    `alerta_terreno:${payload.tag}`,
-    'CREATE',
-    {
-      ...payload,
-      tenantId
-    }
-  );
+  const resultado = await SyncManager.despacharOEncolar(`alerta_terreno:${payload.tag}`, 'CREATE', {
+    ...payload,
+    tenantId,
+  });
 
   return {
     exito: true,
-    modo: resultado.sincronizadoDirecto ? 'online' : 'offline_outbox'
+    modo: resultado.sincronizadoDirecto ? 'online' : 'offline_outbox',
   };
 };
 

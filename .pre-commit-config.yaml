@@ -1,0 +1,36 @@
+# ============================================================================
+# Pre-commit hooks — CIO Predictivo 2.0
+# ============================================================================
+# Instalación (requiere Python 3.11-3.13 con pyyaml disponible):
+#   pip install pre-commit
+#   pre-commit install
+#
+# Nota: en Python 3.15+ pyyaml no tiene wheel precompilado; usar Python 3.11/3.12
+# para los hooks, o ejecutar ruff/eslint manualmente (ver README).
+# ============================================================================
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^cio-predictivo 2\.0/backend/.*\.py$
+      - id: ruff-format
+        files: ^cio-predictivo 2\.0/backend/.*\.py$
+
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v10.14.0
+    hooks:
+      - id: eslint
+        files: ^cio-predictivo 2\.0/src/.*\.(ts|js)$
+        additional_dependencies:
+          - eslint@10.14.0
+          - '@eslint/js@9.15.0'
+          - typescript-eslint@8.15.0
+          - eslint-config-prettier@9.1.0
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.9.0
+    hooks:
+      - id: prettier
+        files: ^cio-predictivo 2\.0/src/.*\.(ts|js|css|html|json)$

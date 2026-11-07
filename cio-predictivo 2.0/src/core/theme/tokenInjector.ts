@@ -9,7 +9,7 @@ const TOKEN_TO_CSS_VARS: Record<keyof TenantThemeTokens, string[]> = {
   bgDark: ['--bg-dark'],
   bgDarkDeep: ['--bg-dark-deep'],
   bgCard: ['--bg-card'],
-  fontFamily: ['--font-family-base']
+  fontFamily: ['--font-family-base'],
 };
 
 export const injectTenantTheme = (tokens: TenantThemeTokens): void => {

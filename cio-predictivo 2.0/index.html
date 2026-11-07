@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="./css/variables.css">
     <link rel="stylesheet" href="./css/main.css">
 
-    <!-- MapLibre GL JS (Motor Geoespacial 3D y Relieve DEM) -->
+    <!-- MapLibre GL JS -->
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css">
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
 
@@ -124,9 +124,7 @@
 </head>
 <body>
 
-    <!-- ===================================================================== -->
-    <!-- 1. VISTA DE AUTENTICACIÓN (LOGIN)                                     -->
-    <!-- ===================================================================== -->
+    <!-- 1. VISTA DE AUTENTICACIÓN (LOGIN) -->
     <section id="vista-login" class="vista-login oculta" role="region" aria-label="Pantalla de Autenticación" style="position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; background: #0E1B1F;">
         <div class="login-card glass-panel" style="width: 100%; max-width: 400px; padding: 2rem; background: rgba(22, 40, 45, 0.95); border: 1px solid var(--border-glass, rgba(255, 255, 255, 0.15)); border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);">
             <header style="text-align: center; margin-bottom: 1.5rem;">
@@ -158,9 +156,7 @@
         </div>
     </section>
 
-    <!-- ===================================================================== -->
-    <!-- 2. VISTA PRINCIPAL DEL SISTEMA (DASHBOARD)                            -->
-    <!-- ===================================================================== -->
+    <!-- 2. VISTA PRINCIPAL DEL SISTEMA (DASHBOARD) -->
     <div id="vista-app" class="vista-app">
 
         <!-- BARRA LATERAL (SIDEBAR) -->
@@ -176,7 +172,7 @@
                     </div>
                 </div>
 
-                <!-- Pestañas de Navegación Lateral: Catastro / Triage -->
+                <!-- Pestañas Catastro / Triage -->
                 <nav class="sidebar-tabs" aria-label="Vistas del menú lateral" style="display: flex; gap: 6px; margin-bottom: 10px;">
                     <button type="button" id="tab-catastro" class="tab-btn active" style="flex: 1;">
                         <span class="material-symbols-outlined" aria-hidden="true">list_alt</span>
@@ -189,9 +185,10 @@
                     </button>
                 </nav>
 
-                <div class="sidebar-search" style="position: relative;">
-                    <span class="material-symbols-outlined search-icon" aria-hidden="true" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem; pointer-events: none;">search</span>
-                    <input type="search" id="input-busqueda-sidebar" placeholder="Buscar equipo o TAG..." aria-label="Buscar equipo en catastro" style="width: 100%; background: #16282D; border: 1px solid rgba(255,255,255,0.12); color: white; padding: 8px 12px 8px 34px; border-radius: 6px; font-size: 0.8rem; outline: none; box-sizing: border-box;">
+                <!-- Buscador de equipos -->
+                <div class="sidebar-search" style="display: flex; align-items: center; background: #16282D; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 6px; padding: 0 10px; margin: 0 0 10px 0; height: 36px; box-sizing: border-box;">
+                    <span class="material-symbols-outlined" aria-hidden="true" style="color: #94a3b8; font-size: 1.15rem; margin-right: 8px; flex-shrink: 0; user-select: none;">search</span>
+                    <input type="search" id="input-busqueda-sidebar" placeholder="Buscar equipo o TAG..." aria-label="Buscar equipo en catastro" style="width: 100%; background: transparent; border: none; color: white; font-size: 0.8rem; outline: none; padding: 0;">
                 </div>
             </header>
 
@@ -215,6 +212,9 @@
                         </span>
                     </div>
                 </div>
+                <button type="button" id="btn-gestion-usuarios" title="Gestión de usuarios" aria-label="Gestión de usuarios" style="display: none; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; border-radius: 8px; width: 36px; height: 36px; min-width: 36px; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 1.2rem;" aria-hidden="true">manage_accounts</span>
+                </button>
                 <button type="button" id="btn-salir" class="btn-logout" title="Cerrar Sesión" aria-label="Cerrar sesión" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #f87171; border-radius: 8px; width: 36px; height: 36px; min-width: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
                     <span class="material-symbols-outlined" style="font-size: 1.2rem;" aria-hidden="true">logout</span>
                 </button>
@@ -235,7 +235,6 @@
                 </div>
 
                 <nav class="topbar-actions" aria-label="Acciones globales del sistema" style="display: flex; align-items: center; gap: 8px;">
-                    <!-- BOTÓN INDEPENDIENTE PARA CONTROL DE AVISOS SAP ESPECTRALES -->
                     <button type="button" id="btn-avisos-espectrales" class="btn-topbar" title="Control de Avisos SAP e Informes Espectrales" style="background: rgba(2, 132, 199, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 7px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
                         <span class="material-symbols-outlined" style="font-size: 1.1rem;" aria-hidden="true">assignment_turned_in</span>
                         <span>Avisos Espectrales SAP</span>
@@ -253,16 +252,14 @@
                 </nav>
             </header>
 
-            <!-- ESPACIO DE TRABAJO DINÁMICO (MAPA 3D / EXPEDIENTE / TRIAGE / PMS / AVISOS) -->
+            <!-- ESPACIO DE TRABAJO DINÁMICO -->
             <section id="espacio-trabajo-dinamico" class="workspace-container" role="main" aria-label="Área de trabajo interactiva">
-                <!-- Se puebla dinámicamente -->
+                <!-- Se puebla dinámicamente con renderizarMapaPlanta() o renderizarModuloTriage() -->
             </section>
         </main>
     </div>
 
-    <!-- ===================================================================== -->
-    <!-- 3. MODALES Y NOTIFICACIONES                                           -->
-    <!-- ===================================================================== -->
+    <!-- 3. MODALES Y NOTIFICACIONES -->
     <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
     <!-- MODAL DE CONFIRMACIÓN -->
@@ -282,10 +279,8 @@
         </div>
     </div>
 
-    <!-- PUNTO DE ENTRADA ÚNICO TYPESCRIPT -->
     <script type="module" src="./src/main.ts"></script>
 
-    <!-- Registro de Service Worker PWA -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {

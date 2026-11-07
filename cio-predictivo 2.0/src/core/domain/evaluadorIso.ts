@@ -30,7 +30,7 @@ export const MATRIZ_LIMITES_ISO: Readonly<Record<`${GrupoIso}_${SoporteIso}`, Is
   grupo1_rigido: { b: 2.3, c: 4.5, d: 7.1 },
   grupo1_flexible: { b: 3.5, c: 7.1, d: 11.0 },
   grupo2_rigido: { b: 1.4, c: 2.8, d: 4.5 },
-  grupo2_flexible: { b: 2.3, c: 4.5, d: 7.1 }
+  grupo2_flexible: { b: 2.3, c: 4.5, d: 7.1 },
 } as const;
 
 export const ZONAS_ISO: Readonly<Record<ZonaIsoId, IsoZonaDef>> = {
@@ -40,7 +40,7 @@ export const ZONAS_ISO: Readonly<Record<ZonaIsoId, IsoZonaDef>> = {
     nivelSeveridad: 1,
     colorHex: '#00e676',
     color: 'var(--iso-zona-a, #00e676)',
-    cls: 'zona-a'
+    cls: 'zona-a',
   },
   B: {
     zona: 'B',
@@ -48,7 +48,7 @@ export const ZONAS_ISO: Readonly<Record<ZonaIsoId, IsoZonaDef>> = {
     nivelSeveridad: 2,
     colorHex: '#84cc16',
     color: 'var(--iso-zona-b, #84cc16)',
-    cls: 'zona-b'
+    cls: 'zona-b',
   },
   C: {
     zona: 'C',
@@ -56,7 +56,7 @@ export const ZONAS_ISO: Readonly<Record<ZonaIsoId, IsoZonaDef>> = {
     nivelSeveridad: 3,
     colorHex: '#f59e0b',
     color: 'var(--iso-zona-c, #f59e0b)',
-    cls: 'zona-c'
+    cls: 'zona-c',
   },
   D: {
     zona: 'D',
@@ -64,7 +64,7 @@ export const ZONAS_ISO: Readonly<Record<ZonaIsoId, IsoZonaDef>> = {
     nivelSeveridad: 4,
     colorHex: '#ef4444',
     color: 'var(--iso-zona-d, #ef4444)',
-    cls: 'zona-d'
+    cls: 'zona-d',
   },
   SIN_DATOS: {
     zona: 'S/D',
@@ -72,14 +72,14 @@ export const ZONAS_ISO: Readonly<Record<ZonaIsoId, IsoZonaDef>> = {
     nivelSeveridad: 0,
     colorHex: '#94a3b8',
     color: 'var(--text-muted, #94a3b8)',
-    cls: 'sin-datos'
-  }
+    cls: 'sin-datos',
+  },
 } as const;
 
 export const evaluarISO20816 = (
   rms: number | string | null | undefined,
   grupo: GrupoIso = 'grupo1',
-  soporte: SoporteIso = 'rigido'
+  soporte: SoporteIso = 'rigido',
 ): EvaluacionIsoResultado => {
   const valorNumerico = typeof rms === 'number' ? rms : Number.parseFloat(String(rms));
 
@@ -102,14 +102,16 @@ export const evaluarISO20816 = (
   return {
     ...ZONAS_ISO[zonaClave],
     rmsEvaluado: Number(valorNumerico.toFixed(2)),
-    limitesAplicados: limites
+    limitesAplicados: limites,
   };
 };
 
 export const calcularSaludComponente = (
-  valoresRms: Array<number | string | { valor?: number | string; rms?: number | string } | null | undefined>,
+  valoresRms: Array<
+    number | string | { valor?: number | string; rms?: number | string } | null | undefined
+  >,
   grupo: GrupoIso = 'grupo1',
-  soporte: SoporteIso = 'rigido'
+  soporte: SoporteIso = 'rigido',
 ): EvaluacionSaludComponente => {
   if (!Array.isArray(valoresRms) || valoresRms.length === 0) {
     return { rmsMax: 0, ...ZONAS_ISO.SIN_DATOS, rmsEvaluado: 0 };
@@ -148,6 +150,6 @@ export const calcularSaludComponente = (
 
   return {
     rmsMax: Number(rmsMax.toFixed(2)),
-    ...evaluacion
+    ...evaluacion,
   };
 };

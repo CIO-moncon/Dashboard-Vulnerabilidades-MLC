@@ -1,53 +1,133 @@
-Reporte Técnico: CIO Predictivo 2.0 (Planta Mina Los Colorados)
-1. Propósito de la web
-Plataforma web industrial de monitoreo de condición (CBM) y gestión de activos críticos para faena minera. Su objetivo principal es centralizar la inspección de equipos (correas transportadoras, reductores, poleas), calcular severidades bajo norma ISO 20816-3, integrar avisos con SAP PM y proveer un gemelo digital geoespacial interactivo en 3D para la toma de decisiones en terreno, incluso en condiciones de baja conectividad.
+# Reporte Técnico: CIO Predictivo 2.0 (Planta Mina Los Colorados)
 
-2. Estructura de archivos actual
-index.html: Página principal y contenedor de vistas SPA (Single Page Application).
+## 1. Propósito de la web
 
-database.rules.json: Reglas de seguridad, validación de esquemas e indexación de Firebase.
+Plataforma web industrial de monitoreo de condición (CBM) y gestión de activos
+críticos para faena minera. Su objetivo principal es centralizar la inspección de
+equipos (correas transportadoras, reductores, poleas), calcular severidades bajo
+norma ISO 20816-3, integrar avisos con SAP PM y proveer un gemelo digital
+geoespacial interactivo en 3D para la toma de decisiones en terreno, incluso en
+condiciones de baja conectividad.
 
-css/: Hojas de estilo modulares con diseño industrial Glassmorphism y temas oscuros.
+## 2. Estructura de archivos actual
 
-js/
+```
+Dashboard-Vulnerabilidades-MLC/
+├── .github/workflows/ci.yml       # CI/CD (typecheck, tests, build, Docker)
+├── .gitignore
+├── README.md                      # Quickstart, credenciales, variables, API
+└── cio-predictivo 2.0/
+    ├── index.html                 # Dashboard principal (SPA)
+    ├── terreno.html               # App de terreno (PWA offline)
+    ├── vite.config.ts             # Entradas múltiples, base './'
+    ├── package.json               # Scripts: dev, build, typecheck, test
+    ├── docker-compose.yml         # Orquestación Docker
+    ├── Dockerfile                 # Frontend (Vite + Nginx)
+    ├── docker/nginx.conf
+    ├── .dockerignore
+    ├── css/main.css
+    ├── public/                    # sw.js, manifest.json, assets/img/logo-cpf.png
+    ├── src/
+    │   ├── main.ts                # Orquestador SPA
+    │   ├── core/                  # auth, domain, offline, pdf, theme, types, utils
+    │   ├── modules/               # activos, analisis, avisos, layout, pms, terreno, triage, usuarios
+    │   └── tenants/               # Configuración por faena
+    ├── backend/
+    │   ├── main.py                # FastAPI (endpoints, middleware, auth)
+    │   ├── persistencia/          # Repositorios + migraciones
+    │   ├── alembic/               # Migraciones de esquema (env.py, versions/)
+    │   ├── alembic.ini
+    │   ├── database.py            # Fachada de compatibilidad
+    │   ├── security.py            # PBKDF2 + JWT
+    │   ├── analizador_fft.py      # FFT + Isolation Forest + ISO 20816-3
+    │   ├── migrar_datos.py        # Migración manual autenticada
+    │   ├── cambiar_clave.py       # Rotación/recuperación de contraseña
+    │   ├── backup_db.py           # Respaldo consistente + rotación
+    │   ├── requirements.txt
+    │   ├── requirements-dev.txt   # pytest, httpx2, ruff
+    │   ├── .env.example
+    │   ├── Dockerfile
+    │   ├── .dockerignore
+    │   ├── pytest.ini
+    │   ├── conftest.py
+    │   └── tests/                 # 48 pruebas (pytest)
+    └── docs/
+        ├── ARQUITECTURA.md
+        ├── CONTEXTO.md
+        ├── CHANGELOG.md
+        ├── MANUAL_TERRENO.md
+        └── README.md
+```
 
-app.js: Módulo principal de inicialización, autenticación, gestión de mapas y rutas reactivas.
+## 3. Estado del CSS y Diseño
 
-core/: Configuración centralizada de Firebase (firebase-config.js) y plantillas PDF corporativas (pdf-plantilla.js).
+- Estilo visual: Glassmorphism industrial oscuro optimizado para salas de control
+  y dispositivos móviles en faena.
+- Layouts: CSS Grid y Flexbox para paneles adaptativos, tablas interactivas de
+  puntos cinemáticos y modulares.
+- Sistema de semaforización ISO (Zonas A, B, C, D) con clases dinámicas y
+  efectos pulsantes para alertas críticas.
+- Popups personalizados para MapLibre GL JS adaptados al gemelo digital.
+- Interfaz responsive y adaptable a modo Kiosko de pantalla completa.
 
-ui/: Módulos de interfaz de usuario (expediente.js, pms.js, sidebar.js, triage.js, analisis.js).
+## 4. Estado del Frontend (TypeScript)
 
-domain/: Lógica de negocio y catálogos de plantas (plantillas.js).
+- Arquitectura de modulación: ES6+ Modules con carga asíncrona (Async/Await) y
+  eventos centralizados.
+- Autenticación: JWT contra backend FastAPI, permisos por rol (ADMINISTRADOR,
+  SUPERVISOR, ANALISTA CBM, OPERADOR TERRENO). Sesión persistida en
+  `localStorage` (`cio_session_v2`).
+- Gemelo Digital 3D: integración con MapLibre GL JS, mapas satelitales (Esri),
+  relieve DEM y control de cámaras con pines dinámicos filtrables por cota/nivel
+  y área.
+- Expedientes y puntos cinemáticos: gestión interactiva de componentes con
+  eliminación en cascada y cálculo dinámico de severidades RMS, temperatura y
+  Factor de Cresta.
+- Reportes y visor PDF: generación integrada de reportes en PDF con visor
+  interactivo en modal.
+- Modo offline / PWA: IndexedDB (Outbox) + Service Worker (app shell, tiles
+  cache-first, API sin caché) con sincronización automática.
+- Gestión de usuarios: modal de administración (solo ADMINISTRADOR).
+- Sanitización HTML centralizada en `src/core/utils/sanitizar.ts`.
 
-3. Estado del CSS y Diseño
-Estilo visual: Glassmorphism industrial oscuro optimizado para salas de control y dispositivos móviles en faena.
+## 5. Estado del Backend (Python / FastAPI)
 
-Layouts: Uso intensivo de CSS Grid y Flexbox para paneles adaptativos, tablas interactivas de puntos cinemáticos y modulares.
+- Persistencia: SQLite (`users`, `cbm_records`, `audit_log`, `refresh_tokens`) con
+  modo WAL y migraciones versionadas con Alembic.
+- Autenticación: JWT HS256 (acceso) + refresh tokens opacos con rotación y
+  revocación; contraseñas PBKDF2-SHA256; rate limit por IP.
+- Autorización: por roles en endpoints de gestión, análisis y auditoría.
+- Análisis: FFT + Isolation Forest + evaluación ISO 20816-3, gráfico PNG base64.
+- Migración inicial automática desde `firebase_data.json` (solo si BD vacía).
+- Respaldos: script CLI y endpoint on-demand con rotación.
+- Seguridad: CORS configurable, cabeceras HTTP (CSP, HSTS opcional, etc.).
+- Documentación interactiva: `/api/docs` (Swagger) y `/api/redoc`.
 
-Componentes visuales:
+## 6. Integraciones
 
-Sistema de semaforización ISO (Zonas A, B, C, D) con clases dinámicas y efectos pulsantes para alertas críticas.
+- **SAP PM:** nomenclatura de avisos espectrales y semanas SAP.
+- **MapLibre GL JS + Esri:** gemelo digital 3D y tiles satelitales.
+- **jsPDF:** exportación de expedientes y reportes.
 
-Popups personalizados para MapLibre GL JS adaptados al gemelo digital sin interferir con los marcadores geográficos.
+## 7. Pruebas y calidad
 
-Interfaz responsive y adaptable a modo Kiosko de pantalla completa.
+- Frontend: Vitest + jsdom (21 pruebas de dominio y Outbox).
+- Backend: pytest (56 pruebas de health, auth, refresh tokens, CBM, roles,
+  seguridad, migraciones, backups).
+- CI/CD: GitHub Actions (typecheck, tests, build, Docker).
+- Linting/formatting: Ruff (backend), ESLint + Prettier (frontend), pre-commit hooks.
 
-4. Estado del JavaScript
-Arquitectura de modulación: ES6+ Modules con carga asíncrona (Async/Await) y eventos centralizados.
+## 8. Despliegue
 
-Firebase & Base de Datos: Conexión en tiempo real (Database Realtime) con control estricto de roles de usuario (Administrador, Supervisor, Analista, Inspector).
+- Desarrollo: `npm run dev` (Vite, puerto 5173) + `uvicorn main:app` (puerto 8000).
+- Producción: Docker Compose (`docker compose up -d --build`) con volumen
+  persistente para la BD.
+- Variables de entorno documentadas en `backend/.env.example`.
 
-Gemelo Digital 3D: Integración avanzada con MapLibre GL JS, mapas satelitales (Esri), relieve DEM y control de cámaras (pitch/bearing) con pines dinámicos filtrables por cota/nivel y área.
+## 9. Siguientes pasos recomendados
 
-Expedientes y Puntos Cinemáticos: Gestión interactiva de componentes (motores, reductores, pares de poleas LI/LD) con eliminación en cascada inteligente y cálculo dinámico de severidades RMS, temperatura y Factor de Cresta (FC+).
-
-Reportes y Visor PDF: Generación integrada de reportes diarios en PDF listos para SAP PM con visor interactivo en modal interno.
-
-5. Siguientes pasos e integración híbrida recomendada
-Modo Offline & Sincronización PWA: Habilitar la persistencia local de Firebase (enablePersistence()) junto con Service Workers avanzados para permitir el ingreso de rutas de terreno sin conexión y su sincronización automática al recuperar señal.
-
-Backend Analítico en Python (FastAPI + SciPy): Diseñar microservicios en Python para automatizar Transformadas Rápidas de Fourier (FFT), envolventes y detección de anomalías mediante Machine Learning no supervisado (Isolation Forest / PyOD).
-
-Series Temporales: Integrar una base de datos optimizada para telemetría histórica (ej. InfluxDB o TimescaleDB) para mejorar la renderización de las tendencias de vibración a largo plazo.
-
-Contenerización: Desplegar el sistema completo (Frontend PWA + Backend Python + BD) mediante Docker y Docker Compose para instalaciones on-premise seguras en Mina Los Colorados.
+1. Migración del JWT a cookies HttpOnly (elimina `localStorage` para la sesión).
+2. Refactor de `window.*` globals hacia imports directos / event bus tipado.
+3. Precaching de Workbox y ajustes finales de PWA.
+4. Paginación en tablas grandes (catastro, auditoría).
+5. Tests E2E (Playwright) para flujos críticos.
