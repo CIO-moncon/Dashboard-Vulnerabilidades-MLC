@@ -75,8 +75,8 @@ Dashboard-Vulnerabilidades-MLC/
 - Arquitectura de modulación: ES6+ Modules con carga asíncrona (Async/Await) y
   eventos centralizados.
 - Autenticación: JWT contra backend FastAPI, permisos por rol (ADMINISTRADOR,
-  SUPERVISOR, ANALISTA CBM, OPERADOR TERRENO). Sesión persistida en
-  `localStorage` (`cio_session_v2`).
+  SUPERVISOR, ANALISTA CBM, OPERADOR TERRENO). Sesión en cookies HttpOnly; en
+  `localStorage` solo se guardan metadatos y expiración (`cio_session_v2`).
 - Gemelo Digital 3D: integración con MapLibre GL JS, mapas satelitales (Esri),
   relieve DEM y control de cámaras con pines dinámicos filtrables por cota/nivel
   y área.
@@ -95,7 +95,8 @@ Dashboard-Vulnerabilidades-MLC/
 - Persistencia: SQLite (`users`, `cbm_records`, `audit_log`, `refresh_tokens`) con
   modo WAL y migraciones versionadas con Alembic.
 - Autenticación: JWT HS256 (acceso) + refresh tokens opacos con rotación y
-  revocación; contraseñas PBKDF2-SHA256; rate limit por IP.
+  revocación, servidos como cookies HttpOnly (`SameSite`, `Secure` opcional);
+  contraseñas PBKDF2-SHA256; rate limit por IP.
 - Autorización: por roles en endpoints de gestión, análisis y auditoría.
 - Análisis: FFT + Isolation Forest + evaluación ISO 20816-3, gráfico PNG base64.
 - Migración inicial automática desde `firebase_data.json` (solo si BD vacía).
@@ -112,8 +113,8 @@ Dashboard-Vulnerabilidades-MLC/
 ## 7. Pruebas y calidad
 
 - Frontend: Vitest + jsdom (21 pruebas de dominio y Outbox).
-- Backend: pytest (56 pruebas de health, auth, refresh tokens, CBM, roles,
-  seguridad, migraciones, backups).
+- Backend: pytest (61 pruebas de health, auth, cookies, refresh tokens, CBM,
+  roles, seguridad, migraciones, backups).
 - CI/CD: GitHub Actions (typecheck, tests, build, Docker).
 - Linting/formatting: Ruff (backend), ESLint + Prettier (frontend), pre-commit hooks.
 
@@ -126,8 +127,7 @@ Dashboard-Vulnerabilidades-MLC/
 
 ## 9. Siguientes pasos recomendados
 
-1. Migración del JWT a cookies HttpOnly (elimina `localStorage` para la sesión).
-2. Refactor de `window.*` globals hacia imports directos / event bus tipado.
-3. Precaching de Workbox y ajustes finales de PWA.
-4. Paginación en tablas grandes (catastro, auditoría).
-5. Tests E2E (Playwright) para flujos críticos.
+1. Refactor de `window.*` globals hacia imports directos / event bus tipado.
+2. Precaching de Workbox y ajustes finales de PWA.
+3. Paginación en tablas grandes (catastro, auditoría).
+4. Tests E2E (Playwright) para flujos críticos.

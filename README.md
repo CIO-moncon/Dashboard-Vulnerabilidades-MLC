@@ -2,7 +2,8 @@
 
 Plataforma industrial de monitoreo de condición (CBM) para la **Mina Los Colorados**.
 Combina un frontend **Vite + TypeScript** (PWA offline), un backend **FastAPI** con
-persistencia **SQLite** y autenticación real por **JWT** con **refresh tokens**.
+persistencia **SQLite** y autenticación real por **JWT** con **refresh tokens** en
+cookies **HttpOnly**.
 
 > Estado: listo para despliegue on-premise. Requiere configuración de secretos y
 > cambio de la contraseña inicial antes de exponerse en producción.
@@ -136,6 +137,7 @@ automáticamente si `python-dotenv` está instalado (incluido en `requirements.t
 | `CIO_SECRET_KEY`        | *(aleatoria temporal)*                                   | Clave de firma JWT. **Obligatoria** en producción, mínimo 32 caracteres. Si no se define, los tokens se invalidan al reiniciar. |
 | `CIO_TOKEN_HORAS`       | `8`                                                      | Vigencia del token de acceso en horas. |
 | `CIO_REFRESH_HORAS`     | `720`                                                    | Vigencia del refresh token en horas (30 días por defecto). |
+| `CIO_COOKIE_SECURE`     | `0`                                                      | `1` para marcar las cookies de sesión con `Secure` (solo con HTTPS). |
 | `CIO_ALLOWED_ORIGINS`   | `http://localhost:5173,http://127.0.0.1:5173`            | Orígenes CORS separados por coma. No usar `*` en producción. |
 | `CIO_TRUST_PROXY`       | `0`                                                      | `1` para usar `X-Forwarded-For` en el rate limit de login (solo detrás de un proxy controlado). |
 | `CIO_ENABLE_HSTS`       | `0`                                                      | `1` para enviar Strict-Transport-Security (solo con HTTPS en producción). |
@@ -247,15 +249,18 @@ python -m pytest
 | GET    | `/api/cbm/registros`         | JWT  | Cualquiera |
 | GET    | `/api/auditoria`             | JWT  | Administrador, Supervisor |
 
-Los endpoints protegidos esperan `Authorization: Bearer <token>`. Si se envía
-`X-Tenant-ID`, debe coincidir con el tenant del token (si no, `403`).
+Los endpoints protegidos usan una cookie **HttpOnly** (`cio_access_token`) para
+autenticar al navegador; el cliente CLI/scripts puede seguir usando
+`Authorization: Bearer <token>`. Si se envía `X-Tenant-ID`, debe coincidir con el
+tenant del token (si no, `403`).
 
 ---
 
 ## Notas operativas
 
 - **Offline / Outbox:** `terreno.html` comparte sesión con `index.html` vía
-  `localStorage` (`cio_session_v2`). Si no hay sesión, redirige a `index.html`.
+  `localStorage` (`cio_session_v2`, que guarda solo metadatos de usuario, nunca
+  el token). Si no hay sesión, redirige a `index.html`.
   El Service Worker cachea el app shell y sincroniza la cola automáticamente.
 - **`firebase_data.json`:** archivo de migración inicial (~54 MB). Está ignorado
   por Git; si existe en `backend/` y la BD está vacía, se importa automáticamente.

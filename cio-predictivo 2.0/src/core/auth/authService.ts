@@ -154,12 +154,7 @@ export class AuthService {
 
     try {
       const data = JSON.parse(sesionRaw) as SesionUsuario;
-      if (
-        data?.uid &&
-        data?.rol &&
-        data?.tenantId &&
-        typeof data.refreshExpiraEn === 'number'
-      ) {
+      if (data?.uid && data?.rol && data?.tenantId && typeof data.refreshExpiraEn === 'number') {
         if (data.refreshExpiraEn <= Date.now()) {
           this.cerrarSesion();
           return null;
@@ -277,12 +272,8 @@ export const inicializarInterceptorAutenticado = (): void => {
 
   const fetchOriginal = window.fetch.bind(window);
 
-  window.fetch = async (
-    input: RequestInfo | URL,
-    init?: RequestInit,
-  ): Promise<Response> => {
-    const url =
-      typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
     const esApi = url.startsWith('/api/');
     const esAuth = /\/api\/auth\/(login|refresh|logout)/.test(url);
 

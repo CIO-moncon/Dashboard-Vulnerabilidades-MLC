@@ -1,4 +1,8 @@
-import { AuthService, SesionUsuario, inicializarInterceptorAutenticado } from './core/auth/authService';
+import {
+  AuthService,
+  SesionUsuario,
+  inicializarInterceptorAutenticado,
+} from './core/auth/authService';
 import { LosColoradosTenantConfig } from './tenants/los-colorados.config';
 import { injectTenantTheme } from './core/theme/tokenInjector';
 import { SyncManager } from './core/offline/syncManager';

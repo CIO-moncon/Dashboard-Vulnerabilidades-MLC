@@ -2,6 +2,14 @@
 
 Todas las modificaciones notables de la plataforma **CIO Predictivo 2.0** serán documentadas en este archivo.
 
+## [2.9.0] - 2026-11-07
+### Seguridad / Sesión
+- Migración del JWT de `localStorage` a **cookies HttpOnly**: el backend ahora emite `cio_access_token` (`Path=/`, `SameSite=Lax`) y `cio_refresh_token` (`Path=/api/auth`, `SameSite=Strict`), ambas `HttpOnly` y con `Secure` opcional vía `CIO_COOKIE_SECURE`.
+- `usuario_actual` lee el token desde la cookie con fallback a `Authorization: Bearer` (compatible con CLI/scripts/tests). `/api/auth/refresh` y `/api/auth/logout` aceptan el refresh token por cookie o por cuerpo.
+- El logout limpia las cookies y revoca el refresh token; mitigación CSRF con `SameSite=Lax/Strict` y CORS con origen específico.
+- Frontend: `AuthService` ya no persiste el token (solo metadatos + expiración), `getHeadersTenant` deja de enviar `Authorization`, y un **interceptor de fetch** renueva el access token antes de expirar y reintenta ante `401`.
+- Nuevas pruebas de cookies (`tests/test_cookies.py`): 5. Total backend: 61.
+
 ## [2.8.0] - 2026-11-07
 ### Seguridad / Autenticación
 - **Refresh tokens**: `POST /api/auth/refresh` emite un nuevo access token a cambio de un refresh token válido; `POST /api/auth/logout` revoca el token presentado. El login ahora devuelve `refresh_token` y `refresh_expires_in`.
