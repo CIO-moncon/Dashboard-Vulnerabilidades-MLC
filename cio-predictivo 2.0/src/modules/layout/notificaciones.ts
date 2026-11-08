@@ -189,9 +189,4 @@ export const UI: UIController = {
   },
 };
 
-// Registro en el objeto window para retrocompatibilidad con scripts existentes
-if (typeof window !== 'undefined') {
-  (window as any).UI = UI;
-}
-
 export default UI;

@@ -12,6 +12,7 @@ import { masterTemplateRegistry } from '../../core/domain/plantillas';
 import { AuthService } from '../../core/auth/authService';
 import { TenantConfig } from '../../core/types/tenant.types';
 import { escaparHTML } from '../../core/utils/sanitizar';
+import { argsJson, registrarComando } from '../../core/app/comandos';
 
 declare const L: any;
 declare const Fuse: any;
@@ -61,7 +62,7 @@ export class TerrenoUIController {
 
   constructor(tenantConfig: TenantConfig) {
     this.tenantConfig = tenantConfig;
-    this.exponerMetodosGlobales();
+    this.registrarComandos();
   }
 
   public async inicializar(): Promise<void> {
@@ -70,28 +71,55 @@ export class TerrenoUIController {
     this.inicializarMapa();
   }
 
-  private exponerMetodosGlobales(): void {
-    const w = window as any;
-    w.terrenoCtrl = this;
-    w.avanzarPaso = (paso: number) => this.avanzarPaso(paso);
-    w.filtrarEquiposFuse = (query: string) => this.filtrarEquiposFuse(query);
-    w.toggleChip = (el: HTMLElement, frase: string) => this.toggleChip(el, frase);
-    w.procesarYComprimirMedia = (e: Event) => this.procesarYComprimirMedia(e);
-    w.eliminarEvidenciaPWA = (idx: number) => this.eliminarEvidencia(idx);
-    w.iniciarDictado = () => this.iniciarDictado();
-    w.selectSevFat = (sev: string) => this.seleccionarSeveridadVisual(sev);
-    w.enviarAlertaSegura = () => this.procesarEnvioAlerta();
-    w.cambiarVistaPWA = (vista: 'reporte' | 'mapa') => this.cambiarVista(vista);
-    w.centrarEnMiUbicacion = () => this.centrarEnMiUbicacion();
-    w.buscarEnMapaPWA = (e: KeyboardEvent) => this.buscarEnMapa(e);
-    w.reportarDesdeMapa = (tag: string, area: string) => this.reportarDesdeMapa(tag, area);
-    w.mostrarNotificacion = (msg: string) => this.mostrarNotificacion(msg);
-    w.cargarEquiposPorArea = () => {
+  // Registro de comandos delegados (antes: window.*).
+  private registrarComandos(): void {
+    registrarComando('terreno:avanzarPaso', (_evento, paso) => this.avanzarPaso(Number(paso)));
+    registrarComando('terreno:filtrarEquipos', (evento) =>
+      this.filtrarEquiposFuse((evento?.target as HTMLInputElement | null)?.value ?? ''),
+    );
+    registrarComando('terreno:toggleChip', (evento, frase) =>
+      this.toggleChip((evento?.target as HTMLElement) ?? document.body, String(frase ?? '')),
+    );
+    registrarComando('terreno:procesarMedia', (evento) => {
+      if (evento) this.procesarYComprimirMedia(evento);
+    });
+    registrarComando('terreno:eliminarEvidencia', (_evento, idx) =>
+      this.eliminarEvidencia(Number(idx)),
+    );
+    registrarComando('terreno:iniciarDictado', () => this.iniciarDictado());
+    registrarComando('terreno:selectSev', (_evento, sev) =>
+      this.seleccionarSeveridadVisual(String(sev ?? '')),
+    );
+    registrarComando('terreno:enviarAlerta', () => this.procesarEnvioAlerta());
+    registrarComando('terreno:cambiarVista', (_evento, vista) =>
+      this.cambiarVista((vista as 'reporte' | 'mapa') || 'reporte'),
+    );
+    registrarComando('terreno:centrarUbicacion', () => this.centrarEnMiUbicacion());
+    registrarComando('terreno:buscarMapa', (evento) => {
+      if (evento) this.buscarEnMapa(evento as KeyboardEvent);
+    });
+    registrarComando('terreno:reportarDesdeMapa', (_evento, tag, area) =>
+      this.reportarDesdeMapa(String(tag ?? ''), String(area ?? '')),
+    );
+    registrarComando('terreno:notificar', (_evento, msg) =>
+      this.mostrarNotificacion(String(msg ?? '')),
+    );
+    registrarComando('terreno:cargarArea', () => {
       const selectArea = document.getElementById('fieldArea') as HTMLSelectElement | null;
       if (selectArea) this.onAreaCambiada(selectArea.value);
-    };
-    w.seleccionarEquipoTag = (tag: string) => this.onEquipoCambiado(tag);
-    w.actualizarHallazgosPorSpot = (spot: string) => this.actualizarHallazgosPorSpot(spot);
+    });
+    registrarComando('terreno:seleccionarTag', (evento) =>
+      this.onEquipoCambiado((evento?.target as HTMLSelectElement | null)?.value ?? ''),
+    );
+    registrarComando('terreno:actualizarHallazgos', (evento) =>
+      this.actualizarHallazgosPorSpot((evento?.target as HTMLSelectElement | null)?.value ?? ''),
+    );
+    registrarComando('terreno:abrirCamaraFoto', () =>
+      document.getElementById('inputCamaraFoto')?.click(),
+    );
+    registrarComando('terreno:abrirCamaraGaleria', () =>
+      document.getElementById('inputCamaraFotoGaleria')?.click(),
+    );
   }
 
   private configurarEventosRed(): void {
@@ -222,7 +250,7 @@ export class TerrenoUIController {
                 aria-pressed="false"
                 data-seleccionado="false"
                 data-frase="${escaparHTML(falla.frase)}"
-                onclick="window.toggleChip(this, '${escaparHTML(falla.frase)}')" 
+                data-accion="terreno:toggleChip" data-args='${argsJson([falla.frase])}' 
                 style="background: var(--primary-bg-translucent, rgba(56, 189, 248, 0.1)); color: var(--primary-color, #38bdf8); border: 1px solid var(--primary-border-translucent, rgba(56, 189, 248, 0.3)); padding: 8px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease;">
             ${escaparHTML(falla.label)}
         </button>
@@ -405,7 +433,7 @@ export class TerrenoUIController {
                style="border-radius: 6px; height: 70px; width: 70px; object-fit: cover; border: 1px solid var(--border-glass, rgba(255,255,255,0.15));" 
                alt="Foto ${index + 1}">
           <button type="button" 
-                  onclick="window.eliminarEvidenciaPWA(${index})" 
+                  data-accion="terreno:eliminarEvidencia" data-args='${argsJson([index])}' 
                   style="position: absolute; top: -6px; right: -6px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 11px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center;">
               ✕
           </button>
@@ -614,7 +642,7 @@ export class TerrenoUIController {
               <strong style="color: #0f172a; font-size: 0.95rem; font-family: monospace;">${escaparHTML(equipo.tag)}</strong><br>
               <span style="color: #64748b; font-size: 0.75rem;">Área: ${escaparHTML(equipo.area)}</span><br>
               <button type="button" 
-                      onclick="window.reportarDesdeMapa('${escaparHTML(equipo.tag)}', '${escaparHTML(equipo.area)}')" 
+                      data-accion="terreno:reportarDesdeMapa" data-args='${argsJson([equipo.tag, equipo.area])}' 
                       style="margin-top: 8px; background: var(--primary-hover, #0284c7); color: white; border: none; padding: 6px 10px; border-radius: 6px; width: 100%; cursor: pointer; font-weight: 700; font-size: 0.75rem;">
                   🎯 Reportar en este equipo
               </button>

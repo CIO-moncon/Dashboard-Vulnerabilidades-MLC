@@ -442,11 +442,3 @@ export const abrirVisorPDFInterno = (doc: any, nombreArchivo = 'reporte_cbm.pdf'
     doc.save(nombreArchivo);
   });
 };
-
-// Exposición global al objeto window para mantener compatibilidad con reportes legados
-if (typeof window !== 'undefined') {
-  const w = window as any;
-  w.abrirVisorPDFInterno = abrirVisorPDFInterno;
-  w.obtenerSemanaISO = obtenerSemanaISO;
-  w.formatearFechaNomenclatura = formatearFechaNomenclatura;
-}

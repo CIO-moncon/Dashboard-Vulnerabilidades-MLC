@@ -15,9 +15,15 @@ import { UI } from './modules/layout/notificaciones';
 import './modules/activos/modalGestionEquipo';
 import './modules/usuarios/gestionUsuarios';
 import { escaparHTML } from './core/utils/sanitizar';
+import {
+  argsJson,
+  ejecutarComando,
+  inicializarDelegacionComandos,
+  registrarComando,
+} from './core/app/comandos';
+import { establecerDatosEquipos, establecerMapaActivo } from './core/app/estadoApp';
 
 declare const maplibregl: any;
-declare const window: any;
 
 export interface ConfiguracionVisualPin {
   colorHex: string;
@@ -40,9 +46,9 @@ let appInicializada = false;
 let rafDibujoPines: number | null = null;
 const equipoSeleccionadoActual: string | null = null;
 
-// Exposición en window
-window.datosGlobalesEquipos = datosGlobalesEquipos;
-window.mapaActivo = null;
+// Estado compartido con los módulos (antes expuesto en window).
+establecerDatosEquipos(datosGlobalesEquipos);
+establecerMapaActivo(null);
 
 export const obtenerInicialesNombre = (nombreCompleto: string): string => {
   if (!nombreCompleto) return 'US';
@@ -114,11 +120,9 @@ export const destruirMapaActivo = (): void => {
   if (mapaActivo) {
     mapaActivo.remove();
     mapaActivo = null;
-    window.mapaActivo = null;
+    establecerMapaActivo(null);
   }
 };
-
-window.destruirMapaActivo = destruirMapaActivo;
 
 // ============================================================================
 // CARGA DE ACTIVOS DESDE EL BACKEND
@@ -155,7 +159,7 @@ export const cargarActivosCentral = async (): Promise<void> => {
 
       if (Object.keys(mapaEquipos).length > 0) {
         datosGlobalesEquipos = mapaEquipos;
-        window.datosGlobalesEquipos = datosGlobalesEquipos;
+        establecerDatosEquipos(datosGlobalesEquipos);
 
         const espacioDinamico = document.getElementById('espacio-trabajo-dinamico');
         if (
@@ -173,10 +177,6 @@ export const cargarActivosCentral = async (): Promise<void> => {
         } else if (mapaActivo) {
           dibujarPinesEnMapa();
         }
-
-        document.dispatchEvent(
-          new CustomEvent('datosEquiposActualizados', { detail: datosGlobalesEquipos }),
-        );
       }
     }
   } catch (err) {
@@ -201,7 +201,7 @@ export const renderizarMapaPlanta = (): void => {
         <button type="button" 
                 class="btn-filtro-nivel" 
                 data-nivel="${niv}" 
-                onclick="window.filtrarMapaPorNivel('${niv}')"
+                data-accion="mapa:filtrarNivel" data-args='${argsJson([niv])}'
                 aria-pressed="${activo ? 'true' : 'false'}"
                 style="background: ${activo ? 'var(--primary-color, #38bdf8)' : 'rgba(255,255,255,0.05)'}; color: ${activo ? '#0E1B1F' : '#e2e8f0'}; border: 1px solid ${activo ? 'var(--primary-color, #38bdf8)' : 'rgba(255,255,255,0.1)'}; padding: 6px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
           ${niv === 'TODOS' ? 'Global' : niv}
@@ -228,7 +228,7 @@ export const renderizarMapaPlanta = (): void => {
           ${htmlBotonesNivel}
           <button type="button" 
                   id="btn-toggle-3d" 
-                  onclick="window.alternarPerspectivaMapa()"
+                  data-accion="mapa:alternarPerspectiva"
                   style="margin-left: 0.5rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
             <span class="material-symbols-outlined" style="font-size: 1rem;" aria-hidden="true">3d_rotation</span>
             <span>${esVista3D ? 'Modo 3D' : 'Plano 2D'}</span>
@@ -284,7 +284,7 @@ export const renderizarMapaPlanta = (): void => {
     'top-right',
   );
 
-  window.mapaActivo = mapaActivo;
+  establecerMapaActivo(mapaActivo);
 
   mapaActivo.once('load', () => {
     mapaActivo.resize();
@@ -367,7 +367,7 @@ export const dibujarPinesEnMapa = (): void => {
           </p>
           
           <button type="button" 
-                  onclick="window.abrirExpedienteDirecto('${escaparHTML(idKey)}')" 
+                  data-accion="expediente:abrir" data-args='${argsJson([idKey])}' 
                   style="width: 100%; background: #0284c7; color: white; border: none; padding: 7px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 800; cursor: pointer; transition: background 0.2s ease;">
             Abrir Expediente
           </button>
@@ -401,6 +401,7 @@ const inicializarApp = (): void => {
   appInicializada = true;
 
   inicializarInterceptorAutenticado();
+  inicializarDelegacionComandos();
   injectTenantTheme(LosColoradosTenantConfig.theme);
   SyncManager.inicializar();
   inicializarBarraLateral();
@@ -462,7 +463,7 @@ const mostrarPlataforma = (sesion: SesionUsuario): void => {
     btnGestionUsuarios.style.display = esAdmin ? 'flex' : 'none';
     if (esAdmin) {
       btnGestionUsuarios.onclick = () => {
-        window.abrirModalGestionUsuarios?.();
+        ejecutarComando('usuarios:abrirModal');
       };
     } else {
       btnGestionUsuarios.onclick = null;
@@ -543,37 +544,46 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================================
-// EXPOSICIÓN GLOBAL
+// REGISTRO DE COMANDOS GLOBALES DE NAVEGACIÓN (antes: window.*)
 // ============================================================================
-if (typeof window !== 'undefined') {
-  window.renderizarMapaPlanta = renderizarMapaPlanta;
-  window.restaurarGeovisor = renderizarMapaPlanta;
-  window.destruirMapaActivo = destruirMapaActivo;
-  window.dibujarPinesEnMapa = dibujarPinesEnMapa;
+registrarComando('mapa:renderizar', () => {
+  renderizarMapaPlanta();
+});
 
-  window.abrirExpedienteDirecto = (idActivo: string) => {
-    destruirMapaActivo();
-    renderizarExpediente(idActivo, 'espacio-trabajo-dinamico');
-  };
+registrarComando('mapa:restaurar', () => {
+  renderizarMapaPlanta();
+});
 
-  window.abrirTriageDirecto = () => {
-    destruirMapaActivo();
-    renderizarModuloTriage('espacio-trabajo-dinamico');
-  };
+registrarComando('mapa:destruir', () => {
+  destruirMapaActivo();
+});
 
-  window.mostrarVistaEnEspacioTrabajo = (renderCallback: (contenedorId: string) => void) => {
-    destruirMapaActivo();
-    renderCallback('espacio-trabajo-dinamico');
-  };
+registrarComando('mapa:dibujarPines', () => {
+  dibujarPinesEnMapa();
+});
 
-  window.filtrarMapaPorNivel = (niv: string) => {
-    nivelFiltroActual = niv;
-    dibujarPinesEnMapa();
-  };
+registrarComando('expediente:abrir', (_evento, idActivo) => {
+  destruirMapaActivo();
+  renderizarExpediente(String(idActivo ?? ''), 'espacio-trabajo-dinamico');
+});
 
-  window.alternarPerspectivaMapa = () => {
-    if (!mapaActivo) return;
-    esVista3D = !esVista3D;
-    mapaActivo.easeTo({ pitch: esVista3D ? 60 : 0, duration: 600 });
-  };
-}
+registrarComando('triage:abrir', () => {
+  destruirMapaActivo();
+  renderizarModuloTriage('espacio-trabajo-dinamico');
+});
+
+registrarComando('vista:renderizarEnEspacio', (_evento, renderCallback) => {
+  destruirMapaActivo();
+  (renderCallback as (contenedorId: string) => void)('espacio-trabajo-dinamico');
+});
+
+registrarComando('mapa:filtrarNivel', (_evento, niv) => {
+  nivelFiltroActual = String(niv ?? 'TODOS');
+  dibujarPinesEnMapa();
+});
+
+registrarComando('mapa:alternarPerspectiva', () => {
+  if (!mapaActivo) return;
+  esVista3D = !esVista3D;
+  mapaActivo.easeTo({ pitch: esVista3D ? 60 : 0, duration: 600 });
+});

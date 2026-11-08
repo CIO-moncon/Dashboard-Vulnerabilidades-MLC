@@ -2,9 +2,7 @@
 // GESTIÓN DE USUARIOS — Panel de administración (solo ADMINISTRADOR)
 // ============================================================================
 import { AuthService } from '../../core/auth/authService';
-
-declare const window: any;
-
+import { registrarComando } from '../../core/app/comandos';
 import { escaparHTML } from '../../core/utils/sanitizar';
 
 const ROLES = ['ADMINISTRADOR', 'SUPERVISOR', 'ANALISTA CBM', 'OPERADOR TERRENO'] as const;
@@ -232,7 +230,5 @@ export const abrirModalGestionUsuarios = async (): Promise<void> => {
   await cargarUsuarios(tabla);
 };
 
-// Exponer globalmente
-if (typeof window !== 'undefined') {
-  window.abrirModalGestionUsuarios = abrirModalGestionUsuarios;
-}
+// Registro en el bus de comandos (antes: window.abrirModalGestionUsuarios).
+registrarComando('usuarios:abrirModal', abrirModalGestionUsuarios);

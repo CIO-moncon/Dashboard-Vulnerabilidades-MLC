@@ -2,8 +2,7 @@ import { AuthService } from '../../core/auth/authService';
 import { SyncManager } from '../../core/offline/syncManager';
 import { UI } from '../layout/notificaciones';
 import { obtenerSemanaISO, formatearFechaNomenclatura } from '../../core/pdf/pdfPlantilla';
-
-declare const window: any;
+import { argsJson, registrarComando } from '../../core/app/comandos';
 
 export interface RegistroAvisoEspectral {
   id: string;
@@ -203,20 +202,20 @@ export const renderizarControlAvisosEspectrales = async (
       <div style="background: rgba(14, 27, 31, 0.85); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <div style="display: flex; align-items: center; gap: 12px;">
           <label style="font-size: 0.76rem; color: #94A3B8; font-weight: 700;">Semana Operacional:</label>
-          <select id="select-filtro-semana" onchange="window.cambiarFiltroAvisosSemana(this.value)" style="background: #0E1B1F; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 5px 10px; border-radius: 6px; font-size: 0.78rem; outline: none;">
+          <select id="select-filtro-semana" data-accion="avisos:cambiarSemana" style="background: #0E1B1F; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 5px 10px; border-radius: 6px; font-size: 0.78rem; outline: none;">
             <option value="TODAS" ${filtroSemanaActiva === 'TODAS' ? 'selected' : ''}>Todas las Semanas</option>
             ${semanasDisponibles.map((s) => `<option value="${s}" ${filtroSemanaActiva === s ? 'selected' : ''}>${s}</option>`).join('')}
           </select>
 
           <label style="font-size: 0.76rem; color: #94A3B8; font-weight: 700; margin-left: 10px;">Estado:</label>
-          <select id="select-filtro-estado" onchange="window.cambiarFiltroAvisosEstado(this.value)" style="background: #0E1B1F; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 5px 10px; border-radius: 6px; font-size: 0.78rem; outline: none;">
+          <select id="select-filtro-estado" data-accion="avisos:cambiarEstado" style="background: #0E1B1F; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 5px 10px; border-radius: 6px; font-size: 0.78rem; outline: none;">
             <option value="TODOS" ${filtroEstadoActivo === 'TODOS' ? 'selected' : ''}>Todos</option>
             <option value="Emitido" ${filtroEstadoActivo === 'Emitido' ? 'selected' : ''}>Emitidos</option>
             <option value="Pendiente" ${filtroEstadoActivo === 'Pendiente' ? 'selected' : ''}>Pendientes</option>
           </select>
         </div>
 
-        <button type="button" onclick="window.registrarNuevoAvisoManualModal()" style="background: #0284c7; color: white; border: none; padding: 7px 14px; border-radius: 6px; font-size: 0.76rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+        <button type="button" data-accion="avisos:registrarManual" style="background: #0284c7; color: white; border: none; padding: 7px 14px; border-radius: 6px; font-size: 0.76rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
           <span class="material-symbols-outlined" style="font-size: 1.1rem;">add</span>
           <span>Vincular Aviso SAP Manual</span>
         </button>
@@ -282,7 +281,7 @@ export const renderizarControlAvisosEspectrales = async (
                       </span>
                     </td>
                     <td style="padding: 12px 14px; text-align: center;">
-                      <button type="button" onclick="window.editarAvisoEspectralModal('${escaparHTML(av.id)}')" title="Editar Aviso SAP" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #E2E8F0; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.72rem; font-weight: 700;">
+                      <button type="button" data-accion="avisos:editarModal" data-args='${argsJson([av.id])}' title="Editar Aviso SAP" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #E2E8F0; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.72rem; font-weight: 700;">
                         Gestionar
                       </button>
                     </td>
@@ -350,8 +349,8 @@ export const editarAvisoEspectralModal = (avisoId: string): void => {
       </div>
 
       <footer style="padding: 12px 18px; background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: flex-end; gap: 8px;">
-        <button type="button" onclick="document.getElementById('modal-gestionar-aviso-sap').remove()" class="btn-secundario" style="background: transparent; color: #94A3B8; border: 1px solid rgba(255,255,255,0.2); padding: 7px 14px; border-radius: 6px; cursor: pointer;">Cancelar</button>
-        <button type="button" onclick="window.guardarCambiosAvisoEspectral('${escaparHTML(registro.id)}')" style="background: #0284c7; color: white; border: none; padding: 7px 16px; border-radius: 6px; font-weight: 800; cursor: pointer;">Guardar Aviso</button>
+        <button type="button" data-accion="avisos:cerrarModal" class="btn-secundario" style="background: transparent; color: #94A3B8; border: 1px solid rgba(255,255,255,0.2); padding: 7px 14px; border-radius: 6px; cursor: pointer;">Cancelar</button>
+        <button type="button" data-accion="avisos:guardarCambios" data-args='${argsJson([registro.id])}' style="background: #0284c7; color: white; border: none; padding: 7px 16px; border-radius: 6px; font-weight: 800; cursor: pointer;">Guardar Aviso</button>
       </footer>
     </div>
   `;
@@ -360,75 +359,81 @@ export const editarAvisoEspectralModal = (avisoId: string): void => {
 };
 
 // ============================================================================
-// EXPOSICIÓN GLOBAL
+// REGISTRO DE COMANDOS (antes: window.*)
 // ============================================================================
-if (typeof window !== 'undefined') {
-  window.renderizarControlAvisosEspectrales = renderizarControlAvisosEspectrales;
-  window.editarAvisoEspectralModal = editarAvisoEspectralModal;
+registrarComando('avisos:renderizar', () => {
+  renderizarControlAvisosEspectrales();
+});
 
-  window.cambiarFiltroAvisosSemana = (semana: string) => {
-    filtroSemanaActiva = semana;
-    renderizarControlAvisosEspectrales();
-  };
+registrarComando('avisos:editarModal', (_evento, id) => {
+  editarAvisoEspectralModal(String(id ?? ''));
+});
 
-  window.cambiarFiltroAvisosEstado = (estado: string) => {
-    filtroEstadoActivo = estado;
-    renderizarControlAvisosEspectrales();
-  };
+registrarComando('avisos:cambiarSemana', (evento) => {
+  filtroSemanaActiva = (evento?.target as HTMLSelectElement | null)?.value ?? 'TODAS';
+  renderizarControlAvisosEspectrales();
+});
 
-  window.guardarCambiosAvisoEspectral = async (id: string) => {
-    const inputNum = document.getElementById('input-aviso-sap-val') as HTMLInputElement | null;
-    const selectPrio = document.getElementById(
-      'select-aviso-prioridad-val',
-    ) as HTMLSelectElement | null;
-    const selectEst = document.getElementById(
-      'select-aviso-estado-val',
-    ) as HTMLSelectElement | null;
+registrarComando('avisos:cambiarEstado', (evento) => {
+  filtroEstadoActivo = (evento?.target as HTMLSelectElement | null)?.value ?? 'TODOS';
+  renderizarControlAvisosEspectrales();
+});
 
-    const registro = memoriaAvisos.find((a) => a.id === id);
-    if (!registro) return;
+registrarComando('avisos:cerrarModal', () => {
+  document.getElementById('modal-gestionar-aviso-sap')?.remove();
+});
 
-    if (inputNum) registro.avisoSap = inputNum.value.trim();
-    if (selectPrio) registro.prioridadSap = selectPrio.value as any;
-    if (selectEst) registro.estadoInforme = selectEst.value as any;
+registrarComando('avisos:guardarCambios', async (_evento, id) => {
+  const idAviso = String(id ?? '');
+  const inputNum = document.getElementById('input-aviso-sap-val') as HTMLInputElement | null;
+  const selectPrio = document.getElementById(
+    'select-aviso-prioridad-val',
+  ) as HTMLSelectElement | null;
+  const selectEst = document.getElementById('select-aviso-estado-val') as HTMLSelectElement | null;
 
-    await SyncManager.despacharOEncolar(`aviso_sap:${registro.tag}`, 'UPDATE', {
-      tag: registro.tag,
-      avisoSap: registro.avisoSap,
-      prioridadSap: registro.prioridadSap,
-      estadoInforme: registro.estadoInforme,
-      timestamp: Date.now(),
-    });
+  const registro = memoriaAvisos.find((a) => a.id === idAviso);
+  if (!registro) return;
 
-    UI.mostrarToast(
-      `Aviso SAP para ${registro.tag} actualizado a: ${registro.avisoSap || 'Pendiente'}`,
-      'exito',
-    );
-    document.getElementById('modal-gestionar-aviso-sap')?.remove();
-    renderizarControlAvisosEspectrales();
-  };
+  if (inputNum) registro.avisoSap = inputNum.value.trim();
+  if (selectPrio) registro.prioridadSap = selectPrio.value as any;
+  if (selectEst) registro.estadoInforme = selectEst.value as any;
 
-  window.registrarNuevoAvisoManualModal = () => {
-    const tag = prompt('Ingrese el TAG del activo (Ej: CV-01):');
-    if (!tag) return;
-    const avisoSap = prompt('Ingrese el número de Aviso SAP PM:');
-    if (!avisoSap) return;
+  await SyncManager.despacharOEncolar(`aviso_sap:${registro.tag}`, 'UPDATE', {
+    tag: registro.tag,
+    avisoSap: registro.avisoSap,
+    prioridadSap: registro.prioridadSap,
+    estadoInforme: registro.estadoInforme,
+    timestamp: Date.now(),
+  });
 
-    memoriaAvisos.unshift({
-      id: `AVS_MANUAL_${Date.now()}`,
-      tag: tag.toUpperCase().trim(),
-      componente: 'Inspección General CBM',
-      punto: 'Gral',
-      severidad: 'ROJO',
-      avisoSap: avisoSap.trim(),
-      prioridadSap: 'Alta',
-      estadoInforme: 'Emitido',
-      semanaSap: `S${String(obtenerSemanaISO(new Date())).padStart(2, '0')}`,
-      fechaEmision: formatearFechaNomenclatura(new Date()),
-      diagnosticoResumen: 'Aviso SAP ingresado manualmente por especialista CBM.',
-    });
+  UI.mostrarToast(
+    `Aviso SAP para ${registro.tag} actualizado a: ${registro.avisoSap || 'Pendiente'}`,
+    'exito',
+  );
+  document.getElementById('modal-gestionar-aviso-sap')?.remove();
+  renderizarControlAvisosEspectrales();
+});
 
-    UI.mostrarToast(`Aviso SAP ${avisoSap} vinculado a ${tag}`, 'exito');
-    renderizarControlAvisosEspectrales();
-  };
-}
+registrarComando('avisos:registrarManual', () => {
+  const tag = prompt('Ingrese el TAG del activo (Ej: CV-01):');
+  if (!tag) return;
+  const avisoSap = prompt('Ingrese el número de Aviso SAP PM:');
+  if (!avisoSap) return;
+
+  memoriaAvisos.unshift({
+    id: `AVS_MANUAL_${Date.now()}`,
+    tag: tag.toUpperCase().trim(),
+    componente: 'Inspección General CBM',
+    punto: 'Gral',
+    severidad: 'ROJO',
+    avisoSap: avisoSap.trim(),
+    prioridadSap: 'Alta',
+    estadoInforme: 'Emitido',
+    semanaSap: `S${String(obtenerSemanaISO(new Date())).padStart(2, '0')}`,
+    fechaEmision: formatearFechaNomenclatura(new Date()),
+    diagnosticoResumen: 'Aviso SAP ingresado manualmente por especialista CBM.',
+  });
+
+  UI.mostrarToast(`Aviso SAP ${avisoSap} vinculado a ${tag}`, 'exito');
+  renderizarControlAvisosEspectrales();
+});

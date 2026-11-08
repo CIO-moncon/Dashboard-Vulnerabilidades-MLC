@@ -72,8 +72,8 @@ Dashboard-Vulnerabilidades-MLC/
 
 ## 4. Estado del Frontend (TypeScript)
 
-- Arquitectura de modulación: ES6+ Modules con carga asíncrona (Async/Await) y
-  eventos centralizados.
+- Arquitectura de modulación: ES6+ Modules con carga asíncrona, estado
+  compartido tipado (`estadoApp.ts`) y comandos UI delegados (`comandos.ts`).
 - Autenticación: JWT contra backend FastAPI, permisos por rol (ADMINISTRADOR,
   SUPERVISOR, ANALISTA CBM, OPERADOR TERRENO). Sesión en cookies HttpOnly; en
   `localStorage` solo se guardan metadatos y expiración (`cio_session_v2`).
@@ -85,8 +85,9 @@ Dashboard-Vulnerabilidades-MLC/
   Factor de Cresta.
 - Reportes y visor PDF: generación integrada de reportes en PDF con visor
   interactivo en modal.
-- Modo offline / PWA: IndexedDB (Outbox) + Service Worker (app shell, tiles
-  cache-first, API sin caché) con sincronización automática.
+- Modo offline / PWA: IndexedDB (Outbox) + Service Worker con precache de Workbox
+  (bundles, íconos, manifest), navegación network-first y tiles cache-first;
+  sincronización automática de la cola.
 - Gestión de usuarios: modal de administración (solo ADMINISTRADOR).
 - Sanitización HTML centralizada en `src/core/utils/sanitizar.ts`.
 
@@ -112,7 +113,7 @@ Dashboard-Vulnerabilidades-MLC/
 
 ## 7. Pruebas y calidad
 
-- Frontend: Vitest + jsdom (21 pruebas de dominio y Outbox).
+- Frontend: Vitest + jsdom (25 pruebas de dominio, Outbox y registro de comandos).
 - Backend: pytest (61 pruebas de health, auth, cookies, refresh tokens, CBM,
   roles, seguridad, migraciones, backups).
 - CI/CD: GitHub Actions (typecheck, tests, build, Docker).
@@ -127,7 +128,5 @@ Dashboard-Vulnerabilidades-MLC/
 
 ## 9. Siguientes pasos recomendados
 
-1. Refactor de `window.*` globals hacia imports directos / event bus tipado.
-2. Precaching de Workbox y ajustes finales de PWA.
-3. Paginación en tablas grandes (catastro, auditoría).
-4. Tests E2E (Playwright) para flujos críticos.
+1. Paginación en tablas grandes (catastro, auditoría).
+2. Tests E2E (Playwright) para flujos críticos.

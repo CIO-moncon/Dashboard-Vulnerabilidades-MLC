@@ -1,9 +1,11 @@
 // ============================================================================
-// SERVICE WORKER INDUSTRIAL: SW.JS (v2.2.0)
+// SERVICE WORKER INDUSTRIAL: SW.JS (v2.3.0)
 // CIO PREDICTIVO 2.0 — Cache resiliente, offline y sincronización diferida
 // ============================================================================
 //
 // Estrategias:
+//   - Precache de Workbox: bundles hasheados, íconos y manifest (arranque
+//     offline instantáneo tras la instalación).
 //   - Navegación (HTML): network-first con fallback al shell cacheado.
 //   - Assets del mismo origen (JS/CSS/imágenes): stale-while-revalidate.
 //   - Tiles satelitales: cache-first con límite de tamaño.
@@ -11,7 +13,12 @@
 //   - API (/api/*): nunca se cachea; el Outbox de IndexedDB maneja el offline.
 // ============================================================================
 
-const VERSION = 'v2.2.0';
+import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
+
+// Precache generado por vite-plugin-pwa (revisiones con hash por build).
+precacheAndRoute(self.__WB_MANIFEST);
+
+const VERSION = 'v2.3.0';
 const CACHE_ESTATICO = `cio-static-${VERSION}`;
 const CACHE_RUNTIME = `cio-runtime-${VERSION}`;
 const CACHE_CDN = `cio-cdn-${VERSION}`;
@@ -20,14 +27,9 @@ const CACHE_MAPAS = `cio-tiles-${VERSION}`;
 const MAX_TILES_CACHE = 450;
 const MAX_RUNTIME_CACHE = 120;
 
-// Solo archivos estables. Los bundles con hash se cachean en runtime.
-const ASSETS_CORE = [
-    './',
-    './index.html',
-    './terreno.html',
-    './manifest.json',
-    './assets/img/logo-cpf.png'
-];
+// El shell HTML se precachea aquí para preservar la estrategia network-first
+// de navegación; los bundles/íconos los precachea Workbox (ver vite.config).
+const ASSETS_CORE = ['./', './index.html', './terreno.html'];
 
 const HOSTS_CDN = [
     'fonts.googleapis.com',
@@ -60,11 +62,15 @@ self.addEventListener('activate', (event) => {
     event.waitUntil(
         Promise.all([
             self.clients.claim(),
+            // Workbox elimina los precaches de versiones anteriores.
+            cleanupOutdatedCaches(),
             caches.keys().then((keys) => {
                 const vigentes = [CACHE_ESTATICO, CACHE_RUNTIME, CACHE_CDN, CACHE_MAPAS];
                 return Promise.all(
                     keys.map((key) => {
-                        if (!vigentes.includes(key)) {
+                        // Solo purgar cachés propias (cio-*); las de Workbox se
+                        // gestionan con cleanupOutdatedCaches.
+                        if (key.startsWith('cio-') && !vigentes.includes(key)) {
                             console.log(`[SW] Purgando caché obsoleta: ${key}`);
                             return caches.delete(key);
                         }

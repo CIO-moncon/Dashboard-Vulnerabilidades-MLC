@@ -1,7 +1,12 @@
 import { SyncManager } from '../../core/offline/syncManager';
 import { UI } from '../layout/notificaciones';
+import { argsJson, ejecutarComando, registrarComando } from '../../core/app/comandos';
+import {
+  establecerDatosEquipos,
+  obtenerDatosEquipos,
+  obtenerMapaActivo,
+} from '../../core/app/estadoApp';
 
-declare const window: any;
 declare const maplibregl: any;
 
 let marcadorTemporalCaptura: any = null;
@@ -195,27 +200,27 @@ export const abrirModalGestionEquipo = (equipoExistente: any = null): void => {
           </h3>
           <span style="font-size: 0.7rem; color: #38bdf8;">Configuración CBM, Puntos y Evaluación ISO 10816-3</span>
         </div>
-        <button type="button" onclick="window.cerrarModalGestionEquipo()" style="background: transparent; border: none; color: #94A3B8; font-size: 1.4rem; cursor: pointer;">&times;</button>
+        <button type="button" data-accion="equipo:cerrarModal" style="background: transparent; border: none; color: #94A3B8; font-size: 1.4rem; cursor: pointer;">&times;</button>
       </header>
 
       <!-- BARRA DE PESTAÑAS DEL MODAL -->
       <nav style="display: flex; background: rgba(22, 40, 45, 0.95); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 0 16px; gap: 4px; flex-shrink: 0;">
-        <button type="button" id="tab-mod-ficha" onclick="window.cambiarPestañaModal('ficha')" style="padding: 10px 14px; background: transparent; border: none; border-bottom: 2px solid #38bdf8; color: #38bdf8; font-weight: 800; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+        <button type="button" id="tab-mod-ficha" data-accion="equipo:cambiarPestana" data-args='${argsJson(['ficha'])}' style="padding: 10px 14px; background: transparent; border: none; border-bottom: 2px solid #38bdf8; color: #38bdf8; font-weight: 800; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
           <span class="material-symbols-outlined" style="font-size: 1rem;">settings</span>
           <span>1. Ficha y GPS</span>
         </button>
-        <button type="button" id="tab-mod-biblioteca" onclick="window.cambiarPestañaModal('biblioteca')" style="padding: 10px 14px; background: transparent; border: none; border-bottom: 2px solid transparent; color: #94A3B8; font-weight: 700; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+        <button type="button" id="tab-mod-biblioteca" data-accion="equipo:cambiarPestana" data-args='${argsJson(['biblioteca'])}' style="padding: 10px 14px; background: transparent; border: none; border-bottom: 2px solid transparent; color: #94A3B8; font-weight: 700; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
           <span class="material-symbols-outlined" style="font-size: 1rem;">dataset</span>
           <span>2. Biblioteca de Puntos (<span id="count-spots-badge">${Object.keys(spotsTemporalesModal).length}</span>)</span>
         </button>
-        <button type="button" id="tab-mod-iso" onclick="window.cambiarPestañaModal('iso')" style="padding: 10px 14px; background: transparent; border: none; border-bottom: 2px solid transparent; color: #94A3B8; font-weight: 700; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+        <button type="button" id="tab-mod-iso" data-accion="equipo:cambiarPestana" data-args='${argsJson(['iso'])}' style="padding: 10px 14px; background: transparent; border: none; border-bottom: 2px solid transparent; color: #94A3B8; font-weight: 700; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
           <span class="material-symbols-outlined" style="font-size: 1rem;">speed</span>
           <span>3. Mediciones Norma ISO</span>
         </button>
       </nav>
 
       <!-- CUERPO PRINCIPAL DEL FORMULARIO -->
-      <form id="form-gestion-equipo" onsubmit="event.preventDefault(); window.guardarEquipoCompletoFormulario('${tagOriginal}', ${esEdicion});" style="flex: 1; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; color: #E2E8F0; font-size: 0.8rem;">
+      <form id="form-gestion-equipo" data-accion="equipo:guardarFormulario" data-args='${argsJson([tagOriginal, String(esEdicion)])}' style="flex: 1; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; color: #E2E8F0; font-size: 0.8rem;">
         
         <!-- PESTAÑA 1: FICHA Y GPS -->
         <div id="seccion-tab-ficha" style="display: flex; flex-direction: column; gap: 12px;">
@@ -261,7 +266,7 @@ export const abrirModalGestionEquipo = (equipoExistente: any = null): void => {
               <span style="font-size: 0.72rem; font-weight: 800; color: #38bdf8; text-transform: uppercase;">Coordenadas Geoespaciales</span>
               <button type="button" 
                       id="btn-capturar-mapa"
-                      onclick="window.iniciarCapturaDesdeMapa()"
+                      data-accion="equipo:capturarGPS"
                       style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; padding: 5px 10px; border-radius: 4px; font-size: 0.72rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
                 <span class="material-symbols-outlined" style="font-size: 0.95rem;">pin_drop</span>
                 <span>Fijar con Clic en Mapa</span>
@@ -298,7 +303,7 @@ export const abrirModalGestionEquipo = (equipoExistente: any = null): void => {
                   )
                   .join('')}
               </select>
-              <button type="button" onclick="window.aplicarPlantillaSeleccionada()" style="background: #0284c7; border: none; color: white; padding: 8px 14px; border-radius: 6px; font-weight: 800; cursor: pointer; white-space: nowrap;">
+              <button type="button" data-accion="equipo:aplicarPlantilla" style="background: #0284c7; border: none; color: white; padding: 8px 14px; border-radius: 6px; font-weight: 800; cursor: pointer; white-space: nowrap;">
                 Cargar Puntos
               </button>
             </div>
@@ -306,7 +311,7 @@ export const abrirModalGestionEquipo = (equipoExistente: any = null): void => {
 
           <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
             <span style="font-size: 0.75rem; color: #94A3B8; font-weight: 800; text-transform: uppercase;">Listado de Puntos Configurados</span>
-            <button type="button" onclick="window.agregarPuntoCustomModal()" style="background: transparent; border: 1px solid #38bdf8; color: #38bdf8; padding: 4px 10px; border-radius: 4px; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
+            <button type="button" data-accion="equipo:agregarPunto" style="background: transparent; border: 1px solid #38bdf8; color: #38bdf8; padding: 4px 10px; border-radius: 4px; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
               + Agregar Punto Libre
             </button>
           </div>
@@ -325,14 +330,14 @@ export const abrirModalGestionEquipo = (equipoExistente: any = null): void => {
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
               <div>
                 <label style="font-size: 0.7rem; color: #94A3B8; display: block; margin-bottom: 2px;">Grupo de Potencia</label>
-                <select id="iso-grupo-potencia" onchange="window.recalcularSeveridadesIso()" style="width: 100%; background: #16282D; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 7px; border-radius: 6px;">
+                <select id="iso-grupo-potencia" data-accion="equipo:recalcularIso" style="width: 100%; background: #16282D; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 7px; border-radius: 6px;">
                   <option value="GRUPO_1">Grupo 1 (Grandes > 300 kW)</option>
                   <option value="GRUPO_2">Grupo 2 (Medianas 15 kW - 300 kW)</option>
                 </select>
               </div>
               <div>
                 <label style="font-size: 0.7rem; color: #94A3B8; display: block; margin-bottom: 2px;">Tipo de Soporte / Fundación</label>
-                <select id="iso-soporte-base" onchange="window.recalcularSeveridadesIso()" style="width: 100%; background: #16282D; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 7px; border-radius: 6px;">
+                <select id="iso-soporte-base" data-accion="equipo:recalcularIso" style="width: 100%; background: #16282D; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 7px; border-radius: 6px;">
                   <option value="RIGIDO">Base Rígida (Macizo de Hormigón)</option>
                   <option value="FLEXIBLE">Base Flexible (Estructura Metálica / Resortes)</option>
                 </select>
@@ -360,7 +365,7 @@ export const abrirModalGestionEquipo = (equipoExistente: any = null): void => {
 
         <!-- PIE DE ACCIONES -->
         <footer style="margin-top: auto; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;">
-          <button type="button" onclick="window.cerrarModalGestionEquipo()" style="background: transparent; color: #94A3B8; border: 1px solid rgba(255,255,255,0.2); padding: 7px 14px; border-radius: 6px; cursor: pointer;">
+          <button type="button" data-accion="equipo:cerrarModal" style="background: transparent; color: #94A3B8; border: 1px solid rgba(255,255,255,0.2); padding: 7px 14px; border-radius: 6px; cursor: pointer;">
             Cancelar
           </button>
           <button type="submit" style="background: #0284c7; color: white; border: none; padding: 7px 18px; border-radius: 6px; font-weight: 800; cursor: pointer;">
@@ -407,7 +412,7 @@ export const renderizarTablaSpotsBiblioteca = (): void => {
           <span style="font-size: 0.68rem; color: #94A3B8; display: block;">Dirección: ${escaparHTML(sp.direccion || 'Horizontal')}</span>
         </div>
       </div>
-      <button type="button" onclick="window.eliminarSpotTemporal('${key}')" style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 4px;" title="Eliminar punto">
+      <button type="button" data-accion="equipo:eliminarSpot" data-args='${argsJson([key])}' style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 4px;" title="Eliminar punto">
         <span class="material-symbols-outlined" style="font-size: 1.1rem;">delete</span>
       </button>
     </div>
@@ -460,13 +465,13 @@ export const renderizarTablaMedicionesIso = (): void => {
           <div>
             <label style="font-size: 0.65rem; color: #94A3B8; display: block;">Vibración RMS (mm/s)</label>
             <input type="number" step="0.01" min="0" value="${sp.rms || ''}" placeholder="0.00" 
-                   oninput="window.actualizarValorSpot('${key}', 'rms', this.value)" 
+                   data-accion="equipo:actualizarValorSpot" data-args='${argsJson([key, 'rms'])}' 
                    style="width: 90px; background: #0E1B1F; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 4px 6px; border-radius: 4px; font-family: monospace; font-weight: 700; font-size: 0.8rem;">
           </div>
           <div>
             <label style="font-size: 0.65rem; color: #94A3B8; display: block;">Temp (°C)</label>
             <input type="number" step="0.1" min="0" value="${sp.temp || ''}" placeholder="25" 
-                   oninput="window.actualizarValorSpot('${key}', 'temp', this.value)" 
+                   data-accion="equipo:actualizarValorSpot" data-args='${argsJson([key, 'temp'])}' 
                    style="width: 70px; background: #0E1B1F; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 4px 6px; border-radius: 4px; font-family: monospace; font-size: 0.8rem;">
           </div>
         </div>
@@ -494,7 +499,7 @@ export const renderizarTablaMedicionesIso = (): void => {
 };
 
 // ============================================================================
-// 5. NAVEGACIÓN Y EXPOSICIÓN GLOBAL
+// 5. NAVEGACIÓN Y REGISTRO DE COMANDOS (antes: window.*)
 // ============================================================================
 export const cerrarModalGestionEquipo = (): void => {
   document.getElementById('modal-gestion-equipo')?.remove();
@@ -505,254 +510,259 @@ export const cerrarModalGestionEquipo = (): void => {
   }
 };
 
-if (typeof window !== 'undefined') {
-  window.abrirModalGestionEquipo = abrirModalGestionEquipo;
-  window.cerrarModalGestionEquipo = cerrarModalGestionEquipo;
+registrarComando('equipo:abrirModalNuevo', () => {
+  abrirModalGestionEquipo();
+});
 
-  window.cambiarPestañaModal = (pestaña: 'ficha' | 'biblioteca' | 'iso') => {
-    pestañaModalActiva = pestaña;
-    const tabFicha = document.getElementById('tab-mod-ficha');
-    const tabBib = document.getElementById('tab-mod-biblioteca');
-    const tabIso = document.getElementById('tab-mod-iso');
+registrarComando('equipo:abrirModalPorTag', (_evento, tag) => {
+  const equipo = obtenerDatosEquipos()[String(tag ?? '')];
+  abrirModalGestionEquipo(equipo ?? null);
+});
 
-    const secFicha = document.getElementById('seccion-tab-ficha');
-    const secBib = document.getElementById('seccion-tab-biblioteca');
-    const secIso = document.getElementById('seccion-tab-iso');
+registrarComando('equipo:cerrarModal', () => {
+  cerrarModalGestionEquipo();
+});
 
-    if (tabFicha)
-      tabFicha.style.borderBottomColor = pestaña === 'ficha' ? '#38bdf8' : 'transparent';
-    if (tabBib)
-      tabBib.style.borderBottomColor = pestaña === 'biblioteca' ? '#38bdf8' : 'transparent';
-    if (tabIso) tabIso.style.borderBottomColor = pestaña === 'iso' ? '#38bdf8' : 'transparent';
+registrarComando('equipo:cambiarPestana', (_evento, pestaña) => {
+  const pestana = (pestaña as 'ficha' | 'biblioteca' | 'iso') || 'ficha';
+  pestañaModalActiva = pestana;
+  const tabFicha = document.getElementById('tab-mod-ficha');
+  const tabBib = document.getElementById('tab-mod-biblioteca');
+  const tabIso = document.getElementById('tab-mod-iso');
 
-    if (secFicha) secFicha.style.display = pestaña === 'ficha' ? 'flex' : 'none';
-    if (secBib) secBib.style.display = pestaña === 'biblioteca' ? 'flex' : 'none';
-    if (secIso) secIso.style.display = pestaña === 'iso' ? 'flex' : 'none';
+  const secFicha = document.getElementById('seccion-tab-ficha');
+  const secBib = document.getElementById('seccion-tab-biblioteca');
+  const secIso = document.getElementById('seccion-tab-iso');
 
-    if (pestaña === 'biblioteca') renderizarTablaSpotsBiblioteca();
-    if (pestaña === 'iso') renderizarTablaMedicionesIso();
-  };
+  if (tabFicha) tabFicha.style.borderBottomColor = pestana === 'ficha' ? '#38bdf8' : 'transparent';
+  if (tabBib) tabBib.style.borderBottomColor = pestana === 'biblioteca' ? '#38bdf8' : 'transparent';
+  if (tabIso) tabIso.style.borderBottomColor = pestana === 'iso' ? '#38bdf8' : 'transparent';
 
-  window.aplicarPlantillaSeleccionada = () => {
-    const sel = document.getElementById('select-plantilla-equipo') as HTMLSelectElement | null;
-    const tipo = sel?.value;
-    if (!tipo || !BIBLIOTECA_PLANTILLAS_CBM[tipo]) {
-      UI.mostrarToast('Por favor selecciona una plantilla válida.', 'info');
-      return;
-    }
+  if (secFicha) secFicha.style.display = pestana === 'ficha' ? 'flex' : 'none';
+  if (secBib) secBib.style.display = pestana === 'biblioteca' ? 'flex' : 'none';
+  if (secIso) secIso.style.display = pestana === 'iso' ? 'flex' : 'none';
 
-    const plantilla = BIBLIOTECA_PLANTILLAS_CBM[tipo];
-    plantilla.spots.forEach((sp) => {
-      spotsTemporalesModal[sp.punto] = {
-        punto: sp.punto,
-        componente: sp.componente,
-        direccion: sp.direccion,
-        rms: 0,
-        temp: 25,
-      };
-    });
+  if (pestana === 'biblioteca') renderizarTablaSpotsBiblioteca();
+  if (pestana === 'iso') renderizarTablaMedicionesIso();
+});
 
-    // Configurar automáticamente los selectores ISO
-    const selectGrupo = document.getElementById('iso-grupo-potencia') as HTMLSelectElement | null;
-    const selectSoporte = document.getElementById('iso-soporte-base') as HTMLSelectElement | null;
-    if (selectGrupo) selectGrupo.value = plantilla.grupoIsoDefault;
-    if (selectSoporte) selectSoporte.value = plantilla.soporteIsoDefault;
+registrarComando('equipo:aplicarPlantilla', () => {
+  const sel = document.getElementById('select-plantilla-equipo') as HTMLSelectElement | null;
+  const tipo = sel?.value;
+  if (!tipo || !BIBLIOTECA_PLANTILLAS_CBM[tipo]) {
+    UI.mostrarToast('Por favor selecciona una plantilla válida.', 'info');
+    return;
+  }
 
-    renderizarTablaSpotsBiblioteca();
-    UI.mostrarToast(
-      `Plantilla "${plantilla.nombreTipo}" cargada (${plantilla.spots.length} puntos).`,
-      'exito',
-    );
-  };
-
-  window.agregarPuntoCustomModal = () => {
-    const punto = prompt('Identificador del punto (ej: M3V, CH3A, BOMBA_IN):');
-    if (!punto) return;
-    const componente =
-      prompt('Nombre del componente asociado (ej: Rodamiento Lado Libre):') || 'Componente';
-    const cleanPunto = punto.toUpperCase().trim();
-
-    spotsTemporalesModal[cleanPunto] = {
-      punto: cleanPunto,
-      componente: componente.trim(),
-      direccion: 'Horizontal',
+  const plantilla = BIBLIOTECA_PLANTILLAS_CBM[tipo];
+  plantilla.spots.forEach((sp) => {
+    spotsTemporalesModal[sp.punto] = {
+      punto: sp.punto,
+      componente: sp.componente,
+      direccion: sp.direccion,
       rms: 0,
       temp: 25,
     };
+  });
 
-    renderizarTablaSpotsBiblioteca();
+  // Configurar automáticamente los selectores ISO
+  const selectGrupo = document.getElementById('iso-grupo-potencia') as HTMLSelectElement | null;
+  const selectSoporte = document.getElementById('iso-soporte-base') as HTMLSelectElement | null;
+  if (selectGrupo) selectGrupo.value = plantilla.grupoIsoDefault;
+  if (selectSoporte) selectSoporte.value = plantilla.soporteIsoDefault;
+
+  renderizarTablaSpotsBiblioteca();
+  UI.mostrarToast(
+    `Plantilla "${plantilla.nombreTipo}" cargada (${plantilla.spots.length} puntos).`,
+    'exito',
+  );
+});
+
+registrarComando('equipo:agregarPunto', () => {
+  const punto = prompt('Identificador del punto (ej: M3V, CH3A, BOMBA_IN):');
+  if (!punto) return;
+  const componente =
+    prompt('Nombre del componente asociado (ej: Rodamiento Lado Libre):') || 'Componente';
+  const cleanPunto = punto.toUpperCase().trim();
+
+  spotsTemporalesModal[cleanPunto] = {
+    punto: cleanPunto,
+    componente: componente.trim(),
+    direccion: 'Horizontal',
+    rms: 0,
+    temp: 25,
   };
 
-  window.eliminarSpotTemporal = (key: string) => {
-    delete spotsTemporalesModal[key];
-    renderizarTablaSpotsBiblioteca();
-    renderizarTablaMedicionesIso();
-  };
+  renderizarTablaSpotsBiblioteca();
+});
 
-  window.actualizarValorSpot = (key: string, campo: 'rms' | 'temp', valor: string) => {
-    if (spotsTemporalesModal[key]) {
-      spotsTemporalesModal[key][campo] = parseFloat(valor) || 0;
-      // Recalcular el badge global inmediatamente sin perder el foco del input
-      const selectGrupo = document.getElementById('iso-grupo-potencia') as HTMLSelectElement | null;
-      const selectSoporte = document.getElementById('iso-soporte-base') as HTMLSelectElement | null;
-      const grupo = (selectGrupo?.value as 'GRUPO_1' | 'GRUPO_2') || 'GRUPO_1';
-      const soporte = (selectSoporte?.value as 'RIGIDO' | 'FLEXIBLE') || 'RIGIDO';
+registrarComando('equipo:eliminarSpot', (_evento, key) => {
+  delete spotsTemporalesModal[String(key ?? '')];
+  renderizarTablaSpotsBiblioteca();
+  renderizarTablaMedicionesIso();
+});
 
-      let peorSeveridad: 'VERDE' | 'AMARILLO' | 'NARANJA' | 'ROJO' = 'VERDE';
-      Object.values(spotsTemporalesModal).forEach((sp) => {
-        const ev = evaluarSeveridadIso(sp.rms, grupo, soporte);
-        if (ev.severidad === 'ROJO') peorSeveridad = 'ROJO';
-        else if (ev.severidad === 'NARANJA' && peorSeveridad !== 'ROJO') peorSeveridad = 'NARANJA';
-        else if (ev.severidad === 'AMARILLO' && peorSeveridad === 'VERDE')
-          peorSeveridad = 'AMARILLO';
-      });
+registrarComando('equipo:actualizarValorSpot', (_evento, key, campo) => {
+  const clave = String(key ?? '');
+  const campoValor = (campo as 'rms' | 'temp') || 'rms';
+  const valor = (_evento?.target as HTMLInputElement | null)?.value ?? '';
 
-      const badgeGlobal = document.getElementById('badge-severidad-global-calculada');
-      if (badgeGlobal) {
-        const colores = {
-          VERDE: '#00e676',
-          AMARILLO: '#eab308',
-          NARANJA: '#f97316',
-          ROJO: '#ef4444',
-        };
-        const col = colores[peorSeveridad];
-        badgeGlobal.style.color = col;
-        badgeGlobal.style.borderColor = col;
-        badgeGlobal.style.background = `${col}22`;
-        badgeGlobal.textContent = `${peorSeveridad} (${peorSeveridad === 'VERDE' ? 'Zona A' : peorSeveridad === 'AMARILLO' ? 'Zona B' : peorSeveridad === 'NARANJA' ? 'Zona C' : 'Zona D'})`;
-      }
-    }
-  };
-
-  window.recalcularSeveridadesIso = () => {
-    renderizarTablaMedicionesIso();
-  };
-
-  window.iniciarCapturaDesdeMapa = () => {
-    const modal = document.getElementById('modal-gestion-equipo');
-    const mapa = window.mapaActivo;
-    if (!mapa) {
-      UI.mostrarToast('El Geovisor 3D aún no está inicializado.', 'error');
-      return;
-    }
-
-    if (modal) modal.style.display = 'none';
-    mapa.getCanvas().style.cursor = 'crosshair';
-
-    const banner = document.createElement('div');
-    banner.id = 'banner-captura-gps';
-    banner.style.cssText =
-      'position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: rgba(14, 27, 31, 0.95); border: 1px solid #38bdf8; box-shadow: 0 10px 30px rgba(0,0,0,0.8); padding: 10px 20px; border-radius: 30px; display: flex; align-items: center; gap: 14px; z-index: 100000; color: #ffffff; font-size: 0.85rem; font-weight: 700;';
-    banner.innerHTML = `
-      <span class="material-symbols-outlined" style="color: #38bdf8; font-size: 1.2rem;">my_location</span>
-      <span>Haz clic sobre el mapa para fijar la ubicación GPS del activo</span>
-      <button type="button" id="btn-cancelar-captura" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #CBD5E1; padding: 4px 10px; border-radius: 14px; font-size: 0.75rem; cursor: pointer;">Cancelar</button>
-    `;
-    document.body.appendChild(banner);
-
-    const finalizarCaptura = () => {
-      mapa.getCanvas().style.cursor = '';
-      banner.remove();
-      if (modal) modal.style.display = 'flex';
-    };
-
-    document.getElementById('btn-cancelar-captura')?.addEventListener('click', () => {
-      mapa.off('click', onClicMapa);
-      finalizarCaptura();
-    });
-
-    const onClicMapa = (e: any) => {
-      const lng = e.lngLat.lng.toFixed(6);
-      const lat = e.lngLat.lat.toFixed(6);
-
-      const inputLat = document.getElementById('eq-lat') as HTMLInputElement | null;
-      const inputLng = document.getElementById('eq-lng') as HTMLInputElement | null;
-      if (inputLat) inputLat.value = lat;
-      if (inputLng) inputLng.value = lng;
-
-      if (typeof maplibregl !== 'undefined') {
-        if (marcadorTemporalCaptura) marcadorTemporalCaptura.remove();
-        const el = document.createElement('div');
-        el.style.cssText =
-          'width: 18px; height: 18px; background: #38bdf8; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 10px #38bdf8;';
-        marcadorTemporalCaptura = new maplibregl.Marker({ element: el })
-          .setLngLat([parseFloat(lng), parseFloat(lat)])
-          .addTo(mapa);
-      }
-
-      finalizarCaptura();
-      UI.mostrarToast(`Coordenadas fijadas: ${lat}, ${lng}`, 'exito');
-    };
-
-    mapa.once('click', onClicMapa);
-  };
-
-  window.guardarEquipoCompletoFormulario = async (tagOriginal: string, esEdicion: boolean) => {
-    const tag = ((document.getElementById('eq-tag') as HTMLInputElement)?.value || tagOriginal)
-      .trim()
-      .toUpperCase();
-    const nombre = (document.getElementById('eq-nombre') as HTMLInputElement)?.value.trim();
-    const area = (document.getElementById('eq-area') as HTMLInputElement)?.value
-      .trim()
-      .toUpperCase();
-    const nivel = (document.getElementById('eq-nivel') as HTMLSelectElement)?.value;
-    const criticidad =
-      (document.getElementById('eq-criticidad') as HTMLSelectElement)?.value || 'Media';
-    const lat = parseFloat((document.getElementById('eq-lat') as HTMLInputElement)?.value);
-    const lng = parseFloat((document.getElementById('eq-lng') as HTMLInputElement)?.value);
-
+  if (spotsTemporalesModal[clave]) {
+    spotsTemporalesModal[clave][campoValor] = parseFloat(valor) || 0;
+    // Recalcular el badge global inmediatamente sin perder el foco del input
     const selectGrupo = document.getElementById('iso-grupo-potencia') as HTMLSelectElement | null;
     const selectSoporte = document.getElementById('iso-soporte-base') as HTMLSelectElement | null;
-    const grupoIso = (selectGrupo?.value as 'GRUPO_1' | 'GRUPO_2') || 'GRUPO_1';
-    const soporteIso = (selectSoporte?.value as 'RIGIDO' | 'FLEXIBLE') || 'RIGIDO';
+    const grupo = (selectGrupo?.value as 'GRUPO_1' | 'GRUPO_2') || 'GRUPO_1';
+    const soporte = (selectSoporte?.value as 'RIGIDO' | 'FLEXIBLE') || 'RIGIDO';
 
-    if (!tag || !nombre || isNaN(lat) || isNaN(lng)) {
-      UI.mostrarToast('Por favor completa todos los campos requeridos.', 'error');
-      return;
-    }
-
-    // Calcular la severidad global automática del equipo basada en la peor lectura ISO
-    let severidadFinal: 'VERDE' | 'AMARILLO' | 'NARANJA' | 'ROJO' = 'VERDE';
+    let peorSeveridad: 'VERDE' | 'AMARILLO' | 'NARANJA' | 'ROJO' = 'VERDE';
     Object.values(spotsTemporalesModal).forEach((sp) => {
-      const ev = evaluarSeveridadIso(sp.rms, grupoIso, soporteIso);
-      if (ev.severidad === 'ROJO') severidadFinal = 'ROJO';
-      else if (ev.severidad === 'NARANJA' && severidadFinal !== 'ROJO') severidadFinal = 'NARANJA';
-      else if (ev.severidad === 'AMARILLO' && severidadFinal === 'VERDE')
-        severidadFinal = 'AMARILLO';
+      const ev = evaluarSeveridadIso(sp.rms, grupo, soporte);
+      if (ev.severidad === 'ROJO') peorSeveridad = 'ROJO';
+      else if (ev.severidad === 'NARANJA' && peorSeveridad !== 'ROJO') peorSeveridad = 'NARANJA';
+      else if (ev.severidad === 'AMARILLO' && peorSeveridad === 'VERDE') peorSeveridad = 'AMARILLO';
     });
 
-    const payloadActivo = {
-      tag,
-      nombre,
-      area,
-      nivel,
-      severidad: severidadFinal,
-      criticidad,
-      latitud: lat,
-      longitud: lng,
-      grupoIso,
-      soporteIso,
-      spots: spotsTemporalesModal,
-    };
+    const badgeGlobal = document.getElementById('badge-severidad-global-calculada');
+    if (badgeGlobal) {
+      const colores = {
+        VERDE: '#00e676',
+        AMARILLO: '#eab308',
+        NARANJA: '#f97316',
+        ROJO: '#ef4444',
+      };
+      const col = colores[peorSeveridad];
+      badgeGlobal.style.color = col;
+      badgeGlobal.style.borderColor = col;
+      badgeGlobal.style.background = `${col}22`;
+      badgeGlobal.textContent = `${peorSeveridad} (${peorSeveridad === 'VERDE' ? 'Zona A' : peorSeveridad === 'AMARILLO' ? 'Zona B' : peorSeveridad === 'NARANJA' ? 'Zona C' : 'Zona D'})`;
+    }
+  }
+});
 
-    const accion = esEdicion ? 'UPDATE' : 'CREATE';
-    await SyncManager.despacharOEncolar(`activo_catastro:${tag}`, accion, payloadActivo);
+registrarComando('equipo:recalcularIso', () => {
+  renderizarTablaMedicionesIso();
+});
 
-    if (!window.datosGlobalesEquipos) window.datosGlobalesEquipos = {};
-    window.datosGlobalesEquipos[tag] = {
-      id: tag,
-      ...payloadActivo,
-    };
+registrarComando('equipo:capturarGPS', () => {
+  const modal = document.getElementById('modal-gestion-equipo');
+  const mapa = obtenerMapaActivo();
+  if (!mapa) {
+    UI.mostrarToast('El Geovisor 3D aún no está inicializado.', 'error');
+    return;
+  }
 
-    UI.mostrarToast(
-      `Equipo ${tag} guardado con condición ${severidadFinal} (ISO 10816-3).`,
-      'exito',
-    );
-    cerrarModalGestionEquipo();
+  if (modal) modal.style.display = 'none';
+  mapa.getCanvas().style.cursor = 'crosshair';
 
-    if (window.dibujarPinesEnMapa) window.dibujarPinesEnMapa();
-    document.dispatchEvent(
-      new CustomEvent('datosEquiposActualizados', { detail: window.datosGlobalesEquipos }),
-    );
+  const banner = document.createElement('div');
+  banner.id = 'banner-captura-gps';
+  banner.style.cssText =
+    'position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: rgba(14, 27, 31, 0.95); border: 1px solid #38bdf8; box-shadow: 0 10px 30px rgba(0,0,0,0.8); padding: 10px 20px; border-radius: 30px; display: flex; align-items: center; gap: 14px; z-index: 100000; color: #ffffff; font-size: 0.85rem; font-weight: 700;';
+  banner.innerHTML = `
+    <span class="material-symbols-outlined" style="color: #38bdf8; font-size: 1.2rem;">my_location</span>
+    <span>Haz clic sobre el mapa para fijar la ubicación GPS del activo</span>
+    <button type="button" id="btn-cancelar-captura" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #CBD5E1; padding: 4px 10px; border-radius: 14px; font-size: 0.75rem; cursor: pointer;">Cancelar</button>
+  `;
+  document.body.appendChild(banner);
+
+  const finalizarCaptura = () => {
+    mapa.getCanvas().style.cursor = '';
+    banner.remove();
+    if (modal) modal.style.display = 'flex';
   };
-}
+
+  document.getElementById('btn-cancelar-captura')?.addEventListener('click', () => {
+    mapa.off('click', onClicMapa);
+    finalizarCaptura();
+  });
+
+  const onClicMapa = (e: any) => {
+    const lng = e.lngLat.lng.toFixed(6);
+    const lat = e.lngLat.lat.toFixed(6);
+
+    const inputLat = document.getElementById('eq-lat') as HTMLInputElement | null;
+    const inputLng = document.getElementById('eq-lng') as HTMLInputElement | null;
+    if (inputLat) inputLat.value = lat;
+    if (inputLng) inputLng.value = lng;
+
+    if (typeof maplibregl !== 'undefined') {
+      if (marcadorTemporalCaptura) marcadorTemporalCaptura.remove();
+      const el = document.createElement('div');
+      el.style.cssText =
+        'width: 18px; height: 18px; background: #38bdf8; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 10px #38bdf8;';
+      marcadorTemporalCaptura = new maplibregl.Marker({ element: el })
+        .setLngLat([parseFloat(lng), parseFloat(lat)])
+        .addTo(mapa);
+    }
+
+    finalizarCaptura();
+    UI.mostrarToast(`Coordenadas fijadas: ${lat}, ${lng}`, 'exito');
+  };
+
+  mapa.once('click', onClicMapa);
+});
+
+registrarComando('equipo:guardarFormulario', async (_evento, tagOriginal, esEdicionCrudo) => {
+  const esEdicion = String(esEdicionCrudo ?? '') === 'true';
+  const tagOriginalValor = String(tagOriginal ?? '');
+
+  const tag = ((document.getElementById('eq-tag') as HTMLInputElement)?.value || tagOriginalValor)
+    .trim()
+    .toUpperCase();
+  const nombre = (document.getElementById('eq-nombre') as HTMLInputElement)?.value.trim();
+  const area = (document.getElementById('eq-area') as HTMLInputElement)?.value.trim().toUpperCase();
+  const nivel = (document.getElementById('eq-nivel') as HTMLSelectElement)?.value;
+  const criticidad =
+    (document.getElementById('eq-criticidad') as HTMLSelectElement)?.value || 'Media';
+  const lat = parseFloat((document.getElementById('eq-lat') as HTMLInputElement)?.value);
+  const lng = parseFloat((document.getElementById('eq-lng') as HTMLInputElement)?.value);
+
+  const selectGrupo = document.getElementById('iso-grupo-potencia') as HTMLSelectElement | null;
+  const selectSoporte = document.getElementById('iso-soporte-base') as HTMLSelectElement | null;
+  const grupoIso = (selectGrupo?.value as 'GRUPO_1' | 'GRUPO_2') || 'GRUPO_1';
+  const soporteIso = (selectSoporte?.value as 'RIGIDO' | 'FLEXIBLE') || 'RIGIDO';
+
+  if (!tag || !nombre || isNaN(lat) || isNaN(lng)) {
+    UI.mostrarToast('Por favor completa todos los campos requeridos.', 'error');
+    return;
+  }
+
+  // Calcular la severidad global automática del equipo basada en la peor lectura ISO
+  let severidadFinal: 'VERDE' | 'AMARILLO' | 'NARANJA' | 'ROJO' = 'VERDE';
+  Object.values(spotsTemporalesModal).forEach((sp) => {
+    const ev = evaluarSeveridadIso(sp.rms, grupoIso, soporteIso);
+    if (ev.severidad === 'ROJO') severidadFinal = 'ROJO';
+    else if (ev.severidad === 'NARANJA' && severidadFinal !== 'ROJO') severidadFinal = 'NARANJA';
+    else if (ev.severidad === 'AMARILLO' && severidadFinal === 'VERDE') severidadFinal = 'AMARILLO';
+  });
+
+  const payloadActivo = {
+    tag,
+    nombre,
+    area,
+    nivel,
+    severidad: severidadFinal,
+    criticidad,
+    latitud: lat,
+    longitud: lng,
+    grupoIso,
+    soporteIso,
+    spots: spotsTemporalesModal,
+  };
+
+  const accion = esEdicion ? 'UPDATE' : 'CREATE';
+  await SyncManager.despacharOEncolar(`activo_catastro:${tag}`, accion, payloadActivo);
+
+  const datosEquipos = obtenerDatosEquipos();
+  datosEquipos[tag] = {
+    id: tag,
+    ...payloadActivo,
+  };
+  establecerDatosEquipos(datosEquipos);
+
+  UI.mostrarToast(`Equipo ${tag} guardado con condición ${severidadFinal} (ISO 10816-3).`, 'exito');
+  cerrarModalGestionEquipo();
+
+  ejecutarComando('mapa:dibujarPines');
+});

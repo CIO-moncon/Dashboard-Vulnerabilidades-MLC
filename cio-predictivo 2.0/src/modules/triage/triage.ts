@@ -1,6 +1,7 @@
 import { AuthService } from '../../core/auth/authService';
 import { SyncManager } from '../../core/offline/syncManager';
 import { EvidenciaAlerta } from '../terreno/terrenoCore';
+import { argsJson, registrarComando } from '../../core/app/comandos';
 
 export type EstadoTriage = 'Pendiente' | 'nuevo' | 'Visto' | 'Validado' | 'Descartado';
 export type FiltroEstadoTriage = 'PENDIENTES' | 'VALIDADOS' | 'TODOS';
@@ -159,7 +160,7 @@ export const abrirVisorMultimediaInterno = (
               <span class="material-symbols-outlined" style="color: #38bdf8; font-size: 1.4rem;">photo_camera</span>
               <h3 style="margin: 0; color: white; font-size: 1rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif;">Visor de Evidencia de Terreno</h3>
             </div>
-            <button type="button" onclick="window.cerrarVisorMultimedia()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            <button type="button" data-accion="triage:cerrarVisor" style="background: transparent; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;">&times;</button>
           </header>
           <div style="flex: 1; background: #000; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 10px;" id="contenedor-contenido-media">
           </div>
@@ -217,13 +218,13 @@ export const renderizarModuloTriage = (idContenedor = 'espacio-trabajo-dinamico'
 
         <div style="display: flex; items-center; gap: 10px; flex-wrap: wrap;">
           <div style="display: flex; gap: 4px; background: rgba(0,0,0,0.4); padding: 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-            <button type="button" id="btn-triage-pendientes" onclick="window.filtrarTriageEstado('PENDIENTES')" style="background: #F5A623; color: #0E1B1F; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">
+            <button type="button" id="btn-triage-pendientes" data-accion="triage:filtrarEstado" data-args='${argsJson(['PENDIENTES'])}' style="background: #F5A623; color: #0E1B1F; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">
               Pendientes (<span id="lbl-triage-pend-count">0</span>)
             </button>
-            <button type="button" id="btn-triage-validados" onclick="window.filtrarTriageEstado('VALIDADOS')" style="background: transparent; color: #94A3B8; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+            <button type="button" id="btn-triage-validados" data-accion="triage:filtrarEstado" data-args='${argsJson(['VALIDADOS'])}' style="background: transparent; color: #94A3B8; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
               Validados (<span id="lbl-triage-val-count">0</span>)
             </button>
-            <button type="button" id="btn-triage-todos" onclick="window.filtrarTriageEstado('TODOS')" style="background: transparent; color: #94A3B8; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+            <button type="button" id="btn-triage-todos" data-accion="triage:filtrarEstado" data-args='${argsJson(['TODOS'])}' style="background: transparent; color: #94A3B8; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
               Todos
             </button>
           </div>
@@ -233,7 +234,7 @@ export const renderizarModuloTriage = (idContenedor = 'espacio-trabajo-dinamico'
       <div style="background: rgba(22, 40, 45, 0.85); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
         <div style="position: relative; max-width: 320px; flex: 1;">
           <span class="material-symbols-outlined" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 1.1rem; color: #94A3B8; pointer-events: none;" aria-hidden="true">search</span>
-          <input type="search" id="triage-busqueda-input" placeholder="Buscar por TAG, Área, Componente..." oninput="window.filtrarTriageTexto(this.value)" style="width: 100%; background: #0E1B1F; border: 1px solid rgba(255,255,255,0.15); color: white; padding: 8px 12px 8px 34px; border-radius: 6px; font-size: 0.82rem; outline: none; box-sizing: border-box;">
+          <input type="search" id="triage-busqueda-input" placeholder="Buscar por TAG, Área, Componente..." data-accion="triage:filtrarTexto" style="width: 100%; background: #0E1B1F; border: 1px solid rgba(255,255,255,0.15); color: white; padding: 8px 12px 8px 34px; border-radius: 6px; font-size: 0.82rem; outline: none; box-sizing: border-box;">
         </div>
       </div>
 
@@ -361,7 +362,7 @@ export const renderizarListaTriage = (): void => {
           </div>
 
           <div style="text-align: right;">
-            <button type="button" onclick="window.abrirModalValidacionAnalista('${escaparHTML(idKey)}')" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">
+            <button type="button" data-accion="triage:validarModal" data-args='${argsJson([idKey])}' style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">
               ${estado === 'Pendiente' || estado === 'nuevo' ? 'Ver Reporte' : esVisto ? 'Validar Caso' : 'Ver / Editar'}
             </button>
           </div>
@@ -419,7 +420,7 @@ export const abrirModalValidacionAnalista = async (idKey: string): Promise<void>
       <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px;" role="region" aria-label="Carrusel de evidencias">
         ${listaEvidencias
           .map((ev, i) => {
-            return `<img src="${ev.data}" style="height: 110px; width: 110px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; flex-shrink: 0;" onclick="window.abrirVisorMultimediaInterno('${ev.data}', 'imagen')" title="Clic para visor ampliado" alt="Evidencia ${i + 1}">`;
+            return `<img src="${ev.data}" style="height: 110px; width: 110px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; flex-shrink: 0;" data-accion="triage:abrirVisorEvidencia" data-args='${argsJson([idKey, String(i)])}' title="Clic para visor ampliado" alt="Evidencia ${i + 1}">`;
           })
           .join('')}
       </div>
@@ -554,12 +555,37 @@ export const abrirModalValidacionAnalista = async (idKey: string): Promise<void>
   });
 };
 
-if (typeof window !== 'undefined') {
-  const w = window as any;
-  w.renderizarModuloTriage = renderizarModuloTriage;
-  w.filtrarTriageEstado = filtrarTriageEstado;
-  w.filtrarTriageTexto = filtrarTriageTexto;
-  w.abrirModalValidacionAnalista = abrirModalValidacionAnalista;
-  w.abrirVisorMultimediaInterno = abrirVisorMultimediaInterno;
-  w.cerrarVisorMultimedia = cerrarVisorMultimedia;
-}
+// ============================================================================
+// REGISTRO DE COMANDOS (antes: window.*)
+// ============================================================================
+registrarComando('triage:renderizar', () => {
+  renderizarModuloTriage('espacio-trabajo-dinamico');
+});
+
+registrarComando('triage:filtrarEstado', (_evento, estado) => {
+  filtrarTriageEstado((estado as FiltroEstadoTriage) || 'TODOS');
+});
+
+registrarComando('triage:filtrarTexto', (evento) => {
+  filtrarTriageTexto((evento?.target as HTMLInputElement | null)?.value ?? '');
+});
+
+registrarComando('triage:validarModal', (_evento, idKey) => {
+  void abrirModalValidacionAnalista(String(idKey ?? ''));
+});
+
+registrarComando('triage:abrirVisorEvidencia', (_evento, idKey, indice) => {
+  const hallazgo = listaHallazgosActuales[String(idKey ?? '')];
+  if (!hallazgo) return;
+  const listaEvidencias =
+    hallazgo.evidencias ||
+    (hallazgo.fotoBase64 ? [{ tipo: 'IMAGEN_BASE64', data: hallazgo.fotoBase64 }] : []);
+  const evidencia = listaEvidencias[Number(indice)];
+  if (evidencia?.data) {
+    abrirVisorMultimediaInterno(String(evidencia.data), 'imagen');
+  }
+});
+
+registrarComando('triage:cerrarVisor', () => {
+  cerrarVisorMultimedia();
+});

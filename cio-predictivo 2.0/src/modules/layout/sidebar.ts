@@ -1,12 +1,15 @@
 import { UI } from './notificaciones';
-
-declare const window: any;
+import { argsJson, ejecutarComando, registrarComando } from '../../core/app/comandos';
+import {
+  obtenerDatosEquipos,
+  obtenerMapaActivo,
+  suscribirCambiosEquipos,
+} from '../../core/app/estadoApp';
+import { escaparHTML } from '../../core/utils/sanitizar';
 
 let terminoBusqueda = '';
 let areaExpandidaActiva: string | null = null;
 let equipoSeleccionadoActual: string | null = null;
-
-import { escaparHTML } from '../../core/utils/sanitizar';
 
 const resolverColorSeveridad = (severidad = ''): string => {
   const sev = String(severidad || '')
@@ -22,7 +25,7 @@ export const renderizarCatastroEnSidebar = (): void => {
   const contenedor = document.getElementById('contenedor-areas-sidebar');
   if (!contenedor) return;
 
-  const datosEquipos: Record<string, any> = window.datosGlobalesEquipos || {};
+  const datosEquipos: Record<string, any> = obtenerDatosEquipos();
   const tags = Object.keys(datosEquipos);
 
   const gruposPorArea: Record<string, any[]> = {};
@@ -55,7 +58,7 @@ export const renderizarCatastroEnSidebar = (): void => {
         Áreas (${areasOrdenadas.length})
       </span>
       <button type="button" 
-              onclick="window.abrirModalGestionEquipo()" 
+              data-accion="equipo:abrirModalNuevo" 
               title="Registrar nuevo equipo o TAG"
               style="flex-shrink: 0; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
         <span class="material-symbols-outlined" style="font-size: 1rem;">add</span>
@@ -87,7 +90,7 @@ export const renderizarCatastroEnSidebar = (): void => {
 
       htmlContenido += `
         <div class="acordeon-area" style="background: rgba(22, 40, 45, 0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; overflow: hidden;">
-          <header onclick="window.alternarAreaAcordeon('${escaparHTML(area)}')" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; cursor: pointer; user-select: none;">
+          <header data-accion="sidebar:alternarArea" data-args='${argsJson([area])}' style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; cursor: pointer; user-select: none;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span style="width: 8px; height: 8px; border-radius: 50%; background: ${peorSeveridad};"></span>
               <strong style="font-size: 0.8rem; color: #ffffff; font-family: 'Space Grotesk', sans-serif;">${escaparHTML(area)}</strong>
@@ -117,7 +120,7 @@ export const renderizarCatastroEnSidebar = (): void => {
                        class="fila-equipo-sidebar" 
                        style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-radius: 6px; transition: all 0.2s ease; ${estiloFila}">
                     
-                    <div onclick="window.centrarYSeleccionarEquipo('${tagLimpio}')" 
+                    <div data-accion="sidebar:centrarEquipo" data-args='${argsJson([eq.tag || 'S/T'])}' 
                          style="cursor: pointer; display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;" 
                          title="Seleccionar y centrar en mapa">
                       <span style="width: 6px; height: 6px; border-radius: 50%; background: ${colorSev}; flex-shrink: 0; box-shadow: 0 0 6px ${colorSev};"></span>
@@ -128,13 +131,13 @@ export const renderizarCatastroEnSidebar = (): void => {
 
                     <div style="display: flex; align-items: center; gap: 4px;">
                       <button type="button" 
-                              onclick="window.abrirModalGestionEquipo(window.datosGlobalesEquipos['${tagLimpio}'])" 
+                              data-accion="equipo:abrirModalPorTag" data-args='${argsJson([eq.tag || 'S/T'])}' 
                               title="Editar Ficha" 
                               style="background: transparent; border: none; color: #94A3B8; cursor: pointer; padding: 2px; display: flex; align-items: center; border-radius: 3px;">
                         <span class="material-symbols-outlined" style="font-size: 0.95rem;">edit</span>
                       </button>
                       <button type="button" 
-                              onclick="window.abrirExpedienteDirecto('${tagLimpio}')" 
+                              data-accion="expediente:abrir" data-args='${argsJson([eq.tag || 'S/T'])}' 
                               title="Abrir Expediente" 
                               style="background: transparent; border: none; color: #38bdf8; cursor: pointer; padding: 2px; display: flex; align-items: center; border-radius: 3px;">
                         <span class="material-symbols-outlined" style="font-size: 0.95rem;">assignment</span>
@@ -174,9 +177,7 @@ export const inicializarBarraLateral = (): void => {
     tabTriage?.classList.remove('active');
 
     // Restaurar inmediatamente el Geovisor 3D
-    if (typeof window.renderizarMapaPlanta === 'function') {
-      window.renderizarMapaPlanta();
-    }
+    ejecutarComando('mapa:renderizar');
     renderizarCatastroEnSidebar();
   });
 
@@ -185,50 +186,50 @@ export const inicializarBarraLateral = (): void => {
     tabCatastro?.classList.remove('active');
 
     // Abrir bandeja de Triage
-    if (typeof window.abrirTriageDirecto === 'function') {
-      window.abrirTriageDirecto();
-    }
+    ejecutarComando('triage:abrir');
   });
 
-  document.addEventListener('datosEquiposActualizados', () => {
+  suscribirCambiosEquipos(() => {
     renderizarCatastroEnSidebar();
   });
 
   renderizarCatastroEnSidebar();
 };
 
-if (typeof window !== 'undefined') {
-  window.alternarAreaAcordeon = (area: string) => {
-    areaExpandidaActiva = areaExpandidaActiva === area ? null : area;
-    renderizarCatastroEnSidebar();
-  };
+// Registro de comandos del sidebar (antes: window.*).
+registrarComando('sidebar:alternarArea', (_evento, area) => {
+  const nombreArea = String(area ?? '');
+  areaExpandidaActiva = areaExpandidaActiva === nombreArea ? null : nombreArea;
+  renderizarCatastroEnSidebar();
+});
 
-  window.centrarYSeleccionarEquipo = (tag: string) => {
-    equipoSeleccionadoActual = tag;
-    renderizarCatastroEnSidebar();
+registrarComando('sidebar:centrarEquipo', (_evento, tag) => {
+  const tagEquipo = String(tag ?? '');
+  equipoSeleccionadoActual = tagEquipo;
+  renderizarCatastroEnSidebar();
 
-    const eq = window.datosGlobalesEquipos?.[tag];
-    if (!eq) return;
+  const eq = obtenerDatosEquipos()?.[tagEquipo];
+  if (!eq) return;
 
-    if (!window.mapaActivo) {
-      window.renderizarMapaPlanta();
-    }
+  if (!obtenerMapaActivo()) {
+    ejecutarComando('mapa:renderizar');
+  }
 
-    const lat = parseFloat(eq.latitud);
-    const lng = parseFloat(eq.longitud);
+  const lat = parseFloat(eq.latitud);
+  const lng = parseFloat(eq.longitud);
 
-    if (!isNaN(lat) && !isNaN(lng) && window.mapaActivo) {
-      window.mapaActivo.flyTo({
-        center: [lng, lat],
-        zoom: 17.5,
-        pitch: 60,
-        essential: true,
-      });
-    }
-  };
+  const mapa = obtenerMapaActivo();
+  if (!isNaN(lat) && !isNaN(lng) && mapa) {
+    mapa.flyTo({
+      center: [lng, lat],
+      zoom: 17.5,
+      pitch: 60,
+      essential: true,
+    });
+  }
+});
 
-  window.actualizarFilaSeleccionadaSidebar = (tag: string) => {
-    equipoSeleccionadoActual = tag;
-    renderizarCatastroEnSidebar();
-  };
-}
+registrarComando('sidebar:seleccionarFila', (_evento, tag) => {
+  equipoSeleccionadoActual = String(tag ?? '');
+  renderizarCatastroEnSidebar();
+});

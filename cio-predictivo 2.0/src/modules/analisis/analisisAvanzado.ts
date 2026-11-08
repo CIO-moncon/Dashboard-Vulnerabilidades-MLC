@@ -8,9 +8,10 @@ import {
   formatearFechaNomenclatura,
   abrirVisorPDFInterno,
 } from '../../core/pdf/pdfPlantilla';
+import { argsJson, registrarComando } from '../../core/app/comandos';
+import { UI } from '../layout/notificaciones';
 
 declare const Chart: any;
-declare const window: any;
 
 export interface ProyeccionFalla {
   pendiente: number;
@@ -260,7 +261,7 @@ const asegurarModalTendenciaDOM = (): HTMLElement => {
               <span id="badge-punto-grafico" style="font-size: 0.72rem; color: #38bdf8; font-family: monospace;">TAG: --- | Punto: ---</span>
             </div>
           </div>
-          <button type="button" class="btn-cerrar-modal" onclick="window.cerrarModalGraficoTendencia()">&times;</button>
+          <button type="button" class="btn-cerrar-modal" data-accion="analisis:cerrarTendencia">&times;</button>
         </header>
 
         <div style="background: rgba(14, 27, 31, 0.95); padding: 10px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
@@ -268,9 +269,9 @@ const asegurarModalTendenciaDOM = (): HTMLElement => {
             <span style="font-size: 0.75rem; color: #94A3B8; font-weight: 700; text-transform: uppercase;">
               Gráficos Activos:
             </span>
-            <button type="button" id="chk-toggle-rms" onclick="window.toggleGraficoSeleccion('rms')" style="background: #0284c7; color: white; border: 1px solid #38bdf8; padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">1. RMS</button>
-            <button type="button" id="chk-toggle-temp" onclick="window.toggleGraficoSeleccion('temp')" style="background: #F5A623; color: #0E1B1F; border: 1px solid #facc15; padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">2. Temperatura</button>
-            <button type="button" id="chk-toggle-fc" onclick="window.toggleGraficoSeleccion('fc')" style="background: #9333ea; color: white; border: 1px solid #c084fc; padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">3. Factor Cresta</button>
+            <button type="button" id="chk-toggle-rms" data-accion="analisis:toggleGrafico" data-args='${argsJson(['rms'])}' style="background: #0284c7; color: white; border: 1px solid #38bdf8; padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">1. RMS</button>
+            <button type="button" id="chk-toggle-temp" data-accion="analisis:toggleGrafico" data-args='${argsJson(['temp'])}' style="background: #F5A623; color: #0E1B1F; border: 1px solid #facc15; padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">2. Temperatura</button>
+            <button type="button" id="chk-toggle-fc" data-accion="analisis:toggleGrafico" data-args='${argsJson(['fc'])}' style="background: #9333ea; color: white; border: 1px solid #c084fc; padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">3. Factor Cresta</button>
           </div>
         </div>
 
@@ -300,11 +301,11 @@ const asegurarModalTendenciaDOM = (): HTMLElement => {
         </div>
 
         <footer class="modal-footer" style="padding: 12px 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: rgba(14, 27, 31, 0.98);">
-          <button type="button" onclick="window.exportarPDFTendenciaPunto()" style="background: #0284c7; color: white; border: none; padding: 9px 18px; border-radius: 6px; font-size: 0.8rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+          <button type="button" data-accion="analisis:exportarPDFTendencia" style="background: #0284c7; color: white; border: none; padding: 9px 18px; border-radius: 6px; font-size: 0.8rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
             <span class="material-symbols-outlined" style="font-size: 1.15rem;">picture_as_pdf</span>
             <span>Exportar Gráficos (PDF)</span>
           </button>
-          <button type="button" class="btn-secundario" onclick="window.cerrarModalGraficoTendencia()">Cerrar</button>
+          <button type="button" class="btn-secundario" data-accion="analisis:cerrarTendencia">Cerrar</button>
         </footer>
       </div>
     `;
@@ -575,7 +576,7 @@ export const abrirModalAnalisisExperto = async (idActivo: string): Promise<void>
         <h3 style="margin: 0; color: #ffffff; font-size: 1.1rem; font-weight: 800; font-family: 'Space Grotesk', sans-serif;">
           Diagnóstico Espectral Experto — ${idActivo}
         </h3>
-        <button type="button" class="btn-cerrar-modal" onclick="document.getElementById('modal-analisis-experto-cbm').remove()">&times;</button>
+        <button type="button" class="btn-cerrar-modal" data-accion="analisis:cerrarExperto">&times;</button>
       </header>
 
       <div style="padding: 18px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; font-size: 0.85rem; color: #E2E8F0;">
@@ -591,8 +592,8 @@ export const abrirModalAnalisisExperto = async (idActivo: string): Promise<void>
       </div>
 
       <footer style="padding: 12px 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: flex-end; gap: 10px; background: rgba(14, 27, 31, 0.95);">
-        <button type="button" class="btn-secundario" onclick="document.getElementById('modal-analisis-experto-cbm').remove()">Cerrar</button>
-        <button type="button" id="btn-guardar-analisis-db" onclick="window.guardarDiagnosticoExperto()" style="background: #F5A623; color: #0E1B1F; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 800; cursor: pointer;">Guardar Diagnóstico</button>
+        <button type="button" class="btn-secundario" data-accion="analisis:cerrarExperto">Cerrar</button>
+        <button type="button" id="btn-guardar-analisis-db" data-accion="analisis:guardarDiagnostico" style="background: #F5A623; color: #0E1B1F; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 800; cursor: pointer;">Guardar Diagnóstico</button>
       </footer>
     </div>
   `;
@@ -619,14 +620,36 @@ export const guardarDiagnosticoExperto = async (): Promise<void> => {
   document.getElementById('modal-analisis-experto-cbm')?.remove();
 };
 
-// Exposición global
-if (typeof window !== 'undefined') {
-  window.abrirGraficoTendencia = abrirGraficoTendencia;
-  window.cerrarModalGraficoTendencia = cerrarModalGraficoTendencia;
-  window.abrirModalAnalisisExperto = abrirModalAnalisisExperto;
-  window.guardarDiagnosticoExperto = guardarDiagnosticoExperto;
-  window.toggleGraficoSeleccion = (tipo: 'rms' | 'temp' | 'fc') => {
-    datosGraficoMemoria.seleccionGraficos[tipo] = !datosGraficoMemoria.seleccionGraficos[tipo];
-    renderizarTresGraficosSimultaneos();
-  };
-}
+// ============================================================================
+// REGISTRO DE COMANDOS (antes: window.*)
+// ============================================================================
+registrarComando('analisis:abrirTendencia', (_evento, idActivo, puntoId, nombrePunto) => {
+  abrirGraficoTendencia(String(idActivo ?? ''), String(puntoId ?? ''), String(nombrePunto ?? ''));
+});
+
+registrarComando('analisis:cerrarTendencia', () => {
+  cerrarModalGraficoTendencia();
+});
+
+registrarComando('analisis:abrirExperto', (_evento, idActivo) => {
+  abrirModalAnalisisExperto(String(idActivo ?? ''));
+});
+
+registrarComando('analisis:guardarDiagnostico', () => {
+  guardarDiagnosticoExperto();
+});
+
+registrarComando('analisis:cerrarExperto', () => {
+  document.getElementById('modal-analisis-experto-cbm')?.remove();
+});
+
+registrarComando('analisis:toggleGrafico', (_evento, tipo) => {
+  const tipoGrafico = (tipo as 'rms' | 'temp' | 'fc') || 'rms';
+  datosGraficoMemoria.seleccionGraficos[tipoGrafico] =
+    !datosGraficoMemoria.seleccionGraficos[tipoGrafico];
+  renderizarTresGraficosSimultaneos();
+});
+
+registrarComando('analisis:exportarPDFTendencia', () => {
+  UI.mostrarToast('Exportación de gráficos de tendencia no disponible aún.', 'info');
+});

@@ -1,8 +1,8 @@
 # Progreso del hardening — CIO Predictivo 2.0
 
-> Última actualización: 2026-11-07
+> Última actualización: 2026-11-08
 > Rama `main` · Commit base (último en el historial): `258dc8f` ("update opencode")
-> Estado: **fases 1–7 completadas y verificadas**. Cambios en el árbol de trabajo, **pendientes de commit** (no hay binario `git` en el entorno de ejecución).
+> Estado: **fases 1–9 completadas y verificadas (roadmap de hardening terminado)**. Cambios en el árbol de trabajo, **pendientes de commit** (no hay binario `git` en el entorno de ejecución).
 
 ## Cómo retomar
 
@@ -20,6 +20,8 @@
 | 5 | Alembic (migraciones de esquema) | `backend/alembic/`, `backend/alembic.ini` |
 | 6 | Refresh tokens | `backend/persistencia/refresh_tokens.py`, `POST /api/auth/refresh` |
 | 7 | JWT → cookies HttpOnly | `src/core/auth/authService.ts`, `backend/main.py` |
+| 8 | Desacoplar `window.*` (~50 globales) | `src/core/app/comandos.ts`, `src/core/app/estadoApp.ts` |
+| 9 | Workbox precache (PWA) | `vite.config.ts` (vite-plugin-pwa), `public/sw.js` |
 
 ## Verificación (todo en verde)
 
@@ -35,16 +37,16 @@ Frontend (desde `cio-predictivo 2.0/`):
 
 ```powershell
 npm run typecheck           # sin errores
-npm run lint                # 0 errores (91 warnings permitidos)
+npm run lint                # 0 errores (warnings permitidos)
 npm run format:check        # OK
-npm test                    # 21 passed
+npm test                    # 25 passed
 npm run build               # OK
 ```
 
-## Siguientes fases
+## Siguientes pasos (fuera del roadmap de hardening)
 
-- **8 — Desacoplar `window.*`** (~50 globales en `src/main.ts` y módulos): crear event bus tipado (`src/core/events/bus.ts`) y migrar las referencias a imports/eventos.
-- **9 — Workbox precache**: afinar el precache del app shell y assets (el service worker ya existe).
+- Paginación en tablas grandes (catastro, auditoría).
+- Tests E2E (Playwright) para flujos críticos.
 
 ## Checklist de producción (bloqueado en el entorno: sin `git` ni `docker`)
 
@@ -57,7 +59,7 @@ npm run build               # OK
 ```powershell
 git status
 git add -A
-git commit -m "Hardening: fases 1-7 (repositorios, Alembic, refresh tokens, cookies HttpOnly)"
+git commit -m "Hardening: fases 1-9 (repositorios, Alembic, refresh tokens, cookies HttpOnly, comandos UI, precache Workbox)"
 git push
 ```
 

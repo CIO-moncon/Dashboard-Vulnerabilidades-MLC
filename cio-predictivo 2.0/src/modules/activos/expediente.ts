@@ -1,8 +1,9 @@
 import { SyncManager } from '../../core/offline/syncManager';
 import { UI } from '../layout/notificaciones';
 import { generarPDFExpediente } from '../../core/pdf/reportes';
+import { argsJson, registrarComando } from '../../core/app/comandos';
+import { obtenerDatosEquipos } from '../../core/app/estadoApp';
 
-declare const window: any;
 declare const Chart: any;
 
 export interface RegistroHistoricoPunto {
@@ -113,7 +114,7 @@ export const renderizarExpediente = async (
   const contenedor = document.getElementById(contenedorId);
   if (!contenedor) return;
 
-  const datosEquipos = window.datosGlobalesEquipos || {};
+  const datosEquipos = obtenerDatosEquipos();
   const activo =
     datosEquipos[idActivo] || Object.values(datosEquipos).find((e: any) => e.tag === idActivo);
 
@@ -121,7 +122,7 @@ export const renderizarExpediente = async (
     contenedor.innerHTML = `
       <div style="padding: 3rem; text-align: center; color: #94A3B8;">
         <h3>No se encontró el activo solicitado (${escaparHTML(idActivo)}).</h3>
-        <button type="button" onclick="window.renderizarMapaPlanta()" style="margin-top: 1rem; background: #0284c7; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Volver al Geovisor</button>
+        <button type="button" data-accion="mapa:renderizar" style="margin-top: 1rem; background: #0284c7; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Volver al Geovisor</button>
       </div>
     `;
     return;
@@ -155,24 +156,24 @@ export const renderizarExpediente = async (
 
         <div style="display: flex; align-items: center; gap: 8px;">
           <div style="display: flex; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 2px;">
-            <button type="button" onclick="window.cambiarFuenteFicha('${tagLimpio}', 'TERRENO')" style="background: ${fuenteVisualizacionActiva === 'TERRENO' ? '#0284c7' : 'transparent'}; color: ${fuenteVisualizacionActiva === 'TERRENO' ? 'white' : '#94A3B8'}; border: none; padding: 5px 10px; border-radius: 4px; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
+            <button type="button" data-accion="expediente:cambiarFuente" data-args='${argsJson([activo.tag, 'TERRENO'])}' style="background: ${fuenteVisualizacionActiva === 'TERRENO' ? '#0284c7' : 'transparent'}; color: ${fuenteVisualizacionActiva === 'TERRENO' ? 'white' : '#94A3B8'}; border: none; padding: 5px 10px; border-radius: 4px; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
               Ruta Terreno
             </button>
-            <button type="button" onclick="window.cambiarFuenteFicha('${tagLimpio}', 'DYNAMOX')" style="background: ${fuenteVisualizacionActiva === 'DYNAMOX' ? '#00e676' : 'transparent'}; color: ${fuenteVisualizacionActiva === 'DYNAMOX' ? '#0E1B1F' : '#94A3B8'}; border: none; padding: 5px 10px; border-radius: 4px; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
+            <button type="button" data-accion="expediente:cambiarFuente" data-args='${argsJson([activo.tag, 'DYNAMOX'])}' style="background: ${fuenteVisualizacionActiva === 'DYNAMOX' ? '#00e676' : 'transparent'}; color: ${fuenteVisualizacionActiva === 'DYNAMOX' ? '#0E1B1F' : '#94A3B8'}; border: none; padding: 5px 10px; border-radius: 4px; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
               Dynamox Online
             </button>
           </div>
 
-          <button type="button" onclick="window.guardarMatrizCompleta('${tagLimpio}')" style="background: #0284c7; color: white; border: none; padding: 7px 14px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+          <button type="button" data-accion="expediente:guardarMatriz" data-args='${argsJson([activo.tag])}' style="background: #0284c7; color: white; border: none; padding: 7px 14px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
             <span class="material-symbols-outlined" style="font-size: 1rem;">save</span>
             <span>Guardar Mediciones</span>
           </button>
 
-          <button type="button" onclick="window.exportarExpedientePDF('${tagLimpio}')" style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; padding: 7px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+          <button type="button" data-accion="expediente:exportarPDF" data-args='${argsJson([activo.tag])}' style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; padding: 7px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
             PDF
           </button>
 
-          <button type="button" onclick="window.renderizarMapaPlanta()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 7px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+          <button type="button" data-accion="mapa:renderizar" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 7px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
             Geovisor
           </button>
         </div>
@@ -272,28 +273,28 @@ export const renderizarExpediente = async (
                     <!-- VALORES ACTUALES EDITABLES CON COLOR EN VIVO -->
                     <td style="padding: 6px 8px;">
                       <input type="number" step="0.01" min="0" id="rms-${sKey}" value="${actualRms > 0 ? actualRms : ''}" placeholder="0.00"
-                             oninput="window.alDigitarMedicionDirecta('${sKey}', 'RMS', this, '${activo.grupoIso || 'GRUPO_1'}', '${activo.soporteIso || 'RIGIDO'}')"
+                             data-accion="expediente:digitarMedicion" data-args='${argsJson([sKey, 'RMS', activo.grupoIso || 'GRUPO_1', activo.soporteIso || 'RIGIDO'])}'
                              title="${colorVib.zona}"
                              style="width: 100%; background: ${colorVib.bg}; border: 1.5px solid ${colorVib.color}; color: #ffffff; padding: 5px 6px; border-radius: 4px; font-family: monospace; font-weight: 800; font-size: 0.8rem; text-align: center; outline: none; box-sizing: border-box;">
                     </td>
 
                     <td style="padding: 6px 8px;">
                       <input type="number" step="0.1" min="0" id="temp-${sKey}" value="${actualTemp > 0 ? actualTemp : ''}" placeholder="°C"
-                             oninput="window.alDigitarMedicionDirecta('${sKey}', 'TEMP', this)"
+                             data-accion="expediente:digitarMedicion" data-args='${argsJson([sKey, 'TEMP'])}'
                              title="${colorTmp.zona}"
                              style="width: 100%; background: ${colorTmp.bg}; border: 1.5px solid ${colorTmp.color}; color: #ffffff; padding: 5px 6px; border-radius: 4px; font-family: monospace; font-weight: 800; font-size: 0.8rem; text-align: center; outline: none; box-sizing: border-box;">
                     </td>
 
                     <td style="padding: 6px 8px;">
                       <input type="number" step="0.1" min="0" id="fc-${sKey}" value="${actualFc > 0 ? actualFc : ''}" placeholder="FC+"
-                             oninput="window.alDigitarMedicionDirecta('${sKey}', 'FC', this)"
+                             data-accion="expediente:digitarMedicion" data-args='${argsJson([sKey, 'FC'])}'
                              title="${colorFc.zona}"
                              style="width: 100%; background: ${colorFc.bg}; border: 1.5px solid ${colorFc.color}; color: #ffffff; padding: 5px 6px; border-radius: 4px; font-family: monospace; font-weight: 800; font-size: 0.8rem; text-align: center; outline: none; box-sizing: border-box;">
                     </td>
 
                     <!-- BOTÓN DE GRÁFICO DEL PUNTO -->
                     <td style="padding: 6px 12px; text-align: center;">
-                      <button type="button" onclick="window.cambiarSpotGraficoDirecto('${sKey}', '${tagLimpio}')" 
+                      <button type="button" data-accion="expediente:cambiarSpot" data-args='${argsJson([sKey, activo.tag])}' 
                               title="Cargar curvas de este punto"
                               style="background: ${esPuntoSeleccionado ? '#0284c7' : 'rgba(56, 189, 248, 0.12)'}; color: ${esPuntoSeleccionado ? 'white' : '#38bdf8'}; border: 1px solid rgba(56, 189, 248, 0.35); padding: 5px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
                         <span class="material-symbols-outlined" style="font-size: 0.95rem;">monitoring</span>
@@ -587,44 +588,57 @@ const actualizarGraficosExpediente = (activo: any, spotKey: string | null): void
 };
 
 // ============================================================================
-// 4. CONTROLADORES GLOBALES Y EVENTOS REACTIVOS
+// 4. REGISTRO DE COMANDOS (antes: window.*)
 // ============================================================================
-if (typeof window !== 'undefined') {
-  window.renderizarExpediente = renderizarExpediente;
+registrarComando('expediente:renderizar', (_evento, idActivo) => {
+  renderizarExpediente(String(idActivo ?? ''));
+});
 
-  window.cambiarFuenteFicha = (tag: string, fuente: 'TERRENO' | 'DYNAMOX') => {
-    fuenteVisualizacionActiva = fuente;
-    renderizarExpediente(tag);
-  };
+registrarComando('expediente:cambiarFuente', (_evento, tag, fuente) => {
+  fuenteVisualizacionActiva = (fuente as 'TERRENO' | 'DYNAMOX') || 'TERRENO';
+  renderizarExpediente(String(tag ?? ''));
+});
 
-  window.cambiarSpotGraficoDirecto = (spotKey: string, tag: string) => {
-    spotActivoGrafico = spotKey;
-    const activo = window.datosGlobalesEquipos?.[tag];
-    if (activo) {
-      // Actualizar selección visual de filas
-      document.querySelectorAll('[id^="fila-spot-"]').forEach((tr) => {
-        (tr as HTMLElement).style.background = 'transparent';
-      });
-      const fila = document.getElementById(`fila-spot-${spotKey}`);
-      if (fila) fila.style.background = 'rgba(56, 189, 248, 0.08)';
+registrarComando('expediente:cambiarSpot', (_evento, spotKey, tag) => {
+  const spot = String(spotKey ?? '');
+  const tagEquipo = String(tag ?? '');
+  spotActivoGrafico = spot;
+  const activo = obtenerDatosEquipos()?.[tagEquipo];
+  if (activo) {
+    // Actualizar selección visual de filas
+    document.querySelectorAll('[id^="fila-spot-"]').forEach((tr) => {
+      (tr as HTMLElement).style.background = 'transparent';
+    });
+    const fila = document.getElementById(`fila-spot-${spot}`);
+    if (fila) fila.style.background = 'rgba(56, 189, 248, 0.08)';
 
-      actualizarGraficosExpediente(activo, spotKey);
-    }
-  };
+    actualizarGraficosExpediente(activo, spot);
+  }
+});
 
-  /**
-   * Al digitar en cualquier casilla, se auto-completa la fecha actual
-   * y se reevalúa la norma para pintar el fondo y borde del input.
-   */
-  window.alDigitarMedicionDirecta = (
-    sKey: string,
-    tipo: 'RMS' | 'TEMP' | 'FC',
-    input: HTMLInputElement,
-    grupoIso = 'GRUPO_1',
-    soporteIso = 'RIGIDO',
-  ) => {
+/**
+ * Al digitar en cualquier casilla, se auto-completa la fecha actual
+ * y se reevalúa la norma para pintar el fondo y borde del input.
+ */
+registrarComando(
+  'expediente:digitarMedicion',
+  (_evento, sKey, tipo, grupoIso = 'GRUPO_1', soporteIso = 'RIGIDO') => {
+    const key = String(sKey ?? '');
+    const tipoMedicion = String(tipo ?? 'RMS') as 'RMS' | 'TEMP' | 'FC';
+
+    const input =
+      (_evento?.target as HTMLInputElement | null) ??
+      (document.getElementById(
+        tipoMedicion === 'RMS'
+          ? `rms-${key}`
+          : tipoMedicion === 'TEMP'
+            ? `temp-${key}`
+            : `fc-${key}`,
+      ) as HTMLInputElement | null);
+    if (!input) return;
+
     // 1. Auto-rellenar la fecha si está vacía
-    const inputFecha = document.getElementById(`fecha-${sKey}`) as HTMLInputElement | null;
+    const inputFecha = document.getElementById(`fecha-${key}`) as HTMLInputElement | null;
     if (inputFecha && !inputFecha.value.trim()) {
       const ahora = new Date();
       const dd = String(ahora.getDate()).padStart(2, '0');
@@ -639,98 +653,101 @@ if (typeof window !== 'undefined') {
     const val = parseFloat(input.value);
     let evaluacion = { color: '#64748B', bg: 'rgba(100, 116, 139, 0.15)', zona: 'S/D' };
 
-    if (tipo === 'RMS') evaluacion = evaluarIso20816_3(val, grupoIso, soporteIso);
-    else if (tipo === 'TEMP') evaluacion = evaluarNetaIso18434(val);
-    else if (tipo === 'FC') evaluacion = evaluarIso13373_2(val);
+    if (tipoMedicion === 'RMS')
+      evaluacion = evaluarIso20816_3(val, String(grupoIso), String(soporteIso));
+    else if (tipoMedicion === 'TEMP') evaluacion = evaluarNetaIso18434(val);
+    else if (tipoMedicion === 'FC') evaluacion = evaluarIso13373_2(val);
 
     input.style.borderColor = evaluacion.color;
     input.style.background = evaluacion.bg;
     input.title = evaluacion.zona;
-  };
+  },
+);
 
-  /**
-   * Guarda todas las filas de la matriz en lote
-   */
-  window.guardarMatrizCompleta = async (tag: string) => {
-    const eq = window.datosGlobalesEquipos?.[tag];
-    if (!eq || !eq.spots) return;
+/**
+ * Guarda todas las filas de la matriz en lote
+ */
+registrarComando('expediente:guardarMatriz', async (_evento, tag) => {
+  const tagEquipo = String(tag ?? '');
+  const eq = obtenerDatosEquipos()?.[tagEquipo];
+  if (!eq || !eq.spots) return;
 
-    let totalActualizados = 0;
-    const ahoraTimestamp = Date.now();
+  let totalActualizados = 0;
+  const ahoraTimestamp = Date.now();
 
-    Object.keys(eq.spots).forEach((sKey) => {
-      const inputFecha = document.getElementById(`fecha-${sKey}`) as HTMLInputElement | null;
-      const inputRms = document.getElementById(`rms-${sKey}`) as HTMLInputElement | null;
-      const inputTemp = document.getElementById(`temp-${sKey}`) as HTMLInputElement | null;
-      const inputFc = document.getElementById(`fc-${sKey}`) as HTMLInputElement | null;
+  Object.keys(eq.spots).forEach((sKey) => {
+    const inputFecha = document.getElementById(`fecha-${sKey}`) as HTMLInputElement | null;
+    const inputRms = document.getElementById(`rms-${sKey}`) as HTMLInputElement | null;
+    const inputTemp = document.getElementById(`temp-${sKey}`) as HTMLInputElement | null;
+    const inputFc = document.getElementById(`fc-${sKey}`) as HTMLInputElement | null;
 
-      const fTxt = inputFecha?.value.trim();
-      const rmsVal = parseFloat(inputRms?.value || '0');
-      const tempVal = parseFloat(inputTemp?.value || '0');
-      const fcVal = parseFloat(inputFc?.value || '0');
+    const fTxt = inputFecha?.value.trim();
+    const rmsVal = parseFloat(inputRms?.value || '0');
+    const tempVal = parseFloat(inputTemp?.value || '0');
+    const fcVal = parseFloat(inputFc?.value || '0');
 
-      if (rmsVal > 0 || tempVal > 0 || fcVal > 0) {
-        const spot = eq.spots[sKey];
+    if (rmsVal > 0 || tempVal > 0 || fcVal > 0) {
+      const spot = eq.spots[sKey];
 
-        // Mover los valores actuales hacia el historial antes de sobreescribir
-        if (spot.actualRms && spot.actualRms > 0) {
-          spot.anteriorRms = spot.actualRms;
-          spot.anteriorTemp = spot.actualTemp;
-          spot.anteriorFc = spot.actualFc;
-          spot.fechaUltima = spot.actualFecha || 'Anterior';
-        }
-
-        spot.actualFecha = fTxt || new Date().toLocaleString('es-CL');
-        spot.actualRms = rmsVal;
-        spot.actualTemp = tempVal;
-        spot.actualFc = fcVal;
-
-        // Actualizar valores de catastro
-        spot.rms = rmsVal;
-        spot.temp = tempVal;
-
-        if (!spot.historial) spot.historial = [];
-        spot.historial.push({
-          fecha: spot.actualFecha,
-          timestamp: ahoraTimestamp,
-          fuente: fuenteVisualizacionActiva,
-          rms: rmsVal,
-          temp: tempVal,
-          fc: fcVal,
-        });
-
-        totalActualizados++;
+      // Mover los valores actuales hacia el historial antes de sobreescribir
+      if (spot.actualRms && spot.actualRms > 0) {
+        spot.anteriorRms = spot.actualRms;
+        spot.anteriorTemp = spot.actualTemp;
+        spot.anteriorFc = spot.actualFc;
+        spot.fechaUltima = spot.actualFecha || 'Anterior';
       }
-    });
 
-    if (totalActualizados === 0) {
-      UI.mostrarToast('No se ingresaron valores numéricos para registrar.', 'info');
-      return;
+      spot.actualFecha = fTxt || new Date().toLocaleString('es-CL');
+      spot.actualRms = rmsVal;
+      spot.actualTemp = tempVal;
+      spot.actualFc = fcVal;
+
+      // Actualizar valores de catastro
+      spot.rms = rmsVal;
+      spot.temp = tempVal;
+
+      if (!spot.historial) spot.historial = [];
+      spot.historial.push({
+        fecha: spot.actualFecha,
+        timestamp: ahoraTimestamp,
+        fuente: fuenteVisualizacionActiva,
+        rms: rmsVal,
+        temp: tempVal,
+        fc: fcVal,
+      });
+
+      totalActualizados++;
     }
+  });
 
-    // Persistir hacia FastAPI / Outbox
-    await SyncManager.despacharOEncolar(`activo_catastro:${tag}`, 'UPDATE', eq);
-    UI.mostrarToast(
-      `Matriz guardada: ${totalActualizados} puntos actualizados para ${tag}.`,
-      'exito',
-    );
+  if (totalActualizados === 0) {
+    UI.mostrarToast('No se ingresaron valores numéricos para registrar.', 'info');
+    return;
+  }
 
-    renderizarExpediente(tag);
-  };
+  // Persistir hacia FastAPI / Outbox
+  await SyncManager.despacharOEncolar(`activo_catastro:${tagEquipo}`, 'UPDATE', eq);
+  UI.mostrarToast(
+    `Matriz guardada: ${totalActualizados} puntos actualizados para ${tagEquipo}.`,
+    'exito',
+  );
 
-  window.exportarExpedientePDF = async (tag: string) => {
-    const eq = window.datosGlobalesEquipos?.[tag];
-    if (!eq) return;
-    UI.mostrarToast(`Generando reporte técnico para ${tag}...`, 'info');
+  renderizarExpediente(tagEquipo);
+});
 
-    const generado = await generarPDFExpediente({
-      tagEquipo: tag,
-      elementoId: 'espacio-trabajo-dinamico',
-      abrirEnVisor: true,
-    });
+registrarComando('expediente:exportarPDF', async (_evento, tag) => {
+  const tagEquipo = String(tag ?? '');
+  const eq = obtenerDatosEquipos()?.[tagEquipo];
+  if (!eq) return;
+  UI.mostrarToast(`Generando reporte técnico para ${tagEquipo}...`, 'info');
 
-    if (generado) {
-      UI.mostrarToast('PDF generado exitosamente.', 'exito');
-    }
-  };
-}
+  const generado = await generarPDFExpediente({
+    tagEquipo,
+    elementoId: 'espacio-trabajo-dinamico',
+    abrirEnVisor: true,
+  });
+
+  if (generado) {
+    UI.mostrarToast('PDF generado exitosamente.', 'exito');
+  }
+});

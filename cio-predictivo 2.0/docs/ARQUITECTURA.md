@@ -43,8 +43,8 @@ integra avisos con SAP PM y provee un gemelo digital geoespacial interactivo en
 | Capa | Ubicación | Responsabilidad |
 |---|---|---|
 | Entradas | `index.html`, `terreno.html` | Shell SPA y app de terreno (PWA) |
-| Orquestador | `src/main.ts` | Inicialización, login, registro de módulos, exposición de `window.*` |
-| Core | `src/core/{auth, domain, offline, pdf, theme, types, utils}` | Autenticación JWT, dominio ISO 20816-3, Outbox IndexedDB, sincronización, PDF, theming, sanitización |
+| Orquestador | `src/main.ts` | Inicialización, login, registro de módulos y comandos de navegación |
+| Core | `src/core/{app, auth, domain, offline, pdf, theme, types, utils}` | Registro de comandos UI (`comandos.ts`), estado compartido (`estadoApp.ts`), autenticación JWT, dominio ISO 20816-3, Outbox IndexedDB, sincronización, PDF, theming, sanitización |
 | Módulos | `src/modules/{activos, analisis, avisos, layout, pms, terreno, triage, usuarios}` | Vistas y lógica de negocio por dominio |
 | Tenants | `src/tenants/los-colorados.config.ts` | Configuración por faena (tema, catálogo) |
 
@@ -65,7 +65,8 @@ integra avisos con SAP PM y provee un gemelo digital geoespacial interactivo en
 ## 4. Decisiones de diseño clave
 
 - **Sin frameworks pesados en cliente:** se prescinde de React/Vue/Angular para evitar sobrecargas de compilación y garantizar rendimiento fluido en tablets de terreno y sala de control. Se usan módulos ES6+ nativos.
-- **Persistencia local offline (PWA):** IndexedDB (Outbox) + Service Worker (app shell, tiles cache-first, API sin caché) permiten operar sin red y sincronizar al recuperar señal.
+- **Sin acoplamiento vía `window`:** los módulos se comunican mediante el registro tipado de comandos (`src/core/app/comandos.ts`) con un único listener delegado (`data-accion`/`data-args`), estado compartido tipado (`estadoApp.ts`) e imports directos. Eliminados los ~50 globales `window.*` de la versión anterior.
+- **Persistencia local offline (PWA):** IndexedDB (Outbox) + Service Worker híbrido: precache de Workbox para los bundles con hash, íconos y manifest (arranque offline instantáneo), navegación network-first, assets SWR, tiles cache-first y API sin caché. Permite operar sin red y sincronizar al recuperar señal.
 - **Autenticación real:** JWT HS256 firmado por el backend; contraseñas hasheadas con PBKDF2-SHA256. Roles: ADMINISTRADOR, SUPERVISOR, ANALISTA CBM, OPERADOR TERRENO. Sesiones largas con **refresh tokens opacos** (rotación y revocación en logout/cambio de contraseña). El JWT y el refresh token viajan en cookies **HttpOnly** (`SameSite=Lax/Strict`, `Secure` opcional), nunca en `localStorage`; el cliente renueva el access token de forma transparente y reintenta ante `401`.
 - **Persistencia por repositorios:** `persistencia/` separa conexión/esquema de los repositorios de usuarios, CBM y auditoría. Cada repositorio acepta una fábrica de conexiones, lo que permite inyectar una base temporal en tests. `database.py` se mantiene solo como fachada de compatibilidad.
 - **Migraciones versionadas (Alembic):** el esquema evoluciona mediante revisiones en `alembic/versions/`; `inicializar_db()` aplica `alembic upgrade head` al arranque y adopta bases anteriores a Alembic con `stamp head`.
@@ -89,5 +90,4 @@ integra avisos con SAP PM y provee un gemelo digital geoespacial interactivo en
 
 ## 7. Deuda técnica conocida (ver reporte de auditoría)
 
-- Acoplamiento inter-módulo vía `window.*` globals (~50).
 - Duplicación histórica de `escaparHTML` (centralizada en v2.5.1).

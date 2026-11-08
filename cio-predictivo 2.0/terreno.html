@@ -202,14 +202,14 @@
 
             <button type="button" 
                     id="badgeConexion" 
-                    onclick="window.forzarSincronizacion()" 
+                    data-accion="terreno:forzarSync" 
                     aria-label="Estado de conexión. Clic para sincronizar"
                     style="background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.4); padding: 5px 10px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
                 🟢 ONLINE
             </button>
             
             <button type="button" 
-                    onclick="window.reiniciarFormulario()" 
+                    data-accion="terreno:reiniciar" 
                     aria-label="Reiniciar formulario"
                     style="background: rgba(255, 255, 255, 0.08); color: var(--text-main, #ffffff); border: 1px solid rgba(255, 255, 255, 0.15); padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
                 <span class="material-symbols-outlined" style="font-size: 0.95rem;" aria-hidden="true">restart_alt</span>
@@ -248,7 +248,7 @@
                                    id="buscador-fuse-local" 
                                    name="busqueda-rapida"
                                    placeholder="Escribe TAG o nombre del equipo..." 
-                                   oninput="window.filtrarEquiposFuse(this.value)" 
+                                   data-accion="terreno:filtrarEquipos" 
                                    style="padding-left: 40px; width: 100%;">
                             <span class="material-symbols-outlined" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #94a3b8); font-size: 1.25rem; pointer-events: none;" aria-hidden="true">search</span>
                         </div>
@@ -256,20 +256,20 @@
 
                     <div class="campo-formulario">
                         <label for="fieldArea">Área Operacional</label>
-                        <select id="fieldArea" name="area" onchange="window.cargarEquiposPorArea()">
+                        <select id="fieldArea" name="area" data-accion="terreno:cargarArea">
                             <option value="">-- Selecciona el Área --</option>
                         </select>
                     </div>
 
                     <div class="campo-formulario">
                         <label for="fieldTagSelect">Equipo / TAG</label>
-                        <select id="fieldTagSelect" name="tag" onchange="window.seleccionarEquipoTag(this.value)" style="font-family: monospace;">
+                        <select id="fieldTagSelect" name="tag" data-accion="terreno:seleccionarTag" style="font-family: monospace;">
                             <option value="">-- Selecciona el equipo --</option>
                         </select>
                     </div>
 
                     <button type="button" 
-                            onclick="window.avanzarPaso(2)" 
+                            data-accion="terreno:avanzarPaso" data-args='[2]' 
                             style="background: var(--primary-hover, #0284c7); color: white; border: none; padding: 13px; border-radius: 8px; font-weight: 700; font-size: 0.92rem; cursor: pointer; margin-top: 8px; display: flex; justify-content: center; align-items: center; gap: 8px;">
                         <span>Siguiente: Diagnóstico</span>
                         <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
@@ -285,7 +285,7 @@
 
                     <div class="campo-formulario">
                         <label for="fieldSpot">Componente / Spot Afectado</label>
-                        <select id="fieldSpot" name="spot" onchange="window.actualizarHallazgosPorSpot(this.value)">
+                        <select id="fieldSpot" name="spot" data-accion="terreno:actualizarHallazgos">
                             <option value="Condición Global del Equipo">🌐 Condición Global (Todo el equipo)</option>
                         </select>
                     </div>
@@ -310,13 +310,13 @@
 
                     <div style="display: flex; gap: 10px; margin-top: 10px;">
                         <button type="button" 
-                                onclick="window.avanzarPaso(1)" 
+                                data-accion="terreno:avanzarPaso" data-args='[1]' 
                                 style="flex: 1; background: rgba(255, 255, 255, 0.08); color: white; border: 1px solid rgba(255, 255, 255, 0.15); padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;">
                             <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
                             <span>Volver</span>
                         </button>
                         <button type="button" 
-                                onclick="window.avanzarPaso(3)" 
+                                data-accion="terreno:avanzarPaso" data-args='[3]' 
                                 style="flex: 1; background: var(--primary-hover, #0284c7); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;">
                             <span>Siguiente: Evidencias</span>
                             <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
@@ -342,7 +342,7 @@
                             
                             <button type="button" 
                                     id="btn-dictado" 
-                                    onclick="window.iniciarDictado()" 
+                                    data-accion="terreno:iniciarDictado" 
                                     aria-label="Iniciar dictado por voz"
                                     style="position: absolute; right: 10px; bottom: 12px; background: transparent; border: none; color: var(--primary-color, #38bdf8); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;">
                                 <span class="material-symbols-outlined" style="font-size: 1.6rem;" aria-hidden="true">mic</span>
@@ -354,35 +354,35 @@
                         <label>Captura de Evidencias en Terreno</label>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                             <button type="button" 
-                                    onclick="document.getElementById('inputCamaraFoto').click()" 
+                                    data-accion="terreno:abrirCamaraFoto" 
                                     style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 48px;">
                                 <span class="material-symbols-outlined" aria-hidden="true">photo_camera</span> 
                                 <span>Tomar Foto</span>
                             </button>
                             
                             <button type="button" 
-                                    onclick="document.getElementById('inputCamaraFotoGaleria').click()" 
+                                    data-accion="terreno:abrirCamaraGaleria" 
                                     style="background: rgba(255, 255, 255, 0.08); color: #f4f6f5; border: 1px solid rgba(255, 255, 255, 0.15); padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 48px;">
                                 <span class="material-symbols-outlined" aria-hidden="true">collections</span> 
                                 <span>Galería</span>
                             </button>
                         </div>
 
-                        <input type="file" id="inputCamaraFoto" accept="image/*" capture="environment" multiple style="display: none;" onchange="window.procesarYComprimirMedia(event)" aria-hidden="true">
-                        <input type="file" id="inputCamaraFotoGaleria" accept="image/*" multiple style="display: none;" onchange="window.procesarYComprimirMedia(event)" aria-hidden="true">
+                        <input type="file" id="inputCamaraFoto" accept="image/*" capture="environment" multiple style="display: none;" data-accion="terreno:procesarMedia" aria-hidden="true">
+                        <input type="file" id="inputCamaraFotoGaleria" accept="image/*" multiple style="display: none;" data-accion="terreno:procesarMedia" aria-hidden="true">
                         
                         <div id="mediaGallery" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;" role="region" aria-label="Galería de fotos adjuntas"></div>
                     </div>
 
                     <div style="display: flex; gap: 10px; margin-top: 10px;">
                         <button type="button" 
-                                onclick="window.avanzarPaso(2)" 
+                                data-accion="terreno:avanzarPaso" data-args='[2]' 
                                 style="flex: 1; background: rgba(255, 255, 255, 0.08); color: white; border: 1px solid rgba(255, 255, 255, 0.15); padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;">
                             <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
                             <span>Volver</span>
                         </button>
                         <button type="button" 
-                                onclick="window.avanzarPaso(4)" 
+                                data-accion="terreno:avanzarPaso" data-args='[4]' 
                                 style="flex: 1; background: var(--primary-hover, #0284c7); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;">
                             <span>Siguiente: Severidad</span>
                             <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
@@ -400,16 +400,16 @@
                     <div class="campo-formulario">
                         <label id="label-severidad">Nivel de Urgencia en Terreno</label>
                         <div class="grid-criticidad" role="radiogroup" aria-labelledby="label-severidad">
-                            <button type="button" class="btn-sev" id="sev_Verde" role="radio" aria-checked="false" onclick="window.selectSevFat('Verde')">
+                            <button type="button" class="btn-sev" id="sev_Verde" role="radio" aria-checked="false" data-accion="terreno:selectSev" data-args='["Verde"]'>
                                 🟢 Normal
                             </button>
-                            <button type="button" class="btn-sev" id="sev_Amarillo" role="radio" aria-checked="false" onclick="window.selectSevFat('Amarillo')">
+                            <button type="button" class="btn-sev" id="sev_Amarillo" role="radio" aria-checked="false" data-accion="terreno:selectSev" data-args='["Amarillo"]'>
                                 🟡 Seguimiento
                             </button>
-                            <button type="button" class="btn-sev" id="sev_Naranja" role="radio" aria-checked="false" onclick="window.selectSevFat('Naranja')">
+                            <button type="button" class="btn-sev" id="sev_Naranja" role="radio" aria-checked="false" data-accion="terreno:selectSev" data-args='["Naranja"]'>
                                 🟠 Alerta
                             </button>
-                            <button type="button" class="btn-sev" id="sev_Rojo" role="radio" aria-checked="true" onclick="window.selectSevFat('Rojo')">
+                            <button type="button" class="btn-sev" id="sev_Rojo" role="radio" aria-checked="true" data-accion="terreno:selectSev" data-args='["Rojo"]'>
                                 🔴 CRÍTICO
                             </button>
                         </div>
@@ -418,14 +418,14 @@
 
                     <button type="button" 
                             id="btn-transmitir-final" 
-                            onclick="window.enviarAlertaSegura()" 
+                            data-accion="terreno:enviarAlerta" 
                             style="background: #F5A623; color: #0E1B1F; border: none; padding: 14px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 1rem; margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 8px; min-height: 50px;">
                         <span class="material-symbols-outlined" aria-hidden="true">send</span>
                         <span>TRANSMITIR AL CIO</span>
                     </button>
                     
                     <button type="button" 
-                            onclick="window.avanzarPaso(3)" 
+                            data-accion="terreno:avanzarPaso" data-args='[3]' 
                             style="background: rgba(255, 255, 255, 0.08); color: white; border: 1px solid rgba(255, 255, 255, 0.15); padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 8px;">
                         ⬅️ Revisar Evidencias
                     </button>
@@ -441,7 +441,7 @@
                     <span class="material-symbols-outlined" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #94a3b8); pointer-events: none;" aria-hidden="true">search</span>
                     <input type="search" 
                            id="buscador-mapa-pwa" 
-                           onkeyup="window.buscarEnMapaPWA(event)" 
+                           data-accion="terreno:buscarMapa" 
                            placeholder="Buscar equipo por TAG (Ej. MH2401)..." 
                            style="width: 100%; background: var(--bg-card, #16282D); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 12px 14px 12px 42px; border-radius: 24px; outline: none; box-sizing: border-box; font-size: 0.9rem;">
                 </div>
@@ -450,7 +450,7 @@
             <div id="mapa-gps-pwa" role="application" style="flex: 1; width: 100%; min-height: 420px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); overflow: hidden; background: #0E1B1F;"></div>
 
             <button type="button" 
-                    onclick="window.centrarEnMiUbicacion()" 
+                    data-accion="terreno:centrarUbicacion" 
                     style="position: absolute; right: 16px; bottom: 20px; background: #F5A623; color: #0E1B1F; border: none; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6); cursor: pointer; z-index: 1000;">
                 <span class="material-symbols-outlined" style="font-size: 1.5rem;" aria-hidden="true">my_location</span>
             </button>
@@ -460,17 +460,17 @@
 
     <!-- BOTTOM NAV -->
     <nav class="bottom-nav-pwa" aria-label="Navegación principal de terreno">
-        <button type="button" class="nav-item active" id="nav-btn-reporte" onclick="window.cambiarVistaPWA('reporte')">
+        <button type="button" class="nav-item active" id="nav-btn-reporte" data-accion="terreno:cambiarVista" data-args='["reporte"]'>
             <span class="material-symbols-outlined" aria-hidden="true">assignment</span>
             <span>Reportar</span>
         </button>
 
-        <button type="button" class="nav-item" id="nav-btn-mapa" onclick="window.cambiarVistaPWA('mapa')">
+        <button type="button" class="nav-item" id="nav-btn-mapa" data-accion="terreno:cambiarVista" data-args='["mapa"]'>
             <span class="material-symbols-outlined" aria-hidden="true">map</span>
             <span>Mapa GPS</span>
         </button>
 
-        <button type="button" class="nav-item" id="nav-btn-sync" onclick="window.forzarSincronizacion()">
+        <button type="button" class="nav-item" id="nav-btn-sync" data-accion="terreno:forzarSync">
             <span class="material-symbols-outlined" aria-hidden="true">cloud_sync</span>
             <span>Pendientes <span id="contadorOffline" style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.68rem; font-weight: 800;">0</span></span>
         </button>
@@ -484,10 +484,12 @@
         import { SyncManager } from './src/core/offline/syncManager';
         import { OutboxDatabase } from './src/core/offline/outboxDatabase';
         import { AuthService, inicializarInterceptorAutenticado } from './src/core/auth/authService';
+        import { inicializarDelegacionComandos, registrarComando } from './src/core/app/comandos';
 
         // 0. La PWA de terreno comparte la sesión del dashboard. Sin sesión válida
         //    no se permite operar ni encolar registros.
         inicializarInterceptorAutenticado();
+        inicializarDelegacionComandos();
         const sesionTerreno = AuthService.getSesion();
         if (!sesionTerreno) {
             window.location.replace('./index.html');
@@ -520,20 +522,20 @@
             if (badge) badge.textContent = String(pendientes);
         });
 
-        // 4. Métodos globales complementarios para botones del header/nav
-        window.forzarSincronizacion = async () => {
+        // 4. Comandos complementarios para botones del header/nav (antes: window.*)
+        registrarComando('terreno:forzarSync', async () => {
             uiController.mostrarNotificacion('🔄 Sincronizando con el servidor central...');
             const stats = await SyncManager.sincronizarPendientes();
             uiController.mostrarNotificacion(`✅ Sincronizados: ${stats.exitosos} | Fallidos: ${stats.fallidos}`);
             await actualizarContadorPendientes();
-        };
+        });
 
-        window.reiniciarFormulario = () => {
+        registrarComando('terreno:reiniciar', () => {
             uiController.avanzarPaso(1);
             const form = document.getElementById('form-reporte-terreno');
             if (form) form.reset();
             uiController.mostrarNotificacion('🔄 Formulario reiniciado');
-        };
+        });
 
         // Verificación inicial de cola
         await actualizarContadorPendientes();

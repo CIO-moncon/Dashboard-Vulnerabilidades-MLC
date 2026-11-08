@@ -261,7 +261,8 @@ tenant del token (si no, `403`).
 - **Offline / Outbox:** `terreno.html` comparte sesión con `index.html` vía
   `localStorage` (`cio_session_v2`, que guarda solo metadatos de usuario, nunca
   el token). Si no hay sesión, redirige a `index.html`.
-  El Service Worker cachea el app shell y sincroniza la cola automáticamente.
+  El Service Worker precachea con **Workbox** los bundles, íconos y manifest
+  (arranque offline instantáneo) y sincroniza la cola automáticamente.
 - **`firebase_data.json`:** archivo de migración inicial (~54 MB). Está ignorado
   por Git; si existe en `backend/` y la BD está vacía, se importa automáticamente.
   Si ya estaba versionado, quítelo del índice con `git rm --cached "backend/firebase_data.json"`.

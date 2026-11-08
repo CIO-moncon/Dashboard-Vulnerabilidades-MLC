@@ -1,5 +1,6 @@
 import { AuthService } from '../../core/auth/authService';
 import { SyncManager } from '../../core/offline/syncManager';
+import { argsJson, registrarComando } from '../../core/app/comandos';
 
 declare const XLSX: any;
 
@@ -303,7 +304,7 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico'): 
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <div style="display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.4); padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
             <span style="font-size: 0.75rem; color: #38bdf8; font-weight: 700;">SEMANA:</span>
-            <select id="pms-selector-periodo" onchange="window.cambiarPeriodoPMS(this.value)" style="background: #0E1B1F; color: #ffffff; border: 1px solid rgba(255,255,255,0.2); padding: 5px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; outline: none; cursor: pointer;">
+            <select id="pms-selector-periodo" data-accion="pms:cambiarPeriodo" style="background: #0E1B1F; color: #ffffff; border: 1px solid rgba(255,255,255,0.2); padding: 5px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; outline: none; cursor: pointer;">
               ${listaSemanasDisponibles.map((sem) => `<option value="${sem}" ${sem === semanaSeleccionada ? 'selected' : ''}>${sem}</option>`).join('')}
             </select>
           </div>
@@ -312,7 +313,7 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico'): 
             <span class="material-symbols-outlined" style="font-size: 1rem;" aria-hidden="true">upload_file</span>
             Subir EXPORT.XLSX
           </button>
-          <input type="file" id="input-excel-pms" accept=".xlsx, .xls, .csv" style="display: none;" onchange="window.procesarArchivoExcelPMS(event)">
+          <input type="file" id="input-excel-pms" accept=".xlsx, .xls, .csv" style="display: none;" data-accion="pms:procesarExcel">
         </div>
       </header>
 
@@ -332,13 +333,13 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico'): 
           </div>
 
           <div style="display: flex; gap: 4px; background: rgba(0,0,0,0.3); padding: 3px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
-            <button type="button" id="btn-filtro-esp-pendientes" onclick="window.filtrarEspectralesPorEstado('PENDIENTES')" style="background: #ef4444; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
+            <button type="button" id="btn-filtro-esp-pendientes" data-accion="pms:filtrarEspectrales" data-args='${argsJson(['PENDIENTES'])}' style="background: #ef4444; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
               Pendientes (<span id="lbl-esp-pendientes-count">0</span>)
             </button>
-            <button type="button" id="btn-filtro-esp-emitidos" onclick="window.filtrarEspectralesPorEstado('EMITIDOS')" style="background: transparent; color: #94A3B8; border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
+            <button type="button" id="btn-filtro-esp-emitidos" data-accion="pms:filtrarEspectrales" data-args='${argsJson(['EMITIDOS'])}' style="background: transparent; color: #94A3B8; border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
               Ejecutados (<span id="lbl-esp-emitidos-count">0</span>)
             </button>
-            <button type="button" id="btn-filtro-esp-obsoletos" onclick="window.filtrarEspectralesPorEstado('OBSOLETOS')" style="background: transparent; color: #94A3B8; border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
+            <button type="button" id="btn-filtro-esp-obsoletos" data-accion="pms:filtrarEspectrales" data-args='${argsJson(['OBSOLETOS'])}' style="background: transparent; color: #94A3B8; border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
               Obsoletos (<span id="lbl-esp-obsoletos-count">0</span>)
             </button>
           </div>
@@ -354,7 +355,7 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico'): 
             <span class="material-symbols-outlined" aria-hidden="true">bolt</span>
             Actividades Emergentes / Imprevistos (<span id="pms-total-emergencias">0</span>)
           </h3>
-          <button type="button" onclick="window.abrirModalNuevaEmergencia()" style="background: rgba(245, 166, 35, 0.15); color: #F5A623; border: 1px solid rgba(245, 166, 35, 0.4); padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+          <button type="button" data-accion="pms:nuevaEmergencia" style="background: rgba(245, 166, 35, 0.15); color: #F5A623; border: 1px solid rgba(245, 166, 35, 0.4); padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
             <span class="material-symbols-outlined" style="font-size: 0.95rem;" aria-hidden="true">add</span>
             Registrar Emergencia
           </button>
@@ -367,7 +368,7 @@ export const renderizarModuloPMS = (idContenedor = 'espacio-trabajo-dinamico'): 
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <div style="position: relative; flex: 1; max-width: 320px;">
             <span class="material-symbols-outlined" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 1.1rem; color: #94A3B8; pointer-events: none;" aria-hidden="true">search</span>
-            <input type="search" id="pms-busqueda-input" placeholder="Filtrar por OM, TAG, Área..." oninput="window.filtrarOrdenesTexto(this.value)" style="width: 100%; background: #0E1B1F; border: 1px solid rgba(255,255,255,0.15); color: white; padding: 8px 12px 8px 34px; border-radius: 6px; font-size: 0.82rem; outline: none; box-sizing: border-box;">
+            <input type="search" id="pms-busqueda-input" placeholder="Filtrar por OM, TAG, Área..." data-accion="pms:filtrarOrdenes" style="width: 100%; background: #0E1B1F; border: 1px solid rgba(255,255,255,0.15); color: white; padding: 8px 12px 8px 34px; border-radius: 6px; font-size: 0.82rem; outline: none; box-sizing: border-box;">
           </div>
         </div>
 
@@ -516,24 +517,24 @@ const renderizarTablaOrdenes = (): void => {
           <td style="padding: 8px 10px; font-family: monospace; color: #CBD5E1;">${escaparHTML(ord.numero)}</td>
           <td style="padding: 8px 10px; font-size: 0.74rem; color: #E2E8F0;">${escaparHTML(ord.actividad)}</td>
           <td style="padding: 8px 10px;">
-            <select onchange="window.actualizarCampoOrden('${escaparHTML(idKey)}', 'estadoReal', this.value)" style="background: #0E1B1F; color: ${ord.estadoReal === 'Ejecutado' ? '#00e676' : '#F5A623'}; border: 1px solid rgba(255,255,255,0.15); padding: 4px 6px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; outline: none;">
+            <select data-accion="pms:actualizarOrden" data-args='${argsJson([idKey, 'estadoReal'])}' style="background: #0E1B1F; color: ${ord.estadoReal === 'Ejecutado' ? '#00e676' : '#F5A623'}; border: 1px solid rgba(255,255,255,0.15); padding: 4px 6px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; outline: none;">
               <option value="Ejecutado" ${ord.estadoReal === 'Ejecutado' ? 'selected' : ''}>✅ Ejecutado</option>
               <option value="Pendiente" ${ord.estadoReal === 'Pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
               <option value="No Ejecutado" ${ord.estadoReal === 'No Ejecutado' ? 'selected' : ''}>❌ No Ejecutado</option>
             </select>
           </td>
           <td style="padding: 8px 10px; text-align: center;">
-            <button type="button" onclick="window.actualizarCampoOrden('${escaparHTML(idKey)}', 'notifSap', ${!esNotif})" style="background: ${esNotif ? 'rgba(0, 230, 118, 0.15)' : 'rgba(239, 68, 68, 0.15)'}; color: ${esNotif ? '#00e676' : '#f87171'}; border: 1px solid ${esNotif ? 'rgba(0, 230, 118, 0.4)' : 'rgba(239, 68, 68, 0.4)'}; padding: 3px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
+            <button type="button" data-accion="pms:actualizarOrden" data-args='${argsJson([idKey, 'notifSap', !esNotif])}' style="background: ${esNotif ? 'rgba(0, 230, 118, 0.15)' : 'rgba(239, 68, 68, 0.15)'}; color: ${esNotif ? '#00e676' : '#f87171'}; border: 1px solid ${esNotif ? 'rgba(0, 230, 118, 0.4)' : 'rgba(239, 68, 68, 0.4)'}; padding: 3px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
               ${esNotif ? '✓ SÍ' : '✕ NO'}
             </button>
           </td>
           <td style="padding: 8px 10px; text-align: center;">
-            <button type="button" onclick="window.actualizarCampoOrden('${escaparHTML(idKey)}', 'ctec', ${!esCtec})" style="background: ${esCtec ? 'rgba(45, 212, 191, 0.15)' : 'rgba(255, 255, 255, 0.05)'}; color: ${esCtec ? '#2dd4bf' : '#94A3B8'}; border: 1px solid ${esCtec ? 'rgba(45, 212, 191, 0.4)' : 'rgba(255, 255, 255, 0.15)'}; padding: 3px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
+            <button type="button" data-accion="pms:actualizarOrden" data-args='${argsJson([idKey, 'ctec', !esCtec])}' style="background: ${esCtec ? 'rgba(45, 212, 191, 0.15)' : 'rgba(255, 255, 255, 0.05)'}; color: ${esCtec ? '#2dd4bf' : '#94A3B8'}; border: 1px solid ${esCtec ? 'rgba(45, 212, 191, 0.4)' : 'rgba(255, 255, 255, 0.15)'}; padding: 3px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 800; cursor: pointer;">
               ${esCtec ? '✓ SÍ' : '✕ NO'}
             </button>
           </td>
           <td style="padding: 8px 10px;">
-            <input type="text" value="${escaparHTML(ord.observacion || '')}" placeholder="Observación..." oninput="window.autoGuardarObservacion('${escaparHTML(idKey)}', this.value)" style="width: 100%; background: #0E1B1F; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.74rem; outline: none; box-sizing: border-box;">
+            <input type="text" value="${escaparHTML(ord.observacion || '')}" placeholder="Observación..." data-accion="pms:autoGuardarObservacion" data-args='${argsJson([idKey])}' style="width: 100%; background: #0E1B1F; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.74rem; outline: none; box-sizing: border-box;">
           </td>
         </tr>
       `;
@@ -576,12 +577,12 @@ const renderizarTablaEmergencias = (): void => {
               <td style="padding: 8px 6px; color: #E2E8F0;">${escaparHTML(em.descripcion)}</td>
               <td style="padding: 8px 6px; font-family: monospace; color: #CBD5E1;">${escaparHTML(em.om)}</td>
               <td style="padding: 8px 6px; text-align: center;">
-                <button type="button" onclick="window.actualizarCampoEmergencia('${escaparHTML(key)}', 'notifSap', ${!em.notifSap})" style="background: ${em.notifSap ? 'rgba(0, 230, 118, 0.15)' : 'rgba(239, 68, 68, 0.15)'}; color: ${em.notifSap ? '#00e676' : '#f87171'}; border: none; padding: 2px 6px; border-radius: 4px; font-weight: bold;">
+                <button type="button" data-accion="pms:actualizarEmergencia" data-args='${argsJson([key, 'notifSap', !em.notifSap])}' style="background: ${em.notifSap ? 'rgba(0, 230, 118, 0.15)' : 'rgba(239, 68, 68, 0.15)'}; color: ${em.notifSap ? '#00e676' : '#f87171'}; border: none; padding: 2px 6px; border-radius: 4px; font-weight: bold;">
                   ${em.notifSap ? 'SÍ' : 'NO'}
                 </button>
               </td>
               <td style="padding: 8px 6px; text-align: center;">
-                <button type="button" onclick="window.actualizarCampoEmergencia('${escaparHTML(key)}', 'ctec', ${!em.ctec})" style="background: ${em.ctec ? 'rgba(45, 212, 191, 0.15)' : 'rgba(255, 255, 255, 0.05)'}; color: ${em.ctec ? '#2dd4bf' : '#94A3B8'}; border: none; padding: 2px 6px; border-radius: 4px; font-weight: bold;">
+                <button type="button" data-accion="pms:actualizarEmergencia" data-args='${argsJson([key, 'ctec', !em.ctec])}' style="background: ${em.ctec ? 'rgba(45, 212, 191, 0.15)' : 'rgba(255, 255, 255, 0.05)'}; color: ${em.ctec ? '#2dd4bf' : '#94A3B8'}; border: none; padding: 2px 6px; border-radius: 4px; font-weight: bold;">
                   ${em.ctec ? 'SÍ' : 'NO'}
                 </button>
               </td>
@@ -678,10 +679,10 @@ const renderizarTablaEspectrales = (): void => {
                 <td style="padding: 8px; text-align: center; font-weight: 900; color: #f87171;">${Number(esp.rms).toFixed(2)}</td>
                 <td style="padding: 8px; font-family: monospace; color: #38bdf8;">${escaparHTML(esp.avisoSap || 'S/A')}</td>
                 <td style="padding: 8px; text-align: center;">
-                  <button type="button" onclick="window.abrirModalCierreEjecucion('${escaparHTML(idKey)}')" style="background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.4); padding: 4px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: 800; cursor: pointer;">
+                  <button type="button" data-accion="pms:cierreEjecucion" data-args='${argsJson([idKey])}' style="background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.4); padding: 4px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: 800; cursor: pointer;">
                     Ejecutar
                   </button>
-                  <button type="button" onclick="window.abrirModalCierreObsolescencia('${escaparHTML(idKey)}')" style="background: rgba(239, 68, 68, 0.12); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 4px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: 800; cursor: pointer; margin-left: 4px;">
+                  <button type="button" data-accion="pms:cierreObsolescencia" data-args='${argsJson([idKey])}' style="background: rgba(239, 68, 68, 0.12); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 4px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: 800; cursor: pointer; margin-left: 4px;">
                     Obsoleto
                   </button>
                 </td>
@@ -911,26 +912,75 @@ export const abrirModalNuevaEmergencia = async (): Promise<void> => {
   await SyncManager.despacharOEncolar(`emergencia_pms:${idEmergencia}`, 'CREATE', nuevaEmergencia);
 };
 
-// Exposición global para el DOM
-if (typeof window !== 'undefined') {
-  const w = window as any;
-  w.renderizarModuloPMS = renderizarModuloPMS;
-  w.actualizarCampoOrden = actualizarCampoOrden;
-  w.actualizarCampoEmergencia = actualizarCampoEmergencia;
-  w.abrirModalCierreEjecucion = abrirModalCierreEjecucion;
-  w.abrirModalCierreObsolescencia = abrirModalCierreObsolescencia;
-  w.abrirModalNuevaEmergencia = abrirModalNuevaEmergencia;
-  w.procesarArchivoExcelPMS = procesarArchivoExcelPMS;
-  w.filtrarOrdenesTexto = (txt: string) => {
-    filtroTexto = txt;
-    renderizarTablaOrdenes();
-  };
-  w.filtrarEspectralesPorEstado = (st: any) => {
-    filtroEspectralesEstado = st;
-    renderizarTablaEspectrales();
-  };
-  w.cambiarPeriodoPMS = (sem: string) => {
-    semanaSeleccionada = sem;
-    cargarDatosSemanaActual();
-  };
-}
+// ============================================================================
+// REGISTRO DE COMANDOS (antes: window.*)
+// ============================================================================
+registrarComando('pms:renderizar', () => {
+  renderizarModuloPMS('espacio-trabajo-dinamico');
+});
+
+registrarComando('pms:actualizarOrden', (evento, idOrden, campo, valor) => {
+  const campoValor = String(campo ?? '');
+  let valorFinal: unknown = valor;
+  // Para 'estadoReal' el valor viene del select que disparó el evento.
+  if (campoValor === 'estadoReal') {
+    valorFinal = (evento?.target as HTMLSelectElement | null)?.value ?? valor;
+  }
+  void actualizarCampoOrden(String(idOrden ?? ''), campoValor, valorFinal);
+});
+
+registrarComando('pms:actualizarEmergencia', (_evento, idEmergencia, campo, valor) => {
+  void actualizarCampoEmergencia(String(idEmergencia ?? ''), String(campo ?? ''), valor);
+});
+
+registrarComando('pms:cierreEjecucion', (_evento, idKey) => {
+  void abrirModalCierreEjecucion(String(idKey ?? ''));
+});
+
+registrarComando('pms:cierreObsolescencia', (_evento, idKey) => {
+  void abrirModalCierreObsolescencia(String(idKey ?? ''));
+});
+
+registrarComando('pms:nuevaEmergencia', () => {
+  void abrirModalNuevaEmergencia();
+});
+
+registrarComando('pms:procesarExcel', (evento) => {
+  if (evento) procesarArchivoExcelPMS(evento);
+});
+
+registrarComando('pms:filtrarOrdenes', (evento) => {
+  filtroTexto = (evento?.target as HTMLInputElement | null)?.value ?? '';
+  renderizarTablaOrdenes();
+});
+
+registrarComando('pms:filtrarEspectrales', (_evento, estado) => {
+  filtroEspectralesEstado = estado as any;
+  renderizarTablaEspectrales();
+});
+
+registrarComando('pms:cambiarPeriodo', (evento) => {
+  semanaSeleccionada = (evento?.target as HTMLSelectElement | null)?.value ?? '';
+  void cargarDatosSemanaActual();
+});
+
+registrarComando('pms:autoGuardarObservacion', (evento, idKey) => {
+  const id = String(idKey ?? '');
+  const valor = (evento?.target as HTMLInputElement | null)?.value ?? '';
+  const orden = datosSemanaActual.ordenes[id];
+  if (!orden) return;
+  (orden as any).observacion = valor;
+
+  // Debounce: persistir en segundo plano sin re-renderizar por tecla.
+  const previo = debounceGuardado[id];
+  if (previo) clearTimeout(previo);
+  debounceGuardado[id] = window.setTimeout(() => {
+    void SyncManager.despacharOEncolar(`om_pms:${id}`, 'UPDATE', {
+      idOrden: id,
+      semana: semanaSeleccionada,
+      campo: 'observacion',
+      valor,
+      timestamp: Date.now(),
+    });
+  }, 700);
+});

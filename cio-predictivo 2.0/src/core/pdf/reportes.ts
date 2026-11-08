@@ -1,8 +1,10 @@
 import { TenantConfig } from '../types/tenant.types';
 import { LosColoradosTenantConfig } from '../../tenants/los-colorados.config';
 import { abrirVisorPDFInterno } from './pdfPlantilla';
+import { UI } from '../../modules/layout/notificaciones';
 
-declare const window: any;
+// Librerías de terceros cargadas por CDN (index.html): solo se leen, no se exponen.
+declare const window: Window & { html2canvas?: any; jspdf?: any };
 
 export interface GenerarPDFExpedienteOptions {
   tagEquipo?: string;
@@ -32,11 +34,7 @@ export const generarPDFExpediente = async ({
   if (!window.html2canvas || !window.jspdf?.jsPDF) {
     const errorMsg = 'Librerías html2canvas o jsPDF no disponibles en el entorno.';
     console.error(`[Reportes] ${errorMsg}`);
-    if (typeof window.UI !== 'undefined' && window.UI.mostrarToast) {
-      window.UI.mostrarToast('Error: Librería de generación PDF no disponible.', 'error');
-    } else {
-      alert(errorMsg);
-    }
+    UI.mostrarToast('Error: Librería de generación PDF no disponible.', 'error');
     return false;
   }
 
@@ -151,18 +149,12 @@ export const generarPDFExpediente = async ({
       pdf.save(nombreArchivo);
     }
 
-    if (typeof window.UI !== 'undefined' && window.UI.mostrarToast) {
-      window.UI.mostrarToast(`Expediente ${tagSeguro} procesado exitosamente.`, 'exito');
-    }
+    UI.mostrarToast(`Expediente ${tagSeguro} procesado exitosamente.`, 'exito');
 
     return true;
   } catch (error) {
     console.error('[Reportes] Error al generar documento PDF:', error);
-    if (typeof window.UI !== 'undefined' && window.UI.mostrarToast) {
-      window.UI.mostrarToast('Error al exportar el documento PDF.', 'error');
-    } else {
-      alert('Ocurrió un error al generar el documento PDF.');
-    }
+    UI.mostrarToast('Error al exportar el documento PDF.', 'error');
     return false;
   } finally {
     // Restauración de controles en el DOM
@@ -175,8 +167,3 @@ export const generarPDFExpediente = async ({
     }
   }
 };
-
-if (typeof window !== 'undefined') {
-  window.generarPDFExpediente = (tag: string, idEl: string) =>
-    generarPDFExpediente({ tagEquipo: tag, elementoId: idEl });
-}

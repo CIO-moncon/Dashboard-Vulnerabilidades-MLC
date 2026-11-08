@@ -2,6 +2,23 @@
 
 Todas las modificaciones notables de la plataforma **CIO Predictivo 2.0** serán documentadas en este archivo.
 
+## [3.1.0] - 2026-11-08
+### PWA / Offline
+- **Precache con Workbox**: integrado `vite-plugin-pwa` (`injectManifest`) sobre el service worker existente. En cada build se genera el manifiesto de precache (`self.__WB_MANIFEST`) con revisiones por hash: bundles JS/CSS, íconos y `manifest.json` (6 entradas, ~395 KiB). Arranque offline instantáneo tras la instalación.
+- El SW conserva sus estrategias: navegación network-first con fallback al shell, assets SWR, tiles cache-first con límite, API sin caché.
+- `cleanupOutdatedCaches()` de Workbox gestiona los precaches obsoletos; la purga manual ahora solo limpia cachés propias (`cio-*`) para no interferir con las de Workbox.
+- El HTML se precachea aparte (`ASSETS_CORE`) para preservar la estrategia network-first de navegación.
+- El registro manual del SW (`register('./sw.js')`) se mantiene en `index.html` y `terreno.html`.
+
+## [3.0.0] - 2026-11-08
+### Refactor (desacoplamiento de `window.*`)
+- Eliminados los ~50 globales `window.*` que acoplaban los módulos del frontend.
+- Nuevo registro tipado de comandos de UI (`src/core/app/comandos.ts`): los módulos registran sus comandos (`registrarComando`) y un único listener delegado despacha clic/input/change/keyup/submit mediante `data-accion` y `data-args` (JSON escapado con entidades HTML, decodificado por el parser del navegador). Llamadas programáticas vía `ejecutarComando`.
+- Nuevo estado compartido (`src/core/app/estadoApp.ts`): `datosGlobalesEquipos` y `mapaActivo` dejaron de vivir en `window`; incluye suscripción a cambios del catastro (reemplaza al `CustomEvent('datosEquiposActualizados')`).
+- Migrados los 12 módulos (main, sidebar, expediente, modalGestionEquipo, analisisAvanzado, controlAvisosEspectrales, pmsCore, triage, terrenoUI, gestionUsuarios, reportes, pdfPlantilla) y `terreno.html` a la nueva arquitectura. Se elimina `window.UI` y la exposición global de pdfPlantilla.
+- Corregidos dos handlers muertos que apuntaban a funciones inexistentes: exportar PDF de tendencia (ahora muestra toast informativo) y auto-guardado de observaciones PMS (ahora guarda con debounce usando `debounceGuardado`).
+- Nuevas pruebas unitarias del registro de comandos (`comandos.test.ts`): 4. Total frontend: 25.
+
 ## [2.9.0] - 2026-11-07
 ### Seguridad / Sesión
 - Migración del JWT de `localStorage` a **cookies HttpOnly**: el backend ahora emite `cio_access_token` (`Path=/`, `SameSite=Lax`) y `cio_refresh_token` (`Path=/api/auth`, `SameSite=Strict`), ambas `HttpOnly` y con `Secure` opcional vía `CIO_COOKIE_SECURE`.
