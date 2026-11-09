@@ -1,0 +1,9 @@
+{
+  "model": "google/gemini-3.8-flash",
+  "workspace": {
+    "autoIndex": false
+  },
+  "context": {
+    "enableBackgroundGrep": false
+  }
+}

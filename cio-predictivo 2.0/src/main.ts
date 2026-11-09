@@ -10,6 +10,7 @@ import { inicializarBarraLateral } from './modules/layout/sidebar';
 import { renderizarExpediente } from './modules/activos/expediente';
 import { renderizarModuloPMS } from './modules/pms/pmsCore';
 import { renderizarControlAvisosEspectrales } from './modules/avisos/controlAvisosEspectrales';
+import './modules/avisos/avisosCbm';
 import { renderizarModuloTriage, iniciarEscuchaBadgeGlobal } from './modules/triage/triage';
 import { UI } from './modules/layout/notificaciones';
 import './modules/activos/modalGestionEquipo';
@@ -425,6 +426,12 @@ const inicializarApp = (): void => {
     if (btnAvisos) {
       destruirMapaActivo();
       renderizarControlAvisosEspectrales('espacio-trabajo-dinamico');
+      return;
+    }
+
+    const btnAvisosCbm = target.closest('#btn-avisos-cbm');
+    if (btnAvisosCbm) {
+      ejecutarComando('avisosCbm:abrir');
       return;
     }
 
